@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Dictation Training</title>
+
+    <style>
+        body{
+            background:#111;
+            color:#eee;
+            font-family:Arial;
+            padding:40px;
+        }
+
+        input{
+            padding:8px;
+            font-size:16px;
+        }
+
+        button{
+            padding:8px 14px;
+            margin:5px;
+            cursor:pointer;
+        }
+
+        .correct{
+            color:lightgreen;
+        }
+
+        .missing{
+            color:red;
+            text-decoration:underline;
+        }
+
+        .extra{
+            color:orange;
+        }
+
+        #panel{
+            margin-top:20px;
+            padding:20px;
+            border:1px solid #444;
+        }
+
+        #prompt{
+            margin:15px 0;
+            font-size:18px;
+        }
+
+        #result{
+            margin-top:15px;
+            font-size:18px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>🎧 Dictation Training</h2>
+
+<label>Lesson ID:
+    <input id="lessonId" value="1"/>
+</label>
+<button onclick="loadLesson()">Load Lesson</button>
+
+<div id="panel" style="display:none;">
+
+    <div id="progress"></div>
+
+    <div id="prompt">Press play to listen</div>
+
+    <button onclick="playAudio()">▶ Play</button>
+
+    <br><br>
+
+    <input id="answer" style="width:500px;" placeholder="Type what you hear..."/>
+    <button onclick="submitAnswer()">Submit</button>
+
+    <div id="result"></div>
+
+    <button onclick="nextQ()">Next</button>
+
+</div>
+
+
+<script>
+    let sentences = [];
+    let idx = 0;
+    let currentText = "";
+
+    // ===============================
+    // 语音播放
+    // ===============================
+    function playAudio(){
+        const msg = new SpeechSynthesisUtterance(currentText);
+        msg.lang = "en-US";
+        msg.rate = 0.9;
+        window.speechSynthesis.speak(msg);
+    }
+
+    // ===============================
+    // 加载 Lesson
+    // ===============================
+    async function loadLesson(){
+        const lessonId = document.getElementById('lessonId').value;
+
+        const res = await fetch(`/api/train/lesson/${lessonId}/sentences/`);
+        const data = await res.json();
+
+        sentences = data.sentences;
+        idx = 0;
+
+        document.getElementById('panel').style.display = 'block';
+
+        showQ();
+    }
+
+    // ===============================
+    // 显示当前题目
+    // ===============================
+    function showQ(){
+        if(idx >= sentences.length){
+            document.getElementById('prompt').innerText = "🎉 Finished!";
+            document.getElementById('progress').innerText = "";
+            return;
+        }
+
+        currentText = sentences[idx].text_en;
+
+        document.getElementById('progress').innerText =
+            `Question ${idx+1} / ${sentences.length}`;
+
+        document.getElementById('prompt').innerText =
+            "Click ▶ to listen";
+
+        document.getElementById('answer').value = "";
+        document.getElementById('result').innerHTML = "";
+    }
+
+    // ===============================
+    // 提交答案
+    // ===============================
+    async function submitAnswer(){
+        const s = sentences[idx];
+
+        const form = new FormData();
+        form.append("sentence_id", s.id);
+        form.append("user_input", document.getElementById('answer').value);
+
+        const res = await fetch("/api/train/check/", {
+            method:"POST",
+            body:form
+        });
+
+        const data = await res.json();
+
+        if(data.correct){
+            document.getElementById('result').innerHTML =
+                "<span class='correct'>✔ Correct</span>";
+        }else{
+            let html = "✖ Wrong<br><br>Expected:<br>";
+
+            data.diff.forEach(w=>{
+                if(w.status === "correct"){
+                    html += w.word + " ";
+                }
+                else if(w.status === "missing"){
+                    html += `<span class='missing'>${w.word}</span> `;
+                }
+                else if(w.status === "extra"){
+                    html += `<span class='extra'>${w.word}</span> `;
+                }
+            });
+
+            document.getElementById('result').innerHTML = html;
+        }
+    }
+
+    // ===============================
+    // 下一题
+    // ===============================
+    function nextQ(){
+        idx++;
+        showQ();
+    }
+
+    // ===============================
+    // Enter 键提交
+    // ===============================
+    document.getElementById("answer").addEventListener("keypress", function(e){
+        if(e.key === "Enter"){
+            submitAnswer();
+        }
+    });
+
+</script>
+
+</body>
+</html>

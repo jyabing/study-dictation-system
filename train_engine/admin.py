@@ -29,8 +29,6 @@ class LessonAdmin(admin.ModelAdmin):
     list_filter = ("course",)
     search_fields = ("title_en",)
 
-    inlines = [SentenceInline]
-
     fields = ("title_en", "course", "order")
 
 

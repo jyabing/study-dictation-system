@@ -104,7 +104,7 @@
     async function loadLesson(){
         const lessonId = document.getElementById('lessonId').value;
 
-        const res = await fetch(`/api/train/lesson/${lessonId}/sentences/`);
+        const res = await fetch(`/lesson/${lessonId}/sentences/`);
         const data = await res.json();
 
         sentences = data.sentences;

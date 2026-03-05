@@ -12,6 +12,7 @@ class Course(models.Model):
     class Meta:
         verbose_name = "Course / 课程"
         verbose_name_plural = "Courses / 课程"
+        ordering = ["id"]   # ← 加这一行
 
     def __str__(self):
         return f"{self.name_en}"

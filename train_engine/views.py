@@ -3,7 +3,7 @@ import re
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
-from .models import Lesson, Sentence, StudyLog, Word  # Word 先留着后面用
+from .models import Lesson, Sentence
 
 
 def normalize_text(s: str) -> str:

@@ -1,0 +1,27 @@
+[
+{
+  "model": "train_engine.course",
+  "pk": 1,
+  "fields": {
+    "name_en": "英日韩",
+    "description": ""
+  }
+},
+{
+  "model": "train_engine.lesson",
+  "pk": 1,
+  "fields": {
+    "course": 1,
+    "title_en": "lesson 1",
+    "order": 0
+  }
+},
+{
+  "model": "train_engine.sentence",
+  "pk": 1,
+  "fields": {
+    "lesson": 1,
+    "text_en": "telekinesis was real"
+  }
+}
+]

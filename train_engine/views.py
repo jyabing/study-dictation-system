@@ -1,10 +1,20 @@
-import random, difflib
+import random, difflib, json
 import re
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 from .models import Lesson, Sentence
 
+
+def check_answer(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        user_answer = data.get("answer", "").strip().lower()
+        correct_answer = data.get("correct", "").strip().lower()
+
+        return JsonResponse({
+            "correct": user_answer == correct_answer
+        })
 
 def normalize_text(s: str) -> str:
     """忽略大小写、标点、连续空格"""

@@ -6,6 +6,8 @@ from django.views.decorators.http import require_GET, require_POST
 from .models import Lesson, Sentence
 
 
+
+@csrf_exempt
 def check_answer(request):
     if request.method == "POST":
         data = json.loads(request.body)

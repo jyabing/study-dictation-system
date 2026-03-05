@@ -92,12 +92,11 @@ TEMPLATES = [
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 DATABASES = {
-    "default": dj_database_url.parse(
-        DATABASE_URL,
+    "default": dj_database_url.config(
+        default="sqlite:///db.sqlite3",
         conn_max_age=600
     )
 }
-
 
 # ===============================
 # PASSWORD VALIDATION
@@ -140,7 +139,7 @@ STATIC_URL = '/static/'
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+#STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 
 # ===============================

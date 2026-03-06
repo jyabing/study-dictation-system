@@ -37,10 +37,14 @@ def lesson_sentences(request, lesson_id):
     return JsonResponse({"sentences": sentences})
 
 
+@csrf_exempt
 @require_POST
 def check_answer(request):
-    sentence_id = request.POST.get("sentence_id")
-    user_input = request.POST.get("user_input", "")
+
+    data = json.loads(request.body)
+
+    sentence_id = data.get("sentence_id")
+    user_input = data.get("user_input")
 
     s = Sentence.objects.get(id=sentence_id)
     expected = s.text_en
@@ -50,35 +54,10 @@ def check_answer(request):
 
     correct = norm_user == norm_expected
 
-    # ===== 逐词 diff =====
-    expected_words = norm_expected.split()
-    user_words = norm_user.split()
-
-    diff = list(difflib.ndiff(expected_words, user_words))
-
-    # 标记错误词
-    marked = []
-    for d in diff:
-        code = d[0]
-        word = d[2:]
-        if code == " ":
-            marked.append({"word": word, "status": "correct"})
-        elif code == "-":
-            marked.append({"word": word, "status": "missing"})
-        elif code == "+":
-            marked.append({"word": word, "status": "extra"})
-
-    StudyLog.objects.create(
-        word=None,
-        correct=correct,
-        review_time=None
-    )
-
     return JsonResponse({
         "correct": correct,
         "expected": expected,
-        "user_input": user_input,
-        "diff": marked
+        "user_input": user_input
     })
 
 def dictation_page(request):

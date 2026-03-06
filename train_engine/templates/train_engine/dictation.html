@@ -160,7 +160,7 @@
         }else{
             let html = "✖ Wrong<br><br>Expected:<br>";
 
-            data.diff.forEach(w=>{
+            (data.diff || []).forEach(w=>{
                 if(w.status === "correct"){
                     html += w.word + " ";
                 }

@@ -70,3 +70,17 @@ class Sentence(models.Model):
 
     def __str__(self):
         return self.text_en[:50]
+    
+
+class StudyLog(models.Model):
+
+    sentence = models.ForeignKey("Sentence", on_delete=models.CASCADE)
+
+    user_input = models.TextField()
+
+    correct = models.BooleanField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.sentence.text_en} ({self.correct})"

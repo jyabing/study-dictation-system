@@ -30,6 +30,7 @@ def lesson_sentences(request, lesson_id):
 @require_POST
 def check_answer(request):
     try:
+
         sentence_id = request.POST.get("sentence_id")
         user_input = request.POST.get("user_input", "")
 
@@ -38,14 +39,15 @@ def check_answer(request):
 
         sentence = Sentence.objects.get(id=sentence_id)
 
-        expected = sentence.text_en.strip()
-        user = user_input.strip()
+        expected = sentence.text_en.strip().lower()
+        user = user_input.strip().lower()
 
-        correct = normalize_text(expected) == normalize_text(user)
+        correct = expected == user
 
         return JsonResponse({
             "correct": correct,
-            "expected": expected
+            "expected": expected,
+            "diff": []
         })
 
     except Sentence.DoesNotExist:

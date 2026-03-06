@@ -158,7 +158,7 @@
             document.getElementById('result').innerHTML =
                 "<span class='correct'>✔ Correct</span>";
         }else{
-            let html = "✖ Wrong<br><br>Expected:<br>";
+            let html = "✖ Wrong<br><br>Expected:<br>" + data.expected + "<br><br>";
 
             (data.diff || []).forEach(w=>{
                 if(w.status === "correct"){

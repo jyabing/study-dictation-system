@@ -31,28 +31,32 @@ def lesson_sentences(request, lesson_id):
 def check_answer(request):
 
     try:
-        data = json.loads(request.body)
+        data = json.loads(request.body.decode("utf-8"))
 
         sentence_id = data.get("sentence_id")
         user_input = data.get("user_input", "")
 
-        s = Sentence.objects.get(id=sentence_id)
+        if not sentence_id:
+            return JsonResponse({"error": "sentence_id missing"}, status=400)
 
-        expected = s.text_en.strip().lower()
-        user_input = user_input.strip().lower()
+        sentence = Sentence.objects.get(id=sentence_id)
 
-        correct = expected == user_input
+        expected = sentence.text_en.strip().lower()
+        user = user_input.strip().lower()
+
+        correct = expected == user
 
         return JsonResponse({
             "correct": correct,
             "expected": expected,
-            "user_input": user_input
+            "diff": []
         })
 
+    except Sentence.DoesNotExist:
+        return JsonResponse({"error": "sentence not found"}, status=404)
+
     except Exception as e:
-        return JsonResponse({
-            "error": str(e)
-        }, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
 
 def dictation_page(request):
     return render(request, "train_engine/dictation.html")

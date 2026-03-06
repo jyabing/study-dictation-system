@@ -2,22 +2,10 @@ import random, difflib, json
 import re
 from django.http import JsonResponse
 from django.shortcuts import render
-from django.views.decorators.http import require_GET, require_POST, csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt
 from .models import Lesson, Sentence
 
-
-
-@csrf_exempt
-def check_answer(request):
-    if request.method == "POST":
-        data = json.loads(request.body)
-        user_answer = data.get("answer", "").strip().lower()
-        correct_answer = data.get("correct", "").strip().lower()
-
-        return JsonResponse({
-            "correct": user_answer == correct_answer
-        })
 
 def normalize_text(s: str) -> str:
     """忽略大小写、标点、连续空格"""

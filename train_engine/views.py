@@ -2,7 +2,8 @@ import random, difflib, json
 import re
 from django.http import JsonResponse
 from django.shortcuts import render
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, csrf_exempt
+from django.views.decorators.http import require_POST
 from .models import Lesson, Sentence
 
 

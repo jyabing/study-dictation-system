@@ -30,24 +30,29 @@ def lesson_sentences(request, lesson_id):
 @require_POST
 def check_answer(request):
 
-    data = json.loads(request.body)
+    try:
+        data = json.loads(request.body)
 
-    sentence_id = data.get("sentence_id")
-    user_input = data.get("user_input")
+        sentence_id = data.get("sentence_id")
+        user_input = data.get("user_input", "")
 
-    s = Sentence.objects.get(id=sentence_id)
-    expected = s.text_en
+        s = Sentence.objects.get(id=sentence_id)
 
-    norm_user = normalize_text(user_input)
-    norm_expected = normalize_text(expected)
+        expected = s.text_en.strip().lower()
+        user_input = user_input.strip().lower()
 
-    correct = norm_user == norm_expected
+        correct = expected == user_input
 
-    return JsonResponse({
-        "correct": correct,
-        "expected": expected,
-        "user_input": user_input
-    })
+        return JsonResponse({
+            "correct": correct,
+            "expected": expected,
+            "user_input": user_input
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            "error": str(e)
+        }, status=500)
 
 def dictation_page(request):
     return render(request, "train_engine/dictation.html")

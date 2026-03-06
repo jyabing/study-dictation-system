@@ -29,11 +29,10 @@ def lesson_sentences(request, lesson_id):
 @csrf_exempt
 @require_POST
 def check_answer(request):
-    try:
-        data = json.loads(request.body.decode("utf-8"))
 
-        sentence_id = data.get("sentence_id")
-        user_input = data.get("user_input", "")
+    try:
+        sentence_id = request.POST.get("sentence_id")
+        user_input = request.POST.get("user_input", "")
 
         if not sentence_id:
             return JsonResponse({"error": "sentence_id missing"}, status=400)

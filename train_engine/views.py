@@ -29,7 +29,6 @@ def lesson_sentences(request, lesson_id):
 @csrf_exempt
 @require_POST
 def check_answer(request):
-
     try:
         data = json.loads(request.body.decode("utf-8"))
 

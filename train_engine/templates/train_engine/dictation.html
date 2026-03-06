@@ -8,11 +8,15 @@
         body{
             background:#111;
             color:#eee;
-            font-family:Arial;
+            font-family:Arial, sans-serif;
             padding:40px;
         }
 
-        input{
+        h2{
+            margin-bottom:20px;
+        }
+
+        input, select{
             padding:8px;
             font-size:16px;
         }
@@ -21,25 +25,39 @@
             padding:8px 14px;
             margin:5px;
             cursor:pointer;
+            font-size:16px;
         }
 
         .correct{
             color:lightgreen;
+            font-weight:bold;
+        }
+
+        .wrong{
+            color:#ff6b6b;
+            font-weight:bold;
         }
 
         .missing{
-            color:red;
+            color:#ff4d4f;
             text-decoration:underline;
+            font-weight:bold;
         }
 
         .extra{
             color:orange;
+            font-weight:bold;
+        }
+
+        .correct-word{
+            color:#ddd;
         }
 
         #panel{
             margin-top:20px;
             padding:20px;
             border:1px solid #444;
+            max-width:700px;
         }
 
         #prompt{
@@ -50,6 +68,31 @@
         #result{
             margin-top:15px;
             font-size:18px;
+            line-height:1.8;
+        }
+
+        #score, #wrongCount{
+            margin-top:10px;
+            font-size:18px;
+            font-weight:bold;
+        }
+
+        #controls{
+            margin-top:10px;
+            margin-bottom:10px;
+        }
+
+        #answer{
+            width:520px;
+        }
+
+        .section{
+            margin-bottom:15px;
+        }
+
+        .small-note{
+            color:#aaa;
+            font-size:14px;
         }
     </style>
 </head>
@@ -58,27 +101,48 @@
 
 <h2>🎧 Dictation Training</h2>
 
-<label>Lesson ID:
-    <input id="lessonId" value="1"/>
-</label>
-<button onclick="loadLesson()">Load Lesson</button>
+<div class="section">
+    <label>Lesson ID:
+        <input id="lessonId" value="1"/>
+    </label>
+    <button onclick="loadLesson()">Load Lesson</button>
+</div>
+
+<div id="score">Score: 0 / 0</div>
+<div id="wrongCount">Wrong Count: 0</div>
 
 <div id="panel" style="display:none;">
 
     <div id="progress"></div>
 
-    <div id="prompt">Press play to listen</div>
+    <div id="prompt">Click ▶ to listen</div>
 
-    <button onclick="playAudio()">▶ Play</button>
+    <div id="controls">
+        <button onclick="playAudio()">▶ Play</button>
+        <button onclick="repeatAudio()">🔁 Repeat</button>
 
-    <br><br>
+        <label style="margin-left:10px;">
+            Speed:
+            <select id="speed">
+                <option value="0.7">Slow</option>
+                <option value="0.9" selected>Normal</option>
+                <option value="1.1">Fast</option>
+            </select>
+        </label>
+    </div>
 
-    <input id="answer" style="width:500px;" placeholder="Type what you hear..."/>
+    <br>
+
+    <input id="answer" placeholder="Type what you hear..."/>
     <button onclick="submitAnswer()">Submit</button>
 
     <div id="result"></div>
 
     <button onclick="nextQ()">Next</button>
+
+    <div class="small-note" style="margin-top:12px;">
+        Tip: Press Enter to submit.
+    </div>
 
 </div>
 
@@ -88,30 +152,99 @@
     let idx = 0;
     let currentText = "";
 
+    let correctCount = 0;
+    let wrongCount = 0;
+    let answeredCurrent = false;
+
+    // ===============================
+    // 文本标准化
+    // ===============================
+    function normalizeText(s){
+        return s
+            .toLowerCase()
+            .replace(/[^\w\s]/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    // ===============================
+    // 生成 diff（前端自己做，避免后端复杂性）
+    // ===============================
+    function buildDiff(expected, userInput){
+        const expectedWords = normalizeText(expected).split(" ").filter(Boolean);
+        const userWords = normalizeText(userInput).split(" ").filter(Boolean);
+
+        const result = [];
+        const maxLen = Math.max(expectedWords.length, userWords.length);
+
+        for(let i = 0; i < maxLen; i++){
+            const ew = expectedWords[i];
+            const uw = userWords[i];
+
+            if(ew !== undefined && uw !== undefined){
+                if(ew === uw){
+                    result.push({ word: ew, status: "correct" });
+                }else{
+                    result.push({ word: ew, status: "missing" });
+                    result.push({ word: uw, status: "extra" });
+                }
+            }else if(ew !== undefined){
+                result.push({ word: ew, status: "missing" });
+            }else if(uw !== undefined){
+                result.push({ word: uw, status: "extra" });
+            }
+        }
+
+        return result;
+    }
+
+    // ===============================
+    // 更新分数显示
+    // ===============================
+    function updateScore(){
+        document.getElementById("score").innerText =
+            `Score: ${correctCount} / ${sentences.length}`;
+
+        document.getElementById("wrongCount").innerText =
+            `Wrong Count: ${wrongCount}`;
+    }
+
     // ===============================
     // 语音播放
     // ===============================
     function playAudio(){
+        if(!currentText) return;
+
+        window.speechSynthesis.cancel();
+
         const msg = new SpeechSynthesisUtterance(currentText);
         msg.lang = "en-US";
-        msg.rate = 0.9;
+        msg.rate = parseFloat(document.getElementById("speed").value || "0.9");
         window.speechSynthesis.speak(msg);
+    }
+
+    function repeatAudio(){
+        playAudio();
     }
 
     // ===============================
     // 加载 Lesson
     // ===============================
     async function loadLesson(){
-        const lessonId = document.getElementById('lessonId').value;
+        const lessonId = document.getElementById("lessonId").value;
 
         const res = await fetch(`/lesson/${lessonId}/sentences/`);
         const data = await res.json();
 
-        sentences = data.sentences;
+        sentences = data.sentences || [];
         idx = 0;
+        correctCount = 0;
+        wrongCount = 0;
+        answeredCurrent = false;
 
-        document.getElementById('panel').style.display = 'block';
+        document.getElementById("panel").style.display = "block";
 
+        updateScore();
         showQ();
     }
 
@@ -120,59 +253,103 @@
     // ===============================
     function showQ(){
         if(idx >= sentences.length){
-            document.getElementById('prompt').innerText = "🎉 Finished!";
-            document.getElementById('progress').innerText = "";
+            document.getElementById("prompt").innerText = "🎉 Finished!";
+            document.getElementById("progress").innerText = "";
+            document.getElementById("result").innerHTML =
+                `<span class="correct">Finished! Final Score: ${correctCount} / ${sentences.length}</span>`;
+            document.getElementById("answer").value = "";
             return;
         }
 
         currentText = sentences[idx].text_en;
+        answeredCurrent = false;
 
-        document.getElementById('progress').innerText =
-            `Question ${idx+1} / ${sentences.length}`;
+        document.getElementById("progress").innerText =
+            `Question ${idx + 1} / ${sentences.length}`;
 
-        document.getElementById('prompt').innerText =
+        document.getElementById("prompt").innerText =
             "Click ▶ to listen";
 
-        document.getElementById('answer').value = "";
-        document.getElementById('result').innerHTML = "";
+        document.getElementById("answer").value = "";
+        document.getElementById("result").innerHTML = "";
     }
 
     // ===============================
     // 提交答案
     // ===============================
     async function submitAnswer(){
+        if(idx >= sentences.length) return;
+
         const s = sentences[idx];
+        const userInput = document.getElementById("answer").value;
 
         const form = new FormData();
         form.append("sentence_id", s.id);
-        form.append("user_input", document.getElementById('answer').value);
+        form.append("user_input", userInput);
 
         const res = await fetch("/api/train/check/", {
-            method:"POST",
-            body:form
+            method: "POST",
+            body: form
         });
 
         const data = await res.json();
 
+        if(data.error){
+            document.getElementById("result").innerHTML =
+                `<span class="wrong">Error: ${data.error}</span>`;
+            return;
+        }
+
         if(data.correct){
-            document.getElementById('result').innerHTML =
+            if(!answeredCurrent){
+                correctCount++;
+                answeredCurrent = true;
+            }
+
+            document.getElementById("result").innerHTML =
                 "<span class='correct'>✔ Correct</span>";
+
+            updateScore();
+
+            setTimeout(()=>{
+                nextQ();
+            }, 1200);
+
         }else{
-            let html = "✖ Wrong<br><br>Expected:<br>" + data.expected + "<br><br>";
+            if(!answeredCurrent){
+                wrongCount++;
+                answeredCurrent = true;
+            }
 
-            (data.diff || []).forEach(w=>{
-                if(w.status === "correct"){
-                    html += w.word + " ";
-                }
-                else if(w.status === "missing"){
-                    html += `<span class='missing'>${w.word}</span> `;
-                }
-                else if(w.status === "extra"){
-                    html += `<span class='extra'>${w.word}</span> `;
-                }
-            });
+            const expectedText = data.expected || "";
+            const diff = buildDiff(expectedText, userInput);
 
-            document.getElementById('result').innerHTML = html;
+            let html = "<span class='wrong'>✖ Wrong</span><br><br>";
+            html += "Expected:<br>";
+
+            if(diff.length === 0){
+                html += expectedText;
+            }else{
+                diff.forEach(w=>{
+                    if(w.status === "correct"){
+                        html += `<span class="correct-word">${w.word}</span> `;
+                    }
+                    else if(w.status === "missing"){
+                        html += `<span class="missing">${w.word}</span> `;
+                    }
+                    else if(w.status === "extra"){
+                        html += `<span class="extra">${w.word}</span> `;
+                    }
+                });
+            }
+
+            document.getElementById("result").innerHTML = html;
+
+            updateScore();
+
+            setTimeout(()=>{
+                nextQ();
+            }, 1800);
         }
     }
 
@@ -187,12 +364,13 @@
     // ===============================
     // Enter 键提交
     // ===============================
-    document.getElementById("answer").addEventListener("keypress", function(e){
-        if(e.key === "Enter"){
-            submitAnswer();
-        }
+    document.addEventListener("DOMContentLoaded", function(){
+        document.getElementById("answer").addEventListener("keypress", function(e){
+            if(e.key === "Enter"){
+                submitAnswer();
+            }
+        });
     });
-
 </script>
 
 </body>

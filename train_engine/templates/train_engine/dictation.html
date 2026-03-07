@@ -2,117 +2,123 @@
 <html>
 <head>
 <meta charset="utf-8"/>
-<title>Dictation Training</title>
+<title>英语听写训练系统</title>
 
 <style>
+
 body{
     background:#111;
     color:#eee;
     font-family:Arial;
     padding:40px;
 }
+
 input,select{
     padding:8px;
     font-size:16px;
 }
+
 button{
     padding:8px 14px;
     margin:5px;
     cursor:pointer;
 }
+
 .correct{
     color:lightgreen;
     font-weight:bold;
 }
+
 .wrong{
     color:#ff6b6b;
     font-weight:bold;
 }
+
 .correct-word{
     color:#ddd;
 }
+
 .missing{
     color:red;
     text-decoration:underline;
     font-weight:bold;
 }
+
 .extra{
     color:orange;
     font-weight:bold;
 }
+
 #panel{
     margin-top:20px;
     padding:20px;
     border:1px solid #444;
     max-width:800px;
 }
+
 #prompt{
     margin:15px 0;
     font-size:18px;
 }
+
 #result{
     margin-top:15px;
     font-size:18px;
     line-height:1.8;
 }
+
 #score{
     margin-top:10px;
     font-size:18px;
     font-weight:bold;
 }
-#mode{
-    margin-top:10px;
-    margin-bottom:10px;
-}
-.small{
-    color:#aaa;
-    font-size:14px;
-    margin-top:8px;
-}
+
 </style>
 </head>
 
 <body>
 
-<h2>🎧 Dictation Training</h2>
+<h2>🎧 英语听写训练</h2>
 
-<label>Lesson ID:
+<label>课程 ID：
 <input id="lessonId" value="1"/>
 </label>
 
-<button onclick="loadLesson()">Load Lesson</button>
-<button onclick="loadWrongReview()">Wrong Review</button>
-<button onclick="loadDueReview()">Due Review</button>
+<button onclick="loadLesson()">加载课程</button>
+<button onclick="loadWrongReview()">错题复习</button>
+<button onclick="loadDueReview()">今日复习</button>
 
-<div id="mode">Mode: Normal</div>
-<div id="score">Score: 0 / 0</div>
+<div id="mode">模式：正常训练</div>
+
+<div id="score">成绩：0 / 0</div>
 
 <div id="panel" style="display:none;">
 
-    <div id="progress"></div>
+<div id="progress"></div>
 
-    <div id="prompt">Click ▶ to listen</div>
+<div id="prompt">点击 ▶ 播放语音</div>
 
-    <button onclick="playAudio()">▶ Play</button>
+<button onclick="playAudio()">▶ 播放</button>
 
-    <select id="speed">
-        <option value="0.7">Slow</option>
-        <option value="0.9" selected>Normal</option>
-        <option value="1.1">Fast</option>
-    </select>
+<select id="speed">
+<option value="0.7">慢速</option>
+<option value="0.9" selected>正常</option>
+<option value="1.1">快速</option>
+</select>
 
-    <br><br>
+<br><br>
 
-    <input id="answer" style="width:500px;" placeholder="Type what you hear..."/>
-    <button onclick="submitAnswer()">Submit</button>
+<input id="answer" style="width:500px;" placeholder="请输入你听到的句子..."/>
 
-    <div id="result"></div>
+<button onclick="submitAnswer()">提交</button>
 
-    <button onclick="nextQ()">Next</button>
+<div id="result"></div>
 
-    <div class="small">
-        正确时自动下一题；错误时停留，确认错误后再点 Next。
-    </div>
+<button onclick="nextQ()">下一题</button>
+
+<p style="color:#aaa;font-size:14px;">
+答对自动进入下一题；答错会停留，确认错误后点击“下一题”
+</p>
 
 </div>
 
@@ -123,7 +129,6 @@ let sentences = [];
 let idx = 0;
 let currentText = "";
 let correctCount = 0;
-let currentMode = "Normal";
 
 function normalizeText(s){
     return s
@@ -134,6 +139,7 @@ function normalizeText(s){
 }
 
 function buildDiff(expected,user){
+
     const ew = normalizeText(expected).split(" ").filter(Boolean);
     const uw = normalizeText(user).split(" ").filter(Boolean);
 
@@ -141,16 +147,20 @@ function buildDiff(expected,user){
     const max = Math.max(ew.length,uw.length);
 
     for(let i=0;i<max;i++){
+
         const e = ew[i];
         const u = uw[i];
 
         if(e !== undefined && u !== undefined){
+
             if(e === u){
                 result.push({word:e,status:"correct"});
-            }else{
+            }
+            else{
                 result.push({word:e,status:"missing"});
                 result.push({word:u,status:"extra"});
             }
+
         }
         else if(e !== undefined){
             result.push({word:e,status:"missing"});
@@ -158,175 +168,205 @@ function buildDiff(expected,user){
         else if(u !== undefined){
             result.push({word:u,status:"extra"});
         }
+
     }
 
     return result;
+
 }
 
 function updateScore(){
-    document.getElementById("score").innerText =
-        `Score: ${correctCount} / ${sentences.length}`;
-}
 
-function setMode(name){
-    currentMode = name;
-    document.getElementById("mode").innerText = `Mode: ${name}`;
+    document.getElementById("score").innerText =
+        `成绩：${correctCount} / ${sentences.length}`;
+
 }
 
 function playAudio(){
+
     const msg = new SpeechSynthesisUtterance(currentText);
+
     msg.lang="en-US";
+
     msg.rate=parseFloat(document.getElementById("speed").value);
+
     window.speechSynthesis.cancel();
+
     window.speechSynthesis.speak(msg);
+
 }
 
 async function loadLesson(){
+
     const lessonId = document.getElementById("lessonId").value;
+
     const res = await fetch(`/lesson/${lessonId}/sentences/`);
+
     const data = await res.json();
 
     sentences = data.sentences || [];
+
     idx = 0;
+
     correctCount = 0;
 
-    setMode("Normal");
+    document.getElementById("mode").innerText="模式：正常训练";
+
     document.getElementById("panel").style.display="block";
+
     updateScore();
+
     showQ();
+
 }
 
 async function loadWrongReview(){
+
     const res = await fetch("/api/review/wrong/");
+
     const data = await res.json();
 
     sentences = data.sentences || [];
+
     idx = 0;
+
     correctCount = 0;
 
-    setMode("Wrong Review");
+    document.getElementById("mode").innerText="模式：错题复习";
+
     document.getElementById("panel").style.display="block";
+
     updateScore();
+
     showQ();
+
 }
 
 async function loadDueReview(){
+
     const res = await fetch("/api/review/due/");
+
     const data = await res.json();
 
     sentences = data.sentences || [];
+
     idx = 0;
+
     correctCount = 0;
 
-    setMode("Due Review");
+    document.getElementById("mode").innerText="模式：今日复习";
+
     document.getElementById("panel").style.display="block";
+
     updateScore();
+
     showQ();
+
 }
 
 function showQ(){
+
     if(idx >= sentences.length){
-        document.getElementById("progress").innerText = "";
-        document.getElementById("prompt").innerText = "🎉 Finished!";
-        document.getElementById("result").innerHTML = "";
-        document.getElementById("answer").value = "";
+
+        document.getElementById("progress").innerText="";
+
+        document.getElementById("prompt").innerText="🎉 本轮完成！";
+
+        document.getElementById("result").innerHTML="";
+
         return;
+
     }
 
     currentText = sentences[idx].text_en;
 
     document.getElementById("progress").innerText =
-        `Question ${idx+1} / ${sentences.length}`;
+        `第 ${idx+1} / ${sentences.length} 题`;
 
-    document.getElementById("prompt").innerText =
-        "Click ▶ to listen";
+    document.getElementById("prompt").innerText="点击 ▶ 听句子";
 
-    document.getElementById("answer").value = "";
-    document.getElementById("result").innerHTML = "";
+    document.getElementById("answer").value="";
+
+    document.getElementById("result").innerHTML="";
+
 }
 
 async function submitAnswer(){
-    if(idx >= sentences.length){
-        return;
-    }
 
     const s = sentences[idx];
+
     const userInput = document.getElementById("answer").value;
 
     const form = new FormData();
-    form.append("sentence_id", s.id);
-    form.append("user_input", userInput);
 
-    const res = await fetch("/api/train/check/", {
+    form.append("sentence_id",s.id);
+
+    form.append("user_input",userInput);
+
+    const res = await fetch("/api/train/check/",{
         method:"POST",
         body:form
     });
 
     const data = await res.json();
 
-    if(data.error){
-        document.getElementById("result").innerHTML =
-            `<span class="wrong">Error: ${data.error}</span>`;
-        return;
-    }
-
     if(data.correct){
-        correctCount++;
 
-        document.getElementById("result").innerHTML =
-            `<span class="correct">✔ Correct</span>
-             <br><br>
-             <span>Memory Level: ${data.memory_level}</span>
-             <br>
-             <span>Next Review: ${data.next_review}</span>`;
+        correctCount++;
 
         updateScore();
 
+        document.getElementById("result").innerHTML =
+            `<span class="correct">✔ 正确</span>`;
+
         setTimeout(()=>{
+
             nextQ();
+
         },1200);
-    }else{
-        const expected = data.expected || "";
-        const diff = buildDiff(expected,userInput);
 
-        let html = `<span class="wrong">✖ Wrong</span><br><br>`;
-        html += `Expected:<br>`;
-
-        if(diff.length === 0){
-            html += expected;
-        }else{
-            diff.forEach(w=>{
-                if(w.status === "correct"){
-                    html += `<span class="correct-word">${w.word}</span> `;
-                }
-                else if(w.status === "missing"){
-                    html += `<span class="missing">${w.word}</span> `;
-                }
-                else if(w.status === "extra"){
-                    html += `<span class="extra">${w.word}</span> `;
-                }
-            });
-        }
-
-        html += `<br><br>`;
-        html += `Memory Level: ${data.memory_level}<br>`;
-        html += `Wrong Count: ${data.wrong_count}<br>`;
-
-        document.getElementById("result").innerHTML = html;
-
-        // 错误时不自动跳题
     }
+    else{
+
+        const diff = buildDiff(data.expected,userInput);
+
+        let html = `<span class="wrong">✘ 错误</span><br><br>正确句子：<br>`;
+
+        diff.forEach(w=>{
+
+            if(w.status==="correct")
+                html+=`<span class="correct-word">${w.word}</span> `;
+
+            else if(w.status==="missing")
+                html+=`<span class="missing">${w.word}</span> `;
+
+            else if(w.status==="extra")
+                html+=`<span class="extra">${w.word}</span> `;
+
+        });
+
+        document.getElementById("result").innerHTML=html;
+
+    }
+
 }
 
 function nextQ(){
+
     idx++;
+
     showQ();
+
 }
 
 document.getElementById("answer").addEventListener("keypress",function(e){
-    if(e.key === "Enter"){
+
+    if(e.key==="Enter"){
+
         submitAnswer();
+
     }
+
 });
 
 </script>

@@ -4,7 +4,69 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.csrf import csrf_exempt
-from .models import Lesson, Sentence
+from .models import Lesson, Sentence, StudyLog
+from django.utils import timezone
+
+
+def wrong_sentences(request):
+    """
+    错题复习：取最近一次作答为错误的句子
+    """
+    latest_logs = StudyLog.objects.select_related("sentence").order_by("sentence_id", "-created_at")
+
+    seen = set()
+    wrong_sentence_ids = []
+
+    for log in latest_logs:
+        if log.sentence_id in seen:
+            continue
+        seen.add(log.sentence_id)
+
+        if not log.correct:
+            wrong_sentence_ids.append(log.sentence_id)
+
+    sentences = Sentence.objects.filter(id__in=wrong_sentence_ids).order_by("id")
+
+    return JsonResponse({
+        "sentences": [
+            {
+                "id": s.id,
+                "text_en": s.text_en
+            }
+            for s in sentences
+        ]
+    })
+
+
+def review_due_sentences(request):
+    """
+    到期复习：取 next_review 已到期的句子
+    """
+    latest_logs = StudyLog.objects.select_related("sentence").order_by("sentence_id", "-created_at")
+
+    seen = set()
+    due_sentence_ids = []
+    now = timezone.now()
+
+    for log in latest_logs:
+        if log.sentence_id in seen:
+            continue
+        seen.add(log.sentence_id)
+
+        if log.next_review and log.next_review <= now:
+            due_sentence_ids.append(log.sentence_id)
+
+    sentences = Sentence.objects.filter(id__in=due_sentence_ids).order_by("id")
+
+    return JsonResponse({
+        "sentences": [
+            {
+                "id": s.id,
+                "text_en": s.text_en
+            }
+            for s in sentences
+        ]
+    })
 
 
 def normalize_text(s: str) -> str:

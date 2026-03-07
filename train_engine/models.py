@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 # =========================
@@ -70,17 +71,58 @@ class Sentence(models.Model):
 
     def __str__(self):
         return self.text_en[:50]
-    
 
+
+# =========================
+# StudyLog
+# =========================
 class StudyLog(models.Model):
 
-    sentence = models.ForeignKey("Sentence", on_delete=models.CASCADE)
+    sentence = models.ForeignKey(
+        "Sentence",
+        on_delete=models.CASCADE,
+        related_name="study_logs"
+    )
 
-    user_input = models.TextField()
+    user_input = models.TextField(
+        blank=True
+    )
 
     correct = models.BooleanField()
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    # =========================
+    # SRS 记忆等级
+    # =========================
+    memory_level = models.IntegerField(
+        default=0,
+        help_text="0-6 记忆等级"
+    )
+
+    # =========================
+    # 下次复习时间
+    # =========================
+    next_review = models.DateTimeField(
+        default=timezone.now
+    )
+
+    # =========================
+    # 错误次数
+    # =========================
+    wrong_count = models.IntegerField(
+        default=0
+    )
+
+    # =========================
+    # 记录时间
+    # =========================
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        verbose_name = "Study Log / 学习记录"
+        verbose_name_plural = "Study Logs / 学习记录"
+        ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.sentence.text_en} ({self.correct})"
+        return f"{self.sentence.text_en[:30]} ({'✓' if self.correct else '✗'})"

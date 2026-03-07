@@ -5,74 +5,70 @@
 <title>Dictation Training</title>
 
 <style>
-
 body{
     background:#111;
     color:#eee;
     font-family:Arial;
     padding:40px;
 }
-
 input,select{
     padding:8px;
     font-size:16px;
 }
-
 button{
     padding:8px 14px;
     margin:5px;
     cursor:pointer;
 }
-
 .correct{
     color:lightgreen;
     font-weight:bold;
 }
-
 .wrong{
     color:#ff6b6b;
     font-weight:bold;
 }
-
 .correct-word{
     color:#ddd;
 }
-
 .missing{
     color:red;
     text-decoration:underline;
     font-weight:bold;
 }
-
 .extra{
     color:orange;
     font-weight:bold;
 }
-
 #panel{
     margin-top:20px;
     padding:20px;
     border:1px solid #444;
-    max-width:700px;
+    max-width:800px;
 }
-
 #prompt{
     margin:15px 0;
     font-size:18px;
 }
-
 #result{
     margin-top:15px;
     font-size:18px;
     line-height:1.8;
 }
-
 #score{
     margin-top:10px;
     font-size:18px;
     font-weight:bold;
 }
-
+#mode{
+    margin-top:10px;
+    margin-bottom:10px;
+}
+.small{
+    color:#aaa;
+    font-size:14px;
+    margin-top:8px;
+}
 </style>
 </head>
 
@@ -85,32 +81,38 @@ button{
 </label>
 
 <button onclick="loadLesson()">Load Lesson</button>
+<button onclick="loadWrongReview()">Wrong Review</button>
+<button onclick="loadDueReview()">Due Review</button>
 
+<div id="mode">Mode: Normal</div>
 <div id="score">Score: 0 / 0</div>
 
 <div id="panel" style="display:none;">
 
-<div id="progress"></div>
+    <div id="progress"></div>
 
-<div id="prompt">Click ▶ to listen</div>
+    <div id="prompt">Click ▶ to listen</div>
 
-<button onclick="playAudio()">▶ Play</button>
+    <button onclick="playAudio()">▶ Play</button>
 
-<select id="speed">
-<option value="0.7">Slow</option>
-<option value="0.9" selected>Normal</option>
-<option value="1.1">Fast</option>
-</select>
+    <select id="speed">
+        <option value="0.7">Slow</option>
+        <option value="0.9" selected>Normal</option>
+        <option value="1.1">Fast</option>
+    </select>
 
-<br><br>
+    <br><br>
 
-<input id="answer" style="width:500px;" placeholder="Type what you hear..."/>
+    <input id="answer" style="width:500px;" placeholder="Type what you hear..."/>
+    <button onclick="submitAnswer()">Submit</button>
 
-<button onclick="submitAnswer()">Submit</button>
+    <div id="result"></div>
 
-<div id="result"></div>
+    <button onclick="nextQ()">Next</button>
 
-<button onclick="nextQ()">Next</button>
+    <div class="small">
+        正确时自动下一题；错误时停留，确认错误后再点 Next。
+    </div>
 
 </div>
 
@@ -120,16 +122,10 @@ button{
 let sentences = [];
 let idx = 0;
 let currentText = "";
-
 let correctCount = 0;
-
-
-// =======================
-// 文本标准化
-// =======================
+let currentMode = "Normal";
 
 function normalizeText(s){
-
     return s
         .toLowerCase()
         .replace(/[^\w\s]/g,"")
@@ -137,257 +133,201 @@ function normalizeText(s){
         .trim();
 }
 
-
-// =======================
-// diff 算法
-// =======================
-
 function buildDiff(expected,user){
-
-    const ew = normalizeText(expected).split(" ");
-    const uw = normalizeText(user).split(" ");
+    const ew = normalizeText(expected).split(" ").filter(Boolean);
+    const uw = normalizeText(user).split(" ").filter(Boolean);
 
     const result = [];
-
     const max = Math.max(ew.length,uw.length);
 
     for(let i=0;i<max;i++){
-
         const e = ew[i];
         const u = uw[i];
 
-        if(e!==undefined && u!==undefined){
-
-            if(e===u){
-
+        if(e !== undefined && u !== undefined){
+            if(e === u){
                 result.push({word:e,status:"correct"});
-
             }else{
-
                 result.push({word:e,status:"missing"});
                 result.push({word:u,status:"extra"});
-
             }
-
         }
-
-        else if(e!==undefined){
-
+        else if(e !== undefined){
             result.push({word:e,status:"missing"});
-
         }
-
-        else if(u!==undefined){
-
+        else if(u !== undefined){
             result.push({word:u,status:"extra"});
-
         }
-
     }
 
     return result;
-
 }
-
-
-// =======================
-// 更新分数
-// =======================
 
 function updateScore(){
-
-document.getElementById("score").innerText =
-`Score: ${correctCount} / ${sentences.length}`;
-
+    document.getElementById("score").innerText =
+        `Score: ${correctCount} / ${sentences.length}`;
 }
 
-
-// =======================
-// 播放语音
-// =======================
+function setMode(name){
+    currentMode = name;
+    document.getElementById("mode").innerText = `Mode: ${name}`;
+}
 
 function playAudio(){
-
-const msg = new SpeechSynthesisUtterance(currentText);
-
-msg.lang="en-US";
-
-msg.rate=parseFloat(document.getElementById("speed").value);
-
-window.speechSynthesis.speak(msg);
-
+    const msg = new SpeechSynthesisUtterance(currentText);
+    msg.lang="en-US";
+    msg.rate=parseFloat(document.getElementById("speed").value);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(msg);
 }
-
-
-// =======================
-// 加载 lesson
-// =======================
 
 async function loadLesson(){
+    const lessonId = document.getElementById("lessonId").value;
+    const res = await fetch(`/lesson/${lessonId}/sentences/`);
+    const data = await res.json();
 
-const lessonId = document.getElementById("lessonId").value;
+    sentences = data.sentences || [];
+    idx = 0;
+    correctCount = 0;
 
-const res = await fetch(`/lesson/${lessonId}/sentences/`);
-
-const data = await res.json();
-
-sentences = data.sentences;
-
-idx=0;
-correctCount=0;
-
-document.getElementById("panel").style.display="block";
-
-updateScore();
-
-showQ();
-
+    setMode("Normal");
+    document.getElementById("panel").style.display="block";
+    updateScore();
+    showQ();
 }
 
+async function loadWrongReview(){
+    const res = await fetch("/api/review/wrong/");
+    const data = await res.json();
 
-// =======================
-// 显示题目
-// =======================
+    sentences = data.sentences || [];
+    idx = 0;
+    correctCount = 0;
+
+    setMode("Wrong Review");
+    document.getElementById("panel").style.display="block";
+    updateScore();
+    showQ();
+}
+
+async function loadDueReview(){
+    const res = await fetch("/api/review/due/");
+    const data = await res.json();
+
+    sentences = data.sentences || [];
+    idx = 0;
+    correctCount = 0;
+
+    setMode("Due Review");
+    document.getElementById("panel").style.display="block";
+    updateScore();
+    showQ();
+}
 
 function showQ(){
+    if(idx >= sentences.length){
+        document.getElementById("progress").innerText = "";
+        document.getElementById("prompt").innerText = "🎉 Finished!";
+        document.getElementById("result").innerHTML = "";
+        document.getElementById("answer").value = "";
+        return;
+    }
 
-if(idx>=sentences.length){
+    currentText = sentences[idx].text_en;
 
-document.getElementById("prompt").innerText="🎉 Finished!";
-document.getElementById("progress").innerText="";
-return;
+    document.getElementById("progress").innerText =
+        `Question ${idx+1} / ${sentences.length}`;
 
+    document.getElementById("prompt").innerText =
+        "Click ▶ to listen";
+
+    document.getElementById("answer").value = "";
+    document.getElementById("result").innerHTML = "";
 }
-
-currentText = sentences[idx].text_en;
-
-document.getElementById("progress").innerText =
-`Question ${idx+1} / ${sentences.length}`;
-
-document.getElementById("prompt").innerText =
-"Click ▶ to listen";
-
-document.getElementById("answer").value="";
-document.getElementById("result").innerHTML="";
-
-}
-
-
-// =======================
-// 提交答案
-// =======================
 
 async function submitAnswer(){
+    if(idx >= sentences.length){
+        return;
+    }
 
-const s = sentences[idx];
+    const s = sentences[idx];
+    const userInput = document.getElementById("answer").value;
 
-const userInput = document.getElementById("answer").value;
+    const form = new FormData();
+    form.append("sentence_id", s.id);
+    form.append("user_input", userInput);
 
-const form = new FormData();
+    const res = await fetch("/api/train/check/", {
+        method:"POST",
+        body:form
+    });
 
-form.append("sentence_id",s.id);
-form.append("user_input",userInput);
+    const data = await res.json();
 
-const res = await fetch("/api/train/check/",{
+    if(data.error){
+        document.getElementById("result").innerHTML =
+            `<span class="wrong">Error: ${data.error}</span>`;
+        return;
+    }
 
-method:"POST",
-body:form
+    if(data.correct){
+        correctCount++;
 
-});
+        document.getElementById("result").innerHTML =
+            `<span class="correct">✔ Correct</span>
+             <br><br>
+             <span>Memory Level: ${data.memory_level}</span>
+             <br>
+             <span>Next Review: ${data.next_review}</span>`;
 
-const data = await res.json();
+        updateScore();
 
+        setTimeout(()=>{
+            nextQ();
+        },1200);
+    }else{
+        const expected = data.expected || "";
+        const diff = buildDiff(expected,userInput);
 
-// ===== 正确 =====
+        let html = `<span class="wrong">✖ Wrong</span><br><br>`;
+        html += `Expected:<br>`;
 
-if(data.correct){
+        if(diff.length === 0){
+            html += expected;
+        }else{
+            diff.forEach(w=>{
+                if(w.status === "correct"){
+                    html += `<span class="correct-word">${w.word}</span> `;
+                }
+                else if(w.status === "missing"){
+                    html += `<span class="missing">${w.word}</span> `;
+                }
+                else if(w.status === "extra"){
+                    html += `<span class="extra">${w.word}</span> `;
+                }
+            });
+        }
 
-correctCount++;
+        html += `<br><br>`;
+        html += `Memory Level: ${data.memory_level}<br>`;
+        html += `Wrong Count: ${data.wrong_count}<br>`;
 
-document.getElementById("result").innerHTML =
-"<span class='correct'>✔ Correct</span>";
+        document.getElementById("result").innerHTML = html;
 
-updateScore();
-
-setTimeout(()=>{
-
-nextQ();
-
-},1200);
-
+        // 错误时不自动跳题
+    }
 }
-
-
-// ===== 错误 =====
-
-else{
-
-const expected = data.expected;
-
-const diff = buildDiff(expected,userInput);
-
-let html="<span class='wrong'>✖ Wrong</span><br><br>";
-
-html+="Expected:<br>";
-
-diff.forEach(w=>{
-
-if(w.status==="correct"){
-
-html+=`<span class="correct-word">${w.word}</span> `;
-
-}
-
-else if(w.status==="missing"){
-
-html+=`<span class="missing">${w.word}</span> `;
-
-}
-
-else if(w.status==="extra"){
-
-html+=`<span class="extra">${w.word}</span> `;
-
-}
-
-});
-
-document.getElementById("result").innerHTML=html;
-
-// ❗错误不自动跳题
-
-}
-
-}
-
-
-// =======================
-// 下一题
-// =======================
 
 function nextQ(){
-
-idx++;
-
-showQ();
-
+    idx++;
+    showQ();
 }
-
-
-// =======================
-// Enter 提交
-// =======================
 
 document.getElementById("answer").addEventListener("keypress",function(e){
-
-if(e.key==="Enter"){
-
-submitAnswer();
-
-}
-
+    if(e.key === "Enter"){
+        submitAnswer();
+    }
 });
-
 
 </script>
 

@@ -148,3 +148,5 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # ===============================
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

@@ -266,19 +266,23 @@ async function loadDueReview(){
 
 function showQ(){
 
+    if(!sentences.length){
+        document.getElementById("prompt").innerText="没有题目";
+        return;
+    }
+
     if(idx >= sentences.length){
 
         document.getElementById("progress").innerText="";
-
         document.getElementById("prompt").innerText="🎉 本轮完成！";
-
         document.getElementById("result").innerHTML="";
 
-        return;
+        document.getElementById("answer").disabled = true;
 
+        return;
     }
 
-    currentText = sentences[idx].text_en;
+    currentText = sentences[idx].text;
 
     document.getElementById("progress").innerText =
         `第 ${idx+1} / ${sentences.length} 题`;
@@ -286,12 +290,14 @@ function showQ(){
     document.getElementById("prompt").innerText="点击 ▶ 听句子";
 
     document.getElementById("answer").value="";
-
     document.getElementById("result").innerHTML="";
-
 }
 
 async function submitAnswer(){
+
+    if(idx >= sentences.length){
+        return;
+    }
 
     const s = sentences[idx];
 

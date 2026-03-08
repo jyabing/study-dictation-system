@@ -18,6 +18,12 @@ urlpatterns = [
         name="lesson_sentences"
     ),
 
+    path(
+        "lesson/<int:lesson_id>/questions/",
+        views.lesson_questions,
+        name="lesson_questions"
+    ),
+
     # =========================
     # Dictation Check
     # =========================
@@ -26,6 +32,13 @@ urlpatterns = [
         views.check_answer,
         name="check_answer"
     ),
+
+    path(
+        "api/question/check/",
+        views.check_question_answer,
+        name="check_question_answer"
+    ),
+
 
     # =========================
     # Wrong Review

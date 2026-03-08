@@ -14,6 +14,9 @@ from .models import Sentence, StudyLog, Question
 # =========================
 def normalize_text(s: str) -> str:
 
+    if not s:
+        return ""
+
     s = s.lower()
 
     s = re.sub(r"[^\w\s]", "", s)
@@ -203,13 +206,16 @@ def check_answer(request):
 
         sentence_id = request.POST.get("sentence_id")
 
-        user_input = request.POST.get("user_input", "")
+        user_input = request.POST.get("user_input") or ""
 
         if not sentence_id:
 
             return JsonResponse({"error": "sentence_id missing"}, status=400)
 
-        sentence = Sentence.objects.get(id=sentence_id)
+        sentence = Sentence.objects.filter(id=sentence_id).first()
+
+        if not sentence:
+            return JsonResponse({"error": "sentence not found"}, status=404)
 
         expected = normalize_text(sentence.text)
 
@@ -263,8 +269,8 @@ def check_answer(request):
         )
 
         return JsonResponse({
-
             "correct": correct,
+            "expected": sentence.text,
             "expected": sentence.text
 
         })

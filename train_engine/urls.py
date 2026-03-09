@@ -8,6 +8,7 @@ urlpatterns = [
     # =========================
     path("", views.dictation_page, name="home"),
     path("dictation/", views.dictation_page, name="dictation_page"),
+    path("question-train/", views.question_train_page, name="question_train_page"),
 
     # =========================
     # Lesson API
@@ -34,11 +35,10 @@ urlpatterns = [
     ),
 
     path(
-        "api/question/check/",
+        "api/train/check_question/",
         views.check_question_answer,
         name="check_question_answer"
     ),
-
 
     # =========================
     # Wrong Review

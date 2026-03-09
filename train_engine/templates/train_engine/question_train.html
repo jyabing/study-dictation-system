@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>多题型训练系统</title>
+
+<style>
+body{
+    background:#111;
+    color:#eee;
+    font-family:Arial, sans-serif;
+    padding:30px;
+}
+
+h2{
+    margin-bottom:25px;
+}
+
+input, select, textarea, button{
+    padding:8px;
+    font-size:16px;
+}
+
+button{
+    cursor:pointer;
+    margin:5px 5px 5px 0;
+}
+
+#panel{
+    margin-top:20px;
+    padding:20px;
+    border:1px solid #444;
+    max-width:900px;
+}
+
+#progress{
+    margin-bottom:12px;
+    font-size:18px;
+    font-weight:bold;
+}
+
+#meta{
+    margin-bottom:12px;
+    color:#bbb;
+}
+
+#prompt{
+    margin:15px 0;
+    font-size:22px;
+    line-height:1.7;
+    min-height:60px;
+}
+
+#patternBox{
+    margin:10px 0;
+    color:#9ad;
+    white-space:pre-wrap;
+}
+
+#options{
+    margin:15px 0;
+}
+
+.option-item{
+    margin:8px 0;
+}
+
+#answerBox{
+    margin:15px 0;
+}
+
+#answer{
+    width:100%;
+    max-width:700px;
+}
+
+#result{
+    margin-top:15px;
+    font-size:18px;
+    line-height:1.8;
+}
+
+.correct{
+    color:lightgreen;
+    font-weight:bold;
+}
+
+.wrong{
+    color:#ff6b6b;
+    font-weight:bold;
+}
+
+.info{
+    color:#ccc;
+}
+
+#score{
+    margin-top:10px;
+    font-size:18px;
+    font-weight:bold;
+}
+
+#mode{
+    margin-top:10px;
+    font-size:18px;
+}
+
+.hidden{
+    display:none;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🧠 多题型训练</h2>
+
+<label>课程 ID：
+    <input id="lessonId" value="1"/>
+</label>
+
+<label>题型：
+    <select id="qtypeFilter">
+        <option value="">全部</option>
+        <option value="qa">问答题</option>
+        <option value="cloze">挖空题</option>
+        <option value="choice">选择题</option>
+        <option value="listening">听力题</option>
+        <option value="speaking">朗读题</option>
+    </select>
+</label>
+
+<button onclick="loadQuestions()">加载题目</button>
+
+<div id="mode">模式：多题型训练</div>
+<div id="score">成绩：0 / 0</div>
+
+<div id="panel" class="hidden">
+
+    <div id="progress"></div>
+    <div id="meta"></div>
+    <div id="patternBox"></div>
+    <div id="prompt"></div>
+
+    <div id="audioControls" class="hidden">
+        <button onclick="playPrompt()">▶ 播放</button>
+        <select id="speed">
+            <option value="0.7">慢速</option>
+            <option value="0.9" selected>正常</option>
+            <option value="1.1">快速</option>
+        </select>
+    </div>
+
+    <div id="options"></div>
+
+    <div id="answerBox">
+        <input id="answer" placeholder="请输入答案..."/>
+    </div>
+
+    <button onclick="submitQuestionAnswer()">提交</button>
+    <button onclick="nextQuestion()">下一题</button>
+
+    <div id="result"></div>
+</div>
+
+<script>
+let questions = [];
+let idx = 0;
+let correctCount = 0;
+let currentQuestion = null;
+
+function normalizeText(s){
+    if(!s) return "";
+    return s
+        .toLowerCase()
+        .replace(/[^\w\s]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function updateScore(){
+    document.getElementById("score").innerText =
+        `成绩：${correctCount} / ${questions.length}`;
+}
+
+async function loadQuestions(){
+
+    const lessonId = document.getElementById("lessonId").value.trim();
+    const qtype = document.getElementById("qtypeFilter").value;
+
+    let url = `/lesson/${lessonId}/questions/`;
+
+    if(qtype){
+        url += `?qtype=${encodeURIComponent(qtype)}`;
+    }
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    questions = data.questions || [];
+    idx = 0;
+    correctCount = 0;
+    currentQuestion = null;
+
+    document.getElementById("panel").classList.remove("hidden");
+    document.getElementById("result").innerHTML = "";
+
+    updateScore();
+    showQuestion();
+}
+
+function resetQuestionUI(){
+    document.getElementById("options").innerHTML = "";
+    document.getElementById("patternBox").innerHTML = "";
+    document.getElementById("answerBox").classList.remove("hidden");
+    document.getElementById("audioControls").classList.add("hidden");
+    document.getElementById("answer").value = "";
+    document.getElementById("answer").disabled = false;
+    document.getElementById("result").innerHTML = "";
+}
+
+function renderChoiceOptions(q){
+    let html = "";
+
+    q.options.forEach((opt, i) => {
+        const inputType = q.is_multiple_choice ? "checkbox" : "radio";
+
+        html += `
+            <div class="option-item">
+                <label>
+                    <input type="${inputType}" name="choice_option" value="${opt.text}">
+                    ${String.fromCharCode(65 + i)}. ${opt.text}
+                </label>
+            </div>
+        `;
+    });
+
+    document.getElementById("options").innerHTML = html;
+    document.getElementById("answerBox").classList.add("hidden");
+}
+
+function showQuestion(){
+
+    resetQuestionUI();
+
+    if(!questions.length){
+        document.getElementById("progress").innerText = "";
+        document.getElementById("meta").innerText = "";
+        document.getElementById("prompt").innerText = "没有题目";
+        return;
+    }
+
+    if(idx >= questions.length){
+        document.getElementById("progress").innerText = "";
+        document.getElementById("meta").innerText = "";
+        document.getElementById("patternBox").innerHTML = "";
+        document.getElementById("prompt").innerText = "🎉 本轮完成！";
+        document.getElementById("options").innerHTML = "";
+        document.getElementById("answerBox").classList.add("hidden");
+        return;
+    }
+
+    currentQuestion = questions[idx];
+
+    document.getElementById("progress").innerText =
+        `第 ${idx + 1} / ${questions.length} 题`;
+
+    document.getElementById("meta").innerText =
+        `题型：${currentQuestion.qtype}`;
+
+    document.getElementById("prompt").innerText =
+        currentQuestion.question || "(暂无题目内容)";
+
+    if(currentQuestion.pattern){
+        document.getElementById("patternBox").innerHTML =
+            `句型提示：${currentQuestion.pattern}`;
+    }
+
+    if(currentQuestion.qtype === "choice"){
+        renderChoiceOptions(currentQuestion);
+    }
+
+    if(currentQuestion.qtype === "listening" || currentQuestion.qtype === "speaking"){
+        document.getElementById("audioControls").classList.remove("hidden");
+    }
+}
+
+function playPrompt(){
+    if(!currentQuestion) return;
+
+    const text = currentQuestion.question || currentQuestion.answer || "";
+    const msg = new SpeechSynthesisUtterance(text);
+
+    msg.lang = "en-US";
+    msg.rate = parseFloat(document.getElementById("speed").value);
+
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(msg);
+}
+
+function getChoiceValues(){
+    const selected = [];
+    document.querySelectorAll('input[name="choice_option"]:checked').forEach(el => {
+        selected.push(el.value);
+    });
+    return selected;
+}
+
+async function submitQuestionAnswer(){
+
+    if(!currentQuestion) return;
+
+    const form = new FormData();
+    form.append("question_id", currentQuestion.id);
+
+    if(currentQuestion.qtype === "choice"){
+        const selected = getChoiceValues();
+        selected.forEach(v => form.append("user_input", v));
+    }else{
+        const userInput = document.getElementById("answer").value.trim();
+        form.append("user_input", userInput);
+    }
+
+    const res = await fetch("/api/train/check_question/", {
+        method: "POST",
+        body: form
+    });
+
+    const data = await res.json();
+
+    if(data.error){
+        document.getElementById("result").innerHTML =
+            `<span class="wrong">错误：</span> ${data.error}`;
+        return;
+    }
+
+    if(data.correct){
+        correctCount++;
+        updateScore();
+
+        document.getElementById("result").innerHTML = `
+            <span class="correct">✔ 正确</span><br>
+            <span class="info">记忆等级：${data.memory_level}</span><br>
+            <span class="info">下次复习：${data.next_review}</span>
+        `;
+
+        setTimeout(() => {
+            nextQuestion();
+        }, 1000);
+
+    }else{
+        let html = `<span class="wrong">✘ 错误</span><br>`;
+
+        if(data.pattern){
+            html += `<span class="info">句型提示：${data.pattern}</span><br>`;
+        }
+
+        html += `<span class="info">正确答案：${data.expected || ""}</span><br>`;
+        html += `<span class="info">记忆等级：${data.memory_level}</span><br>`;
+        html += `<span class="info">错误次数：${data.wrong_count}</span>`;
+
+        document.getElementById("result").innerHTML = html;
+    }
+}
+
+function nextQuestion(){
+    idx++;
+    showQuestion();
+}
+
+document.getElementById("answer").addEventListener("keypress", function(e){
+    if(e.key === "Enter"){
+        submitQuestionAnswer();
+    }
+});
+</script>
+
+</body>
+</html>

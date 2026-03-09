@@ -35,28 +35,46 @@ def dictation_page(request):
 
 
 # =========================
+# 多题型训练页面
+# =========================
+def question_train_page(request):
+
+    return render(request, "train_engine/question_train.html")
+
+
+# =========================
 # 课程句子
 # =========================
 def lesson_sentences(request, lesson_id):
 
-    sentences = Sentence.objects.filter(
-        lesson_id=lesson_id
-    ).order_by("id")
+    try:
 
-    return JsonResponse({
+        sentences = Sentence.objects.filter(
+            lesson_id=lesson_id
+        ).order_by("id")
 
-        "sentences": [
+        return JsonResponse({
 
-            {
-                "id": s.id,
-                "text": s.text
-            }
+            "sentences": [
 
-            for s in sentences
+                {
+                    "id": s.id,
+                    "text": s.text
+                }
 
-        ]
+                for s in sentences
 
-    })
+            ]
+
+        })
+
+    except Exception as e:
+
+        return JsonResponse({
+
+            "error": str(e)
+
+        }, status=500)
 
 # =========================
 # 获取 Lesson 下的题目

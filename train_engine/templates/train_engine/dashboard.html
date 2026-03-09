@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+
+<title>学习训练中心</title>
+
+<style>
+
+body{
+    background:#111;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+    padding-top:100px;
+}
+
+h1{
+    margin-bottom:40px;
+}
+
+.panel{
+    display:flex;
+    justify-content:center;
+    gap:30px;
+    flex-wrap:wrap;
+}
+
+.card{
+
+    background:#1e1e1e;
+    border:1px solid #444;
+    padding:30px;
+    width:220px;
+    border-radius:10px;
+
+    transition:0.2s;
+}
+
+.card:hover{
+    background:#333;
+    transform:scale(1.05);
+}
+
+.card a{
+
+    color:white;
+    text-decoration:none;
+    font-size:20px;
+}
+
+.icon{
+    font-size:40px;
+    margin-bottom:10px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>📚 学习训练中心</h1>
+
+<div class="panel">
+
+<div class="card">
+<div class="icon">🎧</div>
+<a href="/dictation/">听写训练</a>
+</div>
+
+<div class="card">
+<div class="icon">🧠</div>
+<a href="/question-train/">多题型训练</a>
+</div>
+
+<div class="card">
+<div class="icon">❌</div>
+<a href="/dictation/?mode=wrong">错题复习</a>
+</div>
+
+<div class="card">
+<div class="icon">📅</div>
+<a href="/dictation/?mode=review">今日复习</a>
+</div>
+
+<div class="card">
+<div class="icon">⚙️</div>
+<a href="/admin/">题库管理</a>
+</div>
+
+</div>
+
+</body>
+</html>

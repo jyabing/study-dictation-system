@@ -4,9 +4,13 @@ from . import views
 urlpatterns = [
 
     # =========================
+    # Dashboard
+    # =========================
+    path("", views.dashboard, name="dashboard"),
+
+    # =========================
     # 页面
     # =========================
-    path("", views.dictation_page, name="home"),
     path("dictation/", views.dictation_page, name="dictation_page"),
     path("question-train/", views.question_train_page, name="question_train_page"),
 

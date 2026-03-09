@@ -33,6 +33,16 @@ def dictation_page(request):
 
     return render(request, "train_engine/dictation.html")
 
+# =========================
+# Dashboard 首页
+# =========================
+def dashboard(request):
+
+    return render(
+        request,
+        "train_engine/dashboard.html"
+    )
+
 
 # =========================
 # 多题型训练页面

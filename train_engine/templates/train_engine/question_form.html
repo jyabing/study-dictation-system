@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>
+{% if mode == "edit" %}编辑题目{% else %}新增题目{% endif %}
+</title>
+
+<style>
+body{
+    background:#111;
+    color:#fff;
+    font-family:Arial, sans-serif;
+    margin:0;
+    padding:20px;
+}
+
+.editor-layout{
+    display:flex;
+    gap:24px;
+    align-items:flex-start;
+}
+
+.editor-left{
+    flex:2;
+    min-width:0;
+}
+
+.editor-right{
+    flex:1;
+    min-width:320px;
+    position:sticky;
+    top:20px;
+}
+
+.container{
+    background:#111;
+}
+
+.panel{
+    background:#1a1a1a;
+    border:1px solid #333;
+    border-radius:8px;
+    padding:16px;
+    margin-bottom:16px;
+}
+
+h1,h2,h3{
+    margin:0 0 12px 0;
+}
+
+.meta{
+    font-size:14px;
+    line-height:1.8;
+    margin-bottom:16px;
+}
+
+.meta b{
+    color:#fff;
+}
+
+.field{
+    margin-bottom:16px;
+}
+
+label{
+    display:block;
+    margin-bottom:6px;
+    font-size:14px;
+    color:#ddd;
+}
+
+input[type="text"],
+input[type="number"],
+select,
+textarea{
+    width:100%;
+    box-sizing:border-box;
+    background:#222;
+    color:#fff;
+    border:1px solid #444;
+    border-radius:4px;
+    padding:10px 12px;
+    font-size:14px;
+}
+
+textarea{
+    resize:vertical;
+    min-height:90px;
+}
+
+.hint{
+    margin-top:6px;
+    color:#aaa;
+    font-size:12px;
+    line-height:1.6;
+}
+
+.inline-row{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    flex-wrap:wrap;
+}
+
+.inline-row > div{
+    flex:1;
+    min-width:180px;
+}
+
+.checkbox-inline{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:8px;
+}
+
+.checkbox-inline input{
+    width:auto;
+}
+
+.actions{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+button{
+    background:#eee;
+    color:#111;
+    border:none;
+    border-radius:4px;
+    padding:10px 16px;
+    cursor:pointer;
+    font-size:14px;
+}
+
+button.secondary{
+    background:#ccc;
+}
+
+button.small{
+    padding:6px 10px;
+    font-size:12px;
+}
+
+.choice-toolbar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+}
+
+.option-editor{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.option-line{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:#181818;
+    border:1px solid #333;
+    border-radius:6px;
+    padding:10px;
+}
+
+.option-line.dragging{
+    opacity:0.55;
+}
+
+.drag-handle{
+    width:22px;
+    color:#999;
+    cursor:grab;
+    user-select:none;
+    text-align:center;
+    font-size:18px;
+}
+
+.option-label{
+    width:28px;
+    text-align:center;
+    font-weight:bold;
+    color:#fff;
+}
+
+.option-content{
+    flex:1;
+}
+
+.option-content input[type="text"]{
+    margin:0;
+}
+
+.option-correct{
+    width:28px;
+    text-align:center;
+}
+
+.option-correct input{
+    width:auto;
+}
+
+.preview-box{
+    background:#181818;
+    border:1px solid #333;
+    border-radius:8px;
+    padding:16px;
+}
+
+.preview-meta{
+    color:#bbb;
+    font-size:13px;
+    margin-bottom:10px;
+}
+
+.preview-stem{
+    font-size:16px;
+    line-height:1.8;
+    white-space:pre-wrap;
+    margin-bottom:14px;
+}
+
+.preview-options{
+    list-style:none;
+    margin:0;
+    padding:0;
+}
+
+.preview-options li{
+    background:#222;
+    border:1px solid #333;
+    border-radius:6px;
+    padding:10px;
+    margin-bottom:8px;
+}
+
+.preview-options li.correct{
+    border-color:#4caf50;
+    color:#b8f5b8;
+}
+
+.preview-answer,
+.preview-pattern{
+    margin-top:12px;
+    color:#cfcfcf;
+    white-space:pre-wrap;
+    line-height:1.7;
+}
+
+.hidden{
+    display:none !important;
+}
+
+/* 手机 = 卡片 */
+@media (max-width: 900px){
+    .editor-layout{
+        flex-direction:column;
+    }
+
+    .editor-right{
+        position:static;
+        min-width:0;
+        width:100%;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="editor-layout">
+
+    <div class="editor-left">
+        <div class="container">
+
+            <h1>{% if mode == "edit" %}编辑题目{% else %}新增题目{% endif %}</h1>
+
+            <div class="panel meta">
+                <div><b>句子：</b>{{ sentence.text }}</div>
+                <div><b>翻译：</b>{{ sentence.translation }}</div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="panel">
+
+                    <div class="field">
+                        <label for="qtype">题型</label>
+                        <select name="qtype" id="qtype">
+                            <option value="qa" {% if question_obj and question_obj.qtype == "qa" %}selected{% endif %}>问答题</option>
+                            <option value="cloze" {% if question_obj and question_obj.qtype == "cloze" %}selected{% endif %}>挖空题</option>
+                            <option value="choice" {% if question_obj and question_obj.qtype == "choice" %}selected{% endif %}>选择题</option>
+                            <option value="listening" {% if question_obj and question_obj.qtype == "listening" %}selected{% endif %}>听力题</option>
+                            <option value="speaking" {% if question_obj and question_obj.qtype == "speaking" %}selected{% endif %}>朗读题</option>
+                        </select>
+                    </div>
+
+                    <!-- QA / Choice / Listening / Speaking 共用“问题” -->
+                    <div class="field" id="question_field">
+                        <label for="question_text">问题</label>
+                        <textarea name="question" id="question_text">{% if question_obj and question_obj.question %}{{ question_obj.question }}{% endif %}</textarea>
+                        <div class="hint">
+                            QA / 选择题 / 听力题 / 朗读题可填写问题。<br>
+                            挖空题通常可留空，保存后自动生成。
+                        </div>
+                    </div>
+
+                    <!-- QA / Choice / Listening / Speaking 共用“答案” -->
+                    <div class="field" id="answer_field">
+                        <label for="answer_text">答案</label>
+                        <textarea name="answer" id="answer_text">{% if question_obj and question_obj.answer %}{{ question_obj.answer }}{% endif %}</textarea>
+                        <div class="hint">
+                            QA / 听力 / 朗读：填写完整答案。<br>
+                            选择题：可填写正确答案文本；最终正确项以下方选项勾选为准。<br>
+                            挖空题通常可留空，保存后自动生成。
+                        </div>
+                    </div>
+
+                    <!-- QA 专属 -->
+                    <div class="field" id="qa_field">
+                        <label for="pattern_text">句型提示（QA 可选）</label>
+                        <textarea name="pattern" id="pattern_text">{% if question_obj and question_obj.pattern %}{{ question_obj.pattern }}{% endif %}</textarea>
+                    </div>
+
+                    <!-- Cloze 专属 -->
+                    <div class="field" id="cloze_field">
+                        <label for="blank_mode">挖空方式</label>
+                        <select name="blank_mode" id="blank_mode">
+                            <option value="auto" {% if question_obj and question_obj.blank_mode == "auto" %}selected{% endif %}>自动挖空</option>
+                            <option value="specified" {% if question_obj and question_obj.blank_mode == "specified" %}selected{% endif %}>指定挖空</option>
+                        </select>
+                        <div class="hint">
+                            只有挖空题需要设置。指定挖空时，请按你现有标注规则编辑句子内容。
+                        </div>
+                    </div>
+
+                    <!-- Choice 专属 -->
+                    <div class="panel" id="choice_block">
+                        <h3>选择题选项</h3>
+
+                        <div class="inline-row">
+                            <div class="field" style="margin-bottom:0;">
+                                <label for="option_count">总选项数</label>
+                                <input
+                                    type="number"
+                                    name="option_count"
+                                    id="option_count"
+                                    value="{% if question_obj %}{{ question_obj.option_count }}{% else %}4{% endif %}"
+                                >
+                            </div>
+
+                            <div class="field" style="margin-bottom:0;">
+                                <label>模式</label>
+                                <div class="checkbox-inline">
+                                    <input
+                                        type="checkbox"
+                                        name="is_multiple_choice"
+                                        id="is_multiple_choice"
+                                        {% if question_obj and question_obj.is_multiple_choice %}checked{% endif %}
+                                    >
+                                    <span>多选题</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hint" style="margin-bottom:12px;">
+                            现在先做文字选项版。图片 / 音频选项需要下一步补模型与上传逻辑。
+                        </div>
+
+                        <div class="choice-toolbar">
+                            <button type="button" class="small" onclick="addOption()">新增选项</button>
+                            <button type="button" class="small secondary" onclick="removeOption()">删除选项</button>
+                        </div>
+
+                        <div class="option-editor" id="option_editor">
+
+                            {% if question_obj and question_obj.options.all %}
+
+                                {% for o in question_obj.options.all %}
+
+                                <div class="option-line draggable" draggable="true">
+                                    <div class="drag-handle">☰</div>
+                                    <div class="option-label">{{ forloop.counter0|add:"65"|stringformat:"c" }}</div>
+
+                                    <div class="option-content">
+                                        <input
+                                            type="text"
+                                            name="option_text"
+                                            value="{{ o.text }}"
+                                            placeholder="选项内容"
+                                        >
+                                    </div>
+
+                                    <div class="option-correct">
+                                        <input
+                                            type="{% if question_obj.is_multiple_choice %}checkbox{% else %}radio{% endif %}"
+                                            name="correct_option"
+                                            value="{{ forloop.counter0 }}"
+                                            {% if o.is_correct %}checked{% endif %}
+                                        >
+                                    </div>
+                                </div>
+
+                                {% endfor %}
+
+                            {% else %}
+
+                                <div class="option-line draggable" draggable="true">
+                                    <div class="drag-handle">☰</div>
+                                    <div class="option-label">A</div>
+                                    <div class="option-content">
+                                        <input type="text" name="option_text" placeholder="选项 A">
+                                    </div>
+                                    <div class="option-correct">
+                                        <input type="radio" name="correct_option" value="0">
+                                    </div>
+                                </div>
+
+                                <div class="option-line draggable" draggable="true">
+                                    <div class="drag-handle">☰</div>
+                                    <div class="option-label">B</div>
+                                    <div class="option-content">
+                                        <input type="text" name="option_text" placeholder="选项 B">
+                                    </div>
+                                    <div class="option-correct">
+                                        <input type="radio" name="correct_option" value="1">
+                                    </div>
+                                </div>
+
+                                <div class="option-line draggable" draggable="true">
+                                    <div class="drag-handle">☰</div>
+                                    <div class="option-label">C</div>
+                                    <div class="option-content">
+                                        <input type="text" name="option_text" placeholder="选项 C">
+                                    </div>
+                                    <div class="option-correct">
+                                        <input type="radio" name="correct_option" value="2">
+                                    </div>
+                                </div>
+
+                                <div class="option-line draggable" draggable="true">
+                                    <div class="drag-handle">☰</div>
+                                    <div class="option-label">D</div>
+                                    <div class="option-content">
+                                        <input type="text" name="option_text" placeholder="选项 D">
+                                    </div>
+                                    <div class="option-correct">
+                                        <input type="radio" name="correct_option" value="3">
+                                    </div>
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit">
+                            {% if mode == "edit" %}保存修改{% else %}创建题目{% endif %}
+                        </button>
+
+                        <button type="button" class="secondary" onclick="location.href='/sentence/{{ sentence.id }}/'">
+                            返回题目管理
+                        </button>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="editor-right">
+        <div class="panel">
+            <h2>题目预览</h2>
+
+            <div class="preview-box">
+                <div class="preview-meta" id="preview-meta"></div>
+                <div class="preview-stem" id="preview-stem"></div>
+                <ul class="preview-options" id="preview-options"></ul>
+                <div class="preview-answer" id="preview-answer"></div>
+                <div class="preview-pattern" id="preview-pattern"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function getQtype(){
+    return document.getElementById("qtype").value;
+}
+
+function isMultiple(){
+    return document.getElementById("is_multiple_choice").checked;
+}
+
+function getOptionLines(){
+    return Array.from(document.querySelectorAll("#option_editor .option-line"));
+}
+
+function relabelOptions(){
+    const lines = getOptionLines();
+
+    lines.forEach((line, i) => {
+        const label = line.querySelector(".option-label");
+        if(label){
+            label.innerText = String.fromCharCode(65 + i);
+        }
+
+        const correctInput = line.querySelector('input[name="correct_option"]');
+        if(correctInput){
+            correctInput.value = i;
+            correctInput.type = isMultiple() ? "checkbox" : "radio";
+        }
+    });
+
+    const optionCount = document.getElementById("option_count");
+    if(optionCount){
+        optionCount.value = lines.length;
+    }
+}
+
+function toggleEditorByType(){
+    const type = getQtype();
+
+    const questionField = document.getElementById("question_field");
+    const answerField = document.getElementById("answer_field");
+    const qaField = document.getElementById("qa_field");
+    const clozeField = document.getElementById("cloze_field");
+    const choiceBlock = document.getElementById("choice_block");
+
+    questionField.classList.remove("hidden");
+    answerField.classList.remove("hidden");
+    qaField.classList.add("hidden");
+    clozeField.classList.add("hidden");
+    choiceBlock.classList.add("hidden");
+
+    if(type === "qa"){
+        qaField.classList.remove("hidden");
+    }
+    else if(type === "cloze"){
+        questionField.classList.add("hidden");
+        answerField.classList.add("hidden");
+        clozeField.classList.remove("hidden");
+    }
+    else if(type === "choice"){
+        qaField.classList.add("hidden");
+        clozeField.classList.add("hidden");
+        choiceBlock.classList.remove("hidden");
+    }
+    else if(type === "listening" || type === "speaking"){
+        qaField.classList.add("hidden");
+        clozeField.classList.add("hidden");
+    }
+}
+
+function updatePreview(){
+    const qtype = getQtype();
+    const questionText = document.getElementById("question_text").value || "";
+    const answerText = document.getElementById("answer_text").value || "";
+    const patternText = document.getElementById("pattern_text").value || "";
+
+    document.getElementById("preview-meta").innerText = "题型：" + qtype;
+
+    // 预览题干逻辑
+    // choice / qa / listening / speaking 优先用 question
+    // cloze 因为 question 可能自动生成，所以先提示查看保存结果
+    if(qtype === "cloze"){
+        document.getElementById("preview-stem").innerText =
+            questionText.trim() ? questionText : "（挖空题保存后自动生成题干）";
+    }else{
+        document.getElementById("preview-stem").innerText =
+            questionText.trim() ? questionText : "（这里显示问题预览）";
+    }
+
+    const optionList = document.getElementById("preview-options");
+    optionList.innerHTML = "";
+
+    if(qtype === "choice"){
+        getOptionLines().forEach((line, i) => {
+            const textInput = line.querySelector('input[name="option_text"]');
+            const correctInput = line.querySelector('input[name="correct_option"]');
+
+            const text = textInput ? textInput.value.trim() : "";
+            const checked = correctInput ? correctInput.checked : false;
+
+            if(text){
+                const li = document.createElement("li");
+                li.innerText = String.fromCharCode(65 + i) + ". " + text;
+
+                if(checked){
+                    li.classList.add("correct");
+                }
+
+                optionList.appendChild(li);
+            }
+        });
+    }
+
+    document.getElementById("preview-answer").innerText =
+        answerText.trim() ? ("答案：" + answerText) : "";
+
+    document.getElementById("preview-pattern").innerText =
+        (qtype === "qa" && patternText.trim()) ? ("句型提示：" + patternText) : "";
+}
+
+function bindPreviewEvents(){
+    document.querySelectorAll("textarea,input[name='option_text'],#qtype,#is_multiple_choice,#option_count").forEach(el => {
+        el.removeEventListener("input", updatePreview);
+        el.removeEventListener("change", updatePreview);
+        el.addEventListener("input", updatePreview);
+        el.addEventListener("change", updatePreview);
+    });
+
+    document.querySelectorAll('input[name="correct_option"]').forEach(el => {
+        el.removeEventListener("change", updatePreview);
+        el.addEventListener("change", updatePreview);
+    });
+}
+
+function bindDragEvents(){
+    let dragSrc = null;
+
+    getOptionLines().forEach(line => {
+        line.addEventListener("dragstart", function(){
+            dragSrc = this;
+            this.classList.add("dragging");
+        });
+
+        line.addEventListener("dragend", function(){
+            this.classList.remove("dragging");
+        });
+
+        line.addEventListener("dragover", function(e){
+            e.preventDefault();
+        });
+
+        line.addEventListener("drop", function(e){
+            e.preventDefault();
+
+            if(dragSrc && dragSrc !== this){
+                const parent = this.parentNode;
+                parent.insertBefore(dragSrc, this);
+                relabelOptions();
+                bindPreviewEvents();
+                bindDragEvents();
+                updatePreview();
+            }
+        });
+    });
+}
+
+function addOption(){
+    const editor = document.getElementById("option_editor");
+    const count = getOptionLines().length;
+
+    const div = document.createElement("div");
+    div.className = "option-line draggable";
+    div.setAttribute("draggable", "true");
+
+    div.innerHTML = `
+        <div class="drag-handle">☰</div>
+        <div class="option-label">${String.fromCharCode(65 + count)}</div>
+        <div class="option-content">
+            <input type="text" name="option_text" placeholder="选项 ${String.fromCharCode(65 + count)}">
+        </div>
+        <div class="option-correct">
+            <input type="${isMultiple() ? "checkbox" : "radio"}" name="correct_option" value="${count}">
+        </div>
+    `;
+
+    editor.appendChild(div);
+
+    relabelOptions();
+    bindPreviewEvents();
+    bindDragEvents();
+    updatePreview();
+}
+
+function removeOption(){
+    const lines = getOptionLines();
+
+    if(lines.length > 2){
+        lines[lines.length - 1].remove();
+        relabelOptions();
+        bindPreviewEvents();
+        bindDragEvents();
+        updatePreview();
+    }
+}
+
+document.getElementById("is_multiple_choice").addEventListener("change", function(){
+    relabelOptions();
+    bindPreviewEvents();
+    updatePreview();
+});
+
+document.getElementById("qtype").addEventListener("change", function(){
+    toggleEditorByType();
+    updatePreview();
+});
+
+relabelOptions();
+toggleEditorByType();
+bindPreviewEvents();
+bindDragEvents();
+updatePreview();
+</script>
+
+</body>
+</html>

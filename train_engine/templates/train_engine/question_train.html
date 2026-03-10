@@ -74,6 +74,15 @@ button{
     max-width:700px;
 }
 
+#speechBox{
+    margin-top:10px;
+}
+
+#speechStatus{
+    margin-left:10px;
+    color:#9ad;
+}
+
 #result{
     margin-top:15px;
     font-size:18px;
@@ -137,50 +146,58 @@ button{
 
 <div id="panel" class="hidden">
 
-    <div id="progress"></div>
-    <div id="meta"></div>
-    <div id="patternBox"></div>
-    <div id="prompt"></div>
+<div id="progress"></div>
+<div id="meta"></div>
+<div id="patternBox"></div>
+<div id="prompt"></div>
 
-    <div id="audioControls" class="hidden">
-        <button onclick="playPrompt()">▶ 播放</button>
-        <select id="speed">
-            <option value="0.7">慢速</option>
-            <option value="0.9" selected>正常</option>
-            <option value="1.1">快速</option>
-        </select>
-    </div>
+<div id="audioControls" class="hidden">
+<button onclick="playPrompt()">▶ 播放</button>
+<select id="speed">
+<option value="0.7">慢速</option>
+<option value="0.9" selected>正常</option>
+<option value="1.1">快速</option>
+</select>
+</div>
 
-    <div id="options"></div>
+<div id="options"></div>
 
-    <div id="answerBox">
-        <input id="answer" placeholder="请输入答案..."/>
-    </div>
+<div id="answerBox">
 
-    <button onclick="submitQuestionAnswer()">提交</button>
-    <button onclick="nextQuestion()">下一题</button>
+<input id="answer" placeholder="请输入答案..."/>
 
-    <div id="result"></div>
+<div id="speechBox" class="hidden">
+<button onclick="startRecording()">🎤 开始录音</button>
+<button onclick="stopRecording()">⏹ 停止</button>
+<span id="speechStatus"></span>
+</div>
+
+</div>
+
+<button onclick="submitQuestionAnswer()">提交</button>
+<button onclick="nextQuestion()">下一题</button>
+
+<div id="result"></div>
+
 </div>
 
 <script>
+
 let questions = [];
 let idx = 0;
 let correctCount = 0;
 let currentQuestion = null;
 
+let recognition = null;
+
 function normalizeText(s){
     if(!s) return "";
-    return s
-        .toLowerCase()
-        .replace(/[^\w\s]/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
+    return s.toLowerCase().replace(/[^\w\s]/g,"").replace(/\s+/g," ").trim();
 }
 
 function updateScore(){
     document.getElementById("score").innerText =
-        `成绩：${correctCount} / ${questions.length}`;
+    `成绩：${correctCount} / ${questions.length}`;
 }
 
 async function loadQuestions(){
@@ -200,38 +217,41 @@ async function loadQuestions(){
     questions = data.questions || [];
     idx = 0;
     correctCount = 0;
-    currentQuestion = null;
 
     document.getElementById("panel").classList.remove("hidden");
-    document.getElementById("result").innerHTML = "";
+    document.getElementById("result").innerHTML="";
 
     updateScore();
     showQuestion();
 }
 
 function resetQuestionUI(){
-    document.getElementById("options").innerHTML = "";
-    document.getElementById("patternBox").innerHTML = "";
+
+    document.getElementById("options").innerHTML="";
+    document.getElementById("patternBox").innerHTML="";
     document.getElementById("answerBox").classList.remove("hidden");
     document.getElementById("audioControls").classList.add("hidden");
-    document.getElementById("answer").value = "";
-    document.getElementById("answer").disabled = false;
-    document.getElementById("result").innerHTML = "";
+    document.getElementById("speechBox").classList.add("hidden");
+
+    document.getElementById("answer").value="";
+    document.getElementById("result").innerHTML="";
 }
 
 function renderChoiceOptions(q){
-    let html = "";
 
-    q.options.forEach((opt, i) => {
-        const inputType = q.is_multiple_choice ? "checkbox" : "radio";
+    let html="";
 
-        html += `
-            <div class="option-item">
-                <label>
-                    <input type="${inputType}" name="choice_option" value="${opt.text}">
-                    ${String.fromCharCode(65 + i)}. ${opt.text}
-                </label>
-            </div>
+    q.options.forEach((opt,i)=>{
+
+        const type = q.is_multiple_choice ? "checkbox":"radio";
+
+        html+=`
+        <div class="option-item">
+        <label>
+        <input type="${type}" name="choice_option" value="${opt.text}">
+        ${String.fromCharCode(65+i)}. ${opt.text}
+        </label>
+        </div>
         `;
     });
 
@@ -243,19 +263,10 @@ function showQuestion(){
 
     resetQuestionUI();
 
-    if(!questions.length){
-        document.getElementById("progress").innerText = "";
-        document.getElementById("meta").innerText = "";
-        document.getElementById("prompt").innerText = "没有题目";
-        return;
-    }
+    if(idx>=questions.length){
 
-    if(idx >= questions.length){
-        document.getElementById("progress").innerText = "";
-        document.getElementById("meta").innerText = "";
-        document.getElementById("patternBox").innerHTML = "";
-        document.getElementById("prompt").innerText = "🎉 本轮完成！";
-        document.getElementById("options").innerHTML = "";
+        document.getElementById("prompt").innerText="🎉 本轮完成";
+        document.getElementById("options").innerHTML="";
         document.getElementById("answerBox").classList.add("hidden");
         return;
     }
@@ -263,47 +274,98 @@ function showQuestion(){
     currentQuestion = questions[idx];
 
     document.getElementById("progress").innerText =
-        `第 ${idx + 1} / ${questions.length} 题`;
+    `第 ${idx+1} / ${questions.length} 题`;
 
     document.getElementById("meta").innerText =
-        `题型：${currentQuestion.qtype}`;
+    `题型：${currentQuestion.qtype}`;
 
     document.getElementById("prompt").innerText =
-        currentQuestion.question || "(暂无题目内容)";
+    currentQuestion.question || "(暂无题目)";
 
     if(currentQuestion.pattern){
-        document.getElementById("patternBox").innerHTML =
-            `句型提示：${currentQuestion.pattern}`;
+        document.getElementById("patternBox").innerText =
+        "句型提示："+currentQuestion.pattern;
     }
 
-    if(currentQuestion.qtype === "choice"){
+    if(currentQuestion.qtype==="choice"){
         renderChoiceOptions(currentQuestion);
     }
 
-    if(currentQuestion.qtype === "listening" || currentQuestion.qtype === "speaking"){
-        document.getElementById("audioControls").classList.remove("hidden");
+    if(currentQuestion.qtype==="listening" ||
+       currentQuestion.qtype==="speaking"){
+
+        document.getElementById("audioControls")
+        .classList.remove("hidden");
+    }
+
+    if(currentQuestion.qtype==="speaking"){
+        document.getElementById("speechBox")
+        .classList.remove("hidden");
     }
 }
 
 function playPrompt(){
+
     if(!currentQuestion) return;
 
     const text = currentQuestion.question || currentQuestion.answer || "";
+
     const msg = new SpeechSynthesisUtterance(text);
 
-    msg.lang = "en-US";
-    msg.rate = parseFloat(document.getElementById("speed").value);
+    msg.lang="en-US";
+    msg.rate=parseFloat(document.getElementById("speed").value);
 
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(msg);
+    speechSynthesis.cancel();
+    speechSynthesis.speak(msg);
+}
+
+function startRecording(){
+
+    if(!('webkitSpeechRecognition' in window)){
+        alert("浏览器不支持语音识别");
+        return;
+    }
+
+    recognition = new webkitSpeechRecognition();
+
+    recognition.lang="en-US";
+    recognition.interimResults=false;
+
+    recognition.onstart = ()=>{
+        document.getElementById("speechStatus").innerText="录音中...";
+    };
+
+    recognition.onresult = (event)=>{
+
+        const transcript = event.results[0][0].transcript;
+
+        document.getElementById("answer").value = transcript;
+
+        document.getElementById("speechStatus").innerText="识别完成";
+    };
+
+    recognition.onerror = ()=>{
+        document.getElementById("speechStatus").innerText="识别失败";
+    };
+
+    recognition.start();
+}
+
+function stopRecording(){
+    if(recognition){
+        recognition.stop();
+        document.getElementById("speechStatus").innerText="停止录音";
+    }
 }
 
 function getChoiceValues(){
-    const selected = [];
-    document.querySelectorAll('input[name="choice_option"]:checked').forEach(el => {
-        selected.push(el.value);
-    });
-    return selected;
+
+    const arr=[];
+
+    document.querySelectorAll('input[name="choice_option"]:checked')
+    .forEach(el=>arr.push(el.value));
+
+    return arr;
 }
 
 async function submitQuestionAnswer(){
@@ -311,55 +373,47 @@ async function submitQuestionAnswer(){
     if(!currentQuestion) return;
 
     const form = new FormData();
-    form.append("question_id", currentQuestion.id);
+    form.append("question_id",currentQuestion.id);
 
-    if(currentQuestion.qtype === "choice"){
-        const selected = getChoiceValues();
-        selected.forEach(v => form.append("user_input", v));
+    if(currentQuestion.qtype==="choice"){
+
+        const arr = getChoiceValues();
+        arr.forEach(v=>form.append("user_input",v));
+
     }else{
-        const userInput = document.getElementById("answer").value.trim();
-        form.append("user_input", userInput);
+
+        form.append("user_input",
+        document.getElementById("answer").value.trim());
     }
 
-    const res = await fetch("/api/train/check_question/", {
-        method: "POST",
-        body: form
+    const res = await fetch("/api/train/check_question/",{
+        method:"POST",
+        body:form
     });
 
     const data = await res.json();
 
-    if(data.error){
-        document.getElementById("result").innerHTML =
-            `<span class="wrong">错误：</span> ${data.error}`;
-        return;
-    }
-
     if(data.correct){
+
         correctCount++;
         updateScore();
 
-        document.getElementById("result").innerHTML = `
-            <span class="correct">✔ 正确</span><br>
-            <span class="info">记忆等级：${data.memory_level}</span><br>
-            <span class="info">下次复习：${data.next_review}</span>
+        document.getElementById("result").innerHTML=`
+        <span class="correct">✔ 正确</span><br>
+        <span class="info">记忆等级：${data.memory_level}</span><br>
+        <span class="info">下次复习：${data.next_review}</span>
         `;
 
-        setTimeout(() => {
-            nextQuestion();
-        }, 1000);
+        setTimeout(nextQuestion,1000);
 
     }else{
-        let html = `<span class="wrong">✘ 错误</span><br>`;
 
-        if(data.pattern){
-            html += `<span class="info">句型提示：${data.pattern}</span><br>`;
-        }
-
-        html += `<span class="info">正确答案：${data.expected || ""}</span><br>`;
-        html += `<span class="info">记忆等级：${data.memory_level}</span><br>`;
-        html += `<span class="info">错误次数：${data.wrong_count}</span>`;
-
-        document.getElementById("result").innerHTML = html;
+        document.getElementById("result").innerHTML=`
+        <span class="wrong">✘ 错误</span><br>
+        <span class="info">正确答案：${data.expected}</span><br>
+        <span class="info">记忆等级：${data.memory_level}</span><br>
+        <span class="info">错误次数：${data.wrong_count}</span>
+        `;
     }
 }
 
@@ -368,11 +422,14 @@ function nextQuestion(){
     showQuestion();
 }
 
-document.getElementById("answer").addEventListener("keypress", function(e){
-    if(e.key === "Enter"){
+document.getElementById("answer")
+.addEventListener("keypress",function(e){
+
+    if(e.key==="Enter"){
         submitQuestionAnswer();
     }
 });
+
 </script>
 
 </body>

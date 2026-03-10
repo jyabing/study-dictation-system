@@ -41,6 +41,24 @@ urlpatterns = [
         name="sentence_detail"
     ),
 
+    path(
+        "question/create/<int:sentence_id>/",
+        views.question_create,
+        name="question_create"
+    ),
+
+    path(
+        "question/<int:question_id>/edit/",
+        views.question_edit,
+        name="question_edit"
+    ),
+
+    path(
+        "question/<int:question_id>/delete/",
+        views.question_delete,
+        name="question_delete"
+    ),
+
     # =========================
     # Lesson API
     # =========================

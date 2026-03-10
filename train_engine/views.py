@@ -311,6 +311,174 @@ def sentence_detail(request, sentence_id):
     )
 
 # =========================
+# 新增题目
+# =========================
+def question_create(request, sentence_id):
+
+    from .models import Sentence, Question
+    from django.shortcuts import redirect
+
+    sentence = Sentence.objects.get(id=sentence_id)
+
+    if request.method == "POST":
+
+        qtype = request.POST.get("qtype", "").strip()
+        question_text = request.POST.get("question", "").strip()
+        answer = request.POST.get("answer", "").strip()
+        pattern = request.POST.get("pattern", "").strip()
+        blank_mode = request.POST.get("blank_mode", "auto").strip()
+        is_multiple_choice = request.POST.get("is_multiple_choice") == "on"
+        option_count = request.POST.get("option_count", "4").strip()
+        manual_distractors = request.POST.get("manual_distractors", "").strip()
+
+        if qtype:
+
+            q = Question.objects.create(
+                sentence=sentence,
+                qtype=qtype,
+                question=question_text or None,
+                answer=answer or None,
+                pattern=pattern or None,
+                blank_mode=blank_mode or "auto",
+                is_multiple_choice=is_multiple_choice,
+                option_count=int(option_count) if option_count.isdigit() else 4,
+                manual_distractors=manual_distractors or None
+            )
+
+            # 再保存一次，触发自动同步逻辑
+            q.save()
+            
+            # 如果是选择题，保存选项
+            if q.qtype == "choice":
+
+                from .models import ChoiceOption
+
+                # 删除旧选项
+                q.options.all().delete()
+
+                option_texts = request.POST.getlist("option_text")
+                correct_flags = request.POST.getlist("correct_option")
+
+                for i, text in enumerate(option_texts):
+
+                    text = text.strip()
+
+                    if not text:
+                        continue
+
+                    is_correct = str(i) in correct_flags
+
+                    ChoiceOption.objects.create(
+                        question=q,
+                        text=text,
+                        is_correct=is_correct,
+                        is_auto_generated=False,
+                        order=i
+                    )
+
+            return redirect(f"/sentence/{sentence_id}/")
+
+    return render(
+        request,
+        "train_engine/question_form.html",
+        {
+            "mode": "create",
+            "sentence": sentence,
+            "question_obj": None
+        }
+    )
+
+
+# =========================
+# 编辑题目
+# =========================
+def question_edit(request, question_id):
+
+    from .models import Question
+    from django.shortcuts import redirect
+
+    q = Question.objects.get(id=question_id)
+    sentence = q.sentence
+
+    if request.method == "POST":
+
+        qtype = request.POST.get("qtype", "").strip()
+        question_text = request.POST.get("question", "").strip()
+        answer = request.POST.get("answer", "").strip()
+        pattern = request.POST.get("pattern", "").strip()
+        blank_mode = request.POST.get("blank_mode", "auto").strip()
+        is_multiple_choice = request.POST.get("is_multiple_choice") == "on"
+        option_count = request.POST.get("option_count", "4").strip()
+        manual_distractors = request.POST.get("manual_distractors", "").strip()
+
+        q.qtype = qtype or q.qtype
+        q.question = question_text or None
+        q.answer = answer or None
+        q.pattern = pattern or None
+        q.blank_mode = blank_mode or "auto"
+        q.is_multiple_choice = is_multiple_choice
+        q.option_count = int(option_count) if option_count.isdigit() else 4
+        q.manual_distractors = manual_distractors or None
+
+        # 保存时自动同步题目内容 / 选项
+        q.save()
+
+        # 如果是选择题，更新选项
+        if q.qtype == "choice":
+
+            from .models import ChoiceOption
+
+            q.options.all().delete()
+
+            option_texts = request.POST.getlist("option_text")
+            correct_flags = request.POST.getlist("correct_option")
+
+            for i, text in enumerate(option_texts):
+
+                text = text.strip()
+
+                if not text:
+                    continue
+
+                is_correct = str(i) in correct_flags
+
+                ChoiceOption.objects.create(
+                    question=q,
+                    text=text,
+                    is_correct=is_correct,
+                    is_auto_generated=False,
+                    order=i
+                )
+
+        return redirect(f"/sentence/{sentence.id}/")
+
+    return render(
+        request,
+        "train_engine/question_form.html",
+        {
+            "mode": "edit",
+            "sentence": sentence,
+            "question_obj": q
+        }
+    )
+
+
+# =========================
+# 删除题目
+# =========================
+def question_delete(request, question_id):
+
+    from .models import Question
+    from django.shortcuts import redirect
+
+    q = Question.objects.get(id=question_id)
+    sentence_id = q.sentence.id
+
+    q.delete()
+
+    return redirect(f"/sentence/{sentence_id}/")
+
+# =========================
 # 多题型训练页面
 # =========================
 def question_train_page(request):

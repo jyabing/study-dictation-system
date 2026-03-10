@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>题目管理</title>
+
+<style>
+
+body{
+    background:#111;
+    color:white;
+    font-family:Arial;
+    padding:30px;
+}
+
+.container{
+    max-width:1000px;
+    margin:auto;
+}
+
+h1{
+    margin-bottom:20px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    padding:12px;
+    border-bottom:1px solid #333;
+}
+
+button{
+    padding:6px 12px;
+    cursor:pointer;
+}
+
+/* 手机卡片 */
+
+@media(max-width:700px){
+
+table{
+    display:none;
+}
+
+.card{
+
+    background:#1e1e1e;
+    padding:15px;
+    margin-bottom:12px;
+    border-radius:6px;
+
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>{{lesson.title}}</h1>
+
+<button onclick="location.href='/sentence/create/{{lesson.id}}/'">
+新增句子
+</button>
+
+<br><br>
+
+<!-- 桌面 -->
+
+<table>
+
+<tr>
+<th>句子</th>
+<th>翻译</th>
+<th>题目数</th>
+<th>操作</th>
+</tr>
+
+{% for s in sentences %}
+
+<tr>
+
+<td>{{s.text}}</td>
+
+<td>{{s.translation}}</td>
+
+<td>{{s.question_count}}</td>
+
+<td>
+
+<button onclick="location.href='/sentence/{{s.id}}/'">
+管理题目
+</button>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<!-- 手机 -->
+
+{% for s in sentences %}
+
+<div class="card">
+
+<p>{{s.text}}</p>
+
+<p>{{s.translation}}</p>
+
+<p>题目数：{{s.question_count}}</p>
+
+<button onclick="location.href='/sentence/{{s.id}}/'">
+管理题目
+</button>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</body>
+</html>

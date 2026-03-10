@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>课程章节</title>
+
+<style>
+
+body{
+    background:#111;
+    color:white;
+    font-family:Arial;
+    padding:30px;
+}
+
+.container{
+    max-width:900px;
+    margin:auto;
+}
+
+h1{
+    margin-bottom:20px;
+}
+
+/* 桌面表格 */
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    padding:12px;
+    border-bottom:1px solid #333;
+}
+
+button{
+    padding:6px 12px;
+    cursor:pointer;
+}
+
+/* 手机卡片 */
+
+@media(max-width:700px){
+
+table{
+    display:none;
+}
+
+.card{
+
+    background:#1e1e1e;
+    padding:15px;
+    margin-bottom:12px;
+    border-radius:6px;
+
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>{{course.name}}</h1>
+
+<button onclick="location.href='/lesson/create/{{course.id}}/'">
+新增章节
+</button>
+
+<br><br>
+
+<!-- 桌面表格 -->
+
+<table>
+
+<tr>
+<th>章节名称</th>
+<th>题目数</th>
+<th>操作</th>
+</tr>
+
+{% for l in lessons %}
+
+<tr>
+
+<td>{{l.title}}</td>
+
+<td>{{l.question_count}}</td>
+
+<td>
+
+<button onclick="location.href='/lesson/{{l.id}}/'">
+进入章节
+</button>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<!-- 手机卡片 -->
+
+{% for l in lessons %}
+
+<div class="card">
+
+<h3>{{l.title}}</h3>
+
+<p>题目数：{{l.question_count}}</p>
+
+<button onclick="location.href='/lesson/{{l.id}}/'">
+进入章节
+</button>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</body>
+</html>

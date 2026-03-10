@@ -15,6 +15,31 @@ urlpatterns = [
     path("question-train/", views.question_train_page, name="question_train_page"),
     path("courses/", views.course_list, name="course_list"),
     path("course/create/", views.course_create, name="course_create"),
+    path(
+        "course/<int:course_id>/",
+        views.course_detail,
+        name="course_detail"
+    ),
+    path(
+        "lesson/create/<int:course_id>/",
+        views.lesson_create,
+        name="lesson_create"
+    ),
+    path(
+        "lesson/<int:lesson_id>/",
+        views.lesson_detail,
+        name="lesson_detail"
+    ),
+    path(
+        "sentence/create/<int:lesson_id>/",
+        views.sentence_create,
+        name="sentence_create"
+    ),
+    path(
+        "sentence/<int:sentence_id>/",
+        views.sentence_detail,
+        name="sentence_detail"
+    ),
 
     # =========================
     # Lesson API

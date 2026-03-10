@@ -105,6 +105,212 @@ def course_create(request):
     )
 
 # =========================
+# 课程详情（章节管理）
+# =========================
+def course_detail(request, course_id):
+
+    from .models import Course, Lesson
+
+    course = Course.objects.get(id=course_id)
+
+    lessons = Lesson.objects.filter(
+        course=course
+    ).order_by("order")
+
+    lesson_data = []
+
+    for l in lessons:
+
+        question_count = l.sentences.count()
+
+        lesson_data.append({
+
+            "id": l.id,
+            "title": l.title,
+            "question_count": question_count
+
+        })
+
+    return render(
+        request,
+        "train_engine/course_detail.html",
+        {
+            "course": course,
+            "lessons": lesson_data
+        }
+    )
+
+# =========================
+# 新增章节
+# =========================
+def lesson_create(request, course_id):
+
+    from .models import Course, Lesson
+    from django.shortcuts import redirect
+
+    course = Course.objects.get(id=course_id)
+
+    if request.method == "POST":
+
+        title = request.POST.get("title", "").strip()
+        order = request.POST.get("order", "0")
+
+        if title:
+
+            Lesson.objects.create(
+                course=course,
+                title=title,
+                order=int(order)
+            )
+
+            return redirect(f"/course/{course_id}/")
+
+    return render(
+        request,
+        "train_engine/lesson_create.html",
+        {
+            "course": course
+        }
+    )
+
+# =========================
+# 章节题目管理
+# =========================
+def lesson_detail(request, lesson_id):
+
+    from .models import Lesson, Sentence, Question
+
+    lesson = Lesson.objects.get(id=lesson_id)
+
+    sentences = Sentence.objects.filter(
+        lesson=lesson
+    ).order_by("order")
+
+    data = []
+
+    for s in sentences:
+
+        q_count = Question.objects.filter(
+            sentence=s
+        ).count()
+
+        data.append({
+            "id": s.id,
+            "text": s.text,
+            "translation": s.translation,
+            "question_count": q_count
+        })
+
+    return render(
+        request,
+        "train_engine/lesson_detail.html",
+        {
+            "lesson": lesson,
+            "sentences": data
+        }
+    )
+
+# =========================
+# 新增句子
+# =========================
+def sentence_create(request, lesson_id):
+
+    from .models import Lesson, Sentence, Question
+    from django.shortcuts import redirect
+
+    lesson = Lesson.objects.get(id=lesson_id)
+
+    if request.method == "POST":
+
+        text = request.POST.get("text", "").strip()
+        translation = request.POST.get("translation", "").strip()
+
+        if text:
+
+            sentence = Sentence.objects.create(
+                lesson=lesson,
+                text=text,
+                translation=translation
+            )
+
+            # 自动生成题目
+            Question.objects.create(
+                sentence=sentence,
+                qtype="cloze"
+            )
+
+            Question.objects.create(
+                sentence=sentence,
+                qtype="choice"
+            )
+
+            Question.objects.create(
+                sentence=sentence,
+                qtype="listening"
+            )
+
+            Question.objects.create(
+                sentence=sentence,
+                qtype="speaking"
+            )
+
+            return redirect(f"/lesson/{lesson_id}/")
+
+    return render(
+        request,
+        "train_engine/sentence_create.html",
+        {
+            "lesson": lesson
+        }
+    )
+
+# =========================
+# 句子题目管理
+# =========================
+def sentence_detail(request, sentence_id):
+
+    from .models import Sentence, Question
+
+    sentence = Sentence.objects.get(id=sentence_id)
+
+    questions = Question.objects.filter(
+        sentence=sentence
+    ).prefetch_related("options").order_by("sort_order", "id")
+
+    data = []
+
+    for q in questions:
+
+        options = []
+
+        for o in q.options.all():
+
+            options.append({
+                "id": o.id,
+                "text": o.text,
+                "is_correct": o.is_correct
+            })
+
+        data.append({
+
+            "id": q.id,
+            "qtype": q.qtype,
+            "question": q.question,
+            "answer": q.answer,
+            "options": options
+
+        })
+
+    return render(
+        request,
+        "train_engine/sentence_detail.html",
+        {
+            "sentence": sentence,
+            "questions": data
+        }
+    )
+
+# =========================
 # 多题型训练页面
 # =========================
 def question_train_page(request):

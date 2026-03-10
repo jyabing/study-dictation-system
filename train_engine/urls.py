@@ -89,6 +89,12 @@ urlpatterns = [
         name="check_question_answer"
     ),
 
+    path(
+        "api/train/transcribe/",
+        views.transcribe_speaking_audio,
+        name="transcribe_speaking_audio"
+    ),
+
     # =========================
     # Wrong Review
     # =========================

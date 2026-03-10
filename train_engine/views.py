@@ -654,6 +654,63 @@ def check_question_answer(request):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+    
+
+# =========================
+# Speaking：音频转写（Whisper）
+# =========================
+@csrf_exempt
+@require_POST
+def transcribe_speaking_audio(request):
+
+    import os
+    import tempfile
+    from openai import OpenAI
+
+    try:
+        audio_file = request.FILES.get("audio")
+
+        if not audio_file:
+            return JsonResponse({"error": "audio missing"}, status=400)
+
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            return JsonResponse({"error": "OPENAI_API_KEY not set"}, status=500)
+
+        suffix = ".webm"
+        original_name = getattr(audio_file, "name", "") or ""
+
+        if "." in original_name:
+            suffix = "." + original_name.split(".")[-1].lower()
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            for chunk in audio_file.chunks():
+                tmp.write(chunk)
+            temp_path = tmp.name
+
+        client = OpenAI(api_key=api_key)
+
+        with open(temp_path, "rb") as f:
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=f
+            )
+
+        try:
+            os.remove(temp_path)
+        except Exception:
+            pass
+
+        text = getattr(transcript, "text", "") or ""
+
+        return JsonResponse({
+            "text": text
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            "error": str(e)
+        }, status=500)
 
 
 

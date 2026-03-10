@@ -43,6 +43,66 @@ def dashboard(request):
         "train_engine/dashboard.html"
     )
 
+# =========================
+# 课程列表（课程管理）
+# =========================
+def course_list(request):
+
+    from .models import Course, Lesson, Question
+
+    courses = Course.objects.all().order_by("-id")
+
+    course_data = []
+
+    for c in courses:
+
+        lesson_count = Lesson.objects.filter(course=c).count()
+
+        question_count = Question.objects.filter(
+            sentence__lesson__course=c
+        ).count()
+
+        course_data.append({
+            "course": c,
+            "lesson_count": lesson_count,
+            "question_count": question_count
+        })
+
+    return render(
+        request,
+        "train_engine/course_list.html",
+        {
+            "courses": course_data
+        }
+    )
+
+# =========================
+# 新增课程
+# =========================
+def course_create(request):
+
+    from .models import Course
+
+    if request.method == "POST":
+
+        name = request.POST.get("name", "").strip()
+        description = request.POST.get("description", "").strip()
+        is_public = request.POST.get("is_public") == "on"
+
+        if name:
+
+            Course.objects.create(
+                name=name,
+                description=description
+            )
+
+            from django.shortcuts import redirect
+            return redirect("/courses/")
+
+    return render(
+        request,
+        "train_engine/course_create.html"
+    )
 
 # =========================
 # 多题型训练页面

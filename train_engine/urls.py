@@ -13,6 +13,8 @@ urlpatterns = [
     # =========================
     path("dictation/", views.dictation_page, name="dictation_page"),
     path("question-train/", views.question_train_page, name="question_train_page"),
+    path("courses/", views.course_list, name="course_list"),
+    path("course/create/", views.course_create, name="course_create"),
 
     # =========================
     # Lesson API

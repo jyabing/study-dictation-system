@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>课程管理</title>
+
+<style>
+
+body{
+    background:#111;
+    color:white;
+    font-family:Arial;
+    margin:0;
+    padding:30px;
+}
+
+h1{
+    margin-bottom:25px;
+}
+
+/* 桌面端表格 */
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    border-bottom:1px solid #444;
+    padding:12px;
+    text-align:left;
+}
+
+th{
+    background:#222;
+}
+
+a{
+    color:#6cf;
+    text-decoration:none;
+}
+
+/* 手机卡片 */
+
+.card{
+    display:none;
+    background:#1e1e1e;
+    border:1px solid #444;
+    padding:15px;
+    margin-bottom:15px;
+    border-radius:8px;
+}
+
+/* 手机布局 */
+
+@media(max-width:700px){
+
+table{
+    display:none;
+}
+
+.card{
+    display:block;
+}
+
+}
+
+button{
+
+    padding:8px 14px;
+    margin-bottom:15px;
+    cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>📚 课程管理</h1>
+
+<button onclick="location.href='/course/create/'">
+新增课程
+</button>
+
+<!-- 桌面表格 -->
+
+<table>
+
+<tr>
+<th>课程名称</th>
+<th>章节数</th>
+<th>题目数</th>
+<th>操作</th>
+</tr>
+
+{% for item in courses %}
+
+<tr>
+
+<td>{{ item.course.name }}</td>
+
+<td>{{ item.lesson_count }}</td>
+
+<td>{{ item.question_count }}</td>
+
+<td>
+
+<a href="/course/{{ item.course.id }}/">
+进入课程
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<!-- 手机卡片 -->
+
+{% for item in courses %}
+
+<div class="card">
+
+<h3>{{ item.course.name }}</h3>
+
+<p>章节：{{ item.lesson_count }}</p>
+
+<p>题目：{{ item.question_count }}</p>
+
+<a href="/course/{{ item.course.id }}/">
+进入课程
+</a>
+
+</div>
+
+{% endfor %}
+
+</body>
+</html>

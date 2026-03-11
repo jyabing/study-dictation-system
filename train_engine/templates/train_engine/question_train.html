@@ -1,561 +1,425 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>多题型训练系统</title>
+<meta charset="utf-8">
+<title>多题型训练</title>
 
 <style>
+
 body{
-    background:#111;
-    color:#eee;
-    font-family:Arial, sans-serif;
-    padding:30px;
-    margin:0;
+background:#111;
+color:#eee;
+font-family:Arial;
+padding:30px;
 }
 
-h2{
-    margin-bottom:25px;
-}
-
-input, select, textarea, button{
-    padding:8px;
-    font-size:16px;
-    box-sizing:border-box;
-}
-
-button{
-    cursor:pointer;
-    margin:5px 5px 5px 0;
+input,select,button{
+padding:10px;
+font-size:16px;
+margin:5px;
 }
 
 #panel{
-    margin-top:20px;
-    padding:20px;
-    border:1px solid #444;
-    max-width:900px;
-}
-
-#progress{
-    margin-bottom:12px;
-    font-size:18px;
-    font-weight:bold;
-}
-
-#meta{
-    margin-bottom:12px;
-    color:#bbb;
+margin-top:20px;
+padding:20px;
+border:1px solid #444;
+max-width:900px;
 }
 
 #prompt{
-    margin:15px 0;
-    font-size:22px;
-    line-height:1.7;
-    min-height:60px;
-}
-
-#patternBox{
-    margin:10px 0;
-    color:#9ad;
-    white-space:pre-wrap;
-}
-
-#options{
-    margin:15px 0;
+font-size:22px;
+margin:15px 0;
 }
 
 .option-item{
-    margin:8px 0;
-}
-
-#answerBox{
-    margin:15px 0;
-}
-
-#answer{
-    width:100%;
-    max-width:700px;
-}
-
-#speechBox{
-    margin-top:10px;
-    padding:10px;
-    border:1px solid #333;
-    background:#1a1a1a;
-    max-width:700px;
-}
-
-#speechStatus{
-    margin-left:10px;
-    color:#9ad;
-    font-size:14px;
-}
-
-#result{
-    margin-top:15px;
-    font-size:18px;
-    line-height:1.8;
+margin:8px 0;
 }
 
 .correct{
-    color:lightgreen;
-    font-weight:bold;
+color:#7CFC00;
 }
 
 .wrong{
-    color:#ff6b6b;
-    font-weight:bold;
-}
-
-.info{
-    color:#ccc;
-}
-
-#score{
-    margin-top:10px;
-    font-size:18px;
-    font-weight:bold;
-}
-
-#mode{
-    margin-top:10px;
-    font-size:18px;
+color:#ff6b6b;
 }
 
 .hidden{
-    display:none;
+display:none;
 }
 
 @media(max-width:700px){
-    body{
-        padding:15px;
-    }
 
-    #panel{
-        padding:15px;
-    }
-
-    #prompt{
-        font-size:18px;
-    }
-
-    #answer{
-        max-width:100%;
-    }
-
-    #speechBox{
-        max-width:100%;
-    }
+body{
+padding:15px;
 }
+
+input{
+width:100%;
+}
+
+#panel{
+max-width:100%;
+}
+
+}
+
 </style>
+
 </head>
 
 <body>
 
 <h2>🧠 多题型训练</h2>
 
-<label>课程 ID：
-    <input id="lessonId" value="1"/>
+<label>课程ID：
+<input id="lessonId" value="1">
 </label>
 
 <label>题型：
-    <select id="qtypeFilter">
-        <option value="">全部</option>
-        <option value="qa">问答题</option>
-        <option value="cloze">挖空题</option>
-        <option value="choice">选择题</option>
-        <option value="listening">听力题</option>
-        <option value="speaking">朗读题</option>
-    </select>
+<select id="qtypeFilter">
+<option value="">全部</option>
+<option value="qa">问答题</option>
+<option value="cloze">挖空题</option>
+<option value="choice">选择题</option>
+<option value="listening">听力题</option>
+<option value="speaking">口语题</option>
+</select>
 </label>
 
 <label>语言：
-    <select id="speechLang">
-        <option value="auto">自动识别</option>
-        <option value="en">English</option>
-        <option value="ja">日本語</option>
-        <option value="zh">中文</option>
-    </select>
+<select id="speechLang">
+<option value="auto">自动识别</option>
+<option value="en">English</option>
+<option value="ja">日本語</option>
+<option value="zh">中文</option>
+</select>
 </label>
 
 <button onclick="loadQuestions()">加载题目</button>
 
-<div id="mode">模式：多题型训练</div>
 <div id="score">成绩：0 / 0</div>
 
 <div id="panel" class="hidden">
 
-    <div id="progress"></div>
-    <div id="meta"></div>
-    <div id="patternBox"></div>
-    <div id="prompt"></div>
+<div id="progress"></div>
+<div id="meta"></div>
 
-    <div id="audioControls" class="hidden">
-        <button onclick="playPrompt()">▶ 播放</button>
-        <select id="speed">
-            <option value="0.7">慢速</option>
-            <option value="0.9" selected>正常</option>
-            <option value="1.1">快速</option>
-        </select>
-    </div>
+<div id="prompt"></div>
 
-    <div id="options"></div>
+<div id="audioControls" class="hidden">
+<button onclick="playPrompt()">▶ 播放</button>
 
-    <div id="answerBox">
-        <input id="answer" placeholder="请输入答案..."/>
+<select id="speed">
+<option value="0.7">慢速</option>
+<option value="1" selected>正常</option>
+<option value="1.2">快速</option>
+</select>
+</div>
 
-        <div id="speechBox" class="hidden">
-            <button type="button" id="startRecordBtn" onclick="startRecording()">🎤 开始录音</button>
-            <button type="button" id="stopRecordBtn" onclick="stopRecording()">⏹ 停止录音</button>
-            <span id="speechStatus"></span>
-            <div class="info" style="margin-top:8px;">
-                speaking 题型会把录音上传到后端转写，并自动填入答案框。
-            </div>
-        </div>
-    </div>
+<div id="options"></div>
 
-    <button onclick="submitQuestionAnswer()">提交</button>
-    <button onclick="nextQuestion()">下一题</button>
+<input id="answer" placeholder="请输入答案">
 
-    <div id="result"></div>
+<div id="speakingBox" class="hidden">
+
+<button onclick="startRecording()">🎤开始录音</button>
+<button onclick="stopRecording()">■停止录音</button>
+
+<div id="recordStatus"></div>
+
+</div>
+
+<button onclick="submitAnswer()">提交</button>
+<button onclick="nextQuestion()">下一题</button>
+
+<div id="result"></div>
+
 </div>
 
 <script>
-let questions = [];
-let idx = 0;
-let correctCount = 0;
-let currentQuestion = null;
 
-let mediaRecorder = null;
-let audioChunks = [];
-let currentMimeType = "";
+let questions=[]
+let idx=0
+let correct=0
+let currentQuestion=null
 
-function normalizeText(s){
-    if(!s) return "";
-    return s
-        .toLowerCase()
-        .replace(/[^\w\s]/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-}
+let mediaRecorder
+let audioChunks=[]
 
 function updateScore(){
-    document.getElementById("score").innerText =
-        `成绩：${correctCount} / ${questions.length}`;
+
+document.getElementById("score").innerText=
+"成绩："+correct+" / "+questions.length
+
 }
 
 async function loadQuestions(){
 
-    const lessonId = document.getElementById("lessonId").value.trim();
-    const qtype = document.getElementById("qtypeFilter").value;
+const lesson=document.getElementById("lessonId").value
+const type=document.getElementById("qtypeFilter").value
 
-    let url = `/lesson/${lessonId}/questions/`;
+let url="/lesson/"+lesson+"/questions/"
 
-    if(qtype){
-        url += `?qtype=${encodeURIComponent(qtype)}`;
-    }
-
-    const res = await fetch(url);
-    const data = await res.json();
-
-    questions = data.questions || [];
-    idx = 0;
-    correctCount = 0;
-    currentQuestion = null;
-
-    document.getElementById("panel").classList.remove("hidden");
-    document.getElementById("result").innerHTML = "";
-
-    updateScore();
-    showQuestion();
+if(type){
+url+="?qtype="+type
 }
 
-function resetQuestionUI(){
-    document.getElementById("options").innerHTML = "";
-    document.getElementById("patternBox").innerHTML = "";
-    document.getElementById("answerBox").classList.remove("hidden");
-    document.getElementById("audioControls").classList.add("hidden");
-    document.getElementById("speechBox").classList.add("hidden");
-    document.getElementById("answer").value = "";
-    document.getElementById("answer").disabled = false;
-    document.getElementById("speechStatus").innerText = "";
-    document.getElementById("result").innerHTML = "";
-}
+const res=await fetch(url)
+const data=await res.json()
 
-function renderChoiceOptions(q){
-    let html = "";
+questions=data.questions||[]
 
-    q.options.forEach((opt, i) => {
-        const inputType = q.is_multiple_choice ? "checkbox" : "radio";
+idx=0
+correct=0
 
-        html += `
-            <div class="option-item">
-                <label>
-                    <input type="${inputType}" name="choice_option" value="${opt.text}">
-                    ${String.fromCharCode(65 + i)}. ${opt.text}
-                </label>
-            </div>
-        `;
-    });
+updateScore()
 
-    document.getElementById("options").innerHTML = html;
-    document.getElementById("answerBox").classList.add("hidden");
+document.getElementById("panel").classList.remove("hidden")
+
+showQuestion()
+
 }
 
 function showQuestion(){
 
-    resetQuestionUI();
+document.getElementById("result").innerHTML=""
+document.getElementById("options").innerHTML=""
+document.getElementById("answer").value=""
 
-    if(!questions.length){
-        document.getElementById("progress").innerText = "";
-        document.getElementById("meta").innerText = "";
-        document.getElementById("prompt").innerText = "没有题目";
-        return;
-    }
+document.getElementById("audioControls").classList.add("hidden")
+document.getElementById("speakingBox").classList.add("hidden")
 
-    if(idx >= questions.length){
-        document.getElementById("progress").innerText = "";
-        document.getElementById("meta").innerText = "";
-        document.getElementById("patternBox").innerHTML = "";
-        document.getElementById("prompt").innerText = "🎉 本轮完成！";
-        document.getElementById("options").innerHTML = "";
-        document.getElementById("answerBox").classList.add("hidden");
-        return;
-    }
+if(idx>=questions.length){
 
-    currentQuestion = questions[idx];
+document.getElementById("prompt").innerText="🎉 本轮完成"
 
-    document.getElementById("progress").innerText =
-        `第 ${idx + 1} / ${questions.length} 题`;
+return
 
-    document.getElementById("meta").innerText =
-        `题型：${currentQuestion.qtype}`;
+}
 
-    if(currentQuestion.qtype === "listening"){
-        document.getElementById("prompt").innerText = "🎧 请听音频并输入内容";
-    }
-    else{
-        document.getElementById("prompt").innerText =
-            currentQuestion.question || "(暂无题目内容)";
-    }
+currentQuestion=questions[idx]
 
-    if(currentQuestion.pattern){
-        document.getElementById("patternBox").innerHTML =
-            `句型提示：${currentQuestion.pattern}`;
-    }
+document.getElementById("progress").innerText=
+"第 "+(idx+1)+" / "+questions.length+" 题"
 
-    if(currentQuestion.qtype === "choice"){
-        renderChoiceOptions(currentQuestion);
-    }
+document.getElementById("meta").innerText=
+"题型："+currentQuestion.qtype
 
-    if(currentQuestion.qtype === "listening" || currentQuestion.qtype === "speaking"){
-        document.getElementById("audioControls").classList.remove("hidden");
-    }
+if(currentQuestion.qtype==="listening"){
 
-    if(currentQuestion.qtype === "speaking"){
-        document.getElementById("speechBox").classList.remove("hidden");
-    }
+document.getElementById("prompt").innerText=
+"🎧 请听音频并输入内容"
+
+document.getElementById("audioControls").classList.remove("hidden")
+
+}
+
+else{
+
+document.getElementById("prompt").innerText=
+currentQuestion.question
+
+}
+
+if(currentQuestion.qtype==="choice"){
+
+renderChoice(currentQuestion)
+
+}
+
+if(currentQuestion.qtype==="speaking"){
+
+document.getElementById("speakingBox").classList.remove("hidden")
+
+}
+
+}
+
+function renderChoice(q){
+
+let html=""
+
+q.options.forEach((opt,i)=>{
+
+html+=`
+<div class="option-item">
+<label>
+<input type="radio" name="opt" value="${opt.text}">
+${String.fromCharCode(65+i)}. ${opt.text}
+</label>
+</div>
+`
+
+})
+
+document.getElementById("options").innerHTML=html
+
 }
 
 function playPrompt(){
-    if(!currentQuestion) return;
 
-    const text = currentQuestion.question || currentQuestion.answer || "";
-    const msg = new SpeechSynthesisUtterance(text);
+let text=currentQuestion.question
 
-    const lang = document.getElementById("speechLang").value;
+const msg=new SpeechSynthesisUtterance(text)
 
-        if(lang === "ja"){
-            msg.lang = "ja-JP";
-        }
-        else if(lang === "zh"){
-            msg.lang = "zh-CN";
-        }
-        else{
-            msg.lang = "en-US";
-        }
-    msg.rate = parseFloat(document.getElementById("speed").value);
+const lang=document.getElementById("speechLang").value
 
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(msg);
-}
+if(lang==="ja") msg.lang="ja-JP"
+else if(lang==="zh") msg.lang="zh-CN"
+else msg.lang="en-US"
 
-function getChoiceValues(){
-    const selected = [];
-    document.querySelectorAll('input[name="choice_option"]:checked').forEach(el => {
-        selected.push(el.value);
-    });
-    return selected;
-}
+msg.rate=parseFloat(document.getElementById("speed").value)
 
-function getSupportedMimeType(){
-    const types = [
-        "audio/webm;codecs=opus",
-        "audio/webm",
-        "audio/mp4",
-        "audio/mpeg",
-        "audio/ogg;codecs=opus"
-    ];
+speechSynthesis.cancel()
+speechSynthesis.speak(msg)
 
-    for(const t of types){
-        if(window.MediaRecorder && MediaRecorder.isTypeSupported(t)){
-            return t;
-        }
-    }
-    return "";
 }
 
 async function startRecording(){
 
-    if(!currentQuestion || currentQuestion.qtype !== "speaking"){
-        return;
-    }
+audioChunks=[]
 
-    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-        alert("当前浏览器不支持录音");
-        return;
-    }
+const stream=await navigator.mediaDevices.getUserMedia({audio:true})
 
-    try{
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+mediaRecorder=new MediaRecorder(stream)
 
-        currentMimeType = getSupportedMimeType();
-        audioChunks = [];
-
-        if(currentMimeType){
-            mediaRecorder = new MediaRecorder(stream, { mimeType: currentMimeType });
-        }else{
-            mediaRecorder = new MediaRecorder(stream);
-            currentMimeType = mediaRecorder.mimeType || "audio/webm";
-        }
-
-        mediaRecorder.ondataavailable = function(e){
-            if(e.data && e.data.size > 0){
-                audioChunks.push(e.data);
-            }
-        };
-
-        mediaRecorder.onstart = function(){
-            document.getElementById("speechStatus").innerText = "录音中...";
-        };
-
-        mediaRecorder.onstop = async function(){
-            document.getElementById("speechStatus").innerText = "上传中...";
-
-            const blob = new Blob(audioChunks, { type: currentMimeType || "audio/webm" });
-
-            const ext = (currentMimeType && currentMimeType.includes("mp4")) ? "m4a" : "webm";
-            const file = new File([blob], `speaking.${ext}`, { type: currentMimeType || "audio/webm" });
-
-            const form = new FormData();
-            form.append("audio", file);
-
-            const lang = document.getElementById("speechLang").value;
-            if(lang && lang !== "auto"){
-                form.append("lang", lang);
-            }
-
-            try{
-                const res = await fetch("/api/train/transcribe/", {
-                    method: "POST",
-                    body: form
-                });
-
-                const data = await res.json();
-
-                if(data.error){
-                    document.getElementById("speechStatus").innerText = "转写失败：" + data.error;
-                    return;
-                }
-
-                document.getElementById("answer").value = data.text || "";
-                document.getElementById("speechStatus").innerText = "识别完成";
-            }catch(err){
-                document.getElementById("speechStatus").innerText = "上传失败";
-            }
-        };
-
-        mediaRecorder.start();
-
-    }catch(err){
-        document.getElementById("speechStatus").innerText = "无法开始录音";
-    }
+mediaRecorder.ondataavailable=e=>{
+audioChunks.push(e.data)
 }
 
-function stopRecording(){
-    if(mediaRecorder && mediaRecorder.state !== "inactive"){
-        mediaRecorder.stop();
-        document.getElementById("speechStatus").innerText = "停止录音";
-    }
+mediaRecorder.start()
+
+document.getElementById("recordStatus").innerText="录音中..."
+
 }
 
-async function submitQuestionAnswer(){
+async function stopRecording(){
 
-    if(!currentQuestion) return;
+mediaRecorder.stop()
 
-    const form = new FormData();
-    form.append("question_id", currentQuestion.id);
+mediaRecorder.onstop=async()=>{
 
-    if(currentQuestion.qtype === "choice"){
-        const selected = getChoiceValues();
-        selected.forEach(v => form.append("user_input", v));
-    }else{
-        const userInput = document.getElementById("answer").value.trim();
-        form.append("user_input", userInput);
-    }
+document.getElementById("recordStatus").innerText="识别中..."
 
-    const res = await fetch("/api/train/check_question/", {
-        method: "POST",
-        body: form
-    });
+const blob=new Blob(audioChunks,{type:"audio/webm"})
 
-    const data = await res.json();
+const form=new FormData()
 
-    if(data.error){
-        document.getElementById("result").innerHTML =
-            `<span class="wrong">错误：</span> ${data.error}`;
-        return;
-    }
+form.append("audio",blob)
 
-    if(data.correct){
-        correctCount++;
-        updateScore();
+const lang=document.getElementById("speechLang").value
+form.append("lang",lang)
 
-        document.getElementById("result").innerHTML = `
-            <span class="correct">✔ 正确</span><br>
-            <span class="info">记忆等级：${data.memory_level}</span><br>
-            <span class="info">下次复习：${data.next_review}</span>
-        `;
+const res=await fetch("/api/train/transcribe/",{
+method:"POST",
+body:form
+})
 
-        setTimeout(() => {
-            nextQuestion();
-        }, 1000);
+const data=await res.json()
 
-    }else{
-        let html = `<span class="wrong">✘ 错误</span><br>`;
+document.getElementById("answer").value=data.text||""
 
-        if(data.pattern){
-            html += `<span class="info">句型提示：${data.pattern}</span><br>`;
-        }
+document.getElementById("recordStatus").innerText="识别完成"
 
-        html += `<span class="info">正确答案：${data.expected || ""}</span><br>`;
-        html += `<span class="info">记忆等级：${data.memory_level}</span><br>`;
-        html += `<span class="info">错误次数：${data.wrong_count}</span>`;
+if(currentQuestion.qtype==="speaking"){
 
-        document.getElementById("result").innerHTML = html;
-    }
+scoreSpeaking(data.text)
+
+}
+
+}
+
+}
+
+async function scoreSpeaking(text){
+
+const form=new FormData()
+
+form.append("text",text)
+form.append("expected",currentQuestion.answer||"")
+
+const res=await fetch("/api/train/score-speaking/",{
+method:"POST",
+body:form
+})
+
+const score=await res.json()
+
+if(!score.error){
+
+document.getElementById("result").innerHTML=`
+
+<div class="correct">语音识别：${text}</div>
+
+Accuracy: ${score.accuracy}<br>
+Fluency: ${score.fluency}<br>
+Pronunciation: ${score.pronunciation}<br>
+Grammar: ${score.grammar}<br>
+
+Suggestion: ${score.suggestion}
+
+`
+
+}
+
+}
+
+async function submitAnswer(){
+
+const form=new FormData()
+
+form.append("question_id",currentQuestion.id)
+
+if(currentQuestion.qtype==="choice"){
+
+const sel=document.querySelector('input[name="opt"]:checked')
+
+if(sel){
+form.append("user_input",sel.value)
+}
+
+}
+else{
+
+form.append("user_input",
+document.getElementById("answer").value)
+
+}
+
+const res=await fetch("/api/train/check_question/",{
+method:"POST",
+body:form
+})
+
+const data=await res.json()
+
+if(data.correct){
+
+correct++
+
+updateScore()
+
+document.getElementById("result").innerHTML=
+"<div class='correct'>✔ 正确</div>"
+
+}
+else{
+
+document.getElementById("result").innerHTML=
+"<div class='wrong'>✘ 错误</div><br>正确答案："+data.expected
+
+}
+
 }
 
 function nextQuestion(){
-    idx++;
-    showQuestion();
+
+idx++
+
+showQuestion()
+
 }
 
-document.getElementById("answer").addEventListener("keypress", function(e){
-    if(e.key === "Enter"){
-        submitQuestionAnswer();
-    }
-});
 </script>
 
 </body>

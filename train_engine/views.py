@@ -723,6 +723,88 @@ def transcribe_speaking_audio(request):
         return JsonResponse({
             "error": str(e)
         }, status=500)
+    
+# =========================
+# Speaking AI评分
+# =========================
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+
+@csrf_exempt
+@require_POST
+def score_speaking(request):
+
+    import os
+    from openai import OpenAI
+    import json
+
+    try:
+
+        text = request.POST.get("text", "")
+        expected = request.POST.get("expected", "")
+
+        if not text:
+            return JsonResponse({"error": "text missing"}, status=400)
+
+        api_key = os.environ.get("OPENAI_API_KEY")
+
+        if not api_key:
+            return JsonResponse({"error": "OPENAI_API_KEY not set"}, status=500)
+
+        client = OpenAI(api_key=api_key)
+
+        prompt = f"""
+Evaluate English speaking.
+
+Expected sentence:
+{expected}
+
+User speech:
+{text}
+
+Give scores (0-100):
+
+accuracy
+fluency
+pronunciation
+grammar
+
+Also give a short suggestion.
+
+Return JSON only.
+
+Example:
+
+{{
+"accuracy":90,
+"fluency":85,
+"pronunciation":88,
+"grammar":87,
+"suggestion":"Good pronunciation but improve stress."
+}}
+"""
+
+        res = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+                {"role":"system","content":"You are an English speaking teacher."},
+                {"role":"user","content":prompt}
+            ],
+            temperature=0
+        )
+
+        content = res.choices[0].message.content
+
+        data = json.loads(content)
+
+        return JsonResponse(data)
+
+    except Exception as e:
+
+        return JsonResponse({
+            "error": str(e)
+        }, status=500)
 
 # =========================
 # 检查答案

@@ -5,66 +5,122 @@
 <title>多题型训练</title>
 
 <style>
-
 body{
-background:#111;
-color:#eee;
-font-family:Arial;
-padding:30px;
+    background:#111;
+    color:#eee;
+    font-family:Arial, sans-serif;
+    padding:30px;
+    margin:0;
+}
+
+h2{
+    margin-bottom:25px;
 }
 
 input,select,button{
-padding:10px;
-font-size:16px;
-margin:5px;
+    padding:10px;
+    font-size:16px;
+    margin:5px;
+    box-sizing:border-box;
+}
+
+button{
+    cursor:pointer;
 }
 
 #panel{
-margin-top:20px;
-padding:20px;
-border:1px solid #444;
-max-width:900px;
+    margin-top:20px;
+    padding:20px;
+    border:1px solid #444;
+    max-width:900px;
+}
+
+#progress{
+    font-size:18px;
+    font-weight:bold;
+    margin-bottom:10px;
+}
+
+#meta{
+    margin-bottom:10px;
+    color:#bbb;
 }
 
 #prompt{
-font-size:22px;
-margin:15px 0;
+    font-size:22px;
+    margin:15px 0;
+    line-height:1.7;
+    min-height:50px;
+}
+
+#options{
+    margin:15px 0;
 }
 
 .option-item{
-margin:8px 0;
+    margin:8px 0;
 }
 
 .correct{
-color:#7CFC00;
+    color:#7CFC00;
 }
 
 .wrong{
-color:#ff6b6b;
+    color:#ff6b6b;
+}
+
+.info{
+    color:#9ad;
 }
 
 .hidden{
-display:none;
+    display:none;
+}
+
+#audioControls,
+#listeningControls,
+#speakingBox{
+    margin:12px 0;
+    padding:12px;
+    border:1px solid #333;
+    background:#1a1a1a;
+}
+
+#answer{
+    width:100%;
+    max-width:700px;
+}
+
+#recordStatus,
+#listeningStatus{
+    margin-top:8px;
+    color:#9ad;
+    font-size:14px;
 }
 
 @media(max-width:700px){
+    body{
+        padding:15px;
+    }
 
-body{
-padding:15px;
+    #panel{
+        max-width:100%;
+        padding:15px;
+    }
+
+    input{
+        width:100%;
+    }
+
+    #prompt{
+        font-size:18px;
+    }
+
+    #answer{
+        max-width:100%;
+    }
 }
-
-input{
-width:100%;
-}
-
-#panel{
-max-width:100%;
-}
-
-}
-
 </style>
-
 </head>
 
 <body>
@@ -72,27 +128,27 @@ max-width:100%;
 <h2>🧠 多题型训练</h2>
 
 <label>课程ID：
-<input id="lessonId" value="1">
+    <input id="lessonId" value="1">
 </label>
 
 <label>题型：
-<select id="qtypeFilter">
-<option value="">全部</option>
-<option value="qa">问答题</option>
-<option value="cloze">挖空题</option>
-<option value="choice">选择题</option>
-<option value="listening">听力题</option>
-<option value="speaking">口语题</option>
-</select>
+    <select id="qtypeFilter">
+        <option value="">全部</option>
+        <option value="qa">问答题</option>
+        <option value="cloze">挖空题</option>
+        <option value="choice">选择题</option>
+        <option value="listening">听力题</option>
+        <option value="speaking">口语题</option>
+    </select>
 </label>
 
 <label>语言：
-<select id="speechLang">
-<option value="auto">自动识别</option>
-<option value="en">English</option>
-<option value="ja">日本語</option>
-<option value="zh">中文</option>
-</select>
+    <select id="speechLang">
+        <option value="auto">自动识别</option>
+        <option value="en">English</option>
+        <option value="ja">日本語</option>
+        <option value="zh">中文</option>
+    </select>
 </label>
 
 <button onclick="loadQuestions()">加载题目</button>
@@ -101,325 +157,374 @@ max-width:100%;
 
 <div id="panel" class="hidden">
 
-<div id="progress"></div>
-<div id="meta"></div>
+    <div id="progress"></div>
+    <div id="meta"></div>
+    <div id="prompt"></div>
 
-<div id="prompt"></div>
+    <!-- 通用播放 -->
+    <div id="audioControls" class="hidden">
+        <button onclick="playPrompt()">▶ 播放</button>
 
-<div id="audioControls" class="hidden">
-<button onclick="playPrompt()">▶ 播放</button>
+        <select id="speed">
+            <option value="0.7">慢速</option>
+            <option value="1" selected>正常</option>
+            <option value="1.2">快速</option>
+        </select>
+    </div>
 
-<select id="speed">
-<option value="0.7">慢速</option>
-<option value="1" selected>正常</option>
-<option value="1.2">快速</option>
-</select>
-</div>
+    <!-- 专业 listening 控件 -->
+    <div id="listeningControls" class="hidden">
+        <button onclick="playPrompt()">▶ 播放</button>
+        <button onclick="replayPrompt()">🔁 重播</button>
+        <button onclick="toggleLoopAB()" id="loopBtn">A-B循环：关</button>
 
-<div id="options"></div>
+        <select id="listenSpeed">
+            <option value="0.7">0.7x</option>
+            <option value="1" selected>1.0x</option>
+            <option value="1.2">1.2x</option>
+        </select>
 
-<input id="answer" placeholder="请输入答案">
+        <div id="listeningStatus"></div>
+    </div>
 
-<div id="speakingBox" class="hidden">
+    <div id="options"></div>
 
-<button onclick="startRecording()">🎤开始录音</button>
-<button onclick="stopRecording()">■停止录音</button>
+    <input id="answer" placeholder="请输入答案">
 
-<div id="recordStatus"></div>
+    <div id="speakingBox" class="hidden">
+        <button onclick="startRecording()">🎤开始录音</button>
+        <button onclick="stopRecording()">■停止录音</button>
+        <div id="recordStatus"></div>
+    </div>
 
-</div>
+    <button onclick="submitAnswer()">提交</button>
+    <button onclick="nextQuestion()">下一题</button>
 
-<button onclick="submitAnswer()">提交</button>
-<button onclick="nextQuestion()">下一题</button>
-
-<div id="result"></div>
+    <div id="result"></div>
 
 </div>
 
 <script>
-
-let questions=[]
-let idx=0
-let correct=0
-let currentQuestion=null
+let questions = []
+let idx = 0
+let correct = 0
+let currentQuestion = null
 
 let mediaRecorder
-let audioChunks=[]
+let audioChunks = []
+
+let loopAB = false
+let loopTimer = null
 
 function updateScore(){
-
-document.getElementById("score").innerText=
-"成绩："+correct+" / "+questions.length
-
+    document.getElementById("score").innerText =
+        "成绩：" + correct + " / " + questions.length
 }
 
 async function loadQuestions(){
 
-const lesson=document.getElementById("lessonId").value
-const type=document.getElementById("qtypeFilter").value
+    const lesson = document.getElementById("lessonId").value
+    const type = document.getElementById("qtypeFilter").value
 
-let url="/lesson/"+lesson+"/questions/"
+    let url = "/lesson/" + lesson + "/questions/"
 
-if(type){
-url+="?qtype="+type
+    if(type){
+        url += "?qtype=" + type
+    }
+
+    const res = await fetch(url)
+    const data = await res.json()
+
+    questions = data.questions || []
+    idx = 0
+    correct = 0
+
+    updateScore()
+
+    document.getElementById("panel").classList.remove("hidden")
+
+    showQuestion()
 }
 
-const res=await fetch(url)
-const data=await res.json()
+function resetUI(){
 
-questions=data.questions||[]
+    document.getElementById("result").innerHTML = ""
+    document.getElementById("options").innerHTML = ""
+    document.getElementById("answer").value = ""
 
-idx=0
-correct=0
+    document.getElementById("audioControls").classList.add("hidden")
+    document.getElementById("listeningControls").classList.add("hidden")
+    document.getElementById("speakingBox").classList.add("hidden")
 
-updateScore()
+    document.getElementById("recordStatus").innerText = ""
+    document.getElementById("listeningStatus").innerText = ""
 
-document.getElementById("panel").classList.remove("hidden")
-
-showQuestion()
-
+    stopLoopAB()
 }
 
 function showQuestion(){
 
-document.getElementById("result").innerHTML=""
-document.getElementById("options").innerHTML=""
-document.getElementById("answer").value=""
+    resetUI()
 
-document.getElementById("audioControls").classList.add("hidden")
-document.getElementById("speakingBox").classList.add("hidden")
+    if(idx >= questions.length){
+        document.getElementById("prompt").innerText = "🎉 本轮完成"
+        document.getElementById("progress").innerText = ""
+        document.getElementById("meta").innerText = ""
+        return
+    }
 
-if(idx>=questions.length){
+    currentQuestion = questions[idx]
 
-document.getElementById("prompt").innerText="🎉 本轮完成"
+    document.getElementById("progress").innerText =
+        "第 " + (idx + 1) + " / " + questions.length + " 题"
 
-return
+    document.getElementById("meta").innerText =
+        "题型：" + currentQuestion.qtype
 
-}
+    // listening 不显示题干
+    if(currentQuestion.qtype === "listening"){
 
-currentQuestion=questions[idx]
+        document.getElementById("prompt").innerText =
+            "🎧 请听音频并输入内容"
 
-document.getElementById("progress").innerText=
-"第 "+(idx+1)+" / "+questions.length+" 题"
+        document.getElementById("listeningControls").classList.remove("hidden")
+    }
+    else{
 
-document.getElementById("meta").innerText=
-"题型："+currentQuestion.qtype
+        document.getElementById("prompt").innerText =
+            currentQuestion.question || "(暂无题目内容)"
+    }
 
-if(currentQuestion.qtype==="listening"){
+    // choice
+    if(currentQuestion.qtype === "choice"){
+        renderChoice(currentQuestion)
+    }
 
-document.getElementById("prompt").innerText=
-"🎧 请听音频并输入内容"
+    // speaking
+    if(currentQuestion.qtype === "speaking"){
+        document.getElementById("audioControls").classList.remove("hidden")
+        document.getElementById("speakingBox").classList.remove("hidden")
+    }
 
-document.getElementById("audioControls").classList.remove("hidden")
-
-}
-
-else{
-
-document.getElementById("prompt").innerText=
-currentQuestion.question
-
-}
-
-if(currentQuestion.qtype==="choice"){
-
-renderChoice(currentQuestion)
-
-}
-
-if(currentQuestion.qtype==="speaking"){
-
-document.getElementById("speakingBox").classList.remove("hidden")
-
-}
-
+    // qa / cloze
+    if(currentQuestion.qtype === "qa" || currentQuestion.qtype === "cloze"){
+        // 不额外处理
+    }
 }
 
 function renderChoice(q){
 
-let html=""
+    let html = ""
 
-q.options.forEach((opt,i)=>{
+    q.options.forEach((opt, i) => {
+        html += `
+        <div class="option-item">
+            <label>
+                <input type="radio" name="opt" value="${opt.text}">
+                ${String.fromCharCode(65 + i)}. ${opt.text}
+            </label>
+        </div>
+        `
+    })
 
-html+=`
-<div class="option-item">
-<label>
-<input type="radio" name="opt" value="${opt.text}">
-${String.fromCharCode(65+i)}. ${opt.text}
-</label>
-</div>
-`
+    document.getElementById("options").innerHTML = html
+}
 
-})
+function getSpeakLangCode(){
+    const lang = document.getElementById("speechLang").value
 
-document.getElementById("options").innerHTML=html
+    if(lang === "ja") return "ja-JP"
+    if(lang === "zh") return "zh-CN"
+    return "en-US"
+}
 
+function getPromptText(){
+
+    if(!currentQuestion) return ""
+
+    if(currentQuestion.qtype === "listening"){
+        return currentQuestion.answer || currentQuestion.question || ""
+    }
+
+    return currentQuestion.question || currentQuestion.answer || ""
 }
 
 function playPrompt(){
 
-let text=currentQuestion.question
+    const text = getPromptText()
+    if(!text) return
 
-const msg=new SpeechSynthesisUtterance(text)
+    const msg = new SpeechSynthesisUtterance(text)
 
-const lang=document.getElementById("speechLang").value
+    if(currentQuestion && currentQuestion.qtype === "listening"){
+        msg.rate = parseFloat(document.getElementById("listenSpeed").value)
+    }else{
+        msg.rate = parseFloat(document.getElementById("speed").value)
+    }
 
-if(lang==="ja") msg.lang="ja-JP"
-else if(lang==="zh") msg.lang="zh-CN"
-else msg.lang="en-US"
+    msg.lang = getSpeakLangCode()
 
-msg.rate=parseFloat(document.getElementById("speed").value)
+    speechSynthesis.cancel()
+    speechSynthesis.speak(msg)
+}
 
-speechSynthesis.cancel()
-speechSynthesis.speak(msg)
+function replayPrompt(){
+    playPrompt()
+    document.getElementById("listeningStatus").innerText = "已重播"
+}
 
+function toggleLoopAB(){
+
+    loopAB = !loopAB
+
+    const btn = document.getElementById("loopBtn")
+
+    if(loopAB){
+        btn.innerText = "A-B循环：开"
+        document.getElementById("listeningStatus").innerText = "A-B循环播放中"
+
+        playPrompt()
+
+        loopTimer = setInterval(() => {
+            playPrompt()
+        }, 5000)
+    }else{
+        stopLoopAB()
+    }
+}
+
+function stopLoopAB(){
+    loopAB = false
+
+    const btn = document.getElementById("loopBtn")
+    if(btn){
+        btn.innerText = "A-B循环：关"
+    }
+
+    if(loopTimer){
+        clearInterval(loopTimer)
+        loopTimer = null
+    }
 }
 
 async function startRecording(){
 
-audioChunks=[]
+    audioChunks = []
 
-const stream=await navigator.mediaDevices.getUserMedia({audio:true})
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true})
 
-mediaRecorder=new MediaRecorder(stream)
+    mediaRecorder = new MediaRecorder(stream)
 
-mediaRecorder.ondataavailable=e=>{
-audioChunks.push(e.data)
-}
+    mediaRecorder.ondataavailable = e => {
+        audioChunks.push(e.data)
+    }
 
-mediaRecorder.start()
+    mediaRecorder.start()
 
-document.getElementById("recordStatus").innerText="录音中..."
-
+    document.getElementById("recordStatus").innerText = "录音中..."
 }
 
 async function stopRecording(){
 
-mediaRecorder.stop()
+    mediaRecorder.stop()
 
-mediaRecorder.onstop=async()=>{
+    mediaRecorder.onstop = async () => {
 
-document.getElementById("recordStatus").innerText="识别中..."
+        document.getElementById("recordStatus").innerText = "识别中..."
 
-const blob=new Blob(audioChunks,{type:"audio/webm"})
+        const blob = new Blob(audioChunks, {type:"audio/webm"})
 
-const form=new FormData()
+        const form = new FormData()
+        form.append("audio", blob)
 
-form.append("audio",blob)
+        const lang = document.getElementById("speechLang").value
+        form.append("lang", lang)
 
-const lang=document.getElementById("speechLang").value
-form.append("lang",lang)
+        const res = await fetch("/api/train/transcribe/", {
+            method:"POST",
+            body:form
+        })
 
-const res=await fetch("/api/train/transcribe/",{
-method:"POST",
-body:form
-})
+        const data = await res.json()
 
-const data=await res.json()
+        document.getElementById("answer").value = data.text || ""
+        document.getElementById("recordStatus").innerText = "识别完成"
 
-document.getElementById("answer").value=data.text||""
-
-document.getElementById("recordStatus").innerText="识别完成"
-
-if(currentQuestion.qtype==="speaking"){
-
-scoreSpeaking(data.text)
-
-}
-
-}
-
+        if(currentQuestion.qtype === "speaking"){
+            scoreSpeaking(data.text)
+        }
+    }
 }
 
 async function scoreSpeaking(text){
 
-const form=new FormData()
+    const form = new FormData()
+    form.append("text", text)
+    form.append("expected", currentQuestion.answer || "")
 
-form.append("text",text)
-form.append("expected",currentQuestion.answer||"")
+    const res = await fetch("/api/train/score-speaking/", {
+        method:"POST",
+        body:form
+    })
 
-const res=await fetch("/api/train/score-speaking/",{
-method:"POST",
-body:form
-})
+    const score = await res.json()
 
-const score=await res.json()
-
-if(!score.error){
-
-document.getElementById("result").innerHTML=`
-
-<div class="correct">语音识别：${text}</div>
-
-Accuracy: ${score.accuracy}<br>
-Fluency: ${score.fluency}<br>
-Pronunciation: ${score.pronunciation}<br>
-Grammar: ${score.grammar}<br>
-
-Suggestion: ${score.suggestion}
-
-`
-
-}
-
+    if(!score.error){
+        document.getElementById("result").innerHTML = `
+            <div class="correct">语音识别：${text}</div>
+            <div class="info">Accuracy: ${score.accuracy}</div>
+            <div class="info">Fluency: ${score.fluency}</div>
+            <div class="info">Pronunciation: ${score.pronunciation}</div>
+            <div class="info">Grammar: ${score.grammar}</div>
+            <div class="info">Suggestion: ${score.suggestion}</div>
+        `
+    }
 }
 
 async function submitAnswer(){
 
-const form=new FormData()
+    const form = new FormData()
+    form.append("question_id", currentQuestion.id)
 
-form.append("question_id",currentQuestion.id)
+    if(currentQuestion.qtype === "choice"){
 
-if(currentQuestion.qtype==="choice"){
+        const sel = document.querySelector('input[name="opt"]:checked')
 
-const sel=document.querySelector('input[name="opt"]:checked')
+        if(sel){
+            form.append("user_input", sel.value)
+        }
 
-if(sel){
-form.append("user_input",sel.value)
-}
+    }else{
 
-}
-else{
+        form.append("user_input", document.getElementById("answer").value)
+    }
 
-form.append("user_input",
-document.getElementById("answer").value)
+    const res = await fetch("/api/train/check_question/", {
+        method:"POST",
+        body:form
+    })
 
-}
+    const data = await res.json()
 
-const res=await fetch("/api/train/check_question/",{
-method:"POST",
-body:form
-})
+    if(data.correct){
 
-const data=await res.json()
+        correct++
+        updateScore()
 
-if(data.correct){
+        document.getElementById("result").innerHTML =
+            "<div class='correct'>✔ 正确</div>"
 
-correct++
+    }else{
 
-updateScore()
-
-document.getElementById("result").innerHTML=
-"<div class='correct'>✔ 正确</div>"
-
-}
-else{
-
-document.getElementById("result").innerHTML=
-"<div class='wrong'>✘ 错误</div><br>正确答案："+data.expected
-
-}
-
+        document.getElementById("result").innerHTML =
+            "<div class='wrong'>✘ 错误</div><br>正确答案：" + (data.expected || "")
+    }
 }
 
 function nextQuestion(){
-
-idx++
-
-showQuestion()
-
+    idx++
+    showQuestion()
 }
-
 </script>
 
 </body>

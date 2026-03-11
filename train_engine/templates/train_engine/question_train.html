@@ -169,6 +169,15 @@ button{
     </select>
 </label>
 
+<label>语言：
+    <select id="speechLang">
+        <option value="auto">自动识别</option>
+        <option value="en">English</option>
+        <option value="ja">日本語</option>
+        <option value="zh">中文</option>
+    </select>
+</label>
+
 <button onclick="loadQuestions()">加载题目</button>
 
 <div id="mode">模式：多题型训练</div>
@@ -322,8 +331,13 @@ function showQuestion(){
     document.getElementById("meta").innerText =
         `题型：${currentQuestion.qtype}`;
 
-    document.getElementById("prompt").innerText =
-        currentQuestion.question || "(暂无题目内容)";
+    if(currentQuestion.qtype === "listening"){
+        document.getElementById("prompt").innerText = "🎧 请听音频并输入内容";
+    }
+    else{
+        document.getElementById("prompt").innerText =
+            currentQuestion.question || "(暂无题目内容)";
+    }
 
     if(currentQuestion.pattern){
         document.getElementById("patternBox").innerHTML =
@@ -349,7 +363,17 @@ function playPrompt(){
     const text = currentQuestion.question || currentQuestion.answer || "";
     const msg = new SpeechSynthesisUtterance(text);
 
-    msg.lang = "en-US";
+    const lang = document.getElementById("speechLang").value;
+
+        if(lang === "ja"){
+            msg.lang = "ja-JP";
+        }
+        else if(lang === "zh"){
+            msg.lang = "zh-CN";
+        }
+        else{
+            msg.lang = "en-US";
+        }
     msg.rate = parseFloat(document.getElementById("speed").value);
 
     window.speechSynthesis.cancel();
@@ -425,6 +449,11 @@ async function startRecording(){
 
             const form = new FormData();
             form.append("audio", file);
+
+            const lang = document.getElementById("speechLang").value;
+            if(lang && lang !== "auto"){
+                form.append("lang", lang);
+            }
 
             try{
                 const res = await fetch("/api/train/transcribe/", {

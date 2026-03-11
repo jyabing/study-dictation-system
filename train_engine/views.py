@@ -655,7 +655,6 @@ def check_question_answer(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
     
-
 # =========================
 # Speaking：音频转写（Whisper）
 # =========================
@@ -669,6 +668,7 @@ def transcribe_speaking_audio(request):
 
     try:
         audio_file = request.FILES.get("audio")
+        lang = request.POST.get("lang", "auto")
 
         if not audio_file:
             return JsonResponse({"error": "audio missing"}, status=400)
@@ -691,10 +691,21 @@ def transcribe_speaking_audio(request):
         client = OpenAI(api_key=api_key)
 
         with open(temp_path, "rb") as f:
-            transcript = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=f
-            )
+
+            if lang == "auto":
+
+                transcript = client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=f
+                )
+
+            else:
+
+                transcript = client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=f,
+                    language=lang
+                )
 
         try:
             os.remove(temp_path)
@@ -708,11 +719,10 @@ def transcribe_speaking_audio(request):
         })
 
     except Exception as e:
+
         return JsonResponse({
             "error": str(e)
         }, status=500)
-
-
 
 # =========================
 # 检查答案

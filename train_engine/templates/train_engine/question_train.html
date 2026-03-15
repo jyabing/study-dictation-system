@@ -74,6 +74,7 @@ button:hover{
     margin:15px 0;
     line-height:1.7;
     min-height:50px;
+    white-space:pre-wrap;
 }
 
 #options{
@@ -105,14 +106,15 @@ button:hover{
 }
 
 .hidden{
-    display:none;
+    display:none !important;
 }
 
 #audioControls,
 #listeningControls,
 #speakingBox,
 #reviewBox,
-#statsBox{
+#statsBox,
+#finishBox{
     margin:12px 0;
     padding:12px;
     border:1px solid #333;
@@ -176,6 +178,17 @@ button:hover{
     min-width:90px;
 }
 
+.finish-title{
+    font-size:24px;
+    font-weight:bold;
+    margin-bottom:12px;
+}
+
+.finish-section{
+    margin-top:12px;
+    line-height:1.8;
+}
+
 @media(max-width:700px){
     body{
         padding:15px;
@@ -188,8 +201,19 @@ button:hover{
     }
 
     input,select,button,textarea{
-        width:100%;
-        margin:5px 0;
+        padding:10px;
+        font-size:16px;
+        margin:5px;
+        box-sizing:border-box;
+        border:1px solid #555;
+        border-radius:6px;
+        background:#1c1c1c;
+        color:#eee;
+    }
+
+    select option{
+        background:#1c1c1c;
+        color:#eee;
     }
 
     label{
@@ -315,7 +339,6 @@ button:hover{
         <div class="inline-row">
             <button class="audio-btn" onclick="playPrompt()">▶ 播放</button>
             <button class="audio-btn" onclick="replayPrompt()">🔁 重播</button>
-            <button class="audio-btn" onclick="toggleLoopAB()" id="loopBtn">A-B循环：关</button>
 
             <select id="listenSpeed">
                 <option value="0.7">0.7x</option>
@@ -340,9 +363,9 @@ button:hover{
         <div id="speechScoreBox"></div>
     </div>
 
-    <div class="inline-row" style="margin-top:10px;">
-        <button onclick="submitAnswer()">提交</button>
-        <button onclick="nextQuestion()">下一题</button>
+    <div class="inline-row" style="margin-top:10px;" id="actionButtons">
+        <button id="submitBtn" onclick="submitAnswer()">提交</button>
+        <button id="nextBtn" onclick="nextQuestion()">下一题</button>
     </div>
 
     <div id="result"></div>
@@ -350,6 +373,17 @@ button:hover{
     <div id="reviewBox">
         <div class="warn">错题队列</div>
         <div id="reviewList"></div>
+    </div>
+
+    <div id="finishBox" class="hidden">
+        <div class="finish-title">🎉 本轮训练完成</div>
+        <div id="finishStats" class="finish-section info"></div>
+        <div id="finishSRS" class="finish-section warn"></div>
+        <div class="finish-section inline-row">
+            <button onclick="restartTraining()">再练一次</button>
+            <button onclick="reviewWrongOnly()">复习错题</button>
+            <button onclick="goBackToCourse()">返回课程</button>
+        </div>
     </div>
 
 </div>
@@ -369,19 +403,18 @@ function getCSRFToken(){
 }
 
 let questions = []
+let originalQuestions = []
 let idx = 0
 let correct = 0
 let doneCount = 0
 let currentQuestion = null
 let wrongQueue = []
+let trainingNextReview = null
 
 let mediaRecorder = null
 let mediaStream = null
 let audioChunks = []
-
-let loopAB = false
-let loopTimer = null
-
+let audioPlayer = null
 
 // =========================
 // 初始化加载课程
@@ -392,13 +425,13 @@ async function loadCourses(){
         const data = await res.json()
 
         const sel = document.getElementById("lessonId")
-        sel.innerHTML = ""
+        sel.innerHTML = "<option value=''>请选择课程</option>"
 
         if(data.courses && data.courses.length){
             data.courses.forEach(c => {
                 const opt = document.createElement("option")
                 opt.value = c.id
-                opt.textContent = c.name
+                opt.innerText = c.name
                 sel.appendChild(opt)
             })
         }else{
@@ -426,6 +459,7 @@ function updateScore(){
     if(doneCount > 0){
         rate = Math.round(correct * 100 / doneCount)
     }
+
     document.getElementById("accuracyRate").innerText = rate + "%"
     document.getElementById("wrongCount").innerText = wrongQueue.length
 
@@ -498,6 +532,64 @@ function renderMemoryInfo(memory, statusMessage=""){
 
 
 // =========================
+// 显示答题区
+// =========================
+function showAnswerArea(){
+    document.getElementById("answer").classList.remove("hidden")
+    document.getElementById("actionButtons").classList.remove("hidden")
+    document.getElementById("finishBox").classList.add("hidden")
+}
+
+
+// =========================
+// 隐藏答题区
+// =========================
+function hideAnswerArea(){
+    document.getElementById("options").innerHTML = ""
+    document.getElementById("answer").classList.add("hidden")
+    document.getElementById("actionButtons").classList.add("hidden")
+    document.getElementById("audioControls").classList.add("hidden")
+    document.getElementById("listeningControls").classList.add("hidden")
+    document.getElementById("speakingBox").classList.add("hidden")
+}
+
+
+// =========================
+// 完成面板
+// =========================
+function showFinishPanel(){
+
+    hideAnswerArea()
+
+    const rate = doneCount > 0 ? Math.round(correct * 100 / doneCount) : 0
+
+    document.getElementById("progress").innerText = ""
+    document.getElementById("meta").innerText = ""
+    document.getElementById("memoryInfo").innerHTML = ""
+    document.getElementById("result").innerHTML = ""
+    document.getElementById("prompt").innerText = ""
+
+    document.getElementById("finishStats").innerHTML = `
+        成绩：${correct} / ${doneCount}<br>
+        正确率：${rate}%<br>
+        错题数：${wrongQueue.length}
+    `
+
+    let nextReviewText = trainingNextReview || "请根据记忆状态安排下一轮复习"
+
+    document.getElementById("finishSRS").innerHTML = `
+        根据艾宾浩斯记忆曲线，建议你在以下时间继续复习：<br>
+        <b>${escapeHtml(nextReviewText)}</b><br><br>
+        建议：<br>
+        1. 今天把错题再过一遍<br>
+        2. 到下一次复习时间前再做一轮<br>
+        3. 如果连续正确，可逐步拉长复习间隔
+    `
+
+    document.getElementById("finishBox").classList.remove("hidden")
+}
+
+// =========================
 // 加载题目
 // =========================
 async function loadQuestions(){
@@ -537,16 +629,20 @@ async function loadQuestions(){
         console.log("data:",data)
 
         questions = data.questions || []
+        originalQuestions = [...questions]
+        trainingNextReview = data.session_next_review || null
 
         idx = 0
         correct = 0
         doneCount = 0
         wrongQueue = []
+        currentQuestion = null
 
         updateScore()
 
         document.getElementById("panel").classList.remove("hidden")
-
+        document.getElementById("finishBox").classList.add("hidden")
+        showAnswerArea()
         showQuestion()
 
     }catch(err){
@@ -573,8 +669,13 @@ function resetUI(){
     document.getElementById("audioControls").classList.add("hidden")
     document.getElementById("listeningControls").classList.add("hidden")
     document.getElementById("speakingBox").classList.add("hidden")
+    document.getElementById("finishBox").classList.add("hidden")
 
-    stopLoopAB()
+    if(audioPlayer){
+        audioPlayer.pause()
+        audioPlayer = null
+    }
+
     speechSynthesis.cancel()
 }
 
@@ -589,21 +690,22 @@ function showQuestion(){
     if(idx >= questions.length){
 
         if(wrongQueue.length > 0){
-            questions = wrongQueue
+
+            questions = [...wrongQueue]
             wrongQueue = []
             idx = 0
+
             updateScore()
             showQuestion()
+
             return
         }
 
-        currentQuestion = null
-        document.getElementById("prompt").innerText = "🎉 本轮完成"
-        document.getElementById("progress").innerText = ""
-        document.getElementById("meta").innerText = ""
-        document.getElementById("memoryInfo").innerHTML = ""
+        showFinishPanel()
         return
     }
+
+    showAnswerArea()
 
     currentQuestion = questions[idx]
 
@@ -619,15 +721,8 @@ function showQuestion(){
 
         document.getElementById("listeningControls").classList.remove("hidden")
 
-        const q = currentQuestion.question || ""
-
-        if(q.includes("_____") || q.includes("___")){
-            document.getElementById("prompt").innerHTML =
-                "🎧 听音填空<br><br>" + escapeHtml(q)
-        }else{
-            document.getElementById("prompt").innerText =
-                currentQuestion.question || "🎧 请听音频并输入内容"
-        }
+        document.getElementById("prompt").innerHTML =
+            "🎧 请听音频并输入你听到的内容"
 
     }else if(currentQuestion.qtype === "speaking"){
 
@@ -639,9 +734,12 @@ function showQuestion(){
 
     }else{
 
-        let text = currentQuestion.question || "(暂无题目内容)"
+        let text = currentQuestion.question || ""
 
-        // QA题型同时显示答案
+        if(!text){
+            text = "(暂无题目内容)"
+        }
+
         if(currentQuestion.qtype === "qa" && currentQuestion.answer){
             text += "\n\n" + currentQuestion.answer
         }
@@ -663,11 +761,14 @@ function renderChoice(q){
     let html = ""
 
     ;(q.options || []).forEach((opt, i) => {
+
+        const letter = opt.letter || String.fromCharCode(65 + i)
+
         html += `
         <div class="option-item">
             <label>
                 <input type="radio" name="opt" value="${escapeHtml(opt.text)}">
-                ${String.fromCharCode(65 + i)}. ${escapeHtml(opt.text)}
+                ${escapeHtml(letter)}. ${escapeHtml(opt.text)}
             </label>
         </div>
         `
@@ -709,17 +810,36 @@ function getPromptText(){
 // =========================
 function playPrompt(){
 
+    if(!currentQuestion) return
+
+    if(currentQuestion.audio_url){
+
+        if(audioPlayer){
+            audioPlayer.pause()
+        }
+
+        audioPlayer = new Audio(currentQuestion.audio_url)
+
+        let rate = 1
+
+        if(currentQuestion.qtype === "listening"){
+            rate = parseFloat(document.getElementById("listenSpeed").value)
+        }else{
+            rate = parseFloat(document.getElementById("speed").value)
+        }
+
+        audioPlayer.playbackRate = rate
+        audioPlayer.play()
+
+        return
+    }
+
     const text = getPromptText()
     if(!text) return
 
     const msg = new SpeechSynthesisUtterance(text)
 
-    if(currentQuestion && currentQuestion.qtype === "listening"){
-        msg.rate = parseFloat(document.getElementById("listenSpeed").value)
-    }else{
-        msg.rate = parseFloat(document.getElementById("speed").value)
-    }
-
+    msg.rate = parseFloat(document.getElementById("speed").value)
     msg.lang = getSpeakLangCode()
 
     speechSynthesis.cancel()
@@ -733,46 +853,6 @@ function playPrompt(){
 function replayPrompt(){
     playPrompt()
     document.getElementById("listeningStatus").innerText = "已重播"
-}
-
-
-// =========================
-// A-B循环
-// =========================
-function toggleLoopAB(){
-
-    loopAB = !loopAB
-
-    const btn = document.getElementById("loopBtn")
-
-    if(loopAB){
-        btn.innerText = "A-B循环：开"
-        document.getElementById("listeningStatus").innerText = "A-B循环播放中"
-
-        playPrompt()
-
-        loopTimer = setInterval(() => {
-            playPrompt()
-        }, 5000)
-
-    }else{
-        stopLoopAB()
-    }
-}
-
-function stopLoopAB(){
-
-    loopAB = false
-
-    const btn = document.getElementById("loopBtn")
-    if(btn){
-        btn.innerText = "A-B循环：关"
-    }
-
-    if(loopTimer){
-        clearInterval(loopTimer)
-        loopTimer = null
-    }
 }
 
 
@@ -923,6 +1003,10 @@ async function submitAnswer(){
 
         const data = await res.json()
 
+        if(data.session_next_review){
+            trainingNextReview = data.session_next_review
+        }
+
         doneCount++
 
         if(data.correct){
@@ -945,7 +1029,9 @@ async function submitAnswer(){
 
         }else{
 
-            wrongQueue.push({...currentQuestion})
+            if(!wrongQueue.find(q => q.id === currentQuestion.id)){
+                wrongQueue.push({...currentQuestion})
+            }
             updateScore()
 
             if(data.memory){
@@ -976,9 +1062,63 @@ function nextQuestion(){
 }
 
 
+// =========================
+// 再练一次
+// =========================
+function restartTraining(){
+
+    if(!originalQuestions.length){
+        alert("没有可重练的题目")
+        return
+    }
+
+    questions = [...originalQuestions]
+    idx = 0
+    correct = 0
+    doneCount = 0
+    wrongQueue = []
+    currentQuestion = null
+
+    updateScore()
+    showQuestion()
+}
+
+
+// =========================
+// 只复习错题
+// =========================
+function reviewWrongOnly(){
+
+    if(!wrongQueue.length){
+        alert("当前没有错题")
+        return
+    }
+
+    questions = [...wrongQueue]
+    idx = 0
+    correct = 0
+    doneCount = 0
+    currentQuestion = null
+    wrongQueue = []
+
+    updateScore()
+    showQuestion()
+}
+
+
+// =========================
+// 返回课程
+// =========================
+function goBackToCourse(){
+    window.location.href = "/courses/"
+}
+
+
 // 初始化
-loadCourses()
-updateScore()
+window.addEventListener("DOMContentLoaded", () => {
+    loadCourses()
+    updateScore()
+})
 </script>
 
 </body>

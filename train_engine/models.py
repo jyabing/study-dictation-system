@@ -370,6 +370,81 @@ class StudyLog(models.Model):
 
 
 # =========================
+# WordMemoryState（词级记忆状态）
+# =========================
+class WordMemoryState(models.Model):
+
+    word = models.CharField(
+        "单词",
+        max_length=100
+    )
+
+    normalized_word = models.CharField(
+        "标准化单词",
+        max_length=100,
+        unique=True,
+        db_index=True
+    )
+
+    source_sentence = models.ForeignKey(
+        Sentence,
+        on_delete=models.SET_NULL,
+        related_name="word_memories",
+        null=True,
+        blank=True,
+        verbose_name="来源句子"
+    )
+
+    memory_level = models.IntegerField(
+        "记忆等级",
+        default=0
+    )
+
+    next_review = models.DateTimeField(
+        "下次复习",
+        null=True,
+        blank=True
+    )
+
+    last_review = models.DateTimeField(
+        "上次复习",
+        null=True,
+        blank=True
+    )
+
+    wrong_count = models.IntegerField(
+        "错误次数",
+        default=0
+    )
+
+    review_count = models.IntegerField(
+        "复习次数",
+        default=0
+    )
+
+    is_due_boost = models.BooleanField(
+        "是否错词强化中",
+        default=False
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        verbose_name = "Word Memory State / 单词记忆状态"
+        verbose_name_plural = "Word Memory States / 单词记忆状态"
+        ordering = ["normalized_word"]
+
+    def __str__(self):
+        return f"{self.word} (Lv {self.memory_level})"
+
+
+# =========================
 # WrongQuestionLog（错题本）
 # =========================
 class WrongQuestionLog(models.Model):

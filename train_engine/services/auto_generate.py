@@ -13,9 +13,24 @@ def generate_cloze(sentence):
     if len(words) < 3:
         return None
 
-    idx = random.randint(1, len(words)-2)
+    # 优先挖这些词
+    priority = [
+        "where","when","why","how",
+        "what","who","which",
+        "live","work","go","come"
+    ]
 
-    answer = words[idx]
+    idx = None
+
+    for i,w in enumerate(words):
+        if w.lower().strip(".") in priority:
+            idx = i
+            break
+
+    if idx is None:
+        idx = random.randint(1, len(words)-2)
+
+    answer = words[idx].replace(".","")
 
     words[idx] = "_____"
 

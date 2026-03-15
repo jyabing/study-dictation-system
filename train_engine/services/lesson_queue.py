@@ -1,5 +1,8 @@
 from django.utils import timezone
+from datetime import timedelta
 from random import shuffle
+
+from ..models import WordMemoryState, Question
 
 from train_engine.models import Sentence, Question, UserMemoryState
 from .srs_engine import get_due_status, serialize_memory
@@ -18,6 +21,15 @@ def build_lesson_queue(lesson_id, limit=5, qtype=None):
     - 新知识最多 40%
     - 避免同 sentence 连续
     """
+
+    # =========================
+    # 错词强化优先
+    # =========================
+
+    boost_questions = get_due_boost_questions()
+
+    if boost_questions:
+        return boost_questions
 
     now = timezone.now()
 
@@ -158,3 +170,31 @@ def build_questions(sentences, memories, qtype=None):
         })
 
     return result
+
+# =========================
+# 错词强化优先队列
+# =========================
+def get_due_boost_questions(limit=5):
+
+    now = timezone.now()
+
+    words = WordMemoryState.objects.filter(
+        is_due_boost=True,
+        next_review__lte=now
+    ).order_by("next_review")[:limit]
+
+    questions = []
+
+    for w in words:
+
+        if w.source_sentence:
+
+            qs = Question.objects.filter(
+                sentence=w.source_sentence
+            )
+
+            for q in qs:
+
+                questions.append(q)
+
+    return questions

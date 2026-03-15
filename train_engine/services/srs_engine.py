@@ -330,3 +330,31 @@ def serialize_memory(memory):
         "review_count": memory.review_count,
         "is_mastered": memory.memory_level >= MASTERED_LEVEL,
     }
+
+
+def calculate_session_next_review(memories):
+    """
+    计算一轮训练中最早需要复习的时间。
+
+    规则：
+    - 收集所有 memory.next_review
+    - 忽略 None
+    - 返回最早的一个 datetime
+    """
+    if not memories:
+        return None
+
+    times = []
+
+    for memory in memories:
+        if not memory:
+            continue
+
+        next_review = getattr(memory, "next_review", None)
+        if next_review:
+            times.append(next_review)
+
+    if not times:
+        return None
+
+    return min(times)

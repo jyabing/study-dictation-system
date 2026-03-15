@@ -2,6 +2,7 @@ import random
 import re
 
 from ..models import Question, ChoiceOption
+from .cloze_engine import generate_cloze
 
 
 # =========================
@@ -47,7 +48,9 @@ def build_cloze(sentence, level=1):
 
     targets = extract_targets(text)
 
-    # 如果有标注，优先使用标注
+    # =========================
+    # 如果有标注，优先用标注
+    # =========================
     if targets:
 
         answers = []
@@ -68,24 +71,15 @@ def build_cloze(sentence, level=1):
 
         return q, " | ".join(answers)
 
-    words = clean.split()
+    # =========================
+    # 没有标注 → 使用 cloze_engine
+    # =========================
+    result = generate_cloze(clean)
 
-    if len(words) <= 2:
-        return clean, clean
+    if result:
+        return result
 
-    blank_count = min(level, len(words))
-
-    indexes = random.sample(range(len(words)), blank_count)
-
-    answers = []
-
-    for i in indexes:
-
-        answers.append(words[i])
-
-        words[i] = "_____"
-
-    return " ".join(words), " | ".join(answers)
+    return clean, clean
 
 
 # =========================
@@ -244,12 +238,20 @@ def sync_question_content(question):
 
     elif question.qtype == "choice":
 
+        # 如果题干为空，自动生成 Cloze 题干
         if not question.question:
 
+            q, a = build_cloze(sentence)
+
             Question.objects.filter(id=question.id).update(
-                question=strip_markup(sentence.text)
+                question=q,
+                answer=a
             )
 
+            question.question = q
+            question.answer = a
+
+        # 根据答案生成选项
         if question.answer:
 
             build_choice(question)

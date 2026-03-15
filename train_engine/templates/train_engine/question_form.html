@@ -386,7 +386,7 @@ button.small{
 
                         <div class="option-editor" id="option_editor">
 
-                            {% if question_obj and question_obj.options.all %}
+                            {% if question_obj and question_obj.options.exists %}
 
                                 {% for o in question_obj.options.all %}
 

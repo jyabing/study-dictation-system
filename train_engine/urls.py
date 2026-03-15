@@ -105,6 +105,11 @@ urlpatterns = [
         "api/train/score-speaking/",
         views.score_speaking
     ),
+    path(
+        "api/train/start/",
+        views.start_training,
+        name="start_training",
+    ),
 
     # =========================
     # Wrong Review
@@ -122,5 +127,11 @@ urlpatterns = [
         "api/review/due/",
         views.review_due_sentences,
         name="review_due_sentences"
+    ),
+
+    path(
+        "api/courses/",
+        views.courses_api,
+        name="courses_api"
     ),
 ]

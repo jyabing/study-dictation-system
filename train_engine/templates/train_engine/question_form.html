@@ -286,8 +286,13 @@ button.small{
                 <div><b>翻译：</b>{{ sentence.translation }}</div>
             </div>
 
-            <form method="post">
-                {% csrf_token %}
+            {% if mode == "edit" %}
+            <form method="post" action="{% url 'question_edit' question_obj.id %}">
+            {% else %}
+            <form method="post" action="{% url 'question_create' sentence.id %}">
+            {% endif %}
+            {% csrf_token %}
+
 
                 <div class="panel">
 
@@ -546,8 +551,8 @@ function toggleEditorByType(){
         qaField.classList.remove("hidden");
     }
     else if(type === "cloze"){
-        questionField.classList.add("hidden");
-        answerField.classList.add("hidden");
+        questionField.classList.remove("hidden");
+        answerField.classList.remove("hidden");
         clozeField.classList.remove("hidden");
     }
     else if(type === "choice"){

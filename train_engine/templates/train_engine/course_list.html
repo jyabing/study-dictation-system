@@ -102,7 +102,7 @@ button{
 
 <tr>
 
-<td>{{ item.course.name }}</td>
+<td>{{ item.name }}</td>
 
 <td>{{ item.lesson_count }}</td>
 
@@ -110,7 +110,7 @@ button{
 
 <td>
 
-<a href="/course/{{ item.course.id }}/">
+<a href="/course/{{ item.id }}/">
 进入课程
 </a>
 
@@ -128,13 +128,13 @@ button{
 
 <div class="card">
 
-<h3>{{ item.course.name }}</h3>
+<h3>{{ item.name }}</h3>
 
 <p>章节：{{ item.lesson_count }}</p>
 
 <p>题目：{{ item.question_count }}</p>
 
-<a href="/course/{{ item.course.id }}/">
+<a href="/course/{{ item.id }}/">
 进入课程
 </a>
 

@@ -6,21 +6,22 @@ from django.utils import timezone
 # Course
 # =========================
 class Course(models.Model):
+
     name = models.CharField(
-        max_length=200,
-        verbose_name="课程名称"
+        "课程名称",
+        max_length=200
     )
 
     name_en = models.CharField(
+        "课程英文名",
         max_length=200,
-        null=True,
         blank=True,
-        verbose_name="课程英文名"
+        null=True
     )
 
     description = models.TextField(
-        blank=True,
-        verbose_name="课程描述"
+        "课程描述",
+        blank=True
     )
 
     class Meta:
@@ -36,6 +37,7 @@ class Course(models.Model):
 # Lesson
 # =========================
 class Lesson(models.Model):
+
     course = models.ForeignKey(
         Course,
         on_delete=models.CASCADE,
@@ -44,20 +46,20 @@ class Lesson(models.Model):
     )
 
     title = models.CharField(
-        max_length=200,
-        verbose_name="章节标题"
+        "章节标题",
+        max_length=200
     )
 
     title_en = models.CharField(
+        "章节英文标题",
         max_length=200,
-        null=True,
         blank=True,
-        verbose_name="章节英文标题"
+        null=True
     )
 
     order = models.IntegerField(
-        default=0,
-        verbose_name="排序"
+        "排序",
+        default=0
     )
 
     class Meta:
@@ -73,6 +75,7 @@ class Lesson(models.Model):
 # Sentence（知识点 / 原句）
 # =========================
 class Sentence(models.Model):
+
     lesson = models.ForeignKey(
         Lesson,
         on_delete=models.CASCADE,
@@ -81,29 +84,34 @@ class Sentence(models.Model):
     )
 
     text = models.TextField(
-        verbose_name="原句"
+        "原句"
     )
 
     translation = models.TextField(
-        blank=True,
-        verbose_name="翻译"
+        "翻译",
+        blank=True
     )
 
     audio = models.FileField(
+        "音频",
         upload_to="audio/",
         blank=True,
-        null=True,
-        verbose_name="音频"
+        null=True
     )
 
     difficulty = models.PositiveSmallIntegerField(
-        default=1,
-        verbose_name="难度等级"
+        "难度等级",
+        default=1
     )
 
     order = models.IntegerField(
-        default=0,
-        verbose_name="排序"
+        "排序",
+        default=0
+    )
+
+    is_active = models.BooleanField(
+        "是否隐藏知识点",
+        default=True
     )
 
     class Meta:
@@ -112,13 +120,14 @@ class Sentence(models.Model):
         ordering = ["order", "id"]
 
     def __str__(self):
-        return (self.text or "")[:50]
+        return (self.text or "")[:60]
 
 
 # =========================
 # Question（题型）
 # =========================
 class Question(models.Model):
+
     QUESTION_TYPES = [
         ("qa", "问答题"),
         ("cloze", "挖空题"),
@@ -140,77 +149,77 @@ class Question(models.Model):
     )
 
     qtype = models.CharField(
+        "题型",
         max_length=20,
-        choices=QUESTION_TYPES,
-        verbose_name="题型"
+        choices=QUESTION_TYPES
     )
 
     question = models.TextField(
+        "题目",
         blank=True,
-        null=True,
-        verbose_name="题目"
+        null=True
     )
 
     answer = models.TextField(
+        "答案",
         blank=True,
-        null=True,
-        verbose_name="答案"
+        null=True
     )
 
     pattern = models.TextField(
+        "句型提示",
         blank=True,
-        null=True,
-        verbose_name="句型提示 / Pattern"
+        null=True
     )
 
     blank_mode = models.CharField(
+        "挖空方式",
         max_length=20,
         choices=BLANK_MODES,
-        default="auto",
-        verbose_name="挖空方式"
+        default="auto"
     )
 
     is_multiple_choice = models.BooleanField(
-        default=False,
-        verbose_name="是否多选"
+        "是否多选",
+        default=False
     )
 
     option_count = models.PositiveSmallIntegerField(
-        default=4,
-        verbose_name="总选项数"
+        "选项数量",
+        default=4
     )
 
     manual_distractors = models.TextField(
+        "人工混淆项",
         blank=True,
-        null=True,
-        verbose_name="人工混淆项（每行一个）"
+        null=True
     )
 
     audio = models.FileField(
+        "题目音频",
         upload_to="audio/",
         blank=True,
-        null=True,
-        verbose_name="音频文件"
+        null=True
     )
 
     is_active = models.BooleanField(
-        default=True,
-        verbose_name="是否启用"
+        "是否启用",
+        default=True
     )
 
     is_auto_generated = models.BooleanField(
-        default=False,
-        verbose_name="是否自动生成"
+        "是否自动生成",
+        default=False
     )
 
     sort_order = models.IntegerField(
-        default=0,
-        verbose_name="排序"
+        "排序",
+        default=0
     )
 
     created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="创建时间"
+        "创建时间",
+        auto_now_add=True
     )
 
     class Meta:
@@ -222,17 +231,9 @@ class Question(models.Model):
         return f"{self.qtype} - {(self.question or '')[:40]}"
 
     def save(self, *args, **kwargs):
-        """
-        保存 Question 后自动同步：
-        - cloze：自动生成 question / answer
-        - listening / speaking：自动补 question / answer
-        - choice：自动补齐 ChoiceOption
 
-        这里避免递归调用：
-        仅在正常保存后调用一次同步函数；
-        如果外部显式传入 skip_sync=True，则跳过自动同步。
-        """
         skip_sync = kwargs.pop("skip_sync", False)
+
         super().save(*args, **kwargs)
 
         if skip_sync:
@@ -246,6 +247,7 @@ class Question(models.Model):
 # ChoiceOption（选择题选项）
 # =========================
 class ChoiceOption(models.Model):
+
     question = models.ForeignKey(
         Question,
         on_delete=models.CASCADE,
@@ -253,24 +255,30 @@ class ChoiceOption(models.Model):
         verbose_name="所属题目"
     )
 
+    letter = models.CharField(
+        "选项字母",
+        max_length=1,
+        blank=True
+    )
+
     text = models.CharField(
-        max_length=200,
-        verbose_name="选项内容"
+        "选项内容",
+        max_length=200
     )
 
     is_correct = models.BooleanField(
-        default=False,
-        verbose_name="是否正确"
+        "是否正确",
+        default=False
     )
 
     is_auto_generated = models.BooleanField(
-        default=False,
-        verbose_name="是否系统补齐"
+        "系统生成",
+        default=False
     )
 
     order = models.IntegerField(
-        default=0,
-        verbose_name="排序"
+        "排序",
+        default=0
     )
 
     class Meta:
@@ -291,9 +299,8 @@ class StudyLog(models.Model):
         Sentence,
         on_delete=models.CASCADE,
         related_name="study_logs",
-        verbose_name="所属句子",
-        null=True,
-        blank=True
+        blank=True,
+        null=True
     )
 
     question = models.ForeignKey(
@@ -301,39 +308,52 @@ class StudyLog(models.Model):
         on_delete=models.CASCADE,
         related_name="study_logs",
         blank=True,
-        null=True,
-        verbose_name="所属题目"
+        null=True
     )
 
     user_input = models.TextField(
-        blank=True,
-        verbose_name="用户输入"
+        "用户输入",
+        blank=True
+    )
+
+    normalized_input = models.TextField(
+        "标准化输入",
+        blank=True
+    )
+
+    normalized_answer = models.TextField(
+        "标准化答案",
+        blank=True
+    )
+
+    similarity = models.FloatField(
+        "相似度",
+        default=0
     )
 
     correct = models.BooleanField(
-        default=False,
-        verbose_name="是否正确"
+        "是否正确",
+        default=False
     )
 
     memory_level = models.IntegerField(
-        default=0,
-        help_text="0-6 记忆等级",
-        verbose_name="记忆等级"
+        "记忆等级",
+        default=0
     )
 
     next_review = models.DateTimeField(
-        default=timezone.now,
-        verbose_name="下次复习时间"
+        "下次复习",
+        default=timezone.now
     )
 
     wrong_count = models.IntegerField(
-        default=0,
-        verbose_name="错误次数"
+        "错误次数",
+        default=0
     )
 
     created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="记录时间"
+        "记录时间",
+        auto_now_add=True
     )
 
     class Meta:
@@ -343,7 +363,131 @@ class StudyLog(models.Model):
 
     def __str__(self):
         if self.question:
-            src = self.question.question or self.question.answer or ""
+            src = self.question.question or ""
         else:
             src = self.sentence.text if self.sentence else ""
         return f"{src[:30]} ({'✓' if self.correct else '✗'})"
+
+
+# =========================
+# WrongQuestionLog（错题本）
+# =========================
+class WrongQuestionLog(models.Model):
+
+    question = models.ForeignKey(
+        Question,
+        on_delete=models.CASCADE,
+        related_name="wrong_logs"
+    )
+
+    user_input = models.TextField(
+        "错误输入",
+        blank=True
+    )
+
+    wrong_count = models.IntegerField(
+        "错误次数",
+        default=1
+    )
+
+    last_wrong = models.DateTimeField(
+        "最后错误",
+        default=timezone.now
+    )
+
+    is_mastered = models.BooleanField(
+        "已掌握",
+        default=False
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        verbose_name = "Wrong Question / 错题"
+        verbose_name_plural = "Wrong Questions / 错题"
+        ordering = ["-last_wrong"]
+
+    def __str__(self):
+        return f"Wrong Q{self.question_id}"
+    
+
+
+# =========================
+# UserMemoryState（当前记忆状态）
+# =========================
+class UserMemoryState(models.Model):
+
+    sentence = models.ForeignKey(
+        Sentence,
+        on_delete=models.CASCADE,
+        related_name="memory_states",
+        verbose_name="所属句子"
+    )
+
+    memory_level = models.IntegerField(
+        "记忆等级",
+        default=0
+    )
+
+    next_review = models.DateTimeField(
+        "下次复习",
+        null=True,
+        blank=True
+    )
+
+    last_review = models.DateTimeField(
+        "上次复习",
+        null=True,
+        blank=True
+    )
+
+    cycle_started = models.DateTimeField(
+        "循环开始时间",
+        null=True,
+        blank=True
+    )
+
+    wrong_reset_count = models.IntegerField(
+        "错误重置次数",
+        default=0
+    )
+
+    overdue_reset_count = models.IntegerField(
+        "过期重置次数",
+        default=0
+    )
+
+    review_count = models.IntegerField(
+        "复习次数",
+        default=0
+    )
+
+    mastered_at = models.DateTimeField(
+        "掌握时间",
+        null=True,
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        "创建时间",
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        "更新时间",
+        auto_now=True
+    )
+
+    class Meta:
+        verbose_name = "User Memory State / 当前记忆状态"
+        verbose_name_plural = "User Memory States / 当前记忆状态"
+        ordering = ["sentence_id"]
+
+    def __str__(self):
+        return f"Sentence {self.sentence_id} - Lv {self.memory_level}"

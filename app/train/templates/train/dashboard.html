@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        /* 桌面端表格 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        /* 手机卡片 */
+        .card {
+            display: none;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            table {
+                display: none;
+            }
+            .card {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<h1>我的书册</h1>
+
+{% if books %}
+
+<!-- 桌面端 -->
+<table>
+    <tr>
+        <th>书名</th>
+        <th>描述</th>
+        <th>操作</th>
+    </tr>
+
+    {% for book in books %}
+    <tr>
+        <td>{{ book.title }}</td>
+        <td>{{ book.description }}</td>
+        <td>
+            <a href="#">进入训练</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<!-- 手机端 -->
+{% for book in books %}
+<div class="card">
+    <h3>{{ book.title }}</h3>
+    <p>{{ book.description }}</p>
+    <a href="#">进入训练</a>
+</div>
+{% endfor %}
+
+{% else %}
+<p>暂无书册</p>
+{% endif %}
+
+</body>
+</html>

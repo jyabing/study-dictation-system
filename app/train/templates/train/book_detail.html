@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ book.title }}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f6fa;
+            margin: 0;
+        }
+
+        .header {
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .book-card,
+        .create-lesson-card,
+        .lesson-card {
+            background: white;
+            margin: 16px 20px;
+            padding: 18px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .book-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .book-desc {
+            color: #777;
+            font-size: 14px;
+        }
+
+        .book-overview-card {
+            background: white;
+            margin: 16px 20px;
+            padding: 18px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .book-overview-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .book-overview-meta {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+
+        .book-overview-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .book-overview-pill {
+            background: #eef3f8;
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-size: 13px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .book-overview-risk {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .book-overview-risk.high {
+            background: #fff1f2;
+            color: #dc2626;
+        }
+
+        .book-overview-risk.mid {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .book-overview-risk.low {
+            background: #ecfdf5;
+            color: #15803d;
+        }
+
+        @media (max-width: 768px) {
+            .book-overview-card {
+                margin: 12px;
+                padding: 14px;
+            }
+
+            .book-overview-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .create-lesson-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .create-lesson-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .create-lesson-input,
+        .create-lesson-order {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 14px;
+            background: #fff;
+        }
+
+        .create-lesson-submit,
+        .lesson-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .create-lesson-submit:hover,
+        .lesson-btn:hover {
+            opacity: 0.9;
+        }
+
+        .lesson-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .lesson-title {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .lesson-meta {
+            color: #777;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        @media (min-width: 769px) {
+            .create-lesson-grid {
+                display: grid;
+                grid-template-columns: 1fr 140px;
+                gap: 12px;
+                align-items: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .book-card,
+            .create-lesson-card,
+            .lesson-card {
+                margin: 12px;
+                padding: 14px;
+            }
+
+            .lesson-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .lesson-btn,
+            .create-lesson-submit {
+                width: 100%;
+                text-align: center;
+                box-sizing: border-box;
+            }
+        }
+
+        /* =========================
+        章节循环状态摘要
+        ========================= */
+        .lesson-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+            margin-bottom: 12px;
+        }
+
+        .lesson-summary-pill {
+            background: #eef3f8;
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-size: 13px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .lesson-summary-meta {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+
+        .lesson-risk {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .lesson-risk.high {
+            background: #fff1f2;
+            color: #dc2626;
+        }
+
+        .lesson-risk.mid {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .lesson-risk.low {
+            background: #ecfdf5;
+            color: #15803d;
+        }
+
+        @media (max-width: 768px) {
+            .lesson-summary-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">书册详情</div>
+
+    <div class="book-card">
+        <div class="book-title">
+            {{ book.title }}
+            <a href="/book/{{ book.id }}/edit/?next=/book/{{ book.id }}/" class="lesson-btn">编辑书册</a>
+        </div>
+        <div class="book-desc">
+            {{ book.description|default:"暂无说明" }}
+        </div>
+    </div>
+
+    <div class="book-overview-card">
+        <div class="book-overview-title">这本书的循环状态总览</div>
+
+        {% if book_cycle_summary.risk_level == "高风险" %}
+            <div class="book-overview-risk high">{{ book_cycle_summary.risk_level }}</div>
+        {% elif book_cycle_summary.risk_level == "中风险" %}
+            <div class="book-overview-risk mid">{{ book_cycle_summary.risk_level }}</div>
+        {% else %}
+            <div class="book-overview-risk low">{{ book_cycle_summary.risk_level }}</div>
+        {% endif %}
+
+        <div class="book-overview-meta">
+            当前主阶段：{{ book_cycle_summary.main_stage }}<br>
+            下一次复习时间：{{ book_cycle_summary.next_review_text }}<br>
+            今日到期：{{ book_cycle_summary.today_due_count }} ｜ 已逾期：{{ book_cycle_summary.overdue_count }}
+        </div>
+
+        <div class="book-overview-grid">
+            <div class="book-overview-pill">
+                <span>新学</span>
+                <strong>{{ book_cycle_summary.new_count }}</strong>
+            </div>
+            <div class="book-overview-pill">
+                <span>巩固中</span>
+                <strong>{{ book_cycle_summary.short_count }}</strong>
+            </div>
+            <div class="book-overview-pill">
+                <span>长期巩固</span>
+                <strong>{{ book_cycle_summary.long_count }}</strong>
+            </div>
+            <div class="book-overview-pill">
+                <span>今日到期</span>
+                <strong>{{ book_cycle_summary.today_due_count }}</strong>
+            </div>
+            <div class="book-overview-pill">
+                <span>已逾期</span>
+                <strong>{{ book_cycle_summary.overdue_count }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="create-lesson-card">
+        <div class="create-lesson-title">在这本书里新增课节</div>
+
+        <form method="post" class="create-lesson-form">
+            {% csrf_token %}
+
+            <div class="create-lesson-grid">
+                <div>
+                    <input
+                        type="text"
+                        name="title"
+                        class="create-lesson-input"
+                        placeholder="课节名称，例如：第 1 课 / Lesson 1"
+                        required
+                    >
+                </div>
+
+                <div>
+                    <input
+                        type="number"
+                        name="order"
+                        class="create-lesson-order"
+                        placeholder="排序"
+                        value="0"
+                    >
+                </div>
+            </div>
+
+            <button type="submit" class="create-lesson-submit">
+                新建课节
+            </button>
+        </form>
+    </div>
+
+    {% for item in lesson_cycle_summary %}
+    <div class="lesson-card">
+        <div class="lesson-row">
+            <div style="flex:1;">
+                <div class="lesson-title">{{ item.lesson.title }}</div>
+                <div class="lesson-meta">排序：{{ item.lesson.order }}</div>
+
+                {% if item.risk_level == "高风险" %}
+                    <div class="lesson-risk high">{{ item.risk_level }}</div>
+                {% elif item.risk_level == "中风险" %}
+                    <div class="lesson-risk mid">{{ item.risk_level }}</div>
+                {% else %}
+                    <div class="lesson-risk low">{{ item.risk_level }}</div>
+                {% endif %}
+
+                <div class="lesson-summary-meta">
+                    当前主阶段：{{ item.main_stage }}<br>
+                    下一次复习：{{ item.next_review_text }}<br>
+                    今日到期：{{ item.today_due_count }} ｜ 已逾期：{{ item.overdue_count }}
+                </div>
+
+                <div class="lesson-summary-grid">
+                    <div class="lesson-summary-pill">
+                        <span>新学</span>
+                        <strong>{{ item.new_count }}</strong>
+                    </div>
+                    <div class="lesson-summary-pill">
+                        <span>巩固中</span>
+                        <strong>{{ item.short_count }}</strong>
+                    </div>
+                    <div class="lesson-summary-pill">
+                        <span>长期巩固</span>
+                        <strong>{{ item.long_count }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
+                <a href="/lesson/{{ item.lesson.id }}/" class="lesson-btn">进入</a>
+                <a href="/lesson/{{ item.lesson.id }}/edit/?next=/book/{{ book.id }}/" class="lesson-btn">编辑章节</a>
+            </div>
+        </div>
+    </div>
+{% empty %}
+    <div class="lesson-card">
+        这本书还没有课节，先新建一个。
+    </div>
+{% endfor %}
+
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本课素材</title>
+    <style>
+        body {
+            margin: 0;
+            background: #f5f6fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px 12px 40px;
+        }
+
+        .header {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 14px;
+        }
+
+        .sub {
+            color: #666;
+            margin-bottom: 18px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            margin-bottom: 12px;
+        }
+
+        .prompt {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .answer {
+            color: #444;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin-bottom: 12px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            text-decoration: none;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #eef3f8;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">本课素材</div>
+        <div class="sub">
+            书册：{{ book.title }}<br>
+            章节：{{ lesson.title }}
+        </div>
+
+        <div class="actions" style="margin-bottom:16px;">
+            <a class="btn btn-secondary" href="/lesson/{{ lesson.id }}/">返回训练</a>
+            <a class="btn btn-secondary" href="/book/{{ book.id }}/">返回章节页</a>
+            <a class="btn btn-primary" href="/builder/">新增素材</a>
+        </div>
+
+        {% for q in questions %}
+            <div class="card">
+                <div class="prompt">{{ q.prompt_text|default:"（无题干）" }}</div>
+                <div class="answer">标准回答：{{ q.answer_text|default:"（无答案）" }}</div>
+
+                <div class="actions">
+                    <a class="btn btn-primary" href="/question/{{ q.id }}/edit/?next=/lesson/{{ lesson.id }}/questions/">
+                        编辑题干/回答
+                    </a>
+                </div>
+            </div>
+        {% empty %}
+            <div class="card">
+                本课还没有素材。
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

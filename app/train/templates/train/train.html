@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>训练</title>
+    <style>
+        body {
+            background: #f5f6fa;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .page {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 24px 16px 48px;
+        }
+
+        .page-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 40px;
+            width: 420px;
+            max-width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+
+        .question {
+            font-size: 20px;
+            margin-bottom: 20px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        #clozeArea,
+        #writeArea,
+        #choiceArea,
+        #speechArea {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        #clozeArea {
+            line-height: 2.2;
+            min-height: 40px;
+            word-break: break-word;
+        }
+
+        #writeInput,
+        #speechResult {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 16px;
+            outline: none;
+        }
+
+        #writeInput:focus,
+        #speechResult:focus {
+            border-color: #007bff;
+        }
+
+        #speechResult {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px 14px;
+            border: none;
+            border-radius: 10px;
+            background: #1e7be7;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover {
+            opacity: 0.92;
+        }
+
+        #feedback {
+            margin-top: 16px;
+            min-height: 24px;
+            font-size: 15px;
+            white-space: pre-wrap;
+        }
+
+        .cloze-input {
+            width: 80px;
+            margin: 0 5px;
+            padding: 6px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .cloze-input.active {
+            border-color: #007bff;
+            background: #eef6ff;
+        }
+
+        .cloze-input.correct {
+            border-color: #28a745;
+            background: #e6ffed;
+        }
+
+        .cloze-input.wrong {
+            border-color: #dc3545;
+            background: #ffecec;
+        }
+
+        .choice-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background: #fff;
+        }
+
+        .choice-label {
+            font-weight: bold;
+            min-width: 24px;
+        }
+
+        .choice-audio-btn,
+        .speech-btn {
+            border: none;
+            background: #eef6ff;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .choice-audio-btn:hover,
+        .speech-btn:hover {
+            opacity: 0.9;
+        }
+
+        #speechPromptAudio {
+            display: none;
+            margin-bottom: 12px;
+        }
+
+        #doneArea,
+        #noMaterialArea {
+            display: none;
+            text-align: center;
+            background: white;
+            padding: 28px 24px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .done-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .done-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .done-sub {
+            color: #666;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+
+        .done-btn {
+            display: inline-block;
+            padding: 10px 16px;
+            border-radius: 10px;
+            background: #1e7be7;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .manage-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .manage-btn {
+            display: inline-block;
+            text-decoration: none;
+            background: #eef3f8;
+            color: #333;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 14px;
+        }
+
+        .cycle-bar {
+            display: none;
+            margin-bottom: 14px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: #eef6ff;
+            border: 1px solid #dbeafe;
+        }
+
+        .cycle-stage {
+            font-size: 15px;
+            font-weight: 800;
+            color: #1d4ed8;
+            margin-bottom: 4px;
+        }
+
+        .cycle-meta {
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .page {
+                padding: 16px 12px 32px;
+            }
+
+            .card,
+            #doneArea,
+            #noMaterialArea {
+                width: 100%;
+                padding: 20px;
+                border-radius: 16px;
+            }
+
+            .question {
+                font-size: 18px;
+            }
+
+            .cloze-input {
+                width: 72px;
+                margin: 4px;
+            }
+        }
+
+        .lesson-overview-card {
+            background: white;
+            padding: 18px;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            margin-bottom: 16px;
+        }
+
+        .lesson-overview-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .lesson-overview-meta {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+
+        .lesson-overview-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .lesson-overview-pill {
+            background: #eef3f8;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .lesson-overview-risk {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .lesson-overview-risk.high {
+            background: #fff1f2;
+            color: #dc2626;
+        }
+
+        .lesson-overview-risk.mid {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .lesson-overview-risk.low {
+            background: #ecfdf5;
+            color: #15803d;
+        }
+
+        @media (max-width: 768px) {
+            .lesson-overview-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .lesson-round-card {
+            background: white;
+            padding: 18px;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            margin-bottom: 16px;
+        }
+
+        .lesson-round-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .lesson-round-meta {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        .lesson-round-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .lesson-round-pill {
+            background: #eef3f8;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .lesson-round-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <h1 class="page-title">训练</h1>
+        <div class="manage-bar">
+            <a id="manageBookLink" class="manage-btn" href="#">编辑书册</a>
+            <a id="manageLessonLink" class="manage-btn" href="#">编辑章节</a>
+            <a id="manageQuestionListLink" class="manage-btn" href="#">本课素材</a>
+        </div>
+
+        <div class="lesson-overview-card">
+            <div class="lesson-overview-title">本课循环总览</div>
+
+            {% if lesson_cycle_summary.risk_level == "高风险" %}
+                <div class="lesson-overview-risk high">{{ lesson_cycle_summary.risk_level }}</div>
+            {% elif lesson_cycle_summary.risk_level == "中风险" %}
+                <div class="lesson-overview-risk mid">{{ lesson_cycle_summary.risk_level }}</div>
+            {% else %}
+                <div class="lesson-overview-risk low">{{ lesson_cycle_summary.risk_level }}</div>
+            {% endif %}
+
+            <div class="lesson-overview-meta">
+                当前主阶段：{{ lesson_cycle_summary.main_stage }}<br>
+                下一次复习时间：{{ lesson_cycle_summary.next_review_text }}<br>
+                今日到期：{{ lesson_cycle_summary.today_due_count }} ｜ 已逾期：{{ lesson_cycle_summary.overdue_count }}
+            </div>
+
+            <div class="lesson-overview-grid">
+                <div class="lesson-overview-pill">
+                    <span>新学</span>
+                    <strong>{{ lesson_cycle_summary.new_count }}</strong>
+                </div>
+                <div class="lesson-overview-pill">
+                    <span>巩固中</span>
+                    <strong>{{ lesson_cycle_summary.short_count }}</strong>
+                </div>
+                <div class="lesson-overview-pill">
+                    <span>长期巩固</span>
+                    <strong>{{ lesson_cycle_summary.long_count }}</strong>
+                </div>
+                <div class="lesson-overview-pill">
+                    <span>总数</span>
+                    <strong>{{ lesson_cycle_summary.total_count }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="lesson-round-card">
+            <div class="lesson-round-title">本轮训练进度</div>
+
+            <div class="lesson-round-meta">
+                这里显示的是“当前这轮到期复习”的完成情况，不是整章永久总量。
+            </div>
+
+            <div class="lesson-round-grid">
+                <div class="lesson-round-pill">
+                    <span>本次到期项</span>
+                    <strong>{{ lesson_round_progress.due_count }}</strong>
+                </div>
+
+                <div class="lesson-round-pill">
+                    <span>本次已完成</span>
+                    <strong>{{ lesson_round_progress.done_count }}</strong>
+                </div>
+
+                <div class="lesson-round-pill">
+                    <span>本轮剩余</span>
+                    <strong>{{ lesson_round_progress.remaining_count }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <div id="card" class="card">
+
+            <div id="cycleBar" class="cycle-bar" style="display:none;">
+                <div id="cycleStage" class="cycle-stage"></div>
+                <div id="cycleMeta" class="cycle-meta"></div>
+            </div>
+
+            <!-- 题干 / 问题 -->
+            <div id="question" class="question"></div>
+
+            <!-- Cloze -->
+            <div id="clozeArea"></div>
+
+            <!-- Write -->
+            <div id="writeArea">
+                <input id="writeInput" type="text" placeholder="输入答案" autocomplete="off">
+            </div>
+
+            <!-- Choice -->
+            <div id="choiceArea">
+                <div id="choiceList"></div>
+            </div>
+
+            <!-- Speech -->
+            <div id="speechArea">
+                <div id="speechPromptAudio">
+                    <audio id="speechAudio" controls style="width:100%;"></audio>
+                </div>
+
+                <button type="button" class="speech-btn" onclick="startSpeechRecognition()" style="margin-bottom:12px;">
+                    开始语音识别
+                </button>
+
+                <textarea id="speechResult" placeholder="识别结果会显示在这里"></textarea>
+            </div>
+
+            <button type="button" class="submit-btn" onclick="submitAnswer()">提交</button>
+
+            <div id="feedback"></div>
+        </div>
+
+        <div id="doneArea">
+            <div class="done-icon">🎉</div>
+            <div class="done-title">今日完成！</div>
+            <div class="done-sub">干得漂亮，明天继续</div>
+            <a href="/" class="done-btn">返回首页</a>
+        </div>
+
+        <div id="noMaterialArea">
+            <div class="done-icon">📝</div>
+            <div class="done-title">还没有循环记忆素材</div>
+            <div id="noMaterialText" class="done-sub">
+                请先新增循环记忆素材后再开始训练
+            </div>
+            <a href="/builder/" class="done-btn">新增循环记忆素材</a>
+        </div>
+    </div>
+
+    <script>
+        const lessonId = {{ lesson.id }};
+
+        let state = {
+            type: null,
+            trainingId: null,
+            correctAnswers: [],
+            clozeInputs: [],
+            wrongWords: [],
+            selectionMode: "single",
+            asrLang: "ja-JP",
+            currentAudio: "",
+        };
+
+
+        // =========================
+        // 🚀 初始化
+        // =========================
+        document.addEventListener("DOMContentLoaded", function () {
+            bindEvents();
+            bindManageLinks();
+            loadQuestion();
+        });
+
+
+        // =========================
+        // 🎧 全局事件
+        // =========================
+        function bindEvents() {
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Enter") {
+                    submitAnswer();
+                }
+            });
+        }
+
+
+        // =========================
+        // 📥 加载题目
+        // =========================
+        function loadQuestion() {
+            resetUI();
+
+            fetch(`/api/lesson/${lessonId}/`)
+                .then(r => r.json())
+                .then(data => {
+                    console.log("DATA =", data);
+
+                    if (data.empty) {
+                        if (data.reason === "no_material") {
+                            showNoMaterial(data.message);
+                            return;
+                        }
+
+                        if (data.reason === "today_done") {
+                            showDone(data.message);
+                            return;
+                        }
+
+                        showNoMaterial(data.message || "暂无可训练内容");
+                        return;
+                    }
+
+                    state.type = data.type || null;
+                    state.trainingId = data.training_id || null;
+                    state.correctAnswers = data.correct_answers || [];
+                    state.clozeInputs = [];
+                    state.wrongWords = [];
+                    state.selectionMode = data.selection_mode || "single";
+                    state.asrLang = data.asr_lang || "ja-JP";
+                    state.currentAudio = data.audio || "";
+
+                    render(data);
+                })
+                .catch(err => {
+                    console.error("loadQuestion error =", err);
+                    document.getElementById("feedback").innerText = "加载失败";
+                });
+        }
+
+
+        // =========================
+        // 🎨 渲染
+        // =========================
+        function render(data) {
+            hideAllAreas();
+            document.getElementById("clozeArea").innerHTML = "";
+            document.getElementById("choiceList").innerHTML = "";
+            document.getElementById("feedback").innerText = "";
+
+            const promptText = (data.prompt || "").trim();
+            document.getElementById("question").innerText = promptText;
+
+            renderCycleStatus(data.cycle_status);
+
+            if (data.type === "read_cloze" || data.type === "cloze") {
+                renderCloze(data);
+                return;
+            }
+
+            if (data.type === "read_choice") {
+                renderChoice(data);
+                return;
+            }
+
+            if (data.type === "listen_asr" || data.type === "speak_read") {
+                renderSpeech(data);
+                return;
+            }
+
+            if (data.type === "write") {
+                renderWrite();
+                return;
+            }
+
+            console.warn("未知题型:", data.type);
+        }
+
+        function renderCycleStatus(status) {
+            const bar = document.getElementById("cycleBar");
+            const stage = document.getElementById("cycleStage");
+            const meta = document.getElementById("cycleMeta");
+
+            if (!status) {
+                bar.style.display = "none";
+                return;
+            }
+
+            stage.innerText = `${status.stage_label}｜${status.stage_group}`;
+            meta.innerText = status.status_text || `下一次复习：${status.next_review_text || "待安排"}`;
+            bar.style.display = "block";
+        }
+
+
+        // =========================
+        // 📖 Cloze
+        // =========================
+        function renderCloze(data) {
+            const area = document.getElementById("clozeArea");
+            area.innerHTML = "";
+            area.style.display = "block";
+
+            state.clozeInputs = [];
+            state.wrongWords = [];
+
+            const promptText = (data.prompt || "").trim();
+            let text = (data.cloze_text || "").trim();
+
+            if (promptText && text.includes(promptText)) {
+                text = text.replace(promptText, "").trim();
+            }
+
+            if (!text) {
+                text = data.cloze_text || "";
+            }
+
+            const parts = text.split("____");
+
+            if (parts.length === 1) {
+                area.textContent = text;
+                return;
+            }
+
+            parts.forEach((part, i) => {
+                area.append(document.createTextNode(part));
+
+                if (i < parts.length - 1) {
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.className = "cloze-input";
+                    input.value = "";
+                    input.autocomplete = "off";
+
+                    input.addEventListener("input", () => {
+                        checkSingle(i);
+                        autoJump(i);
+                    });
+
+                    input.addEventListener("focus", () => {
+                        setActive(i);
+                    });
+
+                    area.appendChild(input);
+                    state.clozeInputs.push(input);
+                }
+            });
+
+            if (state.clozeInputs.length > 0) {
+                state.clozeInputs[0].focus();
+                setActive(0);
+            }
+        }
+
+
+        // =========================
+        // ✍️ Write
+        // =========================
+        function renderWrite() {
+            document.getElementById("writeArea").style.display = "block";
+            const input = document.getElementById("writeInput");
+            input.value = "";
+            input.focus();
+        }
+
+
+        // =========================
+        // ✅ 选择题
+        // =========================
+        function renderChoice(data) {
+            const area = document.getElementById("choiceArea");
+            const list = document.getElementById("choiceList");
+
+            area.style.display = "block";
+            list.innerHTML = "";
+
+            const inputType = state.selectionMode === "multi" ? "checkbox" : "radio";
+
+            (data.choices || []).forEach(choice => {
+                if (choice._meta) return;
+
+                const row = document.createElement("div");
+                row.className = "choice-item";
+
+                const input = document.createElement("input");
+                input.type = inputType;
+                input.name = "choiceAnswer";
+                input.value = choice.key;
+
+                const label = document.createElement("div");
+                label.className = "choice-label";
+                label.textContent = choice.key;
+
+                const content = document.createElement("div");
+
+                if (choice.type === "audio") {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "choice-audio-btn";
+                    btn.textContent = "播放音频";
+                    btn.onclick = function () {
+                        const audio = new Audio(choice.audio || "");
+                        audio.play();
+                    };
+                    content.appendChild(btn);
+                } else {
+                    content.textContent = choice.content || choice.text || "";
+                }
+
+                row.appendChild(input);
+                row.appendChild(label);
+                row.appendChild(content);
+                list.appendChild(row);
+            });
+        }
+
+
+        // =========================
+        // 🎤 听 / 说
+        // =========================
+        function renderSpeech(data) {
+            const area = document.getElementById("speechArea");
+            const promptAudioWrap = document.getElementById("speechPromptAudio");
+            const speechAudio = document.getElementById("speechAudio");
+            const speechResult = document.getElementById("speechResult");
+
+            area.style.display = "block";
+            speechResult.value = "";
+
+            if (data.type === "listen_asr" && data.audio) {
+                promptAudioWrap.style.display = "block";
+                speechAudio.src = data.audio;
+            } else {
+                promptAudioWrap.style.display = "none";
+                speechAudio.removeAttribute("src");
+                speechAudio.load();
+            }
+        }
+
+
+        function startSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+            if (!SpeechRecognition) {
+                alert("当前浏览器不支持语音识别，请使用 Chrome。");
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = state.asrLang || "ja-JP";
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onresult = function (event) {
+                const text = event.results[0][0].transcript || "";
+                document.getElementById("speechResult").value = text;
+            };
+
+            recognition.onerror = function (event) {
+                console.error("speech recognition error =", event);
+                alert("语音识别失败，请重试。");
+            };
+
+            recognition.start();
+        }
+
+
+        // =========================
+        // 🧠 单词判定
+        // =========================
+        function checkSingle(index) {
+            const input = state.clozeInputs[index];
+            const correct = state.correctAnswers[index];
+
+            if (!input || !correct) return;
+
+            input.classList.remove("correct", "wrong");
+
+            if (input.value.trim().toLowerCase() === String(correct).trim().toLowerCase()) {
+                input.classList.add("correct");
+                state.wrongWords[index] = null;
+            } else {
+                input.classList.add("wrong");
+                state.wrongWords[index] = correct;
+            }
+        }
+
+
+        // =========================
+        // ➡️ 自动跳转
+        // =========================
+        function autoJump(index) {
+            const input = state.clozeInputs[index];
+            if (!input) return;
+
+            if (input.value.length >= 3) {
+                const next = state.clozeInputs[index + 1];
+                if (next) {
+                    next.focus();
+                    setActive(index + 1);
+                }
+            }
+        }
+
+
+        // =========================
+        // 🎯 高亮
+        // =========================
+        function setActive(index) {
+            state.clozeInputs.forEach(i => i.classList.remove("active"));
+
+            if (state.clozeInputs[index]) {
+                state.clozeInputs[index].classList.add("active");
+            }
+        }
+
+
+        // =========================
+        // 📤 提交
+        // =========================
+        function submitAnswer() {
+            if (!state.trainingId) {
+                console.error("trainingId 为空");
+                return;
+            }
+
+            let answer = "";
+
+            if (state.type === "read_cloze" || state.type === "cloze") {
+                answer = state.clozeInputs.map(i => i.value.trim());
+            } else if (state.type === "read_choice") {
+                answer = Array.from(
+                    document.querySelectorAll('input[name="choiceAnswer"]:checked')
+                ).map(i => i.value);
+            } else if (state.type === "listen_asr" || state.type === "speak_read") {
+                answer = document.getElementById("speechResult").value.trim();
+            } else if (state.type === "write") {
+                answer = document.getElementById("writeInput").value.trim();
+            }
+
+            fetch(`/api/lesson/${lessonId}/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": getCSRF()
+                },
+                body: `training_id=${state.trainingId}&answer=${encodeURIComponent(JSON.stringify(answer))}`
+            })
+            .then(r => r.json())
+            .then(data => {
+                const feedbackParts = [];
+
+                if (data.result) {
+                    feedbackParts.push(data.result);
+                }
+
+                if (data.cycle_feedback) {
+                    feedbackParts.push(data.cycle_feedback);
+                }
+
+                document.getElementById("feedback").innerText = feedbackParts.join("\n");
+
+                if (data.cycle_after) {
+                    renderCycleStatus(data.cycle_after);
+                }
+
+                if (!data.is_correct) {
+                    reinforceWrongWords();
+                    return;
+                }
+
+                setTimeout(loadQuestion, 1200);
+            })
+            .catch(err => {
+                console.error("submitAnswer error =", err);
+                document.getElementById("feedback").innerText = "提交失败";
+            });
+        }
+
+
+        // =========================
+        // ❌ 错词强化
+        // =========================
+        function reinforceWrongWords() {
+            const words = state.wrongWords.filter(Boolean);
+
+            if (!words.length) return;
+
+            fetch("/api/reinforce/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRF()
+                },
+                body: JSON.stringify({
+                    training_id: state.trainingId,
+                    wrong_words: words
+                })
+            });
+        }
+
+
+        // =========================
+        // 🧹 UI重置
+        // =========================
+        function resetUI() {
+            state = {
+                type: null,
+                trainingId: null,
+                correctAnswers: [],
+                clozeInputs: [],
+                wrongWords: [],
+                selectionMode: "single",
+                asrLang: "ja-JP",
+                currentAudio: "",
+            };
+
+            document.getElementById("question").innerText = "";
+            document.getElementById("feedback").innerText = "";
+            document.getElementById("clozeArea").innerHTML = "";
+            document.getElementById("writeInput").value = "";
+
+            const speechResult = document.getElementById("speechResult");
+            if (speechResult) speechResult.value = "";
+
+            document.getElementById("card").style.display = "block";
+            document.getElementById("doneArea").style.display = "none";
+            document.getElementById("noMaterialArea").style.display = "none";
+
+            const editLinks = document.getElementById("editLinks");
+            if (editLinks) editLinks.style.display = "none";
+
+            const cycleBar = document.getElementById("cycleBar");
+            if (cycleBar) cycleBar.style.display = "none";
+
+            hideAllAreas();
+        }
+
+
+        // =========================
+        // 🧩 工具
+        // =========================
+        function hideAllAreas() {
+            document.getElementById("clozeArea").style.display = "none";
+            document.getElementById("writeArea").style.display = "none";
+            document.getElementById("choiceArea").style.display = "none";
+            document.getElementById("speechArea").style.display = "none";
+        }
+
+        function showDone(message) {
+            document.getElementById("card").style.display = "none";
+            document.getElementById("noMaterialArea").style.display = "none";
+            document.getElementById("doneArea").style.display = "block";
+
+            const sub = document.querySelector("#doneArea .done-sub");
+            if (sub && message) {
+                sub.innerText = message;
+            }
+        }
+
+        function showNoMaterial(message) {
+            document.getElementById("card").style.display = "none";
+            document.getElementById("doneArea").style.display = "none";
+            document.getElementById("noMaterialArea").style.display = "block";
+
+            const text = document.getElementById("noMaterialText");
+            if (text && message) {
+                text.innerText = message;
+            }
+        }
+
+        function getCSRF() {
+            return document.cookie.split("; ")
+                .find(r => r.startsWith("csrftoken="))
+                ?.split("=")[1];
+        }
+
+        function bindManageLinks() {
+            const next = encodeURIComponent(window.location.pathname);
+
+            const lessonId = {{ lesson.id }};
+            const bookId = {{ lesson.book_id }};
+
+            document.getElementById("manageBookLink").href =
+                `/book/${bookId}/edit/?next=${next}`;
+
+            document.getElementById("manageLessonLink").href =
+                `/lesson/${lessonId}/edit/?next=${next}`;
+
+            document.getElementById("manageQuestionListLink").href =
+                `/lesson/${lessonId}/questions/`;
+        }
+    </script>
+</body>
+</html>

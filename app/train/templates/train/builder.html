@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创建循环记忆素材</title>
+    <style>
+        :root {
+            --bg: #f5f6fa;
+            --card: #ffffff;
+            --line: #e5e7eb;
+            --text: #111827;
+            --sub: #6b7280;
+            --blue: #1677ff;
+            --blue-hover: #0f5fd1;
+            --soft: #f8fafc;
+            --danger: #dc2626;
+            --ok: #16a34a;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            color: var(--text);
+        }
+
+        .page {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .title-wrap h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 800;
+        }
+
+        .title-wrap .sub {
+            margin-top: 6px;
+            color: var(--sub);
+            font-size: 14px;
+        }
+
+        .back-btn {
+            display: inline-block;
+            text-decoration: none;
+            color: #333;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 14px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1.6fr 0.9fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 18px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.04);
+        }
+
+        .section + .section {
+            margin-top: 16px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin: 0 0 14px;
+        }
+
+        .section-sub {
+            font-size: 13px;
+            color: var(--sub);
+            margin-top: -6px;
+            margin-bottom: 14px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 14px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #374151;
+        }
+
+        select,
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            padding: 11px 12px;
+            font-size: 14px;
+            background: #fff;
+            color: #111827;
+            outline: none;
+        }
+
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        select:focus,
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        textarea:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #374151;
+            margin-top: 6px;
+        }
+
+        .choice-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .mini-btn,
+        .save-btn {
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .mini-btn {
+            background: #eef4ff;
+            color: var(--blue);
+            padding: 10px 14px;
+            font-size: 14px;
+        }
+
+        .mini-btn:hover {
+            background: #e2ecff;
+        }
+
+        .save-btn {
+            background: var(--blue);
+            color: #fff;
+            padding: 13px 18px;
+            font-size: 15px;
+            width: 100%;
+        }
+
+        .save-btn:hover {
+            background: var(--blue-hover);
+        }
+
+        .choice-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .choice-item {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 14px;
+            background: var(--soft);
+        }
+
+        .choice-item-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .choice-badge {
+            font-weight: 800;
+            color: var(--blue);
+            font-size: 14px;
+        }
+
+        .choice-remove {
+            border: none;
+            background: #fff1f2;
+            color: var(--danger);
+            border-radius: 10px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .choice-grid {
+            display: grid;
+            grid-template-columns: 140px 1fr 100px;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .choice-correct {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 10px 8px;
+            font-size: 14px;
+        }
+
+        .preview-card {
+            position: sticky;
+            top: 20px;
+        }
+
+        .preview-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin: 0 0 12px;
+        }
+
+        .preview-panel {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: #fafafa;
+            padding: 16px;
+        }
+
+        .preview-label {
+            font-size: 12px;
+            color: var(--sub);
+            margin-bottom: 6px;
+        }
+
+        .preview-question {
+            font-size: 18px;
+            font-weight: 800;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .preview-answer {
+            font-size: 14px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: #374151;
+        }
+
+        .preview-choices {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .preview-choice {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: #fff;
+            padding: 10px 12px;
+        }
+
+        .preview-key {
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+            background: #eef4ff;
+            color: var(--blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .preview-ok {
+            color: var(--ok);
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .preview-note {
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--sub);
+            line-height: 1.7;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .footer-bar {
+            margin-top: 16px;
+        }
+
+        @media (max-width: 980px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .preview-card {
+                position: static;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page {
+                padding: 12px;
+            }
+
+            .topbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .grid-2,
+            .grid-3,
+            .choice-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 14px;
+                border-radius: 16px;
+            }
+
+            .title-wrap h1 {
+                font-size: 24px;
+            }
+
+            .preview-question {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+
+        <div class="topbar">
+            <div class="title-wrap">
+                <h1>创建循环记忆素材</h1>
+                <div class="sub">按“听 / 说 / 读 / 写”建立可进入艾宾浩斯循环的训练素材，不再按传统考试题型组织。</div>
+            </div>
+            <a href="/" class="back-btn">返回首页</a>
+        </div>
+
+        <div class="layout">
+
+            <div class="main">
+
+                <div class="card section">
+                    <div class="section-title">基础信息</div>
+                    <div class="section-sub">先确定这条素材属于哪个课节、哪种技能、哪种训练方式。</div>
+
+                    <div class="grid-3">
+                        <div class="field">
+                            <label for="lesson">所属课节</label>
+                            <select id="lesson">
+                                {% for l in lessons %}
+                                <option value="{{ l.id }}">{{ l.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="skill">技能</label>
+                            <select id="skill" onchange="syncTypeOptions(); toggleSections(); updatePreview();">
+                                <option value="listen">听</option>
+                                <option value="speak">说</option>
+                                <option value="read" selected>读</option>
+                                <option value="write">写</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="item_type">训练方式</label>
+                            <select id="item_type" onchange="toggleSections(); updatePreview();"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card section">
+                    <div class="section-title">题干内容</div>
+                    <div class="section-sub">题干是“问题 / 引导语 / 显示给用户的内容”。</div>
+
+                    <div class="field">
+                        <label for="prompt_text">题干文字</label>
+                        <textarea id="prompt_text" placeholder="例如：Ask me if I am David / 请听音后复述 / ____ に入る言葉を選びなさい" oninput="updatePreview();"></textarea>
+                    </div>
+
+                    <div id="prompt_audio_wrap" class="field hidden" style="margin-top:12px;">
+                        <label for="prompt_audio">题干音频（URL / 路径）</label>
+                        <input id="prompt_audio" type="text" placeholder="没有音频时可留空" oninput="updatePreview();">
+                    </div>
+
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="use_tts" onchange="updatePreview();">
+                        <label for="use_tts" style="margin:0;">没有音频时使用 TTS</label>
+                    </div>
+                </div>
+
+                <div id="answer_section" class="card section">
+                    <div class="section-title">回答内容</div>
+                    <div class="section-sub">这里是系统判题时的标准答案。听 / 说默认也会用这里做识别比对。</div>
+
+                    <div class="field">
+                        <label for="answer_text">标准答案</label>
+                        <textarea id="answer_text" placeholder="可输入单答案；多答案可用换行、逗号、分号分隔" oninput="updatePreview();"></textarea>
+                    </div>
+                </div>
+
+                <div id="cloze_section" class="card section hidden">
+                    <div class="section-title">克漏字配置</div>
+                    <div class="section-sub">读-克漏字用于随着熟练度自动增加空格。</div>
+
+                    <div class="grid-3">
+                        <div class="field">
+                            <label for="blank_min">空格最少数量</label>
+                            <input id="blank_min" type="number" value="1" min="1">
+                        </div>
+
+                        <div class="field">
+                            <label for="blank_max">空格最多数量</label>
+                            <input id="blank_max" type="number" value="3" min="1">
+                        </div>
+
+                        <div class="field" style="justify-content:end;">
+                            <div class="checkbox-row" style="margin-top:28px;">
+                                <input type="checkbox" id="auto_increase_blanks" checked>
+                                <label for="auto_increase_blanks" style="margin:0;">熟练后自动增加空格</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="choice_section" class="card section hidden">
+                    <div class="choice-toolbar">
+                        <div>
+                            <div class="section-title" style="margin-bottom:4px;">选择题配置</div>
+                            <div class="section-sub" style="margin:0;">每个选项都可以是文字或音频。音频选项可配置“答错后显示文字”。</div>
+                        </div>
+                        <button type="button" class="mini-btn" onclick="addChoice()">+ 添加选项</button>
+                    </div>
+
+                    <div id="choices" class="choice-list"></div>
+
+                    <div class="checkbox-row" style="margin-top:12px;">
+                        <input type="checkbox" id="reveal_text_on_wrong" onchange="renderChoices(); updatePreview();">
+                        <label for="reveal_text_on_wrong" style="margin:0;">音频选项答错时显示文字内容</label>
+                    </div>
+                </div>
+
+                <div id="asr_section" class="card section hidden">
+                    <div class="section-title">识别配置</div>
+                    <div class="section-sub">听 / 说都走“识别成文字后比对答案”的路线。</div>
+
+                    <div class="grid-2">
+                        <div class="field">
+                            <label for="asr_lang">识别语言</label>
+                            <select id="asr_lang">
+                                <option value="ja-JP">日语</option>
+                                <option value="en-US">英语</option>
+                                <option value="zh-CN">中文</option>
+                                <option value="ko-KR">韩语</option>
+                            </select>
+                        </div>
+
+                        <div class="field" style="justify-content:end;">
+                            <div class="checkbox-row" style="margin-top:28px;">
+                                <input type="checkbox" id="allow_partial_match" checked>
+                                <label for="allow_partial_match" style="margin:0;">允许部分匹配</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer-bar">
+                    <button type="button" class="save-btn" onclick="save()">保存素材</button>
+                </div>
+            </div>
+
+            <div class="side">
+                <div class="card preview-card">
+                    <div class="preview-title">预览</div>
+
+                    <div class="preview-panel">
+                        <div class="preview-label">题干 / 问题</div>
+                        <div id="previewQuestion" class="preview-question">请先输入题干</div>
+
+                        <div class="preview-label">训练方式</div>
+                        <div id="previewType" class="preview-answer">阅读克漏字</div>
+
+                        <div id="previewAnswerWrap" style="margin-top:16px;">
+                            <div class="preview-label">标准答案</div>
+                            <div id="previewAnswer" class="preview-answer">尚未填写</div>
+                        </div>
+
+                        <div id="previewChoicesWrap" class="hidden" style="margin-top:16px;">
+                            <div class="preview-label">选项预览</div>
+                            <div id="previewChoices" class="preview-choices"></div>
+                        </div>
+
+                        <div id="previewNote" class="preview-note">
+                            这条素材会作为“循环记忆素材”进入训练，不是传统考试题。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const TYPE_MAP = {
+            listen: [
+                ["listen_asr", "听音识别"],
+            ],
+            speak: [
+                ["speak_read", "看字朗读"],
+            ],
+            read: [
+                ["read_cloze", "阅读克漏字"],
+                ["read_choice_single", "阅读单选"],
+                ["read_choice_multi", "阅读多选"],
+            ],
+            write: [
+                ["write_text", "文字作答"],
+            ]
+        };
+
+        let choices = [];
+
+        function syncTypeOptions() {
+            const skill = document.getElementById("skill").value;
+            const typeSelect = document.getElementById("item_type");
+
+            typeSelect.innerHTML = "";
+
+            TYPE_MAP[skill].forEach(([value, label]) => {
+                const option = document.createElement("option");
+                option.value = value;
+                option.textContent = label;
+                typeSelect.appendChild(option);
+            });
+        }
+
+        function toggleSections() {
+            const skill = document.getElementById("skill").value;
+            const itemType = document.getElementById("item_type").value;
+
+            const promptAudioWrap = document.getElementById("prompt_audio_wrap");
+            const answerSection = document.getElementById("answer_section");
+            const clozeSection = document.getElementById("cloze_section");
+            const choiceSection = document.getElementById("choice_section");
+            const asrSection = document.getElementById("asr_section");
+
+            promptAudioWrap.classList.toggle("hidden", skill !== "listen");
+            clozeSection.classList.toggle("hidden", itemType !== "read_cloze");
+            choiceSection.classList.toggle(
+                "hidden",
+                !(itemType === "read_choice_single" || itemType === "read_choice_multi")
+            );
+            asrSection.classList.toggle(
+                "hidden",
+                !(itemType === "listen_asr" || itemType === "speak_read")
+            );
+
+            answerSection.classList.toggle(
+                "hidden",
+                itemType === "read_choice_single" || itemType === "read_choice_multi"
+            );
+        }
+
+        function addChoice() {
+            choices.push({
+                type: "text",
+                content: "",
+                correct: false
+            });
+
+            renderChoices();
+            updatePreview();
+        }
+
+        function removeChoice(index) {
+            choices.splice(index, 1);
+            renderChoices();
+            updatePreview();
+        }
+
+        function updateChoiceType(index, value) {
+            choices[index].type = value;
+            renderChoices();
+            updatePreview();
+        }
+
+        function updateChoiceContent(index, value) {
+            choices[index].content = value;
+            updatePreview();
+        }
+
+        function updateChoiceCorrect(index, checked) {
+            const itemType = document.getElementById("item_type").value;
+
+            if (itemType === "read_choice_single" && checked) {
+                choices.forEach((c, i) => {
+                    choices[i].correct = (i === index);
+                });
+                renderChoices();
+            } else {
+                choices[index].correct = checked;
+            }
+
+            updatePreview();
+        }
+
+        function renderChoices() {
+            const wrap = document.getElementById("choices");
+            const itemType = document.getElementById("item_type").value;
+            const isSingle = itemType === "read_choice_single";
+
+            wrap.innerHTML = "";
+
+            choices.forEach((choice, index) => {
+                const key = String.fromCharCode(65 + index);
+                const row = document.createElement("div");
+                row.className = "choice-item";
+
+                row.innerHTML = `
+                    <div class="choice-item-top">
+                        <div class="choice-badge">选项 ${key}</div>
+                        <button type="button" class="choice-remove" onclick="removeChoice(${index})">删除</button>
+                    </div>
+
+                    <div class="choice-grid">
+                        <select onchange="updateChoiceType(${index}, this.value)">
+                            <option value="text" ${choice.type === "text" ? "selected" : ""}>文字</option>
+                            <option value="audio" ${choice.type === "audio" ? "selected" : ""}>音频</option>
+                        </select>
+
+                        <input
+                            type="text"
+                            value="${escapeHtml(choice.content || "")}"
+                            oninput="updateChoiceContent(${index}, this.value)"
+                            placeholder="${choice.type === 'audio' ? '音频地址或路径' : '文字内容'}"
+                        >
+
+                        <label class="choice-correct">
+                            <input
+                                type="${isSingle ? "radio" : "checkbox"}"
+                                name="builder_correct"
+                                ${choice.correct ? "checked" : ""}
+                                onchange="updateChoiceCorrect(${index}, this.checked)"
+                            >
+                            正确
+                        </label>
+                    </div>
+                `;
+
+                wrap.appendChild(row);
+            });
+        }
+
+        function buildChoices() {
+            return choices.map(c => {
+                if (c.type === "audio") {
+                    return {
+                        type: "audio",
+                        audio: c.content,
+                        text: c.content,
+                        correct: c.correct
+                    };
+                }
+
+                return {
+                    type: "text",
+                    content: c.content,
+                    correct: c.correct
+                };
+            });
+        }
+
+        function updatePreview() {
+            const itemType = document.getElementById("item_type").value;
+            const promptText = document.getElementById("prompt_text").value.trim();
+            const answerText = document.getElementById("answer_text").value.trim();
+
+            const previewQuestion = document.getElementById("previewQuestion");
+            const previewType = document.getElementById("previewType");
+            const previewAnswer = document.getElementById("previewAnswer");
+            const previewAnswerWrap = document.getElementById("previewAnswerWrap");
+            const previewChoicesWrap = document.getElementById("previewChoicesWrap");
+            const previewChoices = document.getElementById("previewChoices");
+            const previewNote = document.getElementById("previewNote");
+
+            previewQuestion.innerText = promptText || "请先输入题干";
+            previewType.innerText = document.getElementById("item_type").selectedOptions[0]?.textContent || "";
+            previewAnswer.innerText = answerText || "尚未填写";
+
+            if (itemType === "read_choice_single" || itemType === "read_choice_multi") {
+                previewAnswerWrap.classList.add("hidden");
+                previewChoicesWrap.classList.remove("hidden");
+                previewChoices.innerHTML = "";
+
+                choices.forEach((choice, index) => {
+                    const key = String.fromCharCode(65 + index);
+                    const div = document.createElement("div");
+                    div.className = "preview-choice";
+
+                    div.innerHTML = `
+                        <div class="preview-key">${key}</div>
+                        <div style="flex:1;">
+                            ${escapeHtml(choice.type === "audio" ? "[音频] " + (choice.content || "") : (choice.content || "未填写"))}
+                        </div>
+                        ${choice.correct ? '<div class="preview-ok">正确</div>' : ''}
+                    `;
+                    previewChoices.appendChild(div);
+                });
+
+                previewNote.innerText =
+                    itemType === "read_choice_multi"
+                    ? "这是多选训练。用户需要把所有正确项全部选中。"
+                    : "这是单选训练。用户只能选择一个正确项。";
+            } else {
+                previewAnswerWrap.classList.remove("hidden");
+                previewChoicesWrap.classList.add("hidden");
+
+                if (itemType === "read_cloze") {
+                    previewNote.innerText = "这是克漏字训练。随着熟练度提升，可自动增加空格数量。";
+                } else if (itemType === "listen_asr") {
+                    previewNote.innerText = "这是听音识别训练。训练时播放音频，用户朗读，系统将识别文本与标准答案比对。";
+                } else if (itemType === "speak_read") {
+                    previewNote.innerText = "这是看字朗读训练。训练时显示文字，用户朗读，系统识别后与标准答案比对。";
+                } else if (itemType === "write_text") {
+                    previewNote.innerText = "这是文字作答训练。训练时显示文字题干，用户手动输入文字回答。";
+                } else {
+                    previewNote.innerText = "这条素材会作为循环记忆素材进入训练。";
+                }
+            }
+        }
+
+        function save() {
+            const skill = document.getElementById("skill").value;
+            const itemType = document.getElementById("item_type").value;
+
+            const payload = {
+                lesson_id: document.getElementById("lesson").value,
+                skill: skill,
+                item_type: itemType,
+
+                prompt_text: document.getElementById("prompt_text").value,
+                prompt_audio: document.getElementById("prompt_audio").value,
+                use_tts: document.getElementById("use_tts").checked,
+
+                answer_text: document.getElementById("answer_text").value,
+
+                choices: buildChoices(),
+                reveal_text_on_wrong: document.getElementById("reveal_text_on_wrong").checked,
+
+                cloze: {
+                    blank_min: parseInt(document.getElementById("blank_min").value || 1, 10),
+                    blank_max: parseInt(document.getElementById("blank_max").value || 3, 10),
+                    auto_increase_blanks: document.getElementById("auto_increase_blanks").checked
+                },
+
+                asr: {
+                    lang: document.getElementById("asr_lang").value,
+                    allow_partial_match: document.getElementById("allow_partial_match").checked
+                }
+            };
+
+            fetch("/builder/save/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    alert("保存成功");
+                    location.reload();
+                } else {
+                    alert(data.error || "保存失败");
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("保存失败");
+            });
+        }
+
+        function escapeHtml(text) {
+            return String(text || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        syncTypeOptions();
+        toggleSections();
+        updatePreview();
+    </script>
+</body>
+</html>

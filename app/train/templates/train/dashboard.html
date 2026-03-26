@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>我的学习</title>
+
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+    background: #f5f6fa;
+    margin: 0;
+}
+
+/* =========================
+   标题
+========================= */
+.header {
+    padding: 20px;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+/* 当前登录用户 */
+.auth-card {
+    background: white;
+    margin: 0 20px 16px;
+    padding: 14px 16px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.auth-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.auth-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(90deg, #4facfe, #00b7ff);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.auth-meta {
+    min-width: 0;
+}
+
+.auth-name {
+    font-weight: bold;
+    font-size: 15px;
+    color: #222;
+}
+
+.auth-email {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #777;
+    word-break: break-all;
+}
+
+.logout-btn {
+    background: #f3f6fb;
+    color: #333;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 14px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.logout-btn:hover {
+    opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+    .auth-card {
+        margin: 0 12px 12px;
+        padding: 12px;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .logout-btn {
+        width: 100%;
+    }
+}
+
+/* =========================
+   今日学习卡片
+========================= */
+.today-card {
+    background: white;
+    margin: 0 20px 20px;
+    padding: 18px 20px;   /* 🔥 更紧凑 */
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.04); /* 🔥 更轻 */
+}
+
+.today-title {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.progress-bar {
+    height: 6px;  /* 更细 */
+    background: #eee;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress {
+    background: linear-gradient(90deg, #4facfe, #007bff);
+}
+
+.today-meta {
+    margin-top: 10px;
+    font-size: 14px;
+    color: gray;
+}
+
+/* =========================
+   艾宾浩斯循环状态
+========================= */
+.cycle-summary-card {
+    background: white;
+    margin: 16px 20px;
+    padding: 18px 20px;
+    border-radius: 18px;
+    box-shadow: 0 5px 18px rgba(0,0,0,0.05);
+}
+
+.cycle-summary-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.cycle-summary-main {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1677ff;
+    margin-bottom: 8px;
+}
+
+.cycle-summary-sub {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 14px;
+    line-height: 1.7;
+}
+
+.cycle-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.cycle-stat-box {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.cycle-stat-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 6px;
+}
+
+.cycle-stat-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #222;
+}
+
+.cycle-danger {
+    background: #fff7ed;
+    color: #9a3412;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 14px;
+}
+
+.cycle-distribution {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.cycle-pill {
+    background: #eef3f8;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #333;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+@media (max-width: 768px) {
+    .cycle-summary-card {
+        margin: 12px;
+        padding: 14px;
+    }
+
+    .cycle-stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .cycle-distribution {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* =========================
+   卡片列表
+========================= */
+.card-list {
+    padding: 10px 20px;
+}
+
+/* =========================
+   书册卡片
+========================= */
+.book-card {
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+/* =========================
+   新建书册
+========================= */
+.create-book-card {
+    background: white;
+    margin: 16px 20px;
+    padding: 18px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.create-book-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+.create-book-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.create-book-input,
+.create-book-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    background: #fff;
+}
+
+.create-book-textarea {
+    min-height: 84px;
+    resize: vertical;
+}
+
+.create-book-submit {
+    align-self: flex-start;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.create-book-submit:hover {
+    opacity: 0.9;
+}
+
+.book-cycle-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.book-cycle-pill {
+    background: #eef3f8;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #333;
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.book-stage-meta {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.8;
+    margin-top: 8px;
+}
+
+.book-risk {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.book-risk.high {
+    background: #fff1f2;
+    color: #dc2626;
+}
+
+.book-risk.mid {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.book-risk.low {
+    background: #ecfdf5;
+    color: #15803d;
+}
+
+@media (max-width: 768px) {
+    .book-cycle-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* 桌面端：表单两列 */
+@media (min-width: 769px) {
+    .create-book-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        align-items: start;
+    }
+
+    .create-book-form-grid .full {
+        grid-column: 1 / -1;
+    }
+}
+
+/* 手机端：保持卡片单列 */
+@media (max-width: 768px) {
+    .create-book-card {
+        margin: 12px;
+        padding: 14px;
+    }
+
+    .create-book-submit {
+        width: 100%;
+    }
+}
+
+/* 左侧图标 */
+.left {
+    font-size: 30px;
+}
+
+/* 中间 */
+.center {
+    flex: 1;
+    margin-left: 15px;
+}
+
+.title {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.meta {
+    color: gray;
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+/* 右侧按钮 */
+.right {
+}
+
+.btn {
+    background: #007bff;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+/* hover */
+.btn:hover {
+    opacity: 0.85;
+}
+/* =========================
+   今日强度（Monoxer风）
+========================= */
+.daily-setting {
+    margin-top: 15px;
+}
+
+.daily-setting .label {
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 8px;
+}
+
+.options {
+    display: flex;
+    gap: 8px;
+}
+
+.opt {
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: #f0f2f5;
+    cursor: pointer;
+    font-size: 13px;
+    color: #555;
+    transition: all 0.2s;
+}
+
+.opt:hover {
+    background: #e6e8eb;
+}
+
+.opt.active {
+    background: #007bff;
+    color: white;
+}
+
+/* =========================
+   🔥 统计UI
+========================= */
+.stats-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+}
+
+.today-stats {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.stat {
+    background: #f1f3f6;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    color: #555;
+}
+
+.today-divider {
+    height: 1px;
+    background: #eee;
+    margin: 15px 0;
+}
+
+.xp-bar {
+    height: 6px;
+    background: #eee;
+    border-radius: 10px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
+}
+
+.xp-text {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- =========================
+     标题
+========================= -->
+<div class="header">
+    我的学习
+</div>
+
+<div class="auth-card">
+    <div class="auth-left">
+        <div class="auth-avatar">
+            {{ request.user.username|default:"U"|first|upper }}
+        </div>
+
+        <div class="auth-meta">
+            <div class="auth-name">
+                {{ request.user.username|default:"未命名用户" }}
+            </div>
+            <div class="auth-email">
+                {{ request.user.email|default:"未设置邮箱" }}
+            </div>
+        </div>
+    </div>
+
+    <div class="auth-right">
+        <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="logout-btn">退出登录</button>
+        </form>
+    </div>
+</div>
+
+<div class="create-book-card">
+    <div class="create-book-title">建立自己的书册</div>
+
+    <form method="post" class="create-book-form">
+        {% csrf_token %}
+
+        <div class="create-book-form-grid">
+            <div>
+                <input
+                    type="text"
+                    name="title"
+                    class="create-book-input"
+                    placeholder="书册名称，例如：英语口语 1"
+                    required
+                >
+            </div>
+
+            <div>
+                <textarea
+                    name="description"
+                    class="create-book-textarea"
+                    placeholder="书册说明（可不填）"
+                ></textarea>
+            </div>
+
+            <div class="full">
+                <button type="submit" class="create-book-submit">
+                    新建书册
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="cycle-summary-card">
+    <div class="cycle-summary-title">艾宾浩斯循环状态</div>
+
+    <div class="cycle-summary-main">
+        当前处于：{{ cycle_summary.main_stage }}
+    </div>
+
+    <div class="cycle-summary-sub">
+        下一次复习时间：{{ cycle_summary.next_review_text }}
+    </div>
+
+    <div class="cycle-stats-grid">
+        <div class="cycle-stat-box">
+            <div class="cycle-stat-label">今日到期</div>
+            <div class="cycle-stat-value">{{ cycle_summary.today_due_count }}</div>
+        </div>
+
+        <div class="cycle-stat-box">
+            <div class="cycle-stat-label">已逾期</div>
+            <div class="cycle-stat-value">{{ cycle_summary.overdue_count }}</div>
+        </div>
+
+        <div class="cycle-stat-box">
+            <div class="cycle-stat-label">今日已完成</div>
+            <div class="cycle-stat-value">{{ cycle_summary.done_today_count }}</div>
+        </div>
+
+        <div class="cycle-stat-box">
+            <div class="cycle-stat-label">当前主阶段</div>
+            <div class="cycle-stat-value" style="font-size:15px;">
+                {{ cycle_summary.main_stage }}
+            </div>
+        </div>
+    </div>
+
+    <div class="cycle-danger">
+        {{ cycle_summary.danger_text }}
+    </div>
+
+    <div class="cycle-distribution">
+        {% for item in cycle_summary.stage_distribution %}
+            <div class="cycle-pill">
+                <span>{{ item.label }}</span>
+                <strong>{{ item.count }}</strong>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- =========================
+     今日学习
+========================= -->
+{% if plan %}
+<div class="today-card">
+
+    <div class="today-title">今日学习</div>
+    <!-- 进度条 -->
+    <div class="xp-bar">
+        <div class="xp-fill" style="width: {{ stats.xp|default:0 }}%;"></div>
+    </div>
+    <div class="xp-text">
+        Lv {{ stats.level }} · {{ stats.xp }} XP
+    </div>
+
+    <div class="progress-bar">
+        <div class="progress" style="width: 100%;"></div>
+    </div>
+
+    <!-- 数量 -->
+    <div class="today-meta">
+        {{ plan|length }} / {{ plan|length }}
+    </div>
+
+    <!-- 🔥 插这里（关键） -->
+    <div class="daily-setting">
+        <div class="label">今日强度</div>
+        <div class="options">
+            <span class="opt" data-val="20">轻松</span>
+            <span class="opt active" data-val="40">标准</span>
+            <span class="opt" data-val="80">强化</span>
+        </div>
+    </div>
+
+    <div class="today-divider"></div>
+
+    <div class="today-stats">
+        <div class="stat">🔥 {{ stats.streak }} 天</div>
+        <div class="stat">今日 {{ stats.today }}</div>
+        <div class="stat">本周 {{ stats.week }}</div>
+        <div class="stat">正确率 {{ stats.accuracy }}%</div>
+    </div>
+
+
+</div>
+{% endif %}
+<!-- =========================
+     书册列表
+========================= -->
+<div class="card-list">
+
+{% for item in book_cycle_summary %}
+    <div class="book-card">
+        <div class="left">📘</div>
+
+        <div class="center" style="flex:1;">
+        <div class="title">{{ item.book.title }}</div>
+        <div class="meta">{{ item.book.description|default:"暂无描述" }}</div>
+
+        {% if item.risk_level == "高风险" %}
+            <div class="book-risk high">{{ item.risk_level }}</div>
+        {% elif item.risk_level == "中风险" %}
+            <div class="book-risk mid">{{ item.risk_level }}</div>
+        {% else %}
+            <div class="book-risk low">{{ item.risk_level }}</div>
+        {% endif %}
+
+        <div class="book-stage-meta">
+            当前主阶段：{{ item.main_stage }}<br>
+            下一次复习时间：{{ item.next_review_text }}<br>
+            今日到期：{{ item.today_due_count }} ｜ 已逾期：{{ item.overdue_count }}
+        </div>
+
+        <div class="book-cycle-grid">
+            <div class="book-cycle-pill">
+                <span>新学</span>
+                <strong>{{ item.new_count }}</strong>
+            </div>
+            <div class="book-cycle-pill">
+                <span>巩固中</span>
+                <strong>{{ item.short_count }}</strong>
+            </div>
+            <div class="book-cycle-pill">
+                <span>长期巩固</span>
+                <strong>{{ item.long_count }}</strong>
+            </div>
+            <div class="book-cycle-pill">
+                <span>今日到期</span>
+                <strong>{{ item.today_due_count }}</strong>
+            </div>
+            <div class="book-cycle-pill">
+                <span>已逾期</span>
+                <strong>{{ item.overdue_count }}</strong>
+            </div>
+        </div>
+    </div>
+
+        <div class="right">
+            <a href="/book/{{ item.book.id }}/" class="btn">进入</a>
+            <a href="/book/{{ item.book.id }}/edit/?next=/" class="btn">编辑书册</a>
+        </div>
+    </div>
+{% empty %}
+    <div class="book-card">
+        还没有书册，先新建一个。
+    </div>
+{% endfor %}
+
+</div>
+
+<script>
+function changeLimit() {
+    document.querySelectorAll(".opt").forEach(el => {
+
+    el.onclick = function () {
+
+        document.querySelectorAll(".opt").forEach(o => o.classList.remove("active"));
+        this.classList.add("active");
+
+        const val = this.dataset.val;
+
+        fetch("/set-daily-limit/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": getCSRF()
+            },
+            body: "limit=" + val
+        }).then(() => location.reload());
+    };
+
+});
+}
+
+function getCSRF() {
+    return document.cookie.split('; ')
+        .find(r => r.startsWith('csrftoken='))
+        ?.split('=')[1];
+}
+</script>
+
+</body>
+</html>

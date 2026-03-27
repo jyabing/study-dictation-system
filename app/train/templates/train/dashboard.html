@@ -24,166 +24,75 @@ body {
 /* =========================
    当前登录用户（轻量版）
 ========================= */
-.auth-lite-card {
-    background: white;
-    margin: 0 20px 16px;
-    border-radius: 16px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    overflow: hidden;
-}
-
-.auth-lite-main {
-    width: 100%;
-    border: none;
-    background: transparent;
-    padding: 14px 16px;
+.topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 14px;
+    gap: 12px;
+    padding: 20px;
+}
+
+.header {
+    padding: 0;
+    font-size: 22px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.account-anchor {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.account-trigger {
+    border: none;
+    background: white;
+    border-radius: 999px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     cursor: pointer;
 }
 
-.auth-lite-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-width: 0;
-}
-
-.auth-avatar {
-    width: 42px;
-    height: 42px;
+.account-avatar {
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     background: linear-gradient(90deg, #4facfe, #00b7ff);
     color: white;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 16px;
+    font-size: 14px;
     flex-shrink: 0;
 }
 
-.auth-lite-meta {
-    min-width: 0;
-    text-align: left;
-}
-
-.auth-lite-name {
-    font-size: 16px;
+.account-name {
+    font-size: 14px;
     font-weight: 700;
     color: #222;
-    line-height: 1.4;
+    line-height: 1;
 }
 
-.auth-lite-sub {
-    font-size: 13px;
-    color: #777;
-    margin-top: 2px;
-}
-
-.auth-lite-arrow {
-    font-size: 18px;
+.account-arrow {
+    font-size: 14px;
     color: #666;
-    flex-shrink: 0;
     transition: transform 0.2s ease;
 }
 
-.auth-lite-panel {
-    border-top: 1px solid #eef1f4;
-    padding: 14px 16px 16px;
-    background: #fafbfc;
-}
-
-.auth-panel-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    font-size: 14px;
-    line-height: 1.8;
-    padding: 4px 0;
-}
-
-.auth-panel-label {
-    color: #666;
-    flex-shrink: 0;
-}
-
-.auth-panel-value {
-    color: #222;
-    text-align: right;
-    word-break: break-all;
-}
-
-.auth-panel-actions {
-    margin-top: 12px;
-}
-
-.auth-panel-actions form {
-    width: 100%;
-}
-
-.logout-btn {
-    background: #f3f6fb;
-    color: #333;
-    border: none;
-    border-radius: 12px;
-    padding: 11px 14px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.auth-panel-actions .logout-btn {
-    width: 100%;
-}
-
-@media (max-width: 768px) {
-    .auth-lite-card {
-        margin: 0 12px 12px;
-    }
-
-    .auth-lite-main {
-        padding: 14px 12px;
-    }
-
-    .auth-avatar {
-        width: 44px;
-        height: 44px;
-        font-size: 17px;
-    }
-
-    .auth-lite-name {
-        font-size: 16px;
-    }
-
-    .auth-lite-sub {
-        font-size: 13px;
-    }
-
-    .auth-lite-arrow {
-        font-size: 18px;
-    }
-
-    .auth-lite-panel {
-        padding: 12px;
-    }
-
-    .auth-panel-row {
-        flex-direction: column;
-        gap: 2px;
-        font-size: 14px;
-    }
-
-    .auth-panel-value {
-        text-align: left;
-    }
-
-    .logout-btn {
-        width: 100%;
-        font-size: 14px;
-        padding: 12px 14px;
-    }
+.account-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    width: min(280px, 78vw);
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+    padding: 12px;
+    z-index: 20;
 }
 
 /* =========================
@@ -606,177 +515,46 @@ body {
 <!-- =========================
      标题
 ========================= -->
-<div class="header">
-    我的学习
-</div>
+<div class="topbar">
+    <div class="header">我的学习</div>
 
-<div class="auth-lite-card">
-    <button type="button" class="auth-lite-main" onclick="toggleUserPanel()">
-        <div class="auth-lite-left">
-            <div class="auth-avatar">
+    <div class="account-anchor">
+        <button type="button" class="account-trigger" onclick="toggleUserPanel()">
+            <span class="account-avatar">
                 {{ request.user.username|default:"U"|first|upper }}
-            </div>
+            </span>
 
-            <div class="auth-lite-meta">
-                <div class="auth-lite-name">
+            {% if request.user.is_authenticated %}
+                <span class="account-name">
                     {{ request.user.username|default:"未命名用户" }}
-                </div>
-                <div class="auth-lite-sub">当前登录用户</div>
+                </span>
+                <span class="account-arrow" id="authLiteArrow">▾</span>
+            {% else %}
+                <span class="account-name">登录</span>
+            {% endif %}
+        </button>
+
+        <div class="account-panel" id="authLitePanel" style="display:none;">
+            <div class="auth-panel-row">
+                <span class="auth-panel-label">用户名</span>
+                <span class="auth-panel-value">{{ request.user.username|default:"未命名用户" }}</span>
             </div>
-        </div>
 
-        <div class="auth-lite-arrow" id="authLiteArrow">▾</div>
-    </button>
+            <div class="auth-panel-row">
+                <span class="auth-panel-label">邮箱</span>
+                <span class="auth-panel-value">{{ request.user.email|default:"未设置邮箱" }}</span>
+            </div>
 
-    <div class="auth-lite-panel" id="authLitePanel" style="display:none;">
-        <div class="auth-panel-row">
-            <span class="auth-panel-label">用户名</span>
-            <span class="auth-panel-value">{{ request.user.username|default:"未命名用户" }}</span>
-        </div>
-
-        <div class="auth-panel-row">
-            <span class="auth-panel-label">邮箱</span>
-            <span class="auth-panel-value">{{ request.user.email|default:"未设置邮箱" }}</span>
-        </div>
-
-        <div class="auth-panel-actions">
-            <form method="post" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button type="submit" class="logout-btn">退出登录</button>
-            </form>
+            <div class="auth-panel-actions">
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-btn">退出登录</button>
+                </form>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="create-book-card">
-    <div class="create-book-title">建立自己的书册</div>
-
-    <form method="post" class="create-book-form">
-        {% csrf_token %}
-
-        <div class="create-book-form-grid">
-            <div>
-                <input
-                    type="text"
-                    name="title"
-                    class="create-book-input"
-                    placeholder="书册名称，例如：英语口语 1"
-                    required
-                >
-            </div>
-
-            <div>
-                <textarea
-                    name="description"
-                    class="create-book-textarea"
-                    placeholder="书册说明（可不填）"
-                ></textarea>
-            </div>
-
-            <div class="full">
-                <button type="submit" class="create-book-submit">
-                    新建书册
-                </button>
-            </div>
-        </div>
-    </form>
-</div>
-
-<div class="cycle-summary-card">
-    <div class="cycle-summary-title">艾宾浩斯循环状态</div>
-
-    <div class="cycle-summary-main">
-        当前处于：{{ cycle_summary.main_stage }}
-    </div>
-
-    <div class="cycle-summary-sub">
-        下一次复习时间：{{ cycle_summary.next_review_text }}
-    </div>
-
-    <div class="cycle-stats-grid">
-        <div class="cycle-stat-box">
-            <div class="cycle-stat-label">今日到期</div>
-            <div class="cycle-stat-value">{{ cycle_summary.today_due_count }}</div>
-        </div>
-
-        <div class="cycle-stat-box">
-            <div class="cycle-stat-label">已逾期</div>
-            <div class="cycle-stat-value">{{ cycle_summary.overdue_count }}</div>
-        </div>
-
-        <div class="cycle-stat-box">
-            <div class="cycle-stat-label">今日已完成</div>
-            <div class="cycle-stat-value">{{ cycle_summary.done_today_count }}</div>
-        </div>
-
-        <div class="cycle-stat-box">
-            <div class="cycle-stat-label">当前主阶段</div>
-            <div class="cycle-stat-value" style="font-size:15px;">
-                {{ cycle_summary.main_stage }}
-            </div>
-        </div>
-    </div>
-
-    <div class="cycle-danger">
-        {{ cycle_summary.danger_text }}
-    </div>
-
-    <div class="cycle-distribution">
-        {% for item in cycle_summary.stage_distribution %}
-            <div class="cycle-pill">
-                <span>{{ item.label }}</span>
-                <strong>{{ item.count }}</strong>
-            </div>
-        {% endfor %}
-    </div>
-</div>
-
-<!-- =========================
-     今日学习
-========================= -->
-{% if plan %}
-<div class="today-card">
-
-    <div class="today-title">今日学习</div>
-    <!-- 进度条 -->
-    <div class="xp-bar">
-        <div class="xp-fill" style="width: {{ stats.xp|default:0 }}%;"></div>
-    </div>
-    <div class="xp-text">
-        Lv {{ stats.level }} · {{ stats.xp }} XP
-    </div>
-
-    <div class="progress-bar">
-        <div class="progress" style="width: 100%;"></div>
-    </div>
-
-    <!-- 数量 -->
-    <div class="today-meta">
-        {{ plan|length }} / {{ plan|length }}
-    </div>
-
-    <!-- 🔥 插这里（关键） -->
-    <div class="daily-setting">
-        <div class="label">今日强度</div>
-        <div class="options">
-            <span class="opt" data-val="20">轻松</span>
-            <span class="opt active" data-val="40">标准</span>
-            <span class="opt" data-val="80">强化</span>
-        </div>
-    </div>
-
-    <div class="today-divider"></div>
-
-    <div class="today-stats">
-        <div class="stat">🔥 {{ stats.streak }} 天</div>
-        <div class="stat">今日 {{ stats.today }}</div>
-        <div class="stat">本周 {{ stats.week }}</div>
-        <div class="stat">正确率 {{ stats.accuracy }}%</div>
-    </div>
-
-
-</div>
-{% endif %}
 <!-- =========================
      书册列表
 ========================= -->

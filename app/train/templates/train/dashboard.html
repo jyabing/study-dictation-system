@@ -2,6 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>我的学习</title>
 
 <style>
@@ -20,20 +21,30 @@ body {
     font-weight: bold;
 }
 
-/* 当前登录用户 */
-.auth-card {
+/* =========================
+   当前登录用户（轻量版）
+========================= */
+.auth-lite-card {
     background: white;
     margin: 0 20px 16px;
-    padding: 14px 16px;
-    border-radius: 15px;
+    border-radius: 16px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
+    overflow: hidden;
 }
 
-.auth-left {
+.auth-lite-main {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    cursor: pointer;
+}
+
+.auth-lite-left {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -54,47 +65,124 @@ body {
     flex-shrink: 0;
 }
 
-.auth-meta {
+.auth-lite-meta {
     min-width: 0;
+    text-align: left;
 }
 
-.auth-name {
-    font-weight: bold;
-    font-size: 15px;
+.auth-lite-name {
+    font-size: 16px;
+    font-weight: 700;
     color: #222;
+    line-height: 1.4;
 }
 
-.auth-email {
-    margin-top: 4px;
-    font-size: 12px;
+.auth-lite-sub {
+    font-size: 13px;
     color: #777;
+    margin-top: 2px;
+}
+
+.auth-lite-arrow {
+    font-size: 18px;
+    color: #666;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.auth-lite-panel {
+    border-top: 1px solid #eef1f4;
+    padding: 14px 16px 16px;
+    background: #fafbfc;
+}
+
+.auth-panel-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+    line-height: 1.8;
+    padding: 4px 0;
+}
+
+.auth-panel-label {
+    color: #666;
+    flex-shrink: 0;
+}
+
+.auth-panel-value {
+    color: #222;
+    text-align: right;
     word-break: break-all;
+}
+
+.auth-panel-actions {
+    margin-top: 12px;
+}
+
+.auth-panel-actions form {
+    width: 100%;
 }
 
 .logout-btn {
     background: #f3f6fb;
     color: #333;
     border: none;
-    border-radius: 10px;
-    padding: 9px 14px;
+    border-radius: 12px;
+    padding: 11px 14px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
 }
 
-.logout-btn:hover {
-    opacity: 0.9;
+.auth-panel-actions .logout-btn {
+    width: 100%;
 }
 
 @media (max-width: 768px) {
-    .auth-card {
+    .auth-lite-card {
         margin: 0 12px 12px;
+    }
+
+    .auth-lite-main {
+        padding: 14px 12px;
+    }
+
+    .auth-avatar {
+        width: 44px;
+        height: 44px;
+        font-size: 17px;
+    }
+
+    .auth-lite-name {
+        font-size: 16px;
+    }
+
+    .auth-lite-sub {
+        font-size: 13px;
+    }
+
+    .auth-lite-arrow {
+        font-size: 18px;
+    }
+
+    .auth-lite-panel {
         padding: 12px;
+    }
+
+    .auth-panel-row {
         flex-direction: column;
-        align-items: stretch;
+        gap: 2px;
+        font-size: 14px;
+    }
+
+    .auth-panel-value {
+        text-align: left;
     }
 
     .logout-btn {
         width: 100%;
+        font-size: 14px;
+        padding: 12px 14px;
     }
 }
 
@@ -522,27 +610,41 @@ body {
     我的学习
 </div>
 
-<div class="auth-card">
-    <div class="auth-left">
-        <div class="auth-avatar">
-            {{ request.user.username|default:"U"|first|upper }}
+<div class="auth-lite-card">
+    <button type="button" class="auth-lite-main" onclick="toggleUserPanel()">
+        <div class="auth-lite-left">
+            <div class="auth-avatar">
+                {{ request.user.username|default:"U"|first|upper }}
+            </div>
+
+            <div class="auth-lite-meta">
+                <div class="auth-lite-name">
+                    {{ request.user.username|default:"未命名用户" }}
+                </div>
+                <div class="auth-lite-sub">当前登录用户</div>
+            </div>
         </div>
 
-        <div class="auth-meta">
-            <div class="auth-name">
-                {{ request.user.username|default:"未命名用户" }}
-            </div>
-            <div class="auth-email">
-                {{ request.user.email|default:"未设置邮箱" }}
-            </div>
-        </div>
-    </div>
+        <div class="auth-lite-arrow" id="authLiteArrow">▾</div>
+    </button>
 
-    <div class="auth-right">
-        <form method="post" action="{% url 'logout' %}">
-            {% csrf_token %}
-            <button type="submit" class="logout-btn">退出登录</button>
-        </form>
+    <div class="auth-lite-panel" id="authLitePanel" style="display:none;">
+        <div class="auth-panel-row">
+            <span class="auth-panel-label">用户名</span>
+            <span class="auth-panel-value">{{ request.user.username|default:"未命名用户" }}</span>
+        </div>
+
+        <div class="auth-panel-row">
+            <span class="auth-panel-label">邮箱</span>
+            <span class="auth-panel-value">{{ request.user.email|default:"未设置邮箱" }}</span>
+        </div>
+
+        <div class="auth-panel-actions">
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">退出登录</button>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -767,6 +869,23 @@ function getCSRF() {
     return document.cookie.split('; ')
         .find(r => r.startsWith('csrftoken='))
         ?.split('=')[1];
+}
+
+function toggleUserPanel() {
+    const panel = document.getElementById("authLitePanel");
+    const arrow = document.getElementById("authLiteArrow");
+
+    if (!panel || !arrow) return;
+
+    const isOpen = panel.style.display === "block";
+
+    if (isOpen) {
+        panel.style.display = "none";
+        arrow.style.transform = "rotate(0deg)";
+    } else {
+        panel.style.display = "block";
+        arrow.style.transform = "rotate(180deg)";
+    }
 }
 </script>
 

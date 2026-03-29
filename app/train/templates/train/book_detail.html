@@ -6,75 +6,94 @@
     <title>{{ book.title }}</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #f5f6fa;
             margin: 0;
+            background: #f5f6fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #111827;
         }
 
-        .header {
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
             padding: 20px;
-            font-size: 20px;
-            font-weight: bold;
         }
 
-        .book-card,
-        .create-lesson-card,
-        .lesson-card {
-            background: white;
-            margin: 16px 20px;
-            padding: 18px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        .topbar-left {
+            min-width: 0;
         }
 
-        .book-title {
-            font-size: 22px;
-            font-weight: bold;
+        .topbar-actions {
+            flex-shrink: 0;
+        }
+
+        .back-btn {
+            display: inline-block;
+            text-decoration: none;
+            color: #475569;
+            font-size: 14px;
             margin-bottom: 8px;
         }
 
-        .book-desc {
-            color: #777;
+        .page-title-wrap {
+            min-width: 0;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1.4;
+            color: #111827;
+        }
+
+        .page-subtitle {
+            margin-top: 4px;
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.7;
+        }
+
+        .top-action-btn {
+            display: inline-block;
+            text-decoration: none;
+            background: #eef3f8;
+            color: #334155;
+            border-radius: 12px;
+            padding: 10px 14px;
             font-size: 14px;
         }
 
-        .book-overview-card {
+        .book-overview-card,
+        .lesson-create-card,
+        .lesson-card {
             background: white;
-            margin: 16px 20px;
+            margin: 0 20px 18px;
             padding: 18px;
-            border-radius: 15px;
+            border-radius: 16px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
 
-        .book-overview-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .book-overview-meta {
-            font-size: 14px;
-            color: #666;
-            line-height: 1.8;
+        .book-overview-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
             margin-bottom: 12px;
         }
 
-        .book-overview-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            margin-top: 12px;
+        .book-overview-title {
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1.4;
+            color: #111827;
         }
 
-        .book-overview-pill {
-            background: #eef3f8;
-            border-radius: 10px;
-            padding: 8px 10px;
+        .book-overview-sub {
+            margin-top: 4px;
             font-size: 13px;
-            color: #333;
-            display: flex;
-            justify-content: space-between;
-            gap: 8px;
+            color: #6b7280;
+            line-height: 1.7;
         }
 
         .book-overview-risk {
@@ -82,8 +101,8 @@
             padding: 6px 10px;
             border-radius: 999px;
             font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-weight: 700;
+            flex-shrink: 0;
         }
 
         .book-overview-risk.high {
@@ -101,133 +120,125 @@
             color: #15803d;
         }
 
-        @media (max-width: 768px) {
-            .book-overview-card {
-                margin: 12px;
-                padding: 14px;
-            }
-
-            .book-overview-grid {
-                grid-template-columns: 1fr 1fr;
-            }
+        .book-overview-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
         }
 
-        .create-lesson-title {
-            font-size: 16px;
-            font-weight: bold;
+        .book-overview-pill {
+            background: #eef3f8;
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: #334155;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .lesson-create-title {
+            font-size: 18px;
+            font-weight: 800;
             margin-bottom: 12px;
         }
 
-        .create-lesson-form {
+        .lesson-create-form {
             display: flex;
             flex-direction: column;
             gap: 10px;
+        }
+
+        .create-lesson-grid {
+            display: grid;
+            grid-template-columns: 1fr 140px;
+            gap: 12px;
+            align-items: center;
         }
 
         .create-lesson-input,
         .create-lesson-order {
             width: 100%;
             box-sizing: border-box;
-            border: 1px solid #ddd;
+            border: 1px solid #d7dce3;
             border-radius: 10px;
             padding: 10px 12px;
             font-size: 14px;
             background: #fff;
         }
 
-        .create-lesson-submit,
-        .lesson-btn {
-            background: #007bff;
-            color: white;
+        .create-lesson-submit {
             border: none;
-            border-radius: 10px;
-            padding: 10px 16px;
+            background: #1677ff;
+            color: white;
+            border-radius: 12px;
+            padding: 11px 14px;
             font-size: 14px;
             cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
         }
 
-        .create-lesson-submit:hover,
-        .lesson-btn:hover {
-            opacity: 0.9;
+        .section-header {
+            margin: 0 20px 12px;
         }
 
-        .lesson-row {
-            display: flex;
-            justify-content: space-between;
+        .section-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #111827;
+            line-height: 1.4;
+        }
+
+        .section-subtitle {
+            margin-top: 4px;
+            font-size: 13px;
+            color: #6b7280;
+            line-height: 1.7;
+        }
+
+        .lesson-main-row {
+            display: grid;
+            grid-template-columns: 56px 1fr 140px;
+            gap: 14px;
             align-items: center;
-            gap: 12px;
+        }
+
+        .lesson-main-left {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lesson-index-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: #1677ff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .lesson-main-center {
+            min-width: 0;
         }
 
         .lesson-title {
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 20px;
+            font-weight: 800;
+            line-height: 1.5;
+            color: #111827;
         }
 
-        .lesson-meta {
-            color: #777;
-            font-size: 13px;
-            margin-top: 4px;
-        }
-
-        @media (min-width: 769px) {
-            .create-lesson-grid {
-                display: grid;
-                grid-template-columns: 1fr 140px;
-                gap: 12px;
-                align-items: center;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .book-card,
-            .create-lesson-card,
-            .lesson-card {
-                margin: 12px;
-                padding: 14px;
-            }
-
-            .lesson-row {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .lesson-btn,
-            .create-lesson-submit {
-                width: 100%;
-                text-align: center;
-                box-sizing: border-box;
-            }
-        }
-
-        /* =========================
-        章节循环状态摘要
-        ========================= */
-        .lesson-summary-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-top: 12px;
-            margin-bottom: 12px;
-        }
-
-        .lesson-summary-pill {
-            background: #eef3f8;
-            border-radius: 10px;
-            padding: 8px 10px;
-            font-size: 13px;
-            color: #333;
+        .lesson-status-line {
             display: flex;
-            justify-content: space-between;
+            align-items: center;
             gap: 8px;
-        }
-
-        .lesson-summary-meta {
-            font-size: 13px;
-            color: #666;
-            line-height: 1.8;
-            margin-bottom: 12px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            margin-bottom: 8px;
         }
 
         .lesson-risk {
@@ -235,8 +246,7 @@
             padding: 6px 10px;
             border-radius: 999px;
             font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-weight: 700;
         }
 
         .lesson-risk.high {
@@ -254,42 +264,207 @@
             color: #15803d;
         }
 
+        .lesson-stage-chip {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #eef3f8;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .lesson-summary-meta {
+            font-size: 14px;
+            color: #475569;
+            line-height: 1.8;
+        }
+
+        .lesson-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .lesson-summary-pill {
+            background: #eef3f8;
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: #334155;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .lesson-main-right {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        .lesson-study-btn,
+        .lesson-edit-btn {
+            display: inline-block;
+            text-decoration: none;
+            text-align: center;
+            border-radius: 12px;
+            padding: 11px 14px;
+            font-size: 14px;
+        }
+
+        .lesson-study-btn {
+            background: #1677ff;
+            color: white;
+        }
+
+        .lesson-edit-btn {
+            background: #eef3f8;
+            color: #334155;
+        }
+
         @media (max-width: 768px) {
-            .lesson-summary-grid {
+            body {
+                font-size: 15px;
+            }
+
+            .topbar {
+                padding: 16px 12px;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .page-title {
+                font-size: 22px;
+            }
+
+            .page-subtitle {
+                font-size: 13px;
+            }
+
+            .book-overview-card,
+            .lesson-create-card,
+            .lesson-card,
+            .section-header {
+                margin-left: 12px !important;
+                margin-right: 12px !important;
+            }
+
+            .book-overview-top {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .book-overview-title,
+            .section-title {
+                font-size: 18px;
+            }
+
+            .book-overview-grid {
                 grid-template-columns: 1fr 1fr;
             }
+
+            .create-lesson-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .lesson-main-row {
+                grid-template-columns: 48px 1fr;
+                gap: 12px;
+            }
+
+            .lesson-main-right {
+                grid-column: 1 / -1;
+                margin-top: 4px;
+            }
+
+            .lesson-index-box {
+                width: 42px;
+                height: 42px;
+                font-size: 16px;
+            }
+
+            .lesson-title {
+                font-size: 18px;
+            }
+
+            .lesson-summary-meta {
+                font-size: 13px;
+            }
+
+            .lesson-summary-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
         }
-    </style>
+
+        @media (max-width: 480px) {
+            .book-overview-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .lesson-main-row {
+                grid-template-columns: 1fr;
+            }
+
+            .lesson-main-left {
+                justify-content: flex-start;
+            }
+
+            .lesson-main-right {
+                grid-column: auto;
+            }
+
+            .lesson-summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .lesson-study-btn,
+            .lesson-edit-btn,
+            .create-lesson-submit,
+            .top-action-btn {
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+        </style>
 </head>
 <body>
 
-    <div class="header">书册详情</div>
+    <div class="topbar">
+        <div class="topbar-left">
+            <a href="/" class="back-btn">← 返回首页</a>
 
-    <div class="book-card">
-        <div class="book-title">
-            {{ book.title }}
-            <a href="/book/{{ book.id }}/edit/?next=/book/{{ book.id }}/" class="lesson-btn">编辑书册</a>
+            <div class="page-title-wrap">
+                <div class="page-title">{{ book.title }}</div>
+                <div class="page-subtitle">{{ book.description|default:"暂无说明" }}</div>
+            </div>
         </div>
-        <div class="book-desc">
-            {{ book.description|default:"暂无说明" }}
+
+        <div class="topbar-actions">
+            <a href="/book/{{ book.id }}/edit/?next=/book/{{ book.id }}/" class="top-action-btn">
+                编辑书册
+            </a>
         </div>
     </div>
 
     <div class="book-overview-card">
-        <div class="book-overview-title">这本书的循环状态总览</div>
+        <div class="book-overview-top">
+            <div>
+                <div class="book-overview-title">这本书的当前循环状态</div>
+                <div class="book-overview-sub">
+                    当前主阶段：{{ book_cycle_summary.main_stage }} ｜ 下一次复习：{{ book_cycle_summary.next_review_text }}
+                </div>
+            </div>
 
-        {% if book_cycle_summary.risk_level == "高风险" %}
-            <div class="book-overview-risk high">{{ book_cycle_summary.risk_level }}</div>
-        {% elif book_cycle_summary.risk_level == "中风险" %}
-            <div class="book-overview-risk mid">{{ book_cycle_summary.risk_level }}</div>
-        {% else %}
-            <div class="book-overview-risk low">{{ book_cycle_summary.risk_level }}</div>
-        {% endif %}
-
-        <div class="book-overview-meta">
-            当前主阶段：{{ book_cycle_summary.main_stage }}<br>
-            下一次复习时间：{{ book_cycle_summary.next_review_text }}<br>
-            今日到期：{{ book_cycle_summary.today_due_count }} ｜ 已逾期：{{ book_cycle_summary.overdue_count }}
+            {% if book_cycle_summary.risk_level == "高风险" %}
+                <div class="book-overview-risk high">高风险</div>
+            {% elif book_cycle_summary.risk_level == "中风险" %}
+                <div class="book-overview-risk mid">今日到期</div>
+            {% else %}
+                <div class="book-overview-risk low">稳定</div>
+            {% endif %}
         </div>
 
         <div class="book-overview-grid">
@@ -306,7 +481,7 @@
                 <strong>{{ book_cycle_summary.long_count }}</strong>
             </div>
             <div class="book-overview-pill">
-                <span>今日到期</span>
+                <span>待处理</span>
                 <strong>{{ book_cycle_summary.today_due_count }}</strong>
             </div>
             <div class="book-overview-pill">
@@ -316,10 +491,10 @@
         </div>
     </div>
 
-    <div class="create-lesson-card">
-        <div class="create-lesson-title">在这本书里新增课节</div>
+    <div class="lesson-create-card">
+        <div class="lesson-create-title">在这本书里新增课节</div>
 
-        <form method="post" class="create-lesson-form">
+        <form method="post" class="lesson-create-form">
             {% csrf_token %}
 
             <div class="create-lesson-grid">
@@ -350,54 +525,67 @@
         </form>
     </div>
 
+    <div class="section-header">
+        <div class="section-title">章节循环状态</div>
+        <div class="section-subtitle">先看风险，再决定优先进入哪一章。</div>
+    </div>
+
     {% for item in lesson_cycle_summary %}
-    <div class="lesson-card">
-        <div class="lesson-row">
-            <div style="flex:1;">
-                <div class="lesson-title">{{ item.lesson.title }}</div>
-                <div class="lesson-meta">排序：{{ item.lesson.order }}</div>
-
-                {% if item.risk_level == "高风险" %}
-                    <div class="lesson-risk high">{{ item.risk_level }}</div>
-                {% elif item.risk_level == "中风险" %}
-                    <div class="lesson-risk mid">{{ item.risk_level }}</div>
-                {% else %}
-                    <div class="lesson-risk low">{{ item.risk_level }}</div>
-                {% endif %}
-
-                <div class="lesson-summary-meta">
-                    当前主阶段：{{ item.main_stage }}<br>
-                    下一次复习：{{ item.next_review_text }}<br>
-                    今日到期：{{ item.today_due_count }} ｜ 已逾期：{{ item.overdue_count }}
-                </div>
-
-                <div class="lesson-summary-grid">
-                    <div class="lesson-summary-pill">
-                        <span>新学</span>
-                        <strong>{{ item.new_count }}</strong>
-                    </div>
-                    <div class="lesson-summary-pill">
-                        <span>巩固中</span>
-                        <strong>{{ item.short_count }}</strong>
-                    </div>
-                    <div class="lesson-summary-pill">
-                        <span>长期巩固</span>
-                        <strong>{{ item.long_count }}</strong>
+        <div class="lesson-card">
+            <div class="lesson-main-row">
+                <div class="lesson-main-left">
+                    <div class="lesson-index-box">
+                        {{ forloop.counter }}
                     </div>
                 </div>
-            </div>
 
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
-                <a href="/lesson/{{ item.lesson.id }}/" class="lesson-btn">进入</a>
-                <a href="/lesson/{{ item.lesson.id }}/edit/?next=/book/{{ book.id }}/" class="lesson-btn">编辑章节</a>
+                <div class="lesson-main-center">
+                    <div class="lesson-title">{{ item.lesson.title }}</div>
+
+                    <div class="lesson-status-line">
+                        {% if item.risk_level == "高风险" %}
+                            <span class="lesson-risk high">高风险</span>
+                        {% elif item.risk_level == "中风险" %}
+                            <span class="lesson-risk mid">今日到期</span>
+                        {% else %}
+                            <span class="lesson-risk low">稳定</span>
+                        {% endif %}
+
+                        <span class="lesson-stage-chip">{{ item.main_stage }}</span>
+                    </div>
+
+                    <div class="lesson-summary-meta">
+                        下一次复习：{{ item.next_review_text }}<br>
+                        今日到期：{{ item.today_due_count }} ｜ 已逾期：{{ item.overdue_count }}
+                    </div>
+
+                    <div class="lesson-summary-grid">
+                        <div class="lesson-summary-pill">
+                            <span>新学</span>
+                            <strong>{{ item.new_count }}</strong>
+                        </div>
+                        <div class="lesson-summary-pill">
+                            <span>巩固中</span>
+                            <strong>{{ item.short_count }}</strong>
+                        </div>
+                        <div class="lesson-summary-pill">
+                            <span>长期巩固</span>
+                            <strong>{{ item.long_count }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lesson-main-right">
+                    <a href="/lesson/{{ item.lesson.id }}/" class="lesson-study-btn">进入学习</a>
+                    <a href="/lesson/{{ item.lesson.id }}/edit/?next=/book/{{ book.id }}/" class="lesson-edit-btn">编辑章节</a>
+                </div>
             </div>
         </div>
-    </div>
-{% empty %}
-    <div class="lesson-card">
-        这本书还没有课节，先新建一个。
-    </div>
-{% endfor %}
+    {% empty %}
+        <div class="lesson-card">
+            这本书还没有课节，先新建一个。
+        </div>
+    {% endfor %}
 
 </body>
 </html>

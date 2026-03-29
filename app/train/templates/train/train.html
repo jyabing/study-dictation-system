@@ -6,211 +6,168 @@
     <title>训练</title>
     <style>
         body {
-            background: #f5f6fa;
-            font-family: sans-serif;
             margin: 0;
-            padding: 0;
+            background: #f5f6fa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #111827;
         }
 
         .page {
-            max-width: 720px;
+            max-width: 920px;
             margin: 0 auto;
-            padding: 24px 16px 48px;
+            padding: 0 0 40px;
         }
 
-        .page-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin: 0 0 20px;
-        }
-
-        .card {
-            background: white;
-            padding: 40px;
-            width: 420px;
-            max-width: 100%;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            box-sizing: border-box;
-        }
-
-        .question {
-            font-size: 20px;
-            margin-bottom: 20px;
-            line-height: 1.7;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-
-        #clozeArea,
-        #writeArea,
-        #choiceArea,
-        #speechArea {
-            display: none;
-            margin-bottom: 20px;
-        }
-
-        #clozeArea {
-            line-height: 2.2;
-            min-height: 40px;
-            word-break: break-word;
-        }
-
-        #writeInput,
-        #speechResult {
-            width: 100%;
-            padding: 12px 14px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            box-sizing: border-box;
-            font-size: 16px;
-            outline: none;
-        }
-
-        #writeInput:focus,
-        #speechResult:focus {
-            border-color: #007bff;
-        }
-
-        #speechResult {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 12px 14px;
-            border: none;
-            border-radius: 10px;
-            background: #1e7be7;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        .submit-btn:hover {
-            opacity: 0.92;
-        }
-
-        #feedback {
-            margin-top: 16px;
-            min-height: 24px;
-            font-size: 15px;
-            white-space: pre-wrap;
-        }
-
-        .cloze-input {
-            width: 80px;
-            margin: 0 5px;
-            padding: 6px;
-            text-align: center;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            box-sizing: border-box;
-            outline: none;
-        }
-
-        .cloze-input.active {
-            border-color: #007bff;
-            background: #eef6ff;
-        }
-
-        .cloze-input.correct {
-            border-color: #28a745;
-            background: #e6ffed;
-        }
-
-        .cloze-input.wrong {
-            border-color: #dc3545;
-            background: #ffecec;
-        }
-
-        .choice-item {
+        .topbar {
             display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            background: #fff;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 20px 20px 16px;
         }
 
-        .choice-label {
-            font-weight: bold;
-            min-width: 24px;
+        .topbar-left {
+            min-width: 0;
         }
 
-        .choice-audio-btn,
-        .speech-btn {
-            border: none;
-            background: #eef6ff;
-            border-radius: 8px;
-            padding: 8px 12px;
-            cursor: pointer;
+        .topbar-actions {
+            flex-shrink: 0;
         }
 
-        .choice-audio-btn:hover,
-        .speech-btn:hover {
-            opacity: 0.9;
-        }
-
-        #speechPromptAudio {
-            display: none;
-            margin-bottom: 12px;
-        }
-
-        #doneArea,
-        #noMaterialArea {
-            display: none;
-            text-align: center;
-            background: white;
-            padding: 28px 24px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .done-icon {
-            font-size: 40px;
-            margin-bottom: 12px;
-        }
-
-        .done-title {
-            font-size: 24px;
-            font-weight: bold;
+        .back-btn {
+            display: inline-block;
+            text-decoration: none;
+            color: #475569;
+            font-size: 14px;
             margin-bottom: 8px;
         }
 
-        .done-sub {
-            color: #666;
-            margin-bottom: 20px;
-            white-space: pre-wrap;
+        .page-title-wrap {
+            min-width: 0;
         }
 
-        .done-btn {
+        .page-title {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1.4;
+            color: #111827;
+        }
+
+        .page-subtitle {
+            margin-top: 4px;
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.7;
+        }
+
+        .top-action-btn {
             display: inline-block;
-            padding: 10px 16px;
-            border-radius: 10px;
-            background: #1e7be7;
-            color: #fff;
             text-decoration: none;
+            background: #eef3f8;
+            color: #334155;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 14px;
         }
 
         .manage-bar {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
-            margin-bottom: 16px;
+            margin: 0 20px 16px;
         }
 
         .manage-btn {
             display: inline-block;
             text-decoration: none;
             background: #eef3f8;
-            color: #333;
-            border-radius: 10px;
+            color: #334155;
+            border-radius: 12px;
             padding: 10px 14px;
             font-size: 14px;
+        }
+
+        .lesson-overview-card,
+        .lesson-round-card,
+        .card,
+        #doneArea,
+        #noMaterialArea {
+            background: white;
+            margin: 0 20px 16px;
+            padding: 18px;
+            border-radius: 16px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+        }
+
+        .lesson-overview-title,
+        .lesson-round-title {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: #111827;
+        }
+
+        .lesson-overview-meta,
+        .lesson-round-meta {
+            font-size: 14px;
+            color: #475569;
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+
+        .lesson-overview-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .lesson-round-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .lesson-overview-pill,
+        .lesson-round-pill {
+            background: #eef3f8;
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: #334155;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .lesson-overview-risk {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .lesson-overview-risk.high {
+            background: #fff1f2;
+            color: #dc2626;
+        }
+
+        .lesson-overview-risk.mid {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .lesson-overview-risk.low {
+            background: #ecfdf5;
+            color: #15803d;
+        }
+
+        .card {
+            width: auto;
+            max-width: none;
         }
 
         .cycle-bar {
@@ -272,10 +229,6 @@
             font-weight: 700;
         }
 
-        .question-audio-btn:hover {
-            opacity: 0.92;
-        }
-
         .audio-tip {
             margin-top: 8px;
             font-size: 13px;
@@ -283,17 +236,202 @@
             min-height: 18px;
         }
 
+        .question {
+            font-size: 20px;
+            margin-bottom: 20px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        #clozeArea,
+        #writeArea,
+        #choiceArea,
+        #speechArea {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        #clozeArea {
+            line-height: 2.2;
+            min-height: 40px;
+            word-break: break-word;
+        }
+
+        #writeInput,
+        #speechResult {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 16px;
+            outline: none;
+        }
+
+        #writeInput:focus,
+        #speechResult:focus,
+        .cloze-input:focus {
+            border-color: #1677ff;
+        }
+
+        #speechResult {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px 14px;
+            border: none;
+            border-radius: 12px;
+            background: #1677ff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #feedback {
+            margin-top: 16px;
+            min-height: 24px;
+            font-size: 15px;
+            white-space: pre-wrap;
+            line-height: 1.7;
+        }
+
+        .cloze-input {
+            width: 80px;
+            margin: 0 5px;
+            padding: 8px 6px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .cloze-input.active {
+            border-color: #1677ff;
+            background: #eef6ff;
+        }
+
+        .cloze-input.correct {
+            border-color: #28a745;
+            background: #e6ffed;
+        }
+
+        .cloze-input.wrong {
+            border-color: #dc3545;
+            background: #ffecec;
+        }
+
+        .choice-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background: #fff;
+        }
+
+        .choice-label {
+            font-weight: bold;
+            min-width: 24px;
+        }
+
+        .choice-audio-btn,
+        .speech-btn {
+            border: none;
+            background: #eef6ff;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        #speechPromptAudio {
+            display: none;
+            margin-bottom: 12px;
+        }
+
+        #doneArea,
+        #noMaterialArea {
+            display: none;
+            text-align: center;
+        }
+
+        .done-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .done-title {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .done-sub {
+            color: #666;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+            line-height: 1.7;
+        }
+
+        .done-btn {
+            display: inline-block;
+            padding: 10px 16px;
+            border-radius: 12px;
+            background: #1677ff;
+            color: #fff;
+            text-decoration: none;
+        }
+
         @media (max-width: 768px) {
-            .page {
-                padding: 16px 12px 32px;
+            body {
+                font-size: 15px;
             }
 
+            .page {
+                padding-bottom: 32px;
+            }
+
+            .topbar {
+                padding: 16px 12px;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .page-title {
+                font-size: 22px;
+            }
+
+            .page-subtitle {
+                font-size: 13px;
+            }
+
+            .manage-bar,
+            .lesson-overview-card,
+            .lesson-round-card,
             .card,
             #doneArea,
             #noMaterialArea {
-                width: 100%;
-                padding: 20px;
-                border-radius: 16px;
+                margin-left: 12px !important;
+                margin-right: 12px !important;
+            }
+
+            .lesson-overview-title,
+            .lesson-round-title {
+                font-size: 18px;
+            }
+
+            .lesson-overview-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .lesson-round-grid {
+                grid-template-columns: 1fr;
             }
 
             .question {
@@ -306,124 +444,41 @@
             }
         }
 
-        .lesson-overview-card {
-            background: white;
-            padding: 18px;
-            border-radius: 18px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            margin-bottom: 16px;
-        }
-
-        .lesson-overview-title {
-            font-size: 18px;
-            font-weight: 800;
-            margin-bottom: 10px;
-        }
-
-        .lesson-overview-meta {
-            font-size: 14px;
-            color: #666;
-            line-height: 1.8;
-            margin-bottom: 12px;
-        }
-
-        .lesson-overview-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-        }
-
-        .lesson-overview-pill {
-            background: #eef3f8;
-            border-radius: 10px;
-            padding: 10px 12px;
-            font-size: 13px;
-            color: #333;
-            display: flex;
-            justify-content: space-between;
-            gap: 8px;
-        }
-
-        .lesson-overview-risk {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .lesson-overview-risk.high {
-            background: #fff1f2;
-            color: #dc2626;
-        }
-
-        .lesson-overview-risk.mid {
-            background: #fff7ed;
-            color: #c2410c;
-        }
-
-        .lesson-overview-risk.low {
-            background: #ecfdf5;
-            color: #15803d;
-        }
-
-        @media (max-width: 768px) {
+        @media (max-width: 480px) {
             .lesson-overview-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        .lesson-round-card {
-            background: white;
-            padding: 18px;
-            border-radius: 18px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            margin-bottom: 16px;
-        }
-
-        .lesson-round-title {
-            font-size: 18px;
-            font-weight: 800;
-            margin-bottom: 10px;
-        }
-
-        .lesson-round-meta {
-            font-size: 13px;
-            color: #666;
-            line-height: 1.7;
-            margin-bottom: 12px;
-        }
-
-        .lesson-round-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-
-        .lesson-round-pill {
-            background: #eef3f8;
-            border-radius: 10px;
-            padding: 10px 12px;
-            font-size: 13px;
-            color: #333;
-            display: flex;
-            justify-content: space-between;
-            gap: 8px;
-        }
-
-        @media (max-width: 768px) {
-            .lesson-round-grid {
                 grid-template-columns: 1fr;
             }
+
+            .top-action-btn,
+            .manage-btn,
+            .done-btn {
+                width: 100%;
+                box-sizing: border-box;
+                text-align: center;
+            }
         }
-    </style>
+        </style>
+
+
 </head>
 <body>
     <div class="page">
-        <h1 class="page-title">训练</h1>
+        <div class="topbar">
+            <div class="topbar-left">
+                <a href="/book/{{ lesson.book_id }}/" class="back-btn">← 返回书册</a>
+
+                <div class="page-title-wrap">
+                    <h1 class="page-title">{{ lesson.title }}</h1>
+                    <div class="page-subtitle">训练页：先看本课状态，再处理这一轮，再进入当前题。</div>
+                </div>
+            </div>
+
+            <div class="topbar-actions">
+                <a id="manageBookLink" class="top-action-btn" href="#">编辑书册</a>
+            </div>
+        </div>
+
         <div class="manage-bar">
-            <a id="manageBookLink" class="manage-btn" href="#">编辑书册</a>
             <a id="manageLessonLink" class="manage-btn" href="#">编辑章节</a>
             <a id="manageQuestionListLink" class="manage-btn" href="#">本课素材</a>
         </div>
@@ -432,16 +487,16 @@
             <div class="lesson-overview-title">本课循环总览</div>
 
             {% if lesson_cycle_summary.risk_level == "高风险" %}
-                <div class="lesson-overview-risk high">{{ lesson_cycle_summary.risk_level }}</div>
+                <div class="lesson-overview-risk high">高风险</div>
             {% elif lesson_cycle_summary.risk_level == "中风险" %}
-                <div class="lesson-overview-risk mid">{{ lesson_cycle_summary.risk_level }}</div>
+                <div class="lesson-overview-risk mid">今日到期</div>
             {% else %}
-                <div class="lesson-overview-risk low">{{ lesson_cycle_summary.risk_level }}</div>
+                <div class="lesson-overview-risk low">稳定</div>
             {% endif %}
 
             <div class="lesson-overview-meta">
                 当前主阶段：{{ lesson_cycle_summary.main_stage }}<br>
-                下一次复习时间：{{ lesson_cycle_summary.next_review_text }}<br>
+                下一次复习：{{ lesson_cycle_summary.next_review_text }}<br>
                 今日到期：{{ lesson_cycle_summary.today_due_count }} ｜ 已逾期：{{ lesson_cycle_summary.overdue_count }}
             </div>
 
@@ -469,23 +524,23 @@
             <div class="lesson-round-title">本轮训练进度</div>
 
             <div class="lesson-round-meta">
-                这里显示的是“当前这轮到期复习”的完成情况，不是整章永久总量。
+                这里显示的是当前这轮到期复习的完成情况，不是整课永久总量。
             </div>
 
             <div class="lesson-round-grid">
                 <div class="lesson-round-pill">
                     <span>本次到期项</span>
-                    <strong>{{ lesson_round_progress.due_count }}</strong>
+                    <strong id="roundDueCount">{{ lesson_round_progress.due_count }}</strong>
                 </div>
 
                 <div class="lesson-round-pill">
                     <span>本次已完成</span>
-                    <strong>{{ lesson_round_progress.done_count }}</strong>
+                    <strong id="roundDoneCount">{{ lesson_round_progress.done_count }}</strong>
                 </div>
 
                 <div class="lesson-round-pill">
                     <span>本轮剩余</span>
-                    <strong>{{ lesson_round_progress.remaining_count }}</strong>
+                    <strong id="roundRemainingCount">{{ lesson_round_progress.remaining_count }}</strong>
                 </div>
             </div>
         </div>
@@ -565,6 +620,7 @@
         let state = {
             type: null,
             trainingId: null,
+            promptText: "",
             correctAnswers: [],
             clozeInputs: [],
             wrongWords: [],
@@ -624,6 +680,7 @@
 
                     state.type = data.type || null;
                     state.trainingId = data.training_id || null;
+                    state.promptText = (data.prompt || "").trim();
                     state.correctAnswers = data.correct_answers || [];
                     state.clozeInputs = [];
                     state.wrongWords = [];
@@ -650,7 +707,16 @@
             document.getElementById("feedback").innerText = "";
 
             const promptText = (data.prompt || "").trim();
-            document.getElementById("question").innerText = promptText;
+            const questionEl = document.getElementById("question");
+            const isListenAsr = data.type === "listen_asr";
+
+            if (isListenAsr) {
+                questionEl.innerText = "";
+                questionEl.style.display = "none";
+            } else {
+                questionEl.innerText = promptText;
+                questionEl.style.display = "block";
+            }
 
             renderCycleStatus(data.cycle_status);
             renderQuestionMeta(data);
@@ -679,24 +745,24 @@
         }
 
         function getSkillLabel(type) {
-    if (type === "listen_asr" || type === "listen_choice") {
-        return "听力题";
-    }
+            if (type === "listen_asr" || type === "listen_choice") {
+                return "听力题";
+            }
 
-    if (type === "speak_read") {
-        return "口语题";
-    }
+            if (type === "speak_read") {
+                return "口语题";
+            }
 
-    if (type === "read_cloze" || type === "cloze" || type === "read_choice") {
-        return "阅读题";
-    }
+            if (type === "read_cloze" || type === "cloze" || type === "read_choice") {
+                return "阅读题";
+            }
 
-    if (type === "write") {
-        return "书写题";
-    }
+            if (type === "write") {
+                return "书写题";
+            }
 
-    return "训练题";
-}
+            return "训练题";
+        }
 
 function renderQuestionMeta(data) {
     const badge = document.getElementById("skillBadge");
@@ -771,6 +837,18 @@ function playAudio(url) {
             stage.innerText = `${status.stage_label}｜${status.stage_group}`;
             meta.innerText = status.status_text || `下一次复习：${status.next_review_text || "待安排"}`;
             bar.style.display = "block";
+        }
+
+        function updateLessonRoundProgress(progress) {
+            if (!progress) return;
+
+            const dueEl = document.getElementById("roundDueCount");
+            const doneEl = document.getElementById("roundDoneCount");
+            const remainingEl = document.getElementById("roundRemainingCount");
+
+            if (dueEl) dueEl.innerText = progress.due_count ?? 0;
+            if (doneEl) doneEl.innerText = progress.done_count ?? 0;
+            if (remainingEl) remainingEl.innerText = progress.remaining_count ?? 0;
         }
 
 
@@ -876,7 +954,7 @@ function playAudio(url) {
 
                 if (choice.type === "audio") {
                     const btn = document.createElement("button");
-                    btn.type = "button";F
+                    btn.type = "button";
                     btn.className = "choice-audio-btn";
                     btn.textContent = "播放音频";
                     btn.onclick = function () {
@@ -1044,7 +1122,17 @@ function playAudio(url) {
                     renderCycleStatus(data.cycle_after);
                 }
 
+                if (data.lesson_round_progress) {
+                    updateLessonRoundProgress(data.lesson_round_progress);
+                }
+
                 if (!data.is_correct) {
+                    if (state.type === "listen_asr") {
+                        const questionEl = document.getElementById("question");
+                        questionEl.innerText = state.promptText || "";
+                        questionEl.style.display = "block";
+                    }
+
                     reinforceWrongWords();
                     return;
                 }

@@ -2,8 +2,13 @@ import random
 import re
 import json
 import difflib
+import hashlib
+import os
 
 from datetime import timedelta
+from urllib.parse import quote
+from django.conf import settings
+from gtts import gTTS
 
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
@@ -331,6 +336,45 @@ def _normalize_choice_answers(raw_answer):
     parts = re.split(r"[,，/|]+", text)
     return [p.strip() for p in parts if p.strip()]
 
+def _guess_tts_lang(meta):
+    asr_cfg = meta.get("asr") or {}
+    lang = (asr_cfg.get("lang") or "").strip()
+
+    mapping = {
+        "ja-JP": "ja",
+        "en-US": "en",
+        "en-GB": "en",
+        "zh-CN": "zh-CN",
+        "ko-KR": "ko",
+    }
+    return mapping.get(lang, "en")
+
+
+def _ensure_tts_audio(question, meta):
+    prompt_text = (question.prompt_text or "").strip()
+    if not prompt_text:
+        return ""
+
+    lang = _guess_tts_lang(meta)
+    text_hash = hashlib.md5(prompt_text.encode("utf-8")).hexdigest()[:12]
+    filename = f"tts_q{question.id}_{lang}_{text_hash}.mp3"
+
+    rel_dir = os.path.join("audio", "tts")
+    abs_dir = os.path.join(settings.MEDIA_ROOT, rel_dir)
+    abs_path = os.path.join(abs_dir, filename)
+
+    os.makedirs(abs_dir, exist_ok=True)
+
+    if not os.path.exists(abs_path):
+        try:
+            tts = gTTS(text=prompt_text, lang=lang)
+            tts.save(abs_path)
+        except Exception as e:
+            print("TTS generate failed:", e)
+            return ""
+
+    return f"{settings.MEDIA_URL}{rel_dir}/{filename}"
+
 
 # =========================
 # 🔥 训练数据构建（最终版）
@@ -344,6 +388,11 @@ def build_training_payload(training, memory=None):
     if memory is not None:
         dynamic_type = _choose_dynamic_item_type(training, memory)
 
+    audio_url = (q.audio_url or "").strip()
+
+    if not audio_url and meta.get("use_tts") and dynamic_type in {"listen_asr", "speak_read"}:
+        audio_url = _ensure_tts_audio(q, meta)
+
     payload = {
         "training_id": training.id,
         "type": dynamic_type,
@@ -351,7 +400,7 @@ def build_training_payload(training, memory=None):
         "cloze_text": training.cloze_text or "",
         "cloze_answers_len": len(training.cloze_answers or []),
         "choices": training.choices or [],
-        "audio": q.audio_url or "",
+        "audio": audio_url,
         "answer_text": q.answer_text or "",
         "meta": meta,
 

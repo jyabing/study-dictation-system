@@ -91,6 +91,7 @@
         .lesson-overview-card,
         .lesson-round-card,
         .card,
+        
         #doneArea,
         #noMaterialArea {
             background: white;
@@ -358,34 +359,96 @@
         #doneArea,
         #noMaterialArea {
             display: none;
-            text-align: center;
         }
 
-        .done-icon {
-            font-size: 40px;
+        .status-state-card {
+            background: white;
+            margin: 0 20px 16px;
+            padding: 22px 20px;
+            border-radius: 16px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            text-align: left;
+        }
+
+        .status-state-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
             margin-bottom: 12px;
         }
 
-        .done-title {
-            font-size: 24px;
+        .status-state-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            flex-shrink: 0;
+        }
+
+        .status-state-icon.done {
+            background: #ecfdf5;
+            color: #15803d;
+        }
+
+        .status-state-icon.empty {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .status-state-title {
+            font-size: 22px;
             font-weight: 800;
-            margin-bottom: 8px;
+            color: #111827;
+            line-height: 1.4;
         }
 
-        .done-sub {
-            color: #666;
-            margin-bottom: 20px;
-            white-space: pre-wrap;
+        .status-state-sub {
+            margin-top: 4px;
+            font-size: 14px;
+            color: #6b7280;
             line-height: 1.7;
+            white-space: pre-wrap;
         }
 
-        .done-btn {
-            display: inline-block;
-            padding: 10px 16px;
+        .status-state-meta {
+            background: #f8fafc;
             border-radius: 12px;
-            background: #1677ff;
-            color: #fff;
+            padding: 12px 14px;
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.8;
+            margin-bottom: 14px;
+        }
+
+        .status-state-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .status-primary-btn,
+        .status-secondary-btn {
+            display: inline-block;
             text-decoration: none;
+            border-radius: 12px;
+            padding: 11px 14px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .status-primary-btn {
+            background: #1677ff;
+            color: white;
+            flex: 1 1 180px;
+        }
+
+        .status-secondary-btn {
+            background: #eef3f8;
+            color: #334155;
+            flex: 1 1 160px;
         }
 
         @media (max-width: 768px) {
@@ -414,11 +477,15 @@
             .manage-bar,
             .lesson-overview-card,
             .lesson-round-card,
-            .card,
-            #doneArea,
-            #noMaterialArea {
+            .card {
                 margin-left: 12px !important;
                 margin-right: 12px !important;
+            }
+
+            .status-state-card {
+                margin-left: 12px !important;
+                margin-right: 12px !important;
+                padding: 18px 16px;
             }
 
             .lesson-overview-title,
@@ -455,6 +522,29 @@
                 width: 100%;
                 box-sizing: border-box;
                 text-align: center;
+            }
+
+            .status-state-top {
+                align-items: flex-start;
+            }
+
+            .status-state-title {
+                font-size: 18px;
+            }
+
+            .status-state-sub,
+            .status-state-meta {
+                font-size: 13px;
+            }
+
+            .status-state-actions {
+                flex-direction: column;
+            }
+
+            .status-primary-btn,
+            .status-secondary-btn {
+                width: 100%;
+                box-sizing: border-box;
             }
         }
         </style>
@@ -598,19 +688,51 @@
         </div>
 
         <div id="doneArea">
-            <div class="done-icon">🎉</div>
-            <div class="done-title">今日完成！</div>
-            <div class="done-sub">干得漂亮，明天继续</div>
-            <a href="/" class="done-btn">返回首页</a>
+            <div class="status-state-card">
+                <div class="status-state-top">
+                    <div class="status-state-icon done">✓</div>
+
+                    <div>
+                        <div class="status-state-title">今日完成</div>
+                        <div class="status-state-sub">
+                            本课今天这一轮已经完成，可以返回书册或明天继续。
+                        </div>
+                    </div>
+                </div>
+
+                <div class="status-state-meta" id="doneStateMeta">
+                    干得漂亮，明天继续。
+                </div>
+
+                <div class="status-state-actions">
+                    <a href="/book/{{ lesson.book_id }}/" class="status-primary-btn">返回书册</a>
+                    <a href="/" class="status-secondary-btn">返回首页</a>
+                </div>
+            </div>
         </div>
 
         <div id="noMaterialArea">
-            <div class="done-icon">📝</div>
-            <div class="done-title">还没有循环记忆素材</div>
-            <div id="noMaterialText" class="done-sub">
-                请先新增循环记忆素材后再开始训练
+            <div class="status-state-card">
+                <div class="status-state-top">
+                    <div class="status-state-icon empty">📝</div>
+
+                    <div>
+                        <div class="status-state-title">还没有循环记忆素材</div>
+                        <div class="status-state-sub">
+                            这课目前还没有可进入训练循环的素材。
+                        </div>
+                    </div>
+                </div>
+
+                <div id="noMaterialText" class="status-state-meta">
+                    请先新增循环记忆素材后再开始训练。
+                </div>
+
+                <div class="status-state-actions">
+                    <a href="/builder/" class="status-primary-btn">新增循环记忆素材</a>
+                    <a href="/book/{{ lesson.book_id }}/" class="status-secondary-btn">返回书册</a>
+                </div>
             </div>
-            <a href="/builder/" class="done-btn">新增循环记忆素材</a>
         </div>
     </div>
 
@@ -1235,9 +1357,9 @@ function playAudio(url) {
             document.getElementById("noMaterialArea").style.display = "none";
             document.getElementById("doneArea").style.display = "block";
 
-            const sub = document.querySelector("#doneArea .done-sub");
-            if (sub && message) {
-                sub.innerText = message;
+            const meta = document.getElementById("doneStateMeta");
+            if (meta && message) {
+                meta.innerText = message;
             }
         }
 

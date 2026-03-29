@@ -83,6 +83,15 @@
             color: #333;
         }
 
+        .btn-danger {
+            background: #e53935;
+            color: white;
+        }
+
+        .danger-zone {
+            margin-top: 14px;
+        }
+
         @media (max-width: 768px) {
             .actions {
                 flex-direction: column;
@@ -150,6 +159,18 @@
                     <a href="{{ next }}" class="btn btn-secondary">返回</a>
                 </div>
             </form>
+
+            {% if mode == "question" %}
+                <div class="danger-zone">
+                    <form method="post"
+                          action="{% url 'question-delete' obj.id %}"
+                          onsubmit="return confirm('确定删除这道题吗？删除后无法恢复。');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">删除此题</button>
+                    </form>
+                </div>
+            {% endif %}
+            
         </div>
     </div>
 </body>

@@ -2025,3 +2025,17 @@ def question_edit(request, question_id):
         "next": next_url,
         "page_title": "编辑题干与回答",
     })
+
+@login_required
+@require_POST
+def question_delete(request, question_id):
+    question = get_object_or_404(
+        Question,
+        id=question_id,
+        lesson__book__owner=request.user
+    )
+
+    lesson_id = question.lesson_id
+    question.delete()
+
+    return redirect("lesson-question-list", lesson_id=lesson_id)

@@ -235,6 +235,54 @@
             line-height: 1.6;
         }
 
+        .question-meta-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .skill-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            background: #f1f5f9;
+            letter-spacing: 0.5px;
+        }
+
+        .question-audio-bar {
+            display: none;
+            margin-bottom: 16px;
+        }
+
+        .question-audio-btn {
+            border: none;
+            background: #eef6ff;
+            color: #1d4ed8;
+            border-radius: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .question-audio-btn:hover {
+            opacity: 0.92;
+        }
+
+        .audio-tip {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #64748b;
+            min-height: 18px;
+        }
+
         @media (max-width: 768px) {
             .page {
                 padding: 16px 12px 32px;
@@ -449,6 +497,17 @@
                 <div id="cycleMeta" class="cycle-meta"></div>
             </div>
 
+            <div class="question-meta-bar">
+                <div id="skillBadge" class="skill-badge">题型</div>
+            </div>
+
+            <div id="questionAudioBar" class="question-audio-bar">
+                <button type="button" id="questionAudioBtn" class="question-audio-btn">
+                    播放题目音频
+                </button>
+                <div id="audioTip" class="audio-tip"></div>
+            </div>
+
             <!-- 题干 / 问题 -->
             <div id="question" class="question"></div>
 
@@ -594,6 +653,7 @@
             document.getElementById("question").innerText = promptText;
 
             renderCycleStatus(data.cycle_status);
+            renderQuestionMeta(data);
 
             if (data.type === "read_cloze" || data.type === "cloze") {
                 renderCloze(data);
@@ -617,6 +677,86 @@
 
             console.warn("未知题型:", data.type);
         }
+
+        function getSkillLabel(type) {
+    if (type === "listen_asr" || type === "listen_choice") {
+        return "听力题";
+    }
+
+    if (type === "speak_read") {
+        return "口语题";
+    }
+
+    if (type === "read_cloze" || type === "cloze" || type === "read_choice") {
+        return "阅读题";
+    }
+
+    if (type === "write") {
+        return "书写题";
+    }
+
+    return "训练题";
+}
+
+function renderQuestionMeta(data) {
+    const badge = document.getElementById("skillBadge");
+    const audioBar = document.getElementById("questionAudioBar");
+    const audioBtn = document.getElementById("questionAudioBtn");
+    const audioTip = document.getElementById("audioTip");
+
+    badge.innerText = getSkillLabel(data.type);
+
+    audioBar.style.display = "none";
+    audioTip.innerText = "";
+
+    const audioUrl = data.audio || "";
+
+    if (audioUrl) {
+        audioBar.style.display = "block";
+        audioBtn.onclick = function () {
+            playAudio(audioUrl);
+        };
+        return;
+    }
+
+    if (data.type === "listen_asr" || data.type === "listen_choice") {
+        audioBar.style.display = "block";
+        audioBtn.onclick = function () {
+            audioTip.innerText = "这道题当前没有可播放音频。";
+        };
+    }
+}
+
+function playAudio(url) {
+    const audioTip = document.getElementById("audioTip");
+
+    if (!url) {
+        audioTip.innerText = "音频地址为空，无法播放。";
+        return;
+    }
+
+    audioTip.innerText = "正在播放…";
+
+    const audio = new Audio(url);
+
+    audio.onended = function () {
+        audioTip.innerText = "播放完成";
+    };
+
+    audio.onerror = function () {
+        audioTip.innerText = "音频播放失败，请检查音频文件或地址。";
+        console.error("audio play error:", url);
+    };
+
+    const playPromise = audio.play();
+
+    if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(function (err) {
+            audioTip.innerText = "音频播放失败，请重试。";
+            console.error("audio play rejected:", err, url);
+        });
+    }
+}
 
         function renderCycleStatus(status) {
             const bar = document.getElementById("cycleBar");
@@ -736,12 +876,11 @@
 
                 if (choice.type === "audio") {
                     const btn = document.createElement("button");
-                    btn.type = "button";
+                    btn.type = "button";F
                     btn.className = "choice-audio-btn";
                     btn.textContent = "播放音频";
                     btn.onclick = function () {
-                        const audio = new Audio(choice.audio || "");
-                        audio.play();
+                        playAudio(choice.audio || "");
                     };
                     content.appendChild(btn);
                 } else {
@@ -973,6 +1112,21 @@
 
             const cycleBar = document.getElementById("cycleBar");
             if (cycleBar) cycleBar.style.display = "none";
+
+            const skillBadge = document.getElementById("skillBadge");
+            if (skillBadge) {
+                skillBadge.innerText = "题型";
+            }
+
+            const questionAudioBar = document.getElementById("questionAudioBar");
+            if (questionAudioBar) {
+                questionAudioBar.style.display = "none";
+            }
+
+            const audioTip = document.getElementById("audioTip");
+            if (audioTip) {
+                audioTip.innerText = "";
+            }
 
             hideAllAreas();
         }

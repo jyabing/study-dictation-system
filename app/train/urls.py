@@ -11,6 +11,7 @@ from .views.train_views import (
     set_daily_limit,
     question_edit,
     lesson_question_list,
+    question_delete,
 )
 
 urlpatterns = [
@@ -35,6 +36,7 @@ urlpatterns = [
     path("book/<int:book_id>/edit/", book_edit, name="book-edit"),
     path("lesson/<int:lesson_id>/edit/", lesson_edit, name="lesson-edit"),
     path("question/<int:question_id>/edit/", question_edit, name="question-edit"),
+    path("question/<int:question_id>/delete/", question_delete, name="question-delete"),
 
     # Lesson + Train
     path("lesson/<int:lesson_id>/", lesson_train, name="lesson-train"),

@@ -43,12 +43,26 @@ def dashboard(request):
 
     print("🔥 DEBUG plan =", plan)
 
+    priority_books = sorted(
+        book_cycle_summary,
+        key=lambda x: (
+            0 if x.get("risk_level") == "高风险" else 1 if x.get("risk_level") == "中风险" else 2,
+            -(x.get("overdue_count") or 0),
+            -(x.get("today_due_count") or 0),
+            x.get("book").id if x.get("book") else 0,
+        )
+    )[:5]
+
+    all_books_count = len(book_cycle_summary)
+
     return render(request, "train/dashboard.html", {
         "books": books,
         "plan": plan,
         "stats": stats,
         "cycle_summary": cycle_summary,
         "book_cycle_summary": book_cycle_summary,
+        "priority_books": priority_books,
+        "all_books_count": all_books_count,
     })
 
 # =========================

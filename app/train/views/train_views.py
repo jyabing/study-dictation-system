@@ -4,6 +4,7 @@ import json
 import difflib
 import hashlib
 import os
+import copy
 
 from datetime import timedelta
 from urllib.parse import quote
@@ -375,48 +376,160 @@ def _ensure_tts_audio(question, meta):
 
     return f"{settings.MEDIA_URL}{rel_dir}/{filename}"
 
+def _build_choice_tts_audio(text, lang="en", prefix="choiceopt"):
+    text = (text or "").strip()
+    if not text:
+        return ""
+
+    digest = hashlib.md5(text.encode("utf-8")).hexdigest()[:12]
+    filename = f"{prefix}_{lang}_{digest}.mp3"
+
+    rel_dir = "audio/tts"
+    abs_dir = os.path.join(settings.MEDIA_ROOT, rel_dir)
+    os.makedirs(abs_dir, exist_ok=True)
+
+    abs_path = os.path.join(abs_dir, filename)
+
+    if not os.path.exists(abs_path):
+        gTTS(text=text, lang=lang).save(abs_path)
+
+    return f"{settings.MEDIA_URL}{rel_dir}/{filename}"
+
+def _get_training_meta_dict(training):
+    choices = training.choices or []
+    if choices and isinstance(choices[0], dict):
+        meta = choices[0].get("_meta")
+        if isinstance(meta, dict):
+            return meta
+    return {}
+
+
+def _resolve_choice_audio(choice, lang="en"):
+    audio = (choice.get("audio") or "").strip()
+    text = (choice.get("text") or choice.get("content") or "").strip()
+    use_tts_when_no_audio = bool(choice.get("use_tts_when_no_audio", False))
+
+    # 1. 优先人工音频
+    if audio:
+        return audio
+
+    # 2. 没人工音频时，用 TTS
+    if use_tts_when_no_audio and text:
+        return _build_choice_tts_audio(
+            text=text,
+            lang=lang,
+            prefix="choiceopt"
+        )
+
+    return ""
+
+def _build_tts_audio(text, lang="en", prefix="prompttts"):
+    text = (text or "").strip()
+    if not text:
+        return ""
+
+    digest = hashlib.md5(text.encode("utf-8")).hexdigest()[:12]
+    filename = f"{prefix}_{lang}_{digest}.mp3"
+
+    rel_dir = "audio/tts"
+    abs_dir = os.path.join(settings.MEDIA_ROOT, rel_dir)
+    os.makedirs(abs_dir, exist_ok=True)
+
+    abs_path = os.path.join(abs_dir, filename)
+
+    if not os.path.exists(abs_path):
+        gTTS(text=text, lang=lang).save(abs_path)
+
+    return f"{settings.MEDIA_URL}{rel_dir}/{filename}"
 
 # =========================
 # 🔥 训练数据构建（最终版）
 # =========================
 def build_training_payload(training, memory=None):
-    q = training.question
-    meta = _extract_training_meta(training)
-    cycle_status = _build_cycle_status(memory)
+    item_type = _extract_training_meta(training).get("item_type") or training.item_type
+    meta = _get_training_meta_dict(training)
 
-    dynamic_type = training.item_type
-    if memory is not None:
-        dynamic_type = _choose_dynamic_item_type(training, memory)
+    choices = copy.deepcopy(training.choices or [])
 
-    audio_url = (q.audio_url or "").strip()
+    if training.item_type == "read_choice":
+        for c in choices:
+            c["resolved_audio"] = _resolve_choice_audio(c, lang="en")
+            c["has_audio"] = bool(c["resolved_audio"])
 
-    if not audio_url and meta.get("use_tts") and dynamic_type in {"listen_asr", "speak_read"}:
-        audio_url = _ensure_tts_audio(q, meta)
+        random.shuffle(choices)
+
+        for idx, c in enumerate(choices):
+            c["key"] = chr(65 + idx)
+
+    selection_mode = "single"
+    if choices:
+        selection_mode = choices[0].get("selection_mode") or "single"
+
+    prompt_text = training.prompt_text or training.question.prompt_text or ""
+    question_audio_url = training.question.audio_url or ""
+
+    use_tts = bool(meta.get("use_tts", False))
+    asr_cfg = meta.get("asr", {}) if isinstance(meta.get("asr"), dict) else {}
+    asr_lang = asr_cfg.get("lang") or "en-US"
+
+    # =========================
+    # 听 / 说题型：题干音频 fallback
+    # =========================
+    resolved_prompt_audio = question_audio_url
+
+    if not resolved_prompt_audio and training.item_type in {"listen_asr", "speak_read"} and use_tts and prompt_text:
+        # gTTS 的 lang 和前端 asr_lang 不同，这里做简单映射
+        tts_lang = "en"
+        lang_upper = str(asr_lang).lower()
+
+        if lang_upper.startswith("ja"):
+            tts_lang = "ja"
+        elif lang_upper.startswith("zh"):
+            tts_lang = "zh-CN"
+        elif lang_upper.startswith("ko"):
+            tts_lang = "ko"
+        else:
+            tts_lang = "en"
+
+        resolved_prompt_audio = _build_tts_audio(
+            text=prompt_text,
+            lang=tts_lang,
+            prefix=f"prompttts_q{training.question_id}"
+        )
 
     payload = {
+        "id": training.id,
         "training_id": training.id,
-        "type": dynamic_type,
-        "prompt": q.prompt_text or "",
+
+        "question_id": training.question_id,
+
+        "item_type": training.item_type,
+        "type": training.item_type,
+
+        "display_item_type": item_type,
+
+        "prompt_text": prompt_text,
+        "prompt": prompt_text,
+
+        "answer_text": training.question.answer_text,
+        "correct_answers": training.cloze_answers or [],
+
+        "audio_url": resolved_prompt_audio or "",
+        "audio": resolved_prompt_audio or "",
+
+        "choices": choices,
+        "selection_mode": selection_mode,
+
         "cloze_text": training.cloze_text or "",
-        "cloze_answers_len": len(training.cloze_answers or []),
-        "choices": training.choices or [],
-        "audio": audio_url,
-        "answer_text": q.answer_text or "",
-        "meta": meta,
+        "cloze_answers": training.cloze_answers or [],
 
-        "question_id": q.id,
-        "lesson_id": q.lesson_id or "",
-        "book_id": q.lesson.book_id if q.lesson_id else "",
+        "memory_level": memory.memory_level if memory else 0,
 
-        "cycle_status": cycle_status,
+        # 听 / 说题型配置也顺便回前端
+        "use_tts": use_tts,
+        "asr_lang": asr_lang,
+        "allow_partial_match": bool(asr_cfg.get("allow_partial_match", True)),
     }
-
-    payload.update({
-        "selection_mode": meta.get("selection_mode", "single"),
-        "use_tts": meta.get("use_tts", False),
-        "asr_lang": (meta.get("asr") or {}).get("lang", "ja-JP"),
-        "allow_partial_match": (meta.get("asr") or {}).get("allow_partial_match", True),
-    })
 
     return payload
 
@@ -2048,23 +2161,185 @@ def question_edit(request, question_id):
         or f"/lesson/{question.lesson_id}/"
     )
 
+    training = question.training_items.order_by("id").first()
+    item_type = training.item_type if training else ""
+
     if request.method == "POST":
         prompt_text = (request.POST.get("prompt_text") or "").strip()
         answer_text = (request.POST.get("answer_text") or "").strip()
         audio_url = (request.POST.get("audio_url") or "").strip()
 
-        if prompt_text:
-            question.prompt_text = prompt_text
-            question.answer_text = answer_text
-            question.audio_url = audio_url
-            question.save(update_fields=["prompt_text", "answer_text", "audio_url"])
+        if not prompt_text:
+            return render(request, "train/edit_item.html", {
+                "mode": "question",
+                "obj": question,
+                "training": training,
+                "item_type": item_type,
+                "next": next_url,
+                "page_title": "按原题型编辑",
+                "error": "题干不能为空",
+                "choices_json": json.dumps(training.choices or [], ensure_ascii=False) if training else "[]",
+                "cloze_answers_text": "\n".join(training.cloze_answers or []) if training and training.cloze_answers else "",
+                "listen_meta": (
+                    ((training.choices or [])[0].get("_meta", {}))
+                    if training and training.choices and isinstance((training.choices or [])[0], dict)
+                    else {}
+                ),
+            })
+
+        # 通用字段先保存
+        question.prompt_text = prompt_text
+        question.answer_text = answer_text
+        question.audio_url = audio_url
+        question.save(update_fields=["prompt_text", "answer_text", "audio_url"])
+
+        # 没有 training 的旧题
+        if not training:
             return redirect(next_url)
+
+        # =========================
+        # 选择题
+        # =========================
+        if training.item_type == "read_choice":
+            raw_choice_texts = request.POST.getlist("choice_text[]")
+            raw_choice_types = request.POST.getlist("choice_type[]")
+            raw_choice_audios = request.POST.getlist("choice_audio[]")
+            raw_choice_tts_flags = request.POST.getlist("choice_use_tts[]")
+            raw_correct_indexes = request.POST.getlist("choice_correct[]")
+
+            selection_mode = "single"
+            old_choices = training.choices or []
+            if old_choices:
+                selection_mode = old_choices[0].get("selection_mode") or "single"
+
+            correct_index_set = {
+                int(x) for x in raw_correct_indexes if str(x).isdigit()
+            }
+
+            normalized_choices = []
+            correct_texts = []
+
+            max_len = max(
+                len(raw_choice_texts),
+                len(raw_choice_types),
+                len(raw_choice_audios),
+            ) if (raw_choice_texts or raw_choice_types or raw_choice_audios) else 0
+
+            for idx in range(max_len):
+                text = (raw_choice_texts[idx] if idx < len(raw_choice_texts) else "").strip()
+                ctype = (raw_choice_types[idx] if idx < len(raw_choice_types) else "text").strip()
+                audio = (raw_choice_audios[idx] if idx < len(raw_choice_audios) else "").strip()
+                use_tts_when_no_audio = str(idx) in raw_choice_tts_flags
+                correct = idx in correct_index_set
+
+                if not text:
+                    continue
+
+                item = {
+                    "key": chr(65 + len(normalized_choices)),
+                    "type": ctype if ctype in {"text", "audio"} else "text",
+                    "text": text,
+                    "content": text,
+                    "audio": audio,
+                    "use_tts_when_no_audio": use_tts_when_no_audio,
+                    "correct": correct,
+                    "selection_mode": selection_mode,
+                    "reveal_text_on_wrong": bool(
+                        old_choices[0].get("reveal_text_on_wrong", False)
+                    ) if old_choices else False,
+                }
+
+                normalized_choices.append(item)
+
+                if correct:
+                    correct_texts.append(text)
+
+            if normalized_choices and correct_texts:
+                training.choices = normalized_choices
+                training.save(update_fields=["choices"])
+
+                question.answer_text = " / ".join(correct_texts)
+                question.save(update_fields=["answer_text"])
+
+            return redirect(next_url)
+
+        # =========================
+        # 克漏字
+        # =========================
+        if training.item_type == "read_cloze":
+            cloze_text = (request.POST.get("cloze_text") or "").strip()
+            cloze_answers_text = (request.POST.get("cloze_answers_text") or "").strip()
+
+            cloze_answers = [
+                x.strip()
+                for x in re.split(r"[\n,，;/；、|]+", cloze_answers_text)
+                if x.strip()
+            ]
+
+            if cloze_text:
+                training.cloze_text = cloze_text
+            training.cloze_answers = cloze_answers
+            training.save(update_fields=["cloze_text", "cloze_answers"])
+
+            if cloze_answers:
+                question.answer_text = " / ".join(cloze_answers)
+                question.save(update_fields=["answer_text"])
+
+            return redirect(next_url)
+
+        # =========================
+        # 听 / 说
+        # =========================
+        if training.item_type in {"listen_asr", "speak_read"}:
+            old_choices = training.choices or []
+            meta = {}
+
+            if old_choices and isinstance(old_choices[0], dict):
+                meta = old_choices[0].get("_meta", {}) or {}
+
+            skill = meta.get(
+                "skill",
+                "listen" if training.item_type == "listen_asr" else "speak"
+            )
+            old_item_type = meta.get("item_type", training.item_type)
+            use_tts = request.POST.get("use_tts") == "1"
+            asr_lang = (request.POST.get("asr_lang") or "en-US").strip()
+            allow_partial_match = request.POST.get("allow_partial_match") == "1"
+
+            training.choices = [{
+                "_meta": {
+                    "skill": skill,
+                    "item_type": old_item_type,
+                    "use_tts": use_tts,
+                    "asr": {
+                        "lang": asr_lang,
+                        "allow_partial_match": allow_partial_match,
+                    }
+                }
+            }]
+            training.save(update_fields=["choices"])
+
+            return redirect(next_url)
+
+        # =========================
+        # 写作题 / 其他
+        # =========================
+        return redirect(next_url)
 
     return render(request, "train/edit_item.html", {
         "mode": "question",
         "obj": question,
+        "training": training,
+        "item_type": item_type,
         "next": next_url,
-        "page_title": "编辑题干与回答",
+        "page_title": "按原题型编辑",
+        "choices_json": json.dumps(training.choices or [], ensure_ascii=False) if training else "[]",
+        "cloze_answers_text": "\n".join(training.cloze_answers or []) if training and training.cloze_answers else "",
+        "listen_meta": (
+            ((training.choices or [])[0].get("_meta", {}))
+            if training and training.choices and isinstance((training.choices or [])[0], dict)
+            else {}
+        ),
     })
 
 @login_required

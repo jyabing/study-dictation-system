@@ -42,7 +42,7 @@
             font-weight: 600;
         }
 
-        .input, .textarea {
+        .input, .textarea, .select {
             width: 100%;
             box-sizing: border-box;
             padding: 12px 14px;
@@ -57,10 +57,61 @@
             resize: vertical;
         }
 
+        .sub-card {
+            background: #fafbfc;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+
+        .sub-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .choice-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .choice-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .tip {
+            margin: 6px 0 14px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .error-box {
+            margin-bottom: 14px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            font-size: 14px;
+        }
+
         .actions {
             display: flex;
             gap: 10px;
             margin-top: 18px;
+            flex-wrap: wrap;
         }
 
         .btn {
@@ -108,6 +159,10 @@
             margin-top: 14px;
         }
 
+        .hidden {
+            display: none;
+        }
+
         @media (max-width: 768px) {
             .actions {
                 flex-direction: column;
@@ -117,6 +172,11 @@
                 width: 100%;
                 box-sizing: border-box;
             }
+
+            .choice-top {
+                flex-direction: column;
+                align-items: stretch;
+            }
         }
     </style>
 </head>
@@ -124,6 +184,10 @@
     <div class="page">
         <div class="card">
             <div class="title">{{ page_title }}</div>
+
+            {% if error %}
+                <div class="error-box">{{ error }}</div>
+            {% endif %}
 
             <form method="post">
                 {% csrf_token %}
@@ -166,12 +230,134 @@
 
                     <div class="field">
                         <label class="label">音频地址（可不填）</label>
-                        <input class="input" type="text" name="audio_url" value="{{ obj.audio_url }}">
+                        <input class="input" type="text" name="audio_url" value="{{ obj.audio_url|default_if_none:'' }}">
                     </div>
+
+                    {% if training and item_type == "read_choice" %}
+                        <div class="field">
+                            <div class="sub-title">选择题编辑区</div>
+                            <div class="tip">
+                                保持原题型编辑。这里不切换题型，只编辑当前题目的选项内容、正确项、音频和 TTS。
+                            </div>
+
+                            <div id="choiceEditor"></div>
+
+                            <button type="button" class="btn btn-secondary" onclick="addChoice()">+ 添加选项</button>
+                        </div>
+                    {% endif %}
+
+                    {% if training and item_type == "read_cloze" %}
+                        <div class="field">
+                            <div class="sub-title">克漏字编辑区</div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">克漏字题干</label>
+                            <textarea class="textarea" name="cloze_text">{{ training.cloze_text|default_if_none:'' }}</textarea>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">克漏字答案（多个答案可换行 / 逗号 / 分号分隔）</label>
+                            <textarea class="textarea" name="cloze_answers_text">{{ cloze_answers_text }}</textarea>
+                        </div>
+                    {% endif %}
+
+                    {% if training and item_type == "write" %}
+                        <div class="tip">
+                            这是一道文字作答题。当前可编辑题干、标准回答和音频地址。
+                        </div>
+                    {% endif %}
+
+                    {% if training and item_type == "listen_asr" %}
+                        <div class="field">
+                            <div class="sub-title">听力题编辑区</div>
+                            <div class="tip">
+                                这是一道听音识别题。可以编辑题干、标准答案、音频地址，以及“无音频时使用 TTS”配置。
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">
+                                <input
+                                    type="checkbox"
+                                    name="use_tts"
+                                    value="1"
+                                    {% if listen_meta.use_tts %}checked{% endif %}
+                                >
+                                没有音频时使用 TTS
+                            </label>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">识别语言</label>
+                            <select class="select" name="asr_lang">
+                                <option value="en-US" {% if listen_meta.asr.lang == "en-US" %}selected{% endif %}>英语（en-US）</option>
+                                <option value="ja-JP" {% if listen_meta.asr.lang == "ja-JP" %}selected{% endif %}>日语（ja-JP）</option>
+                                <option value="zh-CN" {% if listen_meta.asr.lang == "zh-CN" %}selected{% endif %}>中文（zh-CN）</option>
+                                <option value="ko-KR" {% if listen_meta.asr.lang == "ko-KR" %}selected{% endif %}>韩语（ko-KR）</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">
+                                <input
+                                    type="checkbox"
+                                    name="allow_partial_match"
+                                    value="1"
+                                    {% if listen_meta.asr.allow_partial_match %}checked{% endif %}
+                                >
+                                允许部分匹配
+                            </label>
+                        </div>
+                    {% endif %}
+
+                    {% if training and item_type == "speak_read" %}
+                        <div class="field">
+                            <div class="sub-title">口语题编辑区</div>
+                            <div class="tip">
+                                这是一道看字朗读题。可以编辑题干、标准答案，以及语音识别配置。
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">
+                                <input
+                                    type="checkbox"
+                                    name="use_tts"
+                                    value="1"
+                                    {% if listen_meta.use_tts %}checked{% endif %}
+                                >
+                                没有音频时使用 TTS
+                            </label>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">识别语言</label>
+                            <select class="select" name="asr_lang">
+                                <option value="en-US" {% if listen_meta.asr.lang == "en-US" %}selected{% endif %}>英语（en-US）</option>
+                                <option value="ja-JP" {% if listen_meta.asr.lang == "ja-JP" %}selected{% endif %}>日语（ja-JP）</option>
+                                <option value="zh-CN" {% if listen_meta.asr.lang == "zh-CN" %}selected{% endif %}>中文（zh-CN）</option>
+                                <option value="ko-KR" {% if listen_meta.asr.lang == "ko-KR" %}selected{% endif %}>韩语（ko-KR）</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">
+                                <input
+                                    type="checkbox"
+                                    name="allow_partial_match"
+                                    value="1"
+                                    {% if listen_meta.asr.allow_partial_match %}checked{% endif %}
+                                >
+                                允许部分匹配
+                            </label>
+                        </div>
+                    {% endif %}
                 {% endif %}
 
                 <div class="actions">
                     <button type="submit" class="btn btn-primary">保存修改</button>
+
                     {% if mode == "book" %}
                         <a
                             href="{% url 'book-delete-confirm' obj.id %}?next={{ next|urlencode }}"
@@ -187,6 +373,7 @@
                             删除章节
                         </a>
                     {% endif %}
+
                     <a href="{{ next }}" class="btn btn-secondary">返回</a>
                 </div>
             </form>
@@ -201,8 +388,166 @@
                     </form>
                 </div>
             {% endif %}
-            
         </div>
     </div>
+
+    {% if mode == "question" and training and item_type == "read_choice" %}
+    <script>
+        let choices = {{ choices_json|safe }};
+
+        function normalizeChoiceItem(c) {
+            return {
+                type: c?.type || "text",
+                text: c?.text || c?.content || "",
+                audio: c?.audio || "",
+                use_tts_when_no_audio: !!c?.use_tts_when_no_audio,
+                correct: !!c?.correct,
+                selection_mode: c?.selection_mode || "single"
+            };
+        }
+
+        choices = (choices || []).map(normalizeChoiceItem);
+
+        function addChoice() {
+            const mode = choices.length > 0 ? choices[0].selection_mode : "single";
+
+            choices.push({
+                type: "text",
+                text: "",
+                audio: "",
+                use_tts_when_no_audio: false,
+                correct: false,
+                selection_mode: mode
+            });
+
+            renderChoices();
+        }
+
+        function removeChoice(index) {
+            choices.splice(index, 1);
+            renderChoices();
+        }
+
+        function updateChoiceType(index, value) {
+            choices[index].type = value;
+        }
+
+        function updateChoiceText(index, value) {
+            choices[index].text = value;
+        }
+
+        function updateChoiceAudio(index, value) {
+            choices[index].audio = value;
+        }
+
+        function updateChoiceUseTts(index, checked) {
+            choices[index].use_tts_when_no_audio = checked;
+        }
+
+        function updateChoiceCorrect(index, checked) {
+            const isSingle = (choices[0]?.selection_mode || "single") === "single";
+
+            if (isSingle && checked) {
+                choices.forEach((c, i) => {
+                    choices[i].correct = (i === index);
+                });
+                renderChoices();
+            } else {
+                choices[index].correct = checked;
+            }
+        }
+
+        function renderChoices() {
+            const wrap = document.getElementById("choiceEditor");
+            const isSingle = (choices[0]?.selection_mode || "single") === "single";
+
+            wrap.innerHTML = "";
+
+            choices.forEach((choice, index) => {
+                const item = normalizeChoiceItem(choice);
+                const key = String.fromCharCode(65 + index);
+
+                const div = document.createElement("div");
+                div.className = "sub-card";
+
+                div.innerHTML = `
+                    <div class="choice-top">
+                        <div class="sub-title" style="margin:0;">选项 ${key}</div>
+                        <button type="button" class="btn btn-secondary" onclick="removeChoice(${index})">删除</button>
+                    </div>
+
+                    <div class="choice-grid">
+                        <div class="field">
+                            <label class="label">选项类型</label>
+                            <select class="select" name="choice_type[]" onchange="updateChoiceType(${index}, this.value)">
+                                <option value="text" ${item.type === "text" ? "selected" : ""}>文字</option>
+                                <option value="audio" ${item.type === "audio" ? "selected" : ""}>音频</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">选项文字</label>
+                            <input
+                                class="input"
+                                type="text"
+                                name="choice_text[]"
+                                value="${escapeHtml(item.text)}"
+                                oninput="updateChoiceText(${index}, this.value)"
+                                placeholder="请输入选项文字"
+                            >
+                        </div>
+
+                        <div class="field">
+                            <label class="label">音频地址或路径</label>
+                            <input
+                                class="input"
+                                type="text"
+                                name="choice_audio[]"
+                                value="${escapeHtml(item.audio)}"
+                                oninput="updateChoiceAudio(${index}, this.value)"
+                                placeholder="没有可留空；有音频时填写"
+                            >
+                        </div>
+
+                        <label class="checkbox-row">
+                            <input
+                                type="checkbox"
+                                name="choice_use_tts[]"
+                                value="${index}"
+                                ${item.use_tts_when_no_audio ? "checked" : ""}
+                                onchange="updateChoiceUseTts(${index}, this.checked)"
+                            >
+                            没有音频时使用 TTS
+                        </label>
+
+                        <label class="checkbox-row">
+                            <input
+                                type="${isSingle ? "radio" : "checkbox"}"
+                                name="choice_correct[]"
+                                value="${index}"
+                                ${item.correct ? "checked" : ""}
+                                onchange="updateChoiceCorrect(${index}, this.checked)"
+                            >
+                            正确
+                        </label>
+                    </div>
+                `;
+
+                wrap.appendChild(div);
+            });
+        }
+
+        function escapeHtml(text) {
+            return String(text || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        renderChoices();
+    </script>
+    {% endif %}
 </body>
 </html>

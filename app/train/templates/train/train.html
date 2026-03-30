@@ -865,8 +865,8 @@
             selectionMode: "single",
             asrLang: "ja-JP",
             currentAudio: "",
+            revealChoiceText: false,
         };
-
 
         // =========================
         // 🚀 初始化
@@ -916,15 +916,15 @@
                         return;
                     }
 
-                    state.type = data.type || null;
-                    state.trainingId = data.training_id || null;
-                    state.promptText = (data.prompt || "").trim();
-                    state.correctAnswers = data.correct_answers || [];
+                    state.type = data.type || data.item_type || null;
+                    state.trainingId = data.training_id || data.id || null;
+                    state.promptText = (data.prompt || data.prompt_text || "").trim();
+                    state.correctAnswers = data.correct_answers || data.cloze_answers || [];
                     state.clozeInputs = [];
                     state.wrongWords = [];
-                    state.selectionMode = data.selection_mode || "single";
+                    state.selectionMode = data.selection_mode || (data.choices?.[0]?.selection_mode) || "single";
                     state.asrLang = data.asr_lang || "ja-JP";
-                    state.currentAudio = data.audio || "";
+                    state.currentAudio = data.audio || data.audio_url || "";
 
                     render(data);
                 })
@@ -944,9 +944,10 @@
             document.getElementById("choiceList").innerHTML = "";
             document.getElementById("feedback").innerText = "";
 
-            const promptText = (data.prompt || "").trim();
+            const currentType = data.type || data.item_type || "";
+            const promptText = (data.prompt || data.prompt_text || "").trim();
             const questionEl = document.getElementById("question");
-            const isListenAsr = data.type === "listen_asr";
+            const isListenAsr = currentType === "listen_asr";
 
             if (isListenAsr) {
                 questionEl.innerText = "";
@@ -959,27 +960,27 @@
             renderCycleStatus(data.cycle_status);
             renderQuestionMeta(data);
 
-            if (data.type === "read_cloze" || data.type === "cloze") {
+            if (currentType === "read_cloze" || currentType === "cloze") {
                 renderCloze(data);
                 return;
             }
 
-            if (data.type === "read_choice") {
+            if (currentType === "read_choice") {
                 renderChoice(data);
                 return;
             }
 
-            if (data.type === "listen_asr" || data.type === "speak_read") {
+            if (currentType === "listen_asr" || currentType === "speak_read") {
                 renderSpeech(data);
                 return;
             }
 
-            if (data.type === "write") {
+            if (currentType === "write") {
                 renderWrite();
                 return;
             }
 
-            console.warn("未知题型:", data.type);
+            console.warn("未知题型:", currentType, data);
         }
 
         function getSkillLabel(type) {
@@ -1008,12 +1009,13 @@ function renderQuestionMeta(data) {
     const audioBtn = document.getElementById("questionAudioBtn");
     const audioTip = document.getElementById("audioTip");
 
-    badge.innerText = getSkillLabel(data.type);
+    const currentType = data.type || data.item_type || "";
+    badge.innerText = getSkillLabel(currentType);
 
     audioBar.style.display = "none";
     audioTip.innerText = "";
 
-    const audioUrl = data.audio || "";
+    const audioUrl = data.audio || data.audio_url || "";
 
     if (audioUrl) {
         audioBar.style.display = "block";
@@ -1023,7 +1025,7 @@ function renderQuestionMeta(data) {
         return;
     }
 
-    if (data.type === "listen_asr" || data.type === "listen_choice") {
+    if (currentType === "listen_asr" || currentType === "listen_choice") {
         audioBar.style.display = "block";
         audioBtn.onclick = function () {
             audioTip.innerText = "这道题当前没有可播放音频。";
@@ -1035,29 +1037,30 @@ function playAudio(url) {
     const audioTip = document.getElementById("audioTip");
 
     if (!url) {
-        audioTip.innerText = "音频地址为空，无法播放。";
+        if (audioTip) {
+            audioTip.innerText = "这道题当前没有可播放音频。";
+        }
+        console.warn("empty audio url");
         return;
     }
 
-    audioTip.innerText = "正在播放…";
-
     const audio = new Audio(url);
 
-    audio.onended = function () {
-        audioTip.innerText = "播放完成";
-    };
-
-    audio.onerror = function () {
-        audioTip.innerText = "音频播放失败，请检查音频文件或地址。";
+    audio.addEventListener("error", () => {
         console.error("audio play error:", url);
-    };
+        if (audioTip) {
+            audioTip.innerText = "音频加载失败。";
+        }
+    });
 
     const playPromise = audio.play();
 
     if (playPromise && typeof playPromise.catch === "function") {
-        playPromise.catch(function (err) {
-            audioTip.innerText = "音频播放失败，请重试。";
+        playPromise.catch(err => {
             console.error("audio play rejected:", err, url);
+            if (audioTip) {
+                audioTip.innerText = "播放失败，请重试。";
+            }
         });
     }
 }
@@ -1101,7 +1104,7 @@ function playAudio(url) {
             state.clozeInputs = [];
             state.wrongWords = [];
 
-            const promptText = (data.prompt || "").trim();
+            const promptText = (data.prompt || data.prompt_text || "").trim();
             let text = (data.cloze_text || "").trim();
 
             if (promptText && text.includes(promptText)) {
@@ -1189,18 +1192,33 @@ function playAudio(url) {
                 label.textContent = choice.key;
 
                 const content = document.createElement("div");
+                content.className = "choice-content";
+
+                const text = choice.content || choice.text || "";
+                const playableAudio = choice.resolved_audio || choice.audio || "";
+                const shouldRevealText =
+                    state.revealChoiceText && !!choice.reveal_text_on_wrong;
 
                 if (choice.type === "audio") {
                     const btn = document.createElement("button");
                     btn.type = "button";
                     btn.className = "choice-audio-btn";
                     btn.textContent = "播放音频";
-                    btn.onclick = function () {
-                        playAudio(choice.audio || "");
+                    btn.disabled = !playableAudio;
+                    btn.onclick = () => {
+                        playAudio(playableAudio);
                     };
                     content.appendChild(btn);
+
+                    if (shouldRevealText) {
+                        const textSpan = document.createElement("span");
+                        textSpan.style.display = "block";
+                        textSpan.style.marginTop = "8px";
+                        textSpan.textContent = text || "未填写文字";
+                        content.appendChild(textSpan);
+                    }
                 } else {
-                    content.textContent = choice.content || choice.text || "";
+                    content.textContent = text;
                 }
 
                 row.appendChild(input);
@@ -1371,6 +1389,11 @@ function playAudio(url) {
                         questionEl.style.display = "block";
                     }
 
+                    if (state.type === "read_choice") {
+                        state.revealChoiceText = true;
+                        renderChoice(data);
+                    }
+
                     reinforceWrongWords();
                     return;
                 }
@@ -1419,6 +1442,7 @@ function playAudio(url) {
                 selectionMode: "single",
                 asrLang: "ja-JP",
                 currentAudio: "",
+                revealChoiceText: false,
             };
 
             document.getElementById("question").innerText = "";

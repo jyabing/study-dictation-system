@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }}</title>
+    <style>
+        body {
+            margin: 0;
+            background: #f3f4f7;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #111827;
+        }
+
+        .page {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 32px 20px 48px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 28px 22px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+        }
+
+        .title {
+            margin: 0 0 18px;
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .lesson-name {
+            margin: 0 0 10px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .book-name {
+            margin: 0 0 18px;
+            font-size: 15px;
+            color: #6b7280;
+        }
+
+        .warning {
+            margin: 0 0 20px;
+            padding: 16px 18px;
+            border-radius: 18px;
+            background: #fff4f4;
+            color: #b42318;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .stats {
+            margin: 0 0 24px;
+            padding: 0;
+            list-style: none;
+        }
+
+        .stats li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid #eceef3;
+            font-size: 17px;
+        }
+
+        .stats li:last-child {
+            border-bottom: none;
+        }
+
+        .label {
+            color: #4b5563;
+        }
+
+        .value {
+            font-weight: 800;
+            color: #111827;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 18px 20px;
+            border-radius: 18px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            margin-top: 16px;
+        }
+
+        .btn-danger {
+            background: #e5484d;
+            color: #ffffff;
+        }
+
+        .btn-secondary {
+            background: #e9edf2;
+            color: #1f2937;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="card">
+            <h1 class="title">删除章节</h1>
+
+            <p class="lesson-name">{{ lesson.title }}</p>
+            <p class="book-name">所属书册：{{ book.title }}</p>
+
+            <div class="warning">
+                删除后不可恢复。<br>
+                该章节下的题目等下级内容会一起删除。
+            </div>
+
+            <ul class="stats">
+                <li>
+                    <span class="label">题目数量</span>
+                    <span class="value">{{ question_count }}</span>
+                </li>
+            </ul>
+
+            <form method="post" action="{% url 'lesson-delete-submit' lesson.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">确认删除章节</button>
+            </form>
+
+            <a href="{% url 'lesson-edit' lesson.id %}?next={{ next|urlencode }}" class="btn btn-secondary">
+                返回编辑
+            </a>
+
+            <a href="{% url 'book-detail' book.id %}" class="btn btn-secondary">
+                返回书册详情
+            </a>
+        </div>
+    </div>
+</body>
+</html>

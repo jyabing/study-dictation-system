@@ -88,6 +88,52 @@
             font-size: 14px;
         }
 
+        .back-btn {
+            display: inline-block;
+            text-decoration: none;
+            color: #475569;
+            font-size: 14px;
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+
+        .page-title {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1.4;
+            color: #111827;
+        }
+
+        .page-subtitle {
+            margin-top: 6px;
+            font-size: 13px;
+            color: #6b7280;
+            line-height: 1.7;
+        }
+
+        .top-action-btn,
+        .manage-btn {
+            display: inline-block;
+            text-decoration: none;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 14px;
+            line-height: 1.2;
+            min-height: 44px;
+            box-sizing: border-box;
+        }
+
+        .top-action-btn {
+            background: #eef3f8;
+            color: #334155;
+        }
+
+        .manage-btn {
+            background: #eef3f8;
+            color: #334155;
+        }
+
         .lesson-overview-card,
         .lesson-round-card,
         .card,
@@ -451,6 +497,76 @@
             flex: 1 1 160px;
         }
 
+        /* =========================
+        统一收口：train
+        ========================= */
+        .top-action-btn,
+        .manage-btn,
+        .submit-btn,
+        .done-btn,
+        .status-primary-btn,
+        .status-secondary-btn {
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+
+        .submit-btn,
+        .status-primary-btn,
+        .done-btn {
+            background: #1677ff;
+            color: #fff;
+            font-weight: 700;
+            padding: 11px 14px;
+        }
+
+        .top-action-btn,
+        .manage-btn,
+        .status-secondary-btn {
+            background: #eef3f8;
+            color: #334155;
+            font-weight: 600;
+            padding: 11px 14px;
+        }
+
+        .lesson-overview-risk,
+        .skill-badge {
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 800;
+        }
+
+        .lesson-overview-title,
+        .lesson-round-title,
+        .status-state-title {
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .question {
+            font-size: 20px;
+            line-height: 1.7;
+        }
+
+        .lesson-overview-meta,
+        .lesson-round-meta,
+        .status-state-sub,
+        .status-state-meta {
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .cycle-meta,
+        .done-sub {
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
         @media (max-width: 768px) {
             body {
                 font-size: 15px;
@@ -574,7 +690,7 @@
         </div>
 
         <div class="lesson-overview-card">
-            <div class="lesson-overview-title">本课循环总览</div>
+            <div class="lesson-overview-title">本课循环状态</div>
 
             {% if lesson_cycle_summary.risk_level == "高风险" %}
                 <div class="lesson-overview-risk high">高风险</div>
@@ -693,7 +809,7 @@
                     <div class="status-state-icon done">✓</div>
 
                     <div>
-                        <div class="status-state-title">今日完成</div>
+                        <div class="status-state-title">本轮已完成</div>
                         <div class="status-state-sub">
                             本课今天这一轮已经完成，可以返回书册或明天继续。
                         </div>
@@ -717,7 +833,7 @@
                     <div class="status-state-icon empty">📝</div>
 
                     <div>
-                        <div class="status-state-title">还没有循环记忆素材</div>
+                        <div class="status-state-title">这课还没有循环记忆素材</div>
                         <div class="status-state-sub">
                             这课目前还没有可进入训练循环的素材。
                         </div>
@@ -1357,9 +1473,9 @@ function playAudio(url) {
             document.getElementById("noMaterialArea").style.display = "none";
             document.getElementById("doneArea").style.display = "block";
 
-            const meta = document.getElementById("doneStateMeta");
-            if (meta && message) {
-                meta.innerText = message;
+            const sub = document.querySelector("#doneArea .done-sub");
+            if (sub) {
+                sub.innerText = message || "今天这一轮已经完成，可以返回书册，明天继续。";
             }
         }
 
@@ -1369,10 +1485,11 @@ function playAudio(url) {
             document.getElementById("noMaterialArea").style.display = "block";
 
             const text = document.getElementById("noMaterialText");
-            if (text && message) {
-                text.innerText = message;
+            if (text) {
+                text.innerText = message || "请先新增循环记忆素材，再进入训练。";
             }
         }
+                
 
         function getCSRF() {
             return document.cookie.split("; ")

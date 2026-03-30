@@ -84,8 +84,24 @@
         }
 
         .btn-danger {
-            background: #e53935;
-            color: white;
+            display: block;
+            width: 100%;
+            margin-top: 16px;
+            padding: 18px 20px;
+            border-radius: 18px;
+            background: #e5484d;
+            color: #ffffff;
+            text-align: center;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 700;
+            border: none;
+            box-sizing: border-box;
+        }
+
+        .btn-danger:hover {
+            background: #d63c41;
+            color: #ffffff;
         }
 
         .danger-zone {
@@ -156,6 +172,21 @@
 
                 <div class="actions">
                     <button type="submit" class="btn btn-primary">保存修改</button>
+                    {% if mode == "book" %}
+                        <a
+                            href="{% url 'book-delete-confirm' obj.id %}?next={{ next|urlencode }}"
+                            class="btn btn-danger"
+                        >
+                            删除书册
+                        </a>
+                    {% elif mode == "lesson" %}
+                        <a
+                            href="{% url 'lesson-delete-confirm' obj.id %}?next={{ next|urlencode }}"
+                            class="btn btn-danger"
+                        >
+                            删除章节
+                        </a>
+                    {% endif %}
                     <a href="{{ next }}" class="btn btn-secondary">返回</a>
                 </div>
             </form>

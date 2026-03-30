@@ -1800,41 +1800,29 @@ def _normalize_choices(raw_choices, selection_mode="single", reveal_text_on_wron
     for idx, c in enumerate(raw_choices or []):
         ctype = (c.get("type") or "text").strip()
 
-        if ctype == "audio":
-            audio = (c.get("audio") or c.get("content") or "").strip()
-            text = (c.get("text") or c.get("content") or "").strip()
+        text = (c.get("text") or c.get("content") or "").strip()
+        audio = (c.get("audio") or "").strip()
+        use_tts_when_no_audio = bool(c.get("use_tts_when_no_audio", False))
+        correct = bool(c.get("correct"))
 
-            item = {
-                "key": chr(65 + idx),  # A/B/C/D...
-                "type": "audio",
-                "audio": audio,
-                "text": text,
-                "content": text,
-                "correct": bool(c.get("correct")),
-                "selection_mode": selection_mode,
-                "reveal_text_on_wrong": reveal_text_on_wrong,
-            }
-
-            if item["correct"] and text:
-                correct_texts.append(text)
-
-            normalized.append(item)
+        # 所有选项都必须有文字
+        if not text:
             continue
 
-        content = (c.get("content") or c.get("text") or "").strip()
-
         item = {
-            "key": chr(65 + idx),
-            "type": "text",
-            "content": content,
-            "text": content,
-            "correct": bool(c.get("correct")),
+            "key": chr(65 + idx),   # A / B / C / D
+            "type": ctype if ctype in {"text", "audio"} else "text",
+            "text": text,
+            "content": text,
+            "audio": audio,
+            "use_tts_when_no_audio": use_tts_when_no_audio,
+            "correct": correct,
             "selection_mode": selection_mode,
             "reveal_text_on_wrong": reveal_text_on_wrong,
         }
 
-        if item["correct"] and content:
-            correct_texts.append(content)
+        if correct:
+            correct_texts.append(text)
 
         normalized.append(item)
 
@@ -1907,9 +1895,13 @@ def builder_save(request):
             reveal_text_on_wrong=reveal_text_on_wrong
         )
 
+        if not raw_choices:
+            question.delete()
+            return JsonResponse({"ok": False, "error": "选择题至少需要填写一个选项"}, status=400)
+
         if not choices_payload:
             question.delete()
-            return JsonResponse({"ok": False, "error": "选择题至少需要一个选项"}, status=400)
+            return JsonResponse({"ok": False, "error": "所有选项都不能为空，且每个选项必须填写文字内容"}, status=400)
 
         if not correct_texts:
             question.delete()

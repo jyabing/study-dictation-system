@@ -325,6 +325,70 @@
             color: #334155;
         }
 
+        /* =========================
+        统一收口：book_detail
+        ========================= */
+        .top-action-btn,
+        .create-lesson-submit,
+        .lesson-study-btn,
+        .lesson-edit-btn {
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.2;
+            padding: 11px 14px;
+        }
+
+        .create-lesson-submit,
+        .lesson-study-btn {
+            background: #1677ff;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .top-action-btn,
+        .lesson-edit-btn {
+            background: #eef3f8;
+            color: #334155;
+            font-weight: 600;
+        }
+
+        .book-overview-risk,
+        .lesson-risk,
+        .lesson-stage-chip {
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 800;
+        }
+
+        .book-overview-title,
+        .section-title {
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .lesson-title {
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .page-subtitle,
+        .book-overview-sub,
+        .section-subtitle {
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .lesson-summary-meta {
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
         @media (max-width: 768px) {
             body {
                 font-size: 15px;
@@ -342,6 +406,42 @@
 
             .page-subtitle {
                 font-size: 13px;
+            }
+
+            .back-btn {
+                display: inline-block;
+                text-decoration: none;
+                color: #475569;
+                font-size: 14px;
+                margin-bottom: 10px;
+                line-height: 1.2;
+            }
+
+            .page-title {
+                font-size: 28px;
+                font-weight: 800;
+                line-height: 1.4;
+                color: #111827;
+            }
+
+            .page-subtitle {
+                margin-top: 6px;
+                font-size: 13px;
+                color: #6b7280;
+                line-height: 1.7;
+            }
+
+            .top-action-btn {
+                display: inline-block;
+                text-decoration: none;
+                background: #eef3f8;
+                color: #334155;
+                border-radius: 12px;
+                padding: 10px 14px;
+                font-size: 14px;
+                line-height: 1.2;
+                min-height: 44px;
+                box-sizing: border-box;
             }
 
             .book-overview-card,
@@ -583,7 +683,7 @@
         </div>
     {% empty %}
         <div class="lesson-card">
-            这本书还没有课节，先新建一个。
+            这本书还没有课节。请先新建课节。
         </div>
     {% endfor %}
 

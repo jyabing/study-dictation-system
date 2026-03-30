@@ -1,13 +1,15 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from ..models import Book, Lesson
+from ..models import Book, Lesson, Question
 from .train_views import (
     get_today_plan,
     get_stats,
     get_dashboard_cycle_summary,
     get_book_lessons_cycle_summary,
     get_dashboard_books_cycle_summary,
+
 )
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 
 @login_required
 def dashboard(request):
@@ -161,3 +163,73 @@ def lesson_edit(request, lesson_id):
         "next": next_url,
         "page_title": "编辑章节",
     })
+
+@login_required
+def book_delete_confirm(request, book_id):
+    book = get_object_or_404(
+        Book,
+        id=book_id,
+        owner=request.user
+    )
+
+    lesson_count = Lesson.objects.filter(book=book).count()
+    question_count = Question.objects.filter(lesson__book=book).count()
+
+    next_url = request.GET.get("next") or "/"
+
+    return render(request, "train/book_delete_confirm.html", {
+        "book": book,
+        "lesson_count": lesson_count,
+        "question_count": question_count,
+        "next": next_url,
+        "page_title": "删除书册",
+    })
+
+
+@login_required
+@require_POST
+def book_delete_submit(request, book_id):
+    book = get_object_or_404(
+        Book,
+        id=book_id,
+        owner=request.user
+    )
+
+    book.delete()
+    return redirect("dashboard")
+
+
+@login_required
+def lesson_delete_confirm(request, lesson_id):
+    lesson = get_object_or_404(
+        Lesson,
+        id=lesson_id,
+        book__owner=request.user
+    )
+
+    question_count = Question.objects.filter(lesson=lesson).count()
+
+    next_url = request.GET.get("next") or f"/book/{lesson.book_id}/"
+
+    return render(request, "train/lesson_delete_confirm.html", {
+        "lesson": lesson,
+        "book": lesson.book,
+        "question_count": question_count,
+        "next": next_url,
+        "page_title": "删除章节",
+    })
+
+
+@login_required
+@require_POST
+def lesson_delete_submit(request, lesson_id):
+    lesson = get_object_or_404(
+        Lesson,
+        id=lesson_id,
+        book__owner=request.user
+    )
+
+    book_id = lesson.book_id
+    lesson.delete()
+
+    return redirect("book-detail", book_id=book_id)

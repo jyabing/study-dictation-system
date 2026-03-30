@@ -84,6 +84,30 @@ body {
     z-index: 20;
 }
 
+/* =========================
+   顶部导航统一：dashboard
+========================= */
+.topbar-left {
+    min-width: 0;
+}
+
+.page-title-wrap {
+    min-width: 0;
+}
+
+.page-subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.7;
+}
+
+.account-trigger {
+    min-height: 44px;
+    padding: 10px 14px;
+    border-radius: 12px;
+}
+
 .auth-panel-row {
     display: flex;
     justify-content: space-between;
@@ -471,6 +495,83 @@ body {
     color: #334155;
 }
 
+/* =========================
+   统一收口：dashboard
+========================= */
+.top-action-btn,
+.book-study-btn,
+.btn,
+.account-menu-btn,
+.account-submit-btn {
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.2;
+}
+
+.book-study-btn,
+.account-submit-btn {
+    background: #1677ff;
+    color: #fff;
+    font-weight: 700;
+    padding: 11px 14px;
+}
+
+.top-action-btn,
+.btn,
+.account-menu-btn,
+.secondary-btn {
+    background: #eef3f8;
+    color: #334155;
+    font-weight: 600;
+    padding: 11px 14px;
+}
+
+.books-toggle-btn {
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.2;
+    padding: 11px 14px;
+    background: #eef3f8;
+    color: #334155;
+    font-weight: 600;
+}
+
+.book-risk,
+.book-stage-chip {
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.header {
+    font-size: 28px;
+    font-weight: 800;
+}
+
+.books-home-title {
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.title {
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.meta,
+.book-stage-meta {
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.books-home-sub,
+.minimal-book-meta,
+.auth-panel-row {
+    font-size: 13px;
+    line-height: 1.7;
+}
+
 @media (max-width: 768px) {
     body {
         font-size: 15px;
@@ -481,7 +582,7 @@ body {
     }
 
     .header {
-        font-size: 20px;
+        font-size: 22px;
     }
 
     .account-trigger {
@@ -538,6 +639,16 @@ body {
     .account-create-book-panel {
         margin-top: 12px;
         padding-top: 12px;
+    }
+
+    .page-subtitle {
+        font-size: 13px;
+        margin-top: 6px;
+    }
+
+    .account-trigger {
+        min-height: 44px;
+        padding: 10px 12px;
     }
 
     .books-home-section {
@@ -691,7 +802,12 @@ body {
      标题
 ========================= -->
 <div class="topbar">
-    <div class="header">我的学习</div>
+    <div class="topbar-left">
+        <div class="page-title-wrap">
+            <div class="header">我的学习</div>
+            <div class="page-subtitle">先看优先处理的书，再看全部书册。</div>
+        </div>
+    </div>
 
     <div class="account-anchor">
         <button type="button" class="account-trigger" onclick="toggleUserPanel()">
@@ -914,7 +1030,7 @@ body {
 {% else %}
     <div class="books-home-section">
         <div class="book-card">
-            还没有书册。请从右上角账户菜单中新建书册。
+            还没有书册。请从右上角菜单新建书册。
         </div>
     </div>
 {% endif %}

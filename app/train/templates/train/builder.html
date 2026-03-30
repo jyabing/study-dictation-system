@@ -584,6 +584,16 @@
 
         let choices = [];
 
+        function normalizeChoiceItem(c) {
+            return {
+                type: c?.type || "text",
+                text: c?.text || c?.content || "",
+                audio: c?.audio || "",
+                use_tts_when_no_audio: !!c?.use_tts_when_no_audio,
+                correct: !!c?.correct
+            };
+        }
+
         function syncTypeOptions() {
             const skill = document.getElementById("skill").value;
             const typeSelect = document.getElementById("item_type");
@@ -623,12 +633,16 @@
                 "hidden",
                 itemType === "read_choice_single" || itemType === "read_choice_multi"
             );
+
+            updatePreview();
         }
 
         function addChoice() {
             choices.push({
                 type: "text",
-                content: "",
+                text: "",
+                audio: "",
+                use_tts_when_no_audio: false,
                 correct: false
             });
 
@@ -648,8 +662,18 @@
             updatePreview();
         }
 
-        function updateChoiceContent(index, value) {
-            choices[index].content = value;
+        function updateChoiceText(index, value) {
+            choices[index].text = value;
+            updatePreview();
+        }
+
+        function updateChoiceAudio(index, value) {
+            choices[index].audio = value;
+            updatePreview();
+        }
+
+        function updateChoiceUseTts(index, checked) {
+            choices[index].use_tts_when_no_audio = checked;
             updatePreview();
         }
 
@@ -675,6 +699,8 @@
 
             wrap.innerHTML = "";
 
+            choices = choices.map(normalizeChoiceItem);
+
             choices.forEach((choice, index) => {
                 const key = String.fromCharCode(65 + index);
                 const row = document.createElement("div");
@@ -686,18 +712,43 @@
                         <button type="button" class="choice-remove" onclick="removeChoice(${index})">删除</button>
                     </div>
 
-                    <div class="choice-grid">
-                        <select onchange="updateChoiceType(${index}, this.value)">
-                            <option value="text" ${choice.type === "text" ? "selected" : ""}>文字</option>
-                            <option value="audio" ${choice.type === "audio" ? "selected" : ""}>音频</option>
-                        </select>
+                    <div class="choice-grid" style="grid-template-columns:1fr;">
+                        <div>
+                            <label>选项类型</label>
+                            <select onchange="updateChoiceType(${index}, this.value)">
+                                <option value="text" ${choice.type === "text" ? "selected" : ""}>文字</option>
+                                <option value="audio" ${choice.type === "audio" ? "selected" : ""}>音频</option>
+                            </select>
+                        </div>
 
-                        <input
-                            type="text"
-                            value="${escapeHtml(choice.content || "")}"
-                            oninput="updateChoiceContent(${index}, this.value)"
-                            placeholder="${choice.type === 'audio' ? '音频地址或路径' : '文字内容'}"
-                        >
+                        <div>
+                            <label>选项文字</label>
+                            <input
+                                type="text"
+                                value="${escapeHtml(choice.text || "")}"
+                                oninput="updateChoiceText(${index}, this.value)"
+                                placeholder="请输入选项文字"
+                            >
+                        </div>
+
+                        <div>
+                            <label>音频地址或路径</label>
+                            <input
+                                type="text"
+                                value="${escapeHtml(choice.audio || "")}"
+                                oninput="updateChoiceAudio(${index}, this.value)"
+                                placeholder="没有可留空；有音频时填写 mp3 地址"
+                            >
+                        </div>
+
+                        <label class="choice-correct">
+                            <input
+                                type="checkbox"
+                                ${choice.use_tts_when_no_audio ? "checked" : ""}
+                                onchange="updateChoiceUseTts(${index}, this.checked)"
+                            >
+                            没有音频时使用 TTS
+                        </label>
 
                         <label class="choice-correct">
                             <input
@@ -717,19 +768,15 @@
 
         function buildChoices() {
             return choices.map(c => {
-                if (c.type === "audio") {
-                    return {
-                        type: "audio",
-                        audio: c.content,
-                        text: c.content,
-                        correct: c.correct
-                    };
-                }
+                const item = normalizeChoiceItem(c);
 
                 return {
-                    type: "text",
-                    content: c.content,
-                    correct: c.correct
+                    type: item.type || "text",
+                    text: (item.text || "").trim(),
+                    content: (item.text || "").trim(),
+                    audio: (item.audio || "").trim(),
+                    use_tts_when_no_audio: !!item.use_tts_when_no_audio,
+                    correct: !!item.correct
                 };
             });
         }
@@ -756,25 +803,35 @@
                 previewChoicesWrap.classList.remove("hidden");
                 previewChoices.innerHTML = "";
 
+                choices = choices.map(normalizeChoiceItem);
+
                 choices.forEach((choice, index) => {
                     const key = String.fromCharCode(65 + index);
                     const div = document.createElement("div");
                     div.className = "preview-choice";
 
+                    let choiceLabel = choice.text || "未填写";
+
+                    if (choice.type === "audio") {
+                        const audioState = choice.audio
+                            ? "（有音频）"
+                            : (choice.use_tts_when_no_audio ? "（TTS）" : "（无音频）");
+                        choiceLabel = `[音频] ${choice.text || "未填写文字"} ${audioState}`;
+                    }
+
                     div.innerHTML = `
                         <div class="preview-key">${key}</div>
-                        <div style="flex:1;">
-                            ${escapeHtml(choice.type === "audio" ? "[音频] " + (choice.content || "") : (choice.content || "未填写"))}
-                        </div>
+                        <div style="flex:1;">${escapeHtml(choiceLabel)}</div>
                         ${choice.correct ? '<div class="preview-ok">正确</div>' : ''}
                     `;
+
                     previewChoices.appendChild(div);
                 });
 
                 previewNote.innerText =
                     itemType === "read_choice_multi"
-                    ? "这是多选训练。用户需要把所有正确项全部选中。"
-                    : "这是单选训练。用户只能选择一个正确项。";
+                    ? "这是多选训练。用户需要把所有正确项全部选中。音频选项也必须保留文字内容。"
+                    : "这是单选训练。用户只能选择一个正确项。音频选项也必须保留文字内容。";
             } else {
                 previewAnswerWrap.classList.remove("hidden");
                 previewChoicesWrap.classList.add("hidden");
@@ -856,6 +913,7 @@
 
         syncTypeOptions();
         toggleSections();
+        renderChoices();
         updatePreview();
     </script>
 </body>

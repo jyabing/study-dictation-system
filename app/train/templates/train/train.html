@@ -1473,9 +1473,9 @@ function playAudio(url) {
             document.getElementById("noMaterialArea").style.display = "none";
             document.getElementById("doneArea").style.display = "block";
 
-            const sub = document.querySelector("#doneArea .done-sub");
-            if (sub) {
-                sub.innerText = message || "今天这一轮已经完成，可以返回书册，明天继续。";
+            const meta = document.getElementById("doneStateMeta");
+            if (meta) {
+                meta.innerText = message || "今天这一轮已经完成，可以返回书册，明天继续。";
             }
         }
 

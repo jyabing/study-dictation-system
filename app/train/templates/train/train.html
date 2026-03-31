@@ -1,1372 +1,1178 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ lesson.title }} - 训练</title>
-    <style>
-        :root {
-            --bg: #0b1020;
-            --bg-soft: #11182d;
-            --panel: rgba(17, 24, 45, 0.94);
-            --panel-2: rgba(20, 29, 52, 0.94);
-            --panel-3: rgba(13, 20, 38, 0.96);
-            --border: rgba(255, 255, 255, 0.08);
-            --border-strong: rgba(255, 255, 255, 0.14);
-            --text: #ecf2ff;
-            --text-soft: #b7c3e0;
-            --text-faint: #7f8aa6;
-            --primary: #6ea8ff;
-            --primary-2: #84f3d1;
-            --success: #33d17a;
-            --warning: #ffbe55;
-            --danger: #ff7272;
-            --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
-            --radius-xl: 24px;
-            --radius-lg: 18px;
-            --radius-md: 14px;
-            --radius-sm: 10px;
-            --transition: 0.2s ease;
-            --max-width: 1440px;
-        }
+{% extends "train/base_train.html" %}
 
-        * {
-            box-sizing: border-box;
-        }
+{% block title %}{{ lesson.title }} - 训练{% endblock %}
 
-        html,
-        body {
-            margin: 0;
-            padding: 0;
-            min-height: 100%;
-            background:
-                radial-gradient(circle at top left, rgba(110, 168, 255, 0.20), transparent 28%),
-                radial-gradient(circle at top right, rgba(132, 243, 209, 0.10), transparent 24%),
-                linear-gradient(180deg, #0b1020 0%, #0a0f1c 100%);
-            color: var(--text);
-            font-family:
-                "Inter",
-                "Noto Sans JP",
-                "Hiragino Sans",
-                "Yu Gothic",
-                "Microsoft YaHei",
-                sans-serif;
-        }
+{% block content %}
+<div class="page train-page">
+    <div class="shell train-shell">
 
-        body {
-            line-height: 1.6;
-        }
-
-        a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        button,
-        input,
-        textarea {
-            font: inherit;
-        }
-
-        button {
-            cursor: pointer;
-            border: none;
-            outline: none;
-        }
-
-        .train-page {
-            width: min(var(--max-width), calc(100% - 32px));
-            margin: 28px auto 48px;
-        }
-
-        .train-shell {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-        }
-
-        .train-topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .train-top-left,
-        .train-top-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .back-link,
-        .primary-btn,
-        .secondary-btn,
-        .ghost-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            min-height: 44px;
-            padding: 0 18px;
-            border-radius: 14px;
-            font-size: 14px;
-            font-weight: 900;
-            transition: var(--transition);
-            border: 1px solid transparent;
-            white-space: nowrap;
-        }
-
-        .back-link {
-            color: var(--text-soft);
-            border-color: var(--border);
-            background: rgba(255, 255, 255, 0.04);
-        }
-
-        .back-link:hover {
-            color: var(--text);
-            border-color: var(--border-strong);
-            background: rgba(255, 255, 255, 0.08);
-            transform: translateY(-1px);
-        }
-
-        .primary-btn {
-            background: linear-gradient(135deg, #7ab2ff, #4f8dff);
-            color: #08111f;
-            box-shadow: 0 12px 28px rgba(79, 141, 255, 0.34);
-        }
-
-        .primary-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 16px 34px rgba(79, 141, 255, 0.40);
-        }
-
-        .secondary-btn {
-            background: rgba(255, 255, 255, 0.06);
-            color: var(--text);
-            border-color: var(--border);
-        }
-
-        .secondary-btn:hover {
-            background: rgba(255, 255, 255, 0.10);
-            border-color: var(--border-strong);
-            transform: translateY(-1px);
-        }
-
-        .ghost-btn {
-            background: transparent;
-            color: var(--text-soft);
-            border-color: var(--border);
-        }
-
-        .ghost-btn:hover {
-            color: var(--text);
-            background: rgba(255, 255, 255, 0.05);
-            transform: translateY(-1px);
-        }
-
-        .hero-card,
-        .question-card,
-        .stat-card,
-        .side-card,
-        .empty-card {
-            background: linear-gradient(180deg, rgba(17, 24, 45, 0.96), rgba(12, 18, 34, 0.96));
-            border: 1px solid var(--border);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .hero-card {
-            padding: 24px 24px 20px;
-            position: relative;
-        }
-
-        .hero-card::before {
-            content: "";
-            position: absolute;
-            inset: auto -80px -80px auto;
-            width: 240px;
-            height: 240px;
-            background: radial-gradient(circle, rgba(110, 168, 255, 0.22), transparent 70%);
-            pointer-events: none;
-        }
-
-        .hero-inner {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .hero-main {
-            flex: 1 1 560px;
-            min-width: 280px;
-        }
-
-        .hero-side {
-            display: flex;
-            align-items: flex-start;
-            justify-content: flex-end;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .hero-eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            font-weight: 800;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--primary-2);
-            margin-bottom: 10px;
-        }
-
-        .hero-title {
-            margin: 0;
-            font-size: clamp(30px, 4vw, 44px);
-            line-height: 1.12;
-            font-weight: 900;
-            letter-spacing: -0.03em;
-            word-break: break-word;
-        }
-
-        .hero-subtitle {
-            margin: 12px 0 0;
-            color: var(--text-soft);
-            font-size: 15px;
-            max-width: 880px;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-
-        .hero-chips {
-            margin-top: 18px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            min-height: 40px;
-            padding: 0 14px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: 800;
-            border: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text);
-            white-space: nowrap;
-        }
-
-        .chip.primary {
-            background: rgba(110, 168, 255, 0.14);
-            border-color: rgba(110, 168, 255, 0.30);
-            color: #dbe9ff;
-        }
-
-        .chip.warning {
-            background: rgba(255, 190, 85, 0.14);
-            border-color: rgba(255, 190, 85, 0.30);
-            color: #fff2d6;
-        }
-
-        .chip.danger {
-            background: rgba(255, 114, 114, 0.14);
-            border-color: rgba(255, 114, 114, 0.30);
-            color: #ffe0e0;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 14px;
-        }
-
-        .stat-card {
-            padding: 18px 18px 16px;
-            min-height: 118px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .stat-title {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text-soft);
-            letter-spacing: 0.02em;
-        }
-
-        .stat-value {
-            font-size: clamp(26px, 3vw, 38px);
-            line-height: 1.05;
-            font-weight: 900;
-            color: var(--text);
-            letter-spacing: -0.02em;
-            word-break: break-word;
-        }
-
-        .stat-sub {
-            font-size: 12px;
-            color: var(--text-faint);
-        }
-
-        .layout-main {
-            display: grid;
-            grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.72fr);
-            gap: 18px;
-            align-items: start;
-        }
-
-        .main-left,
-        .main-right {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            min-width: 0;
-        }
-
-        .question-header,
-        .side-header,
-        .empty-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            padding: 18px 22px;
-            border-bottom: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.02);
-            flex-wrap: wrap;
-        }
-
-        .question-title,
-        .side-title,
-        .empty-title {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 900;
-            letter-spacing: -0.01em;
-            color: var(--text);
-        }
-
-        .question-subtitle,
-        .side-subtitle,
-        .empty-subtitle {
-            font-size: 12px;
-            color: var(--text-faint);
-        }
-
-        .question-body,
-        .side-body,
-        .empty-body {
-            padding: 22px;
-        }
-
-        .question-prompt-wrap {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .question-type-badge {
-            align-self: flex-start;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            min-height: 36px;
-            padding: 0 12px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 900;
-            border: 1px solid rgba(110, 168, 255, 0.22);
-            background: rgba(110, 168, 255, 0.10);
-            color: #dbe9ff;
-        }
-
-        .question-prompt {
-            font-size: clamp(26px, 3vw, 38px);
-            line-height: 1.28;
-            font-weight: 900;
-            letter-spacing: -0.02em;
-            color: var(--text);
-            word-break: break-word;
-        }
-
-        .question-extra {
-            padding: 14px 16px;
-            border-radius: 16px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            color: var(--text-soft);
-            font-size: 14px;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-
-        .audio-wrap {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .audio-player {
-            width: 100%;
-        }
-
-        .choices-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
-        }
-
-        .choice-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-            width: 100%;
-            min-height: 96px;
-            padding: 14px 16px;
-            text-align: left;
-            border-radius: 18px;
-            border: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.04);
-            color: var(--text);
-            transition: var(--transition);
-        }
-
-        .choice-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: var(--border-strong);
-            transform: translateY(-1px);
-        }
-
-        .choice-btn.selected {
-            background: rgba(110, 168, 255, 0.14);
-            border-color: rgba(110, 168, 255, 0.34);
-            box-shadow: 0 10px 24px rgba(79, 141, 255, 0.20);
-        }
-
-        .choice-btn.correct {
-            border-color: rgba(51, 209, 122, 0.30);
-            background: rgba(51, 209, 122, 0.10);
-        }
-
-        .choice-btn.wrong {
-            border-color: rgba(255, 114, 114, 0.30);
-            background: rgba(255, 114, 114, 0.10);
-        }
-
-        .choice-head {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .choice-key {
-            width: 38px;
-            min-width: 38px;
-            height: 38px;
-            border-radius: 12px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 900;
-            color: var(--text);
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.10);
-        }
-
-        .choice-play-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 42px;
-            padding: 0 14px;
-            border-radius: 12px;
-            border: 1px solid rgba(110, 168, 255, 0.24);
-            background: rgba(110, 168, 255, 0.12);
-            color: #dce8ff;
-            font-size: 14px;
-            font-weight: 900;
-            transition: var(--transition);
-        }
-
-        .choice-play-btn:hover {
-            background: rgba(110, 168, 255, 0.18);
-            border-color: rgba(110, 168, 255, 0.34);
-        }
-
-        .choice-text {
-            display: none;
-            font-size: 15px;
-            line-height: 1.5;
-            font-weight: 800;
-            word-break: break-word;
-            color: var(--text);
-            padding-top: 2px;
-        }
-
-        .choice-text.show {
-            display: block;
-        }
-
-        .choice-text-label {
-            font-size: 12px;
-            color: var(--text-faint);
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-
-        .answer-form {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .answer-input {
-            width: 100%;
-            min-height: 58px;
-            padding: 16px 18px;
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text);
-            outline: none;
-            transition: var(--transition);
-        }
-
-        .answer-input::placeholder {
-            color: var(--text-faint);
-        }
-
-        .answer-input:focus {
-            border-color: rgba(110, 168, 255, 0.40);
-            background: rgba(255, 255, 255, 0.07);
-            box-shadow: 0 0 0 4px rgba(110, 168, 255, 0.12);
-        }
-
-        .answer-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .feedback-box {
-            display: none;
-            padding: 16px 18px;
-            border-radius: 18px;
-            font-size: 14px;
-            font-weight: 800;
-            border: 1px solid var(--border);
-        }
-
-        .feedback-box.show {
-            display: block;
-        }
-
-        .feedback-box.correct {
-            background: rgba(51, 209, 122, 0.12);
-            border-color: rgba(51, 209, 122, 0.24);
-            color: #dbffea;
-        }
-
-        .feedback-box.wrong {
-            background: rgba(255, 114, 114, 0.12);
-            border-color: rgba(255, 114, 114, 0.24);
-            color: #ffe3e3;
-        }
-
-        .feedback-box.info {
-            background: rgba(110, 168, 255, 0.12);
-            border-color: rgba(110, 168, 255, 0.24);
-            color: #dce8ff;
-        }
-
-        .side-list {
-            display: grid;
-            gap: 10px;
-        }
-
-        .side-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 14px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .side-row-label {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text-soft);
-        }
-
-        .side-row-value {
-            font-size: 14px;
-            font-weight: 900;
-            color: var(--text);
-            text-align: right;
-            word-break: break-word;
-        }
-
-        .empty-card {
-            display: none;
-        }
-
-        .empty-card.show {
-            display: block;
-        }
-
-        .empty-message {
-            padding: 18px;
-            border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.04);
-            color: var(--text-soft);
-            font-size: 14px;
-        }
-
-        .empty-message.success {
-            border-color: rgba(51, 209, 122, 0.24);
-            background: rgba(51, 209, 122, 0.12);
-            color: #dbffea;
-        }
-
-        .empty-message.warning {
-            border-color: rgba(255, 190, 85, 0.24);
-            background: rgba(255, 190, 85, 0.12);
-            color: #fff2d6;
-        }
-
-        .footer-note {
-            text-align: center;
-            font-size: 12px;
-            color: var(--text-faint);
-        }
-
-        @media (max-width: 1180px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .layout-main {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 780px) {
-            .train-page {
-                width: min(100% - 20px, var(--max-width));
-                margin: 16px auto 28px;
-            }
-
-            .hero-card {
-                padding: 18px 16px;
-            }
-
-            .question-header,
-            .side-header,
-            .empty-header,
-            .question-body,
-            .side-body,
-            .empty-body {
-                padding-left: 16px;
-                padding-right: 16px;
-            }
-
-            .train-topbar {
-                align-items: stretch;
-            }
-
-            .train-top-left,
-            .train-top-actions,
-            .hero-side,
-            .answer-actions {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .back-link,
-            .primary-btn,
-            .secondary-btn,
-            .ghost-btn {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .choices-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .side-row {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .side-row-value {
-                text-align: left;
-            }
-        }
-
-        @media (max-width: 520px) {
-            .hero-title {
-                font-size: 26px;
-            }
-
-            .question-prompt {
-                font-size: 24px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="train-page">
-        <div class="train-shell">
-
-            <div class="train-topbar">
-                <div class="train-top-left">
-                    <a href="{% url 'book-detail' lesson.book.id %}" class="back-link">← 返回书册</a>
-                    <a href="{% url 'dashboard' %}" class="back-link">返回首页</a>
-                </div>
-
-                <div class="train-top-actions">
-                    <a href="{% url 'lesson-question-list' lesson.id %}" class="secondary-btn">题目列表</a>
-                    <a href="{% url 'lesson-edit' lesson.id %}" class="ghost-btn">编辑本课素材</a>
-                </div>
+        <div class="topbar train-topbar">
+            <div class="topbar-left train-top-left">
+                <a href="{% url 'book-detail' lesson.book.id %}" class="back-link">← 返回书册</a>
+                <a href="{% url 'dashboard' %}" class="back-link">返回首页</a>
             </div>
 
-            <section class="hero-card">
-                <div class="hero-inner">
-                    <div class="hero-main">
-                        <div class="hero-eyebrow">Lesson Train</div>
-                        <h1 class="hero-title">{{ lesson.title }}</h1>
-                        <p class="hero-subtitle">
-                            现在这里不只是状态页，而是直接接 lesson-train-api 的训练页。
-                        </p>
-
-                        <div class="hero-chips">
-                            <span class="chip warning" id="chip-stage">当前阶段：加载中...</span>
-                            <span class="chip primary" id="chip-next-review">下一次复习：加载中...</span>
-                            <span class="chip danger" id="chip-source">训练来源：加载中...</span>
-                        </div>
-                    </div>
-
-                    <div class="hero-side">
-                        <a href="{% url 'lesson-question-list' lesson.id %}" class="secondary-btn">题目列表</a>
-                        <a href="{% url 'lesson-edit' lesson.id %}" class="ghost-btn">编辑素材</a>
-                    </div>
-                </div>
-            </section>
-
-            <section class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-title">计划总数</div>
-                    <div class="stat-value" id="stat-plan-total">{{ plan_total|default:0 }}</div>
-                    <div class="stat-sub">今天计划或本课总数</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-title">已完成</div>
-                    <div class="stat-value" id="stat-plan-done">{{ plan_done|default:0 }}</div>
-                    <div class="stat-sub">当前轮次已完成数量</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-title">进度</div>
-                    <div class="stat-value" id="stat-plan-progress">{{ plan_progress|default:0 }}%</div>
-                    <div class="stat-sub">按 API 返回动态更新</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-title">记忆等级</div>
-                    <div class="stat-value" id="stat-memory-level">-</div>
-                    <div class="stat-sub">当前题目的 memory level</div>
-                </div>
-            </section>
-
-            <div class="layout-main">
-                <div class="main-left">
-                    <section class="question-card" id="question-card">
-                        <div class="question-header">
-                            <div>
-                                <h2 class="question-title">当前题目</h2>
-                                <div class="question-subtitle">真正做题区。这里直接接 API 的当前训练项。</div>
-                            </div>
-                        </div>
-
-                        <div class="question-body">
-                            <div class="question-prompt-wrap">
-                                <div class="question-type-badge" id="question-type-badge">加载中</div>
-                                <div class="question-prompt" id="question-prompt">正在加载当前题目...</div>
-
-                                <div class="question-extra" id="question-extra" style="display:none;"></div>
-
-                                <div class="audio-wrap" id="audio-wrap" style="display:none;">
-                                    <audio id="question-audio" class="audio-player" controls></audio>
-                                </div>
-
-                                <div class="choices-grid" id="choices-grid" style="display:none;"></div>
-
-                                <form class="answer-form" id="answer-form">
-                                    <input type="hidden" id="training-id" value="">
-                                    <input
-                                        type="text"
-                                        id="answer-input"
-                                        class="answer-input"
-                                        placeholder="请输入答案，然后提交"
-                                        autocomplete="off"
-                                    >
-
-                                    <div class="answer-actions">
-                                        <button type="submit" class="primary-btn" id="submit-btn">提交答案</button>
-                                        <button type="button" class="secondary-btn" id="next-btn" style="display:none;">下一题</button>
-                                        <button type="button" class="ghost-btn" id="reload-btn">重新加载当前题</button>
-                                    </div>
-                                </form>
-
-                                <div class="feedback-box info" id="feedback-box"></div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="empty-card" id="empty-card">
-                        <div class="empty-header">
-                            <div>
-                                <h2 class="empty-title">当前没有可训练内容</h2>
-                                <div class="empty-subtitle">根据 API 返回原因显示。</div>
-                            </div>
-                        </div>
-
-                        <div class="empty-body">
-                            <div class="empty-message" id="empty-message"></div>
-                        </div>
-                    </section>
-                </div>
-
-                <div class="main-right">
-                    <section class="side-card">
-                        <div class="side-header">
-                            <div>
-                                <h2 class="side-title">当前训练摘要</h2>
-                                <div class="side-subtitle">辅助信息，不抢主操作区。</div>
-                            </div>
-                        </div>
-
-                        <div class="side-body">
-                            <div class="side-list">
-                                <div class="side-row">
-                                    <div class="side-row-label">训练类型</div>
-                                    <div class="side-row-value" id="side-type">-</div>
-                                </div>
-
-                                <div class="side-row">
-                                    <div class="side-row-label">当前题 ID</div>
-                                    <div class="side-row-value" id="side-training-id">-</div>
-                                </div>
-
-                                <div class="side-row">
-                                    <div class="side-row-label">是否今日计划</div>
-                                    <div class="side-row-value" id="side-is-today-plan">-</div>
-                                </div>
-
-                                <div class="side-row">
-                                    <div class="side-row-label">标准答案</div>
-                                    <div class="side-row-value" id="side-correct-answer">提交后显示</div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="side-card">
-                        <div class="side-header">
-                            <div>
-                                <h2 class="side-title">快捷操作</h2>
-                                <div class="side-subtitle">题目、编辑、返回。</div>
-                            </div>
-                        </div>
-
-                        <div class="side-body">
-                            <div class="train-top-actions" style="flex-direction: column; align-items: stretch;">
-                                <a href="{% url 'lesson-question-list' lesson.id %}" class="primary-btn">题目列表</a>
-                                <a href="{% url 'lesson-edit' lesson.id %}" class="secondary-btn">编辑本课素材</a>
-                                <a href="{% url 'book-detail' lesson.book.id %}" class="ghost-btn">返回书册</a>
-                                <a href="{% url 'dashboard' %}" class="ghost-btn">返回首页</a>
-                            </div>
-                        </div>
-                    </section>
-                </div>
+            <div class="topbar-right train-top-actions">
+                <a href="{% url 'lesson-question-list' lesson.id %}" class="secondary-btn">题目列表</a>
+                <a href="{% url 'lesson-edit' lesson.id %}" class="ghost-btn">编辑本课素材</a>
             </div>
-
-            <div class="footer-note">Lesson Train Page</div>
         </div>
+
+        <section class="hero-card">
+            <div class="hero-inner">
+                <div class="hero-main">
+                    <div class="hero-eyebrow">Lesson Train</div>
+                    <h1 class="hero-title">{{ lesson.title }}</h1>
+                    <p class="hero-subtitle">
+                        现在这里不只是状态页，而是直接接 lesson-train-api 的训练页。
+                    </p>
+
+                    <div class="hero-chips">
+                        <span class="chip warning" id="chip-stage">当前阶段：加载中...</span>
+                        <span class="chip primary" id="chip-next-review">下一次复习：加载中...</span>
+                        <span class="chip danger" id="chip-source">训练来源：加载中...</span>
+                    </div>
+                </div>
+
+                <div class="hero-side">
+                    <a href="{% url 'lesson-question-list' lesson.id %}" class="secondary-btn">题目列表</a>
+                    <a href="{% url 'lesson-edit' lesson.id %}" class="ghost-btn">编辑素材</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-title">计划总数</div>
+                <div class="stat-value" id="stat-plan-total">{{ plan_total|default:0 }}</div>
+                <div class="stat-sub">今天计划或本课总数</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-title">已完成</div>
+                <div class="stat-value" id="stat-plan-done">{{ plan_done|default:0 }}</div>
+                <div class="stat-sub">当前轮次已完成数量</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-title">进度</div>
+                <div class="stat-value" id="stat-plan-progress">{{ plan_progress|default:0 }}%</div>
+                <div class="stat-sub">按 API 返回动态更新</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-title">记忆等级</div>
+                <div class="stat-value" id="stat-memory-level">-</div>
+                <div class="stat-sub">当前题目的 memory level</div>
+            </div>
+        </section>
+
+        <div class="layout-main">
+            <div class="main-left">
+                <section class="question-card" id="question-card">
+                    <div class="question-header">
+                        <div>
+                            <h2 class="question-title">当前题目</h2>
+                            <div class="question-subtitle">真正做题区。这里直接接 API 的当前训练项。</div>
+                        </div>
+                    </div>
+
+                    <div class="question-body">
+                        <div class="question-prompt-wrap">
+                            <div class="question-type-badge" id="question-type-badge">加载中</div>
+                            <div class="question-prompt" id="question-prompt">正在加载当前题目...</div>
+
+                            <div class="question-extra" id="question-extra" style="display:none;"></div>
+
+                            <div class="audio-wrap" id="audio-wrap" style="display:none;">
+                                <audio id="question-audio" class="audio-player" controls></audio>
+                            </div>
+
+                            <div class="choices-grid" id="choices-grid" style="display:none;"></div>
+
+                            <form class="answer-form" id="answer-form">
+                                <input type="hidden" id="training-id" value="">
+                                <input
+                                    type="text"
+                                    id="answer-input"
+                                    class="answer-input"
+                                    placeholder="请输入答案，然后提交"
+                                    autocomplete="off"
+                                >
+
+                                <div class="answer-actions">
+                                    <button type="submit" class="primary-btn" id="submit-btn">提交答案</button>
+                                    <button type="button" class="secondary-btn" id="next-btn" style="display:none;">下一题</button>
+                                    <button type="button" class="ghost-btn" id="reload-btn">重新加载当前题</button>
+                                </div>
+                            </form>
+
+                            <div class="feedback-box info" id="feedback-box"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="empty-card" id="empty-card">
+                    <div class="empty-header">
+                        <div>
+                            <h2 class="empty-title">当前没有可训练内容</h2>
+                            <div class="empty-subtitle">根据 API 返回原因显示。</div>
+                        </div>
+                    </div>
+
+                    <div class="empty-body">
+                        <div class="empty-message" id="empty-message"></div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="main-right">
+                <section class="side-card">
+                    <div class="side-header">
+                        <div>
+                            <h2 class="side-title">当前训练摘要</h2>
+                            <div class="side-subtitle">辅助信息，不抢主操作区。</div>
+                        </div>
+                    </div>
+
+                    <div class="side-body">
+                        <div class="side-list">
+                            <div class="side-row">
+                                <div class="side-row-label">训练类型</div>
+                                <div class="side-row-value" id="side-type">-</div>
+                            </div>
+
+                            <div class="side-row">
+                                <div class="side-row-label">当前题 ID</div>
+                                <div class="side-row-value" id="side-training-id">-</div>
+                            </div>
+
+                            <div class="side-row">
+                                <div class="side-row-label">是否今日计划</div>
+                                <div class="side-row-value" id="side-is-today-plan">-</div>
+                            </div>
+
+                            <div class="side-row">
+                                <div class="side-row-label">标准答案</div>
+                                <div class="side-row-value" id="side-correct-answer">提交后显示</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="side-card">
+                    <div class="side-header">
+                        <div>
+                            <h2 class="side-title">快捷操作</h2>
+                            <div class="side-subtitle">题目、编辑、返回。</div>
+                        </div>
+                    </div>
+
+                    <div class="side-body">
+                        <div class="actions quick-actions">
+                            <a href="{% url 'lesson-question-list' lesson.id %}" class="primary-btn">题目列表</a>
+                            <a href="{% url 'lesson-edit' lesson.id %}" class="secondary-btn">编辑本课素材</a>
+                            <a href="{% url 'book-detail' lesson.book.id %}" class="ghost-btn">返回书册</a>
+                            <a href="{% url 'dashboard' %}" class="ghost-btn">返回首页</a>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <div class="footer-note">Lesson Train Page</div>
     </div>
+</div>
+{% endblock %}
 
-    <script>
-        const API_URL = "{% url 'lesson-train-api' lesson.id %}";
-        const questionCard = document.getElementById("question-card");
-        const emptyCard = document.getElementById("empty-card");
-        const emptyMessage = document.getElementById("empty-message");
+{% block extra_css %}
+<style>
+.train-page {
+    --max-width: 1440px;
+}
 
-        const chipStage = document.getElementById("chip-stage");
-        const chipNextReview = document.getElementById("chip-next-review");
-        const chipSource = document.getElementById("chip-source");
+.train-shell {
+    gap: 18px;
+}
 
-        const statPlanTotal = document.getElementById("stat-plan-total");
-        const statPlanDone = document.getElementById("stat-plan-done");
-        const statPlanProgress = document.getElementById("stat-plan-progress");
-        const statMemoryLevel = document.getElementById("stat-memory-level");
+.train-topbar {
+    gap: 16px;
+}
 
-        const questionTypeBadge = document.getElementById("question-type-badge");
-        const questionPrompt = document.getElementById("question-prompt");
-        const questionExtra = document.getElementById("question-extra");
-        const audioWrap = document.getElementById("audio-wrap");
-        const questionAudio = document.getElementById("question-audio");
-        const choicesGrid = document.getElementById("choices-grid");
+.train-top-left,
+.train-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
 
-        const answerForm = document.getElementById("answer-form");
-        const trainingIdInput = document.getElementById("training-id");
-        const answerInput = document.getElementById("answer-input");
-        const submitBtn = document.getElementById("submit-btn");
-        const nextBtn = document.getElementById("next-btn");
-        const reloadBtn = document.getElementById("reload-btn");
-        const feedbackBox = document.getElementById("feedback-box");
+.hero-card,
+.question-card,
+.stat-card,
+.side-card,
+.empty-card {
+    background: linear-gradient(180deg, rgba(17, 24, 45, 0.96), rgba(12, 18, 34, 0.96));
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
 
-        const sideType = document.getElementById("side-type");
-        const sideTrainingId = document.getElementById("side-training-id");
-        const sideIsTodayPlan = document.getElementById("side-is-today-plan");
-        const sideCorrectAnswer = document.getElementById("side-correct-answer");
+.hero-card {
+    padding: 24px 24px 20px;
+    position: relative;
+}
 
-        const state = {
-            current: null,
-            startedAt: 0,
-            selectedChoiceIndex: null,
-            loading: false,
-            autoNextTimer: null,
-        };
+.hero-card::before {
+    content: "";
+    position: absolute;
+    inset: auto -80px -80px auto;
+    width: 240px;
+    height: 240px;
+    background: radial-gradient(circle, rgba(110, 168, 255, 0.22), transparent 70%);
+    pointer-events: none;
+}
 
-        function getCookie(name) {
-            const cookieValue = document.cookie
-                .split("; ")
-                .find(row => row.startsWith(name + "="));
-            return cookieValue ? decodeURIComponent(cookieValue.split("=")[1]) : "";
+.hero-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.hero-main {
+    flex: 1 1 560px;
+    min-width: 280px;
+}
+
+.hero-side {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #84f3d1;
+    margin-bottom: 10px;
+}
+
+.hero-title {
+    margin: 0;
+    font-size: clamp(30px, 4vw, 44px);
+    line-height: 1.12;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    word-break: break-word;
+}
+
+.hero-subtitle {
+    margin: 12px 0 0;
+    color: var(--text-soft);
+    font-size: 15px;
+    max-width: 880px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.hero-chips {
+    margin-top: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.stat-card {
+    padding: 18px 18px 16px;
+    min-height: 118px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.stat-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-soft);
+    letter-spacing: 0.02em;
+}
+
+.stat-value {
+    font-size: clamp(26px, 3vw, 38px);
+    line-height: 1.05;
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    word-break: break-word;
+}
+
+.stat-sub {
+    font-size: 12px;
+    color: var(--text-faint);
+}
+
+.layout-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.72fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.main-left,
+.main-right {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 0;
+}
+
+.question-header,
+.side-header,
+.empty-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02);
+    flex-wrap: wrap;
+}
+
+.question-title,
+.side-title,
+.empty-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    color: var(--text);
+}
+
+.question-subtitle,
+.side-subtitle,
+.empty-subtitle {
+    font-size: 12px;
+    color: var(--text-faint);
+}
+
+.question-body,
+.side-body,
+.empty-body {
+    padding: 22px;
+}
+
+.question-prompt-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.question-type-badge {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    border: 1px solid rgba(110, 168, 255, 0.22);
+    background: rgba(110, 168, 255, 0.10);
+    color: #dbe9ff;
+}
+
+.question-prompt {
+    font-size: clamp(26px, 3vw, 38px);
+    line-height: 1.28;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    word-break: break-word;
+}
+
+.question-extra {
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--text-soft);
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.audio-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.audio-player {
+    width: 100%;
+}
+
+.choices-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.choice-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+    min-height: 96px;
+    padding: 14px 16px;
+    text-align: left;
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    transition: var(--transition);
+}
+
+.choice-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
+}
+
+.choice-btn.selected {
+    background: rgba(110, 168, 255, 0.14);
+    border-color: rgba(110, 168, 255, 0.34);
+    box-shadow: 0 10px 24px rgba(79, 141, 255, 0.20);
+}
+
+.choice-btn.correct {
+    border-color: rgba(51, 209, 122, 0.30);
+    background: rgba(51, 209, 122, 0.10);
+}
+
+.choice-btn.wrong {
+    border-color: rgba(255, 114, 114, 0.30);
+    background: rgba(255, 114, 114, 0.10);
+}
+
+.choice-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.choice-key {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 900;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.choice-play-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(110, 168, 255, 0.24);
+    background: rgba(110, 168, 255, 0.12);
+    color: #dce8ff;
+    font-size: 14px;
+    font-weight: 900;
+    transition: var(--transition);
+}
+
+.choice-play-btn:hover {
+    background: rgba(110, 168, 255, 0.18);
+    border-color: rgba(110, 168, 255, 0.34);
+}
+
+.choice-text {
+    display: none;
+    font-size: 15px;
+    line-height: 1.5;
+    font-weight: 800;
+    word-break: break-word;
+    color: var(--text);
+    padding-top: 2px;
+}
+
+.choice-text.show {
+    display: block;
+}
+
+.choice-text-label {
+    font-size: 12px;
+    color: var(--text-faint);
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.answer-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.answer-input {
+    width: 100%;
+    min-height: 58px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    outline: none;
+    transition: var(--transition);
+}
+
+.answer-input::placeholder {
+    color: var(--text-faint);
+}
+
+.answer-input:focus {
+    border-color: rgba(110, 168, 255, 0.40);
+    background: rgba(255, 255, 255, 0.07);
+    box-shadow: 0 0 0 4px rgba(110, 168, 255, 0.12);
+}
+
+.answer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.feedback-box {
+    display: none;
+    padding: 16px 18px;
+    border-radius: 18px;
+    font-size: 14px;
+    font-weight: 800;
+    border: 1px solid var(--border);
+}
+
+.feedback-box.show {
+    display: block;
+}
+
+.feedback-box.correct {
+    background: rgba(51, 209, 122, 0.12);
+    border-color: rgba(51, 209, 122, 0.24);
+    color: #dbffea;
+}
+
+.feedback-box.wrong {
+    background: rgba(255, 114, 114, 0.12);
+    border-color: rgba(255, 114, 114, 0.24);
+    color: #ffe3e3;
+}
+
+.feedback-box.info {
+    background: rgba(110, 168, 255, 0.12);
+    border-color: rgba(110, 168, 255, 0.24);
+    color: #dce8ff;
+}
+
+.side-list {
+    display: grid;
+    gap: 10px;
+}
+
+.side-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.side-row-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-soft);
+}
+
+.side-row-value {
+    font-size: 14px;
+    font-weight: 900;
+    color: var(--text);
+    text-align: right;
+    word-break: break-word;
+}
+
+.quick-actions {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.empty-card {
+    display: none;
+}
+
+.empty-card.show {
+    display: block;
+}
+
+.empty-message {
+    padding: 18px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-soft);
+    font-size: 14px;
+}
+
+.empty-message.success {
+    border-color: rgba(51, 209, 122, 0.24);
+    background: rgba(51, 209, 122, 0.12);
+    color: #dbffea;
+}
+
+.empty-message.warning {
+    border-color: rgba(255, 190, 85, 0.24);
+    background: rgba(255, 190, 85, 0.12);
+    color: #fff2d6;
+}
+
+@media (max-width: 1180px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .layout-main {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 780px) {
+    .hero-card {
+        padding: 18px 16px;
+    }
+
+    .question-header,
+    .side-header,
+    .empty-header,
+    .question-body,
+    .side-body,
+    .empty-body {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .train-topbar {
+        align-items: stretch;
+    }
+
+    .train-top-left,
+    .train-top-actions,
+    .hero-side,
+    .answer-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .choices-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .side-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .side-row-value {
+        text-align: left;
+    }
+}
+
+@media (max-width: 520px) {
+    .hero-title {
+        font-size: 26px;
+    }
+
+    .question-prompt {
+        font-size: 24px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const API_URL = "{% url 'lesson-train-api' lesson.id %}";
+const questionCard = document.getElementById("question-card");
+const emptyCard = document.getElementById("empty-card");
+const emptyMessage = document.getElementById("empty-message");
+
+const chipStage = document.getElementById("chip-stage");
+const chipNextReview = document.getElementById("chip-next-review");
+const chipSource = document.getElementById("chip-source");
+
+const statPlanTotal = document.getElementById("stat-plan-total");
+const statPlanDone = document.getElementById("stat-plan-done");
+const statPlanProgress = document.getElementById("stat-plan-progress");
+const statMemoryLevel = document.getElementById("stat-memory-level");
+
+const questionTypeBadge = document.getElementById("question-type-badge");
+const questionPrompt = document.getElementById("question-prompt");
+const questionExtra = document.getElementById("question-extra");
+const audioWrap = document.getElementById("audio-wrap");
+const questionAudio = document.getElementById("question-audio");
+const choicesGrid = document.getElementById("choices-grid");
+
+const answerForm = document.getElementById("answer-form");
+const trainingIdInput = document.getElementById("training-id");
+const answerInput = document.getElementById("answer-input");
+const submitBtn = document.getElementById("submit-btn");
+const nextBtn = document.getElementById("next-btn");
+const reloadBtn = document.getElementById("reload-btn");
+const feedbackBox = document.getElementById("feedback-box");
+
+const sideType = document.getElementById("side-type");
+const sideTrainingId = document.getElementById("side-training-id");
+const sideIsTodayPlan = document.getElementById("side-is-today-plan");
+const sideCorrectAnswer = document.getElementById("side-correct-answer");
+
+const state = {
+    current: null,
+    startedAt: 0,
+    selectedChoiceIndex: null,
+    loading: false,
+    autoNextTimer: null,
+};
+
+function getCookie(name) {
+    const cookieValue = document.cookie
+        .split("; ")
+        .find(row => row.startsWith(name + "="));
+    return cookieValue ? decodeURIComponent(cookieValue.split("=")[1]) : "";
+}
+
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function pickText(obj, keys, fallback = "") {
+    for (const key of keys) {
+        const value = obj?.[key];
+        if (value !== undefined && value !== null && String(value).trim() !== "") {
+            return String(value);
         }
-
-        function escapeHtml(value) {
-            return String(value ?? "")
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;")
-                .replaceAll('"', "&quot;")
-                .replaceAll("'", "&#039;");
-        }
-
-        function pickText(obj, keys, fallback = "") {
-            for (const key of keys) {
-                const value = obj?.[key];
-                if (value !== undefined && value !== null && String(value).trim() !== "") {
-                    return String(value);
-                }
-            }
-            return fallback;
-        }
-
-        function getChoiceText(choice, index) {
-            return pickText(choice, [
-                "text", "label", "value", "content", "answer", "prompt", "display", "title"
-            ], `选项 ${index + 1}`);
-        }
-
-        function getChoiceSubmitValue(choice, index) {
-            return pickText(choice, [
-                "submit_value",
-                "value",
-                "key",
-                "id",
-                "answer"
-            ], getChoiceText(choice, index));
-        }
-
-        function getQuestionText(payload) {
-            return pickText(payload, [
-                "prompt", "question", "title", "text", "stem", "display_text"
-            ], "当前题目加载成功，但没有找到可显示的题干。");
-        }
-
-        function getExtraText(payload) {
-            return pickText(payload, [
-                "cloze_text", "sentence", "explain", "note", "subtitle"
-            ], "");
-        }
-
-        function getAudioUrl(payload) {
-            return pickText(payload, [
-                "resolved_audio", "audio", "audio_url"
-            ], "");
-        }
-
-        function setFeedback(message, type = "info") {
-            feedbackBox.className = `feedback-box show ${type}`;
-            feedbackBox.innerHTML = escapeHtml(message);
-        }
-
-        function clearFeedback() {
-            feedbackBox.className = "feedback-box info";
-            feedbackBox.textContent = "";
-        }
-
-        function clearAutoNextTimer() {
-            if (state.autoNextTimer) {
-                clearTimeout(state.autoNextTimer);
-                state.autoNextTimer = null;
-            }
-        }
-
-        function scheduleAutoNext(delay = 900) {
-            clearAutoNextTimer();
-            state.autoNextTimer = setTimeout(() => {
-                loadCurrentQuestion();
-            }, delay);
-        }
-
-        function setLoading(isLoading) {
-            state.loading = isLoading;
-            submitBtn.disabled = isLoading;
-            reloadBtn.disabled = isLoading;
-            answerInput.disabled = isLoading;
-        }
-
-        function showQuestionMode() {
-            questionCard.style.display = "block";
-            emptyCard.classList.remove("show");
-        }
-
-        function showEmptyMode(message, kind = "warning") {
-            clearAutoNextTimer();
-            questionCard.style.display = "none";
-            emptyCard.classList.add("show");
-            emptyMessage.className = `empty-message ${kind}`;
-            emptyMessage.textContent = message;
-        }
-
-        function renderChoices(choices) {
-            choicesGrid.innerHTML = "";
-            state.selectedChoiceIndex = null;
-
-            if (!Array.isArray(choices) || choices.length === 0) {
-                choicesGrid.style.display = "none";
-                return;
-            }
-
-            choicesGrid.style.display = "grid";
-
-            choices.forEach((choice, index) => {
-                const button = document.createElement("button");
-                button.type = "button";
-                button.className = "choice-btn";
-                button.dataset.index = String(index);
-                button.dataset.choiceText = getChoiceText(choice, index);
-                button.dataset.submitValue = getChoiceSubmitValue(choice, index);
-
-                const head = document.createElement("div");
-                head.className = "choice-head";
-
-                const key = document.createElement("div");
-                key.className = "choice-key";
-                key.textContent = choice.key || String.fromCharCode(65 + index);
-
-                head.appendChild(key);
-
-                const playableAudio = pickText(choice, [
-                    "resolved_audio",
-                    "audio",
-                    "audio_url"
-                ], "");
-
-                if (choice.type === "audio" || playableAudio) {
-                    const playBtn = document.createElement("button");
-                    playBtn.type = "button";
-                    playBtn.className = "choice-play-btn";
-                    playBtn.textContent = "▶ 播放选项";
-
-                    playBtn.addEventListener("click", (event) => {
-                        event.stopPropagation();
-
-                        if (playableAudio) {
-                            const audio = new Audio(playableAudio);
-                            audio.play().catch(() => {});
-                        }
-                    });
-
-                    head.appendChild(playBtn);
-                } else {
-                    const fallbackText = document.createElement("div");
-                    fallbackText.style.fontSize = "15px";
-                    fallbackText.style.fontWeight = "800";
-                    fallbackText.style.wordBreak = "break-word";
-                    fallbackText.textContent = getChoiceText(choice, index);
-                    head.appendChild(fallbackText);
-                }
-
-                const textWrap = document.createElement("div");
-                textWrap.className = "choice-text";
-                textWrap.innerHTML = `
-                    <div class="choice-text-label">选项文字</div>
-                    <div>${escapeHtml(getChoiceText(choice, index))}</div>
-                `;
-
-                button.appendChild(head);
-                button.appendChild(textWrap);
-
-                button.addEventListener("click", () => {
-                    [...choicesGrid.querySelectorAll(".choice-btn")].forEach(btn => {
-                        btn.classList.remove("selected");
-                    });
-
-                    button.classList.add("selected");
-                    state.selectedChoiceIndex = index;
-                    answerInput.value = button.dataset.submitValue;
-                });
-
-                choicesGrid.appendChild(button);
-            });
-        }
-
-        function revealChoiceTexts() {
-            [...choicesGrid.querySelectorAll(".choice-text")].forEach(node => {
-                node.classList.add("show");
-            });
-        }
-
-        function markChoiceResult(isCorrect, submittedAnswer, correctAnswers) {
-            const buttons = [...choicesGrid.querySelectorAll(".choice-btn")];
-            const submitted = (submittedAnswer || "").trim().toLowerCase();
-            const correctList = Array.isArray(correctAnswers)
-                ? correctAnswers.map(x => String(x).trim().toLowerCase())
-                : [];
-
-            buttons.forEach(button => {
-                const text = (button.dataset.choiceText || "").trim().toLowerCase();
-
-                if (correctList.includes(text)) {
-                    button.classList.add("correct");
-                }
-
-                if (submitted && text === submitted && !isCorrect) {
-                    button.classList.add("wrong");
-                }
-            });
-        }
-
-        function renderPayload(payload) {
-            state.current = payload;
-            state.startedAt = Date.now();
-            clearAutoNextTimer();
-            showQuestionMode();
-            clearFeedback();
-            nextBtn.style.display = "none";
-            sideCorrectAnswer.textContent = "提交后显示";
-            submitBtn.disabled = false;
-            answerInput.disabled = false;
-            reloadBtn.disabled = false;
-
-            chipStage.textContent = `当前阶段：${pickText(payload, ["stage_label", "current_stage_label", "stage"], "进行中")}`;
-            chipNextReview.textContent = `下一次复习：${pickText(payload, ["next_review_text", "next_review_display", "next_review"], "未安排")}`;
-            chipSource.textContent = `训练来源：${payload.is_today_plan ? "今日计划" : "本课训练"}`;
-
-            statPlanTotal.textContent = pickText(payload, ["plan_total"], "0");
-            statPlanDone.textContent = pickText(payload, ["plan_done"], "0");
-            statPlanProgress.textContent = `${pickText(payload, ["plan_progress"], "0")}%`;
-            statMemoryLevel.textContent = pickText(payload, ["memory_level"], "0");
-
-            const qType = pickText(payload, ["type", "qtype"], "unknown");
-            questionTypeBadge.textContent = `类型：${qType}`;
-            questionPrompt.textContent = getQuestionText(payload);
-
-            const extra = getExtraText(payload);
-            if (extra) {
-                questionExtra.style.display = "block";
-                questionExtra.textContent = extra;
-            } else {
-                questionExtra.style.display = "none";
-                questionExtra.textContent = "";
-            }
-
-            const audioUrl = getAudioUrl(payload);
-            if (audioUrl) {
-                audioWrap.style.display = "flex";
-                questionAudio.src = audioUrl;
-            } else {
-                audioWrap.style.display = "none";
-                questionAudio.removeAttribute("src");
-                questionAudio.load();
-            }
-
-            renderChoices(payload.choices || []);
-            trainingIdInput.value = pickText(payload, ["training_id"], "");
-            answerInput.value = "";
-            answerInput.placeholder = Array.isArray(payload.choices) && payload.choices.length > 0
-                ? "可点击选项，也可手动输入答案"
-                : "请输入答案，然后提交";
-
-            sideType.textContent = qType;
-            sideTrainingId.textContent = trainingIdInput.value || "-";
-            sideIsTodayPlan.textContent = payload.is_today_plan ? "是" : "否";
-        }
-
-        async function loadCurrentQuestion() {
-            setLoading(true);
-            try {
-                const response = await fetch(API_URL, {
-                    method: "GET",
-                    headers: {
-                        "X-Requested-With": "XMLHttpRequest",
-                    },
-                    credentials: "same-origin",
-                });
-
-                const data = await response.json();
-
-                if (data.empty) {
-                    const kind = data.reason === "today_done" ? "success" : "warning";
-                    showEmptyMode(data.message || "当前没有可训练内容。", kind);
-
-                    chipSource.textContent = data.reason === "today_done"
-                        ? "训练来源：今日计划已完成"
-                        : "训练来源：暂无可训练内容";
-
-                    statMemoryLevel.textContent = "-";
-                    sideType.textContent = "-";
-                    sideTrainingId.textContent = "-";
-                    sideIsTodayPlan.textContent = "-";
-                    return;
-                }
-
-                renderPayload(data);
-            } catch (error) {
-                showEmptyMode("加载当前题目失败，请刷新页面重试。", "warning");
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        async function submitAnswer(event) {
-            event.preventDefault();
-
-            if (state.loading) {
-                return;
-            }
-
-            const trainingId = trainingIdInput.value.trim();
-            const answer = answerInput.value.trim();
-
-            if (!trainingId) {
-                setFeedback("当前题目还没有准备好，请先重新加载。", "warning");
-                return;
-            }
-
-            if (!answer) {
-                setFeedback("请先输入答案，或者先点选一个选项。", "warning");
-                return;
-            }
-
-            setLoading(true);
-            clearFeedback();
-
-            const duration = Math.max(0, Date.now() - state.startedAt);
-            const formData = new URLSearchParams();
-            formData.append("training_id", trainingId);
-            formData.append("answer", answer);
-            formData.append("duration", String(duration));
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-                        "X-CSRFToken": getCookie("csrftoken"),
-                        "X-Requested-With": "XMLHttpRequest",
-                    },
-                    body: formData.toString(),
-                    credentials: "same-origin",
-                });
-
-                const data = await response.json();
-
-                if (!response.ok || data.ok === false) {
-                    setFeedback(data.result || "提交失败，请重试。", "wrong");
-                    return;
-                }
-
-                const resultType = data.is_correct ? "correct" : "wrong";
-                setFeedback(data.result || "提交成功。", resultType);
-
-                const correctAnswersRaw = Array.isArray(data.correct_answers)
-                    ? data.correct_answers
-                    : [pickText(data, ["correct_answer", "answer"], "")].filter(Boolean);
-
-                const correctAnswersText = correctAnswersRaw.join(" / ");
-                sideCorrectAnswer.textContent = correctAnswersText || "未返回";
-
-                submitBtn.disabled = true;
-                answerInput.disabled = true;
-                reloadBtn.disabled = true;
-
-                if (!data.is_correct) {
-                    revealChoiceTexts();
-                    markChoiceResult(false, answer, correctAnswersRaw);
-
-                    nextBtn.style.display = "inline-flex";
-                } else {
-                    markChoiceResult(true, answer, correctAnswersRaw);
-
-                    nextBtn.style.display = "none";
-                    scheduleAutoNext(1200);
-                }
-
-                submitBtn.disabled = true;
-                answerInput.disabled = true;
-                nextBtn.style.display = "inline-flex";
-            } catch (error) {
-                setFeedback("提交失败，请检查网络或刷新页面后重试。", "wrong");
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        answerForm.addEventListener("submit", submitAnswer);
-
-        nextBtn.addEventListener("click", () => {
-            clearAutoNextTimer();
-            loadCurrentQuestion();
-        });
-
-        reloadBtn.addEventListener("click", () => {
-            clearAutoNextTimer();
-            loadCurrentQuestion();
-        });
-
+    }
+    return fallback;
+}
+
+function getChoiceText(choice, index) {
+    return pickText(choice, [
+        "text", "label", "value", "content", "answer", "prompt", "display", "title"
+    ], `选项 ${index + 1}`);
+}
+
+function getChoiceSubmitValue(choice, index) {
+    return pickText(choice, [
+        "submit_value",
+        "value",
+        "key",
+        "id",
+        "answer"
+    ], getChoiceText(choice, index));
+}
+
+function getQuestionText(payload) {
+    return pickText(payload, [
+        "prompt", "question", "title", "text", "stem", "display_text"
+    ], "当前题目加载成功，但没有找到可显示的题干。");
+}
+
+function getExtraText(payload) {
+    return pickText(payload, [
+        "cloze_text", "sentence", "explain", "note", "subtitle"
+    ], "");
+}
+
+function getAudioUrl(payload) {
+    return pickText(payload, [
+        "resolved_audio", "audio", "audio_url"
+    ], "");
+}
+
+function setFeedback(message, type = "info") {
+    feedbackBox.className = `feedback-box show ${type}`;
+    feedbackBox.innerHTML = escapeHtml(message);
+}
+
+function clearFeedback() {
+    feedbackBox.className = "feedback-box info";
+    feedbackBox.textContent = "";
+}
+
+function clearAutoNextTimer() {
+    if (state.autoNextTimer) {
+        clearTimeout(state.autoNextTimer);
+        state.autoNextTimer = null;
+    }
+}
+
+function scheduleAutoNext(delay = 900) {
+    clearAutoNextTimer();
+    state.autoNextTimer = setTimeout(() => {
         loadCurrentQuestion();
-    </script>
-</body>
-</html>
+    }, delay);
+}
+
+function setLoading(isLoading) {
+    state.loading = isLoading;
+    submitBtn.disabled = isLoading;
+    reloadBtn.disabled = isLoading;
+    answerInput.disabled = isLoading;
+}
+
+function showQuestionMode() {
+    questionCard.style.display = "block";
+    emptyCard.classList.remove("show");
+}
+
+function showEmptyMode(message, kind = "warning") {
+    clearAutoNextTimer();
+    questionCard.style.display = "none";
+    emptyCard.classList.add("show");
+    emptyMessage.className = `empty-message ${kind}`;
+    emptyMessage.textContent = message;
+}
+
+function renderChoices(choices) {
+    choicesGrid.innerHTML = "";
+    state.selectedChoiceIndex = null;
+
+    if (!Array.isArray(choices) || choices.length === 0) {
+        choicesGrid.style.display = "none";
+        return;
+    }
+
+    choicesGrid.style.display = "grid";
+
+    choices.forEach((choice, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "choice-btn";
+        button.dataset.index = String(index);
+        button.dataset.choiceText = getChoiceText(choice, index);
+        button.dataset.submitValue = getChoiceSubmitValue(choice, index);
+
+        const head = document.createElement("div");
+        head.className = "choice-head";
+
+        const key = document.createElement("div");
+        key.className = "choice-key";
+        key.textContent = choice.key || String.fromCharCode(65 + index);
+
+        head.appendChild(key);
+
+        const playableAudio = pickText(choice, [
+            "resolved_audio",
+            "audio",
+            "audio_url"
+        ], "");
+
+        if (choice.type === "audio" || playableAudio) {
+            const playBtn = document.createElement("button");
+            playBtn.type = "button";
+            playBtn.className = "choice-play-btn";
+            playBtn.textContent = "▶ 播放选项";
+
+            playBtn.addEventListener("click", (event) => {
+                event.stopPropagation();
+
+                if (playableAudio) {
+                    const audio = new Audio(playableAudio);
+                    audio.play().catch(() => {});
+                }
+            });
+
+            head.appendChild(playBtn);
+        } else {
+            const fallbackText = document.createElement("div");
+            fallbackText.style.fontSize = "15px";
+            fallbackText.style.fontWeight = "800";
+            fallbackText.style.wordBreak = "break-word";
+            fallbackText.textContent = getChoiceText(choice, index);
+            head.appendChild(fallbackText);
+        }
+
+        const textWrap = document.createElement("div");
+        textWrap.className = "choice-text";
+        textWrap.innerHTML = `
+            <div class="choice-text-label">选项文字</div>
+            <div>${escapeHtml(getChoiceText(choice, index))}</div>
+        `;
+
+        button.appendChild(head);
+        button.appendChild(textWrap);
+
+        button.addEventListener("click", () => {
+            [...choicesGrid.querySelectorAll(".choice-btn")].forEach(btn => {
+                btn.classList.remove("selected");
+            });
+
+            button.classList.add("selected");
+            state.selectedChoiceIndex = index;
+            answerInput.value = button.dataset.submitValue;
+        });
+
+        choicesGrid.appendChild(button);
+    });
+}
+
+function revealChoiceTexts() {
+    [...choicesGrid.querySelectorAll(".choice-text")].forEach(node => {
+        node.classList.add("show");
+    });
+}
+
+function markChoiceResult(isCorrect, submittedAnswer, correctAnswers) {
+    const buttons = [...choicesGrid.querySelectorAll(".choice-btn")];
+    const submitted = (submittedAnswer || "").trim().toLowerCase();
+    const correctList = Array.isArray(correctAnswers)
+        ? correctAnswers.map(x => String(x).trim().toLowerCase())
+        : [];
+
+    buttons.forEach(button => {
+        const text = (button.dataset.choiceText || "").trim().toLowerCase();
+
+        if (correctList.includes(text)) {
+            button.classList.add("correct");
+        }
+
+        if (submitted && text === submitted && !isCorrect) {
+            button.classList.add("wrong");
+        }
+    });
+}
+
+function renderPayload(payload) {
+    state.current = payload;
+    state.startedAt = Date.now();
+    clearAutoNextTimer();
+    showQuestionMode();
+    clearFeedback();
+    nextBtn.style.display = "none";
+    sideCorrectAnswer.textContent = "提交后显示";
+    submitBtn.disabled = false;
+    answerInput.disabled = false;
+    reloadBtn.disabled = false;
+
+    chipStage.textContent = `当前阶段：${pickText(payload, ["stage_label", "current_stage_label", "stage"], "进行中")}`;
+    chipNextReview.textContent = `下一次复习：${pickText(payload, ["next_review_text", "next_review_display", "next_review"], "未安排")}`;
+    chipSource.textContent = `训练来源：${payload.is_today_plan ? "今日计划" : "本课训练"}`;
+
+    statPlanTotal.textContent = pickText(payload, ["plan_total"], "0");
+    statPlanDone.textContent = pickText(payload, ["plan_done"], "0");
+    statPlanProgress.textContent = `${pickText(payload, ["plan_progress"], "0")}%`;
+    statMemoryLevel.textContent = pickText(payload, ["memory_level"], "0");
+
+    const qType = pickText(payload, ["type", "qtype"], "unknown");
+    questionTypeBadge.textContent = `类型：${qType}`;
+    questionPrompt.textContent = getQuestionText(payload);
+
+    const extra = getExtraText(payload);
+    if (extra) {
+        questionExtra.style.display = "block";
+        questionExtra.textContent = extra;
+    } else {
+        questionExtra.style.display = "none";
+        questionExtra.textContent = "";
+    }
+
+    const audioUrl = getAudioUrl(payload);
+    if (audioUrl) {
+        audioWrap.style.display = "flex";
+        questionAudio.src = audioUrl;
+    } else {
+        audioWrap.style.display = "none";
+        questionAudio.removeAttribute("src");
+        questionAudio.load();
+    }
+
+    renderChoices(payload.choices || []);
+    trainingIdInput.value = pickText(payload, ["training_id"], "");
+    answerInput.value = "";
+    answerInput.placeholder = Array.isArray(payload.choices) && payload.choices.length > 0
+        ? "可点击选项，也可手动输入答案"
+        : "请输入答案，然后提交";
+
+    sideType.textContent = qType;
+    sideTrainingId.textContent = trainingIdInput.value || "-";
+    sideIsTodayPlan.textContent = payload.is_today_plan ? "是" : "否";
+}
+
+async function loadCurrentQuestion() {
+    setLoading(true);
+    try {
+        const response = await fetch(API_URL, {
+            method: "GET",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            credentials: "same-origin",
+        });
+
+        const data = await response.json();
+
+        if (data.empty) {
+            const kind = data.reason === "today_done" ? "success" : "warning";
+            showEmptyMode(data.message || "当前没有可训练内容。", kind);
+
+            chipSource.textContent = data.reason === "today_done"
+                ? "训练来源：今日计划已完成"
+                : "训练来源：暂无可训练内容";
+
+            statMemoryLevel.textContent = "-";
+            sideType.textContent = "-";
+            sideTrainingId.textContent = "-";
+            sideIsTodayPlan.textContent = "-";
+            return;
+        }
+
+        renderPayload(data);
+    } catch (error) {
+        showEmptyMode("加载当前题目失败，请刷新页面重试。", "warning");
+    } finally {
+        setLoading(false);
+    }
+}
+
+async function submitAnswer(event) {
+    event.preventDefault();
+
+    if (state.loading) {
+        return;
+    }
+
+    const trainingId = trainingIdInput.value.trim();
+    const answer = answerInput.value.trim();
+
+    if (!trainingId) {
+        setFeedback("当前题目还没有准备好，请先重新加载。", "warning");
+        return;
+    }
+
+    if (!answer) {
+        setFeedback("请先输入答案，或者先点选一个选项。", "warning");
+        return;
+    }
+
+    setLoading(true);
+    clearFeedback();
+
+    const duration = Math.max(0, Date.now() - state.startedAt);
+    const formData = new URLSearchParams();
+    formData.append("training_id", trainingId);
+    formData.append("answer", answer);
+    formData.append("duration", String(duration));
+
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                "X-CSRFToken": getCookie("csrftoken"),
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            body: formData.toString(),
+            credentials: "same-origin",
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.ok === false) {
+            setFeedback(data.result || "提交失败，请重试。", "wrong");
+            return;
+        }
+
+        const resultType = data.is_correct ? "correct" : "wrong";
+        setFeedback(data.result || "提交成功。", resultType);
+
+        const correctAnswersRaw = Array.isArray(data.correct_answers)
+            ? data.correct_answers
+            : [pickText(data, ["correct_answer", "answer"], "")].filter(Boolean);
+
+        const correctAnswersText = correctAnswersRaw.join(" / ");
+        sideCorrectAnswer.textContent = correctAnswersText || "未返回";
+
+        submitBtn.disabled = true;
+        answerInput.disabled = true;
+        reloadBtn.disabled = true;
+
+        if (!data.is_correct) {
+            revealChoiceTexts();
+            markChoiceResult(false, answer, correctAnswersRaw);
+            nextBtn.style.display = "inline-flex";
+        } else {
+            markChoiceResult(true, answer, correctAnswersRaw);
+            nextBtn.style.display = "none";
+            scheduleAutoNext(1200);
+        }
+    } catch (error) {
+        setFeedback("提交失败，请检查网络或刷新页面后重试。", "wrong");
+    } finally {
+        setLoading(false);
+    }
+}
+
+answerForm.addEventListener("submit", submitAnswer);
+
+nextBtn.addEventListener("click", () => {
+    clearAutoNextTimer();
+    loadCurrentQuestion();
+});
+
+reloadBtn.addEventListener("click", () => {
+    clearAutoNextTimer();
+    loadCurrentQuestion();
+});
+
+loadCurrentQuestion();
+</script>
+{% endblock %}

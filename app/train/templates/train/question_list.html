@@ -1,481 +1,154 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>本课素材</title>
-    <style>
-        :root {
-            --bg: #0b1020;
-            --bg-soft: #11182d;
-            --panel: rgba(17, 24, 45, 0.96);
-            --panel-2: rgba(12, 18, 34, 0.96);
-            --border: rgba(255, 255, 255, 0.08);
-            --border-strong: rgba(255, 255, 255, 0.14);
-            --text: #ecf2ff;
-            --text-soft: #b7c3e0;
-            --text-faint: #7f8aa6;
-            --primary: #6ea8ff;
-            --success: #33d17a;
-            --warning: #ffbe55;
-            --danger: #ff7272;
-            --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
-            --radius-xl: 22px;
-            --radius-lg: 16px;
-            --radius-md: 12px;
-            --transition: 0.2s ease;
-            --max-width: 980px;
-        }
+{% extends "train/base_train.html" %}
 
-        * {
-            box-sizing: border-box;
-        }
+{% block title %}本课素材{% endblock %}
 
-        html,
-        body {
-            margin: 0;
-            padding: 0;
-            min-height: 100%;
-            background:
-                radial-gradient(circle at top left, rgba(110, 168, 255, 0.20), transparent 28%),
-                radial-gradient(circle at top right, rgba(132, 243, 209, 0.10), transparent 24%),
-                linear-gradient(180deg, #0b1020 0%, #0a0f1c 100%);
-            color: var(--text);
-            font-family:
-                "Inter",
-                "Noto Sans JP",
-                "Hiragino Sans",
-                "Yu Gothic",
-                "Microsoft YaHei",
-                sans-serif;
-        }
+{% block content %}
+{% firstof lesson.book.title book.title "未命名书册" as book_title %}
+{% firstof lesson.title "未命名章节" as lesson_title %}
 
-        body {
-            line-height: 1.6;
-        }
+<div class="page">
+    <div class="shell">
 
-        a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        button,
-        input,
-        textarea,
-        select {
-            font: inherit;
-        }
-
-        .page {
-            width: min(var(--max-width), calc(100% - 32px));
-            margin: 28px auto 48px;
-        }
-
-        .shell {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .topbar-left,
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .back-link,
-        .primary-btn,
-        .secondary-btn,
-        .ghost-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            min-height: 42px;
-            padding: 0 16px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 900;
-            transition: var(--transition);
-            border: 1px solid transparent;
-            white-space: nowrap;
-        }
-
-        .back-link,
-        .secondary-btn,
-        .ghost-btn {
-            border-color: var(--border);
-        }
-
-        .back-link,
-        .ghost-btn {
-            color: var(--text-soft);
-            background: rgba(255, 255, 255, 0.04);
-        }
-
-        .back-link:hover,
-        .ghost-btn:hover {
-            color: var(--text);
-            background: rgba(255, 255, 255, 0.08);
-            border-color: var(--border-strong);
-        }
-
-        .secondary-btn {
-            background: rgba(255, 255, 255, 0.06);
-            color: var(--text);
-        }
-
-        .secondary-btn:hover {
-            background: rgba(255, 255, 255, 0.10);
-            border-color: var(--border-strong);
-        }
-
-        .primary-btn {
-            background: linear-gradient(135deg, #7ab2ff, #4f8dff);
-            color: #08111f;
-            box-shadow: 0 12px 28px rgba(79, 141, 255, 0.30);
-        }
-
-        .primary-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 16px 32px rgba(79, 141, 255, 0.36);
-        }
-
-        .chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            min-height: 36px;
-            padding: 0 14px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: 800;
-            color: var(--text);
-            border: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.05);
-            white-space: nowrap;
-        }
-
-        .chip.primary {
-            background: rgba(110, 168, 255, 0.14);
-            border-color: rgba(110, 168, 255, 0.30);
-            color: #dbe9ff;
-        }
-
-        .chip.warning {
-            background: rgba(255, 190, 85, 0.14);
-            border-color: rgba(255, 190, 85, 0.30);
-            color: #fff2d6;
-        }
-
-        .chip.success {
-            background: rgba(51, 209, 122, 0.14);
-            border-color: rgba(51, 209, 122, 0.28);
-            color: #d9ffe9;
-        }
-
-        .header-card,
-        .list-card,
-        .empty-card {
-            background: linear-gradient(180deg, var(--panel), var(--panel-2));
-            border: 1px solid var(--border);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .header-card {
-            padding: 20px 22px;
-        }
-
-        .title {
-            margin: 0;
-            font-size: clamp(28px, 4vw, 40px);
-            line-height: 1.12;
-            font-weight: 900;
-            letter-spacing: -0.03em;
-            word-break: break-word;
-        }
-
-        .subtitle {
-            margin: 10px 0 0;
-            color: var(--text-soft);
-            font-size: 14px;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-
-        .meta-list {
-            margin-top: 16px;
-            display: grid;
-            gap: 8px;
-        }
-
-        .meta-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .meta-label {
-            font-size: 12px;
-            color: var(--text-faint);
-            font-weight: 700;
-            min-width: 52px;
-        }
-
-        .meta-value {
-            font-size: 14px;
-            color: var(--text);
-            font-weight: 800;
-            word-break: break-word;
-        }
-
-        .card-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .card-title {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 900;
-            color: var(--text);
-        }
-
-        .card-subtitle {
-            margin-top: 4px;
-            font-size: 12px;
-            color: var(--text-faint);
-        }
-
-        .card-body {
-            padding: 18px 20px 20px;
-        }
-
-        .question-list {
-            display: grid;
-            gap: 14px;
-        }
-
-        .question-item {
-            padding: 18px;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            background: rgba(255, 255, 255, 0.04);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .question-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .question-title {
-            margin: 0;
-            font-size: 22px;
-            line-height: 1.28;
-            font-weight: 900;
-            letter-spacing: -0.02em;
-            color: var(--text);
-            word-break: break-word;
-        }
-
-        .question-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .answer-box {
-            padding: 14px 16px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .answer-label {
-            font-size: 12px;
-            color: var(--text-faint);
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-
-        .answer-value {
-            font-size: 14px;
-            color: var(--text);
-            font-weight: 800;
-            word-break: break-word;
-            white-space: pre-wrap;
-        }
-
-        .actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .empty-card {
-            padding: 28px 20px;
-            text-align: center;
-            color: var(--text-soft);
-        }
-
-        .empty-title {
-            font-size: 18px;
-            font-weight: 900;
-            color: var(--text);
-            margin-bottom: 8px;
-        }
-
-        .footer-note {
-            text-align: center;
-            font-size: 12px;
-            color: var(--text-faint);
-        }
-
-        @media (max-width: 780px) {
-            .page {
-                width: min(100% - 20px, var(--max-width));
-                margin: 16px auto 28px;
-            }
-
-            .topbar,
-            .topbar-left,
-            .topbar-right,
-            .actions {
-                align-items: stretch;
-            }
-
-            .topbar-left,
-            .topbar-right,
-            .actions {
-                flex-direction: column;
-            }
-
-            .back-link,
-            .primary-btn,
-            .secondary-btn,
-            .ghost-btn {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .header-card,
-            .card-header,
-            .card-body {
-                padding-left: 16px;
-                padding-right: 16px;
-            }
-
-            .header-card {
-                padding-top: 18px;
-                padding-bottom: 18px;
-            }
-        }
-    </style>
-</head>
-<body>
-    {% firstof lesson.book.title book.title "未命名书册" as book_title %}
-    {% firstof lesson.title "未命名章节" as lesson_title %}
-
-    <div class="page">
-        <div class="shell">
-
-            <div class="topbar">
-                <div class="topbar-left">
-                    <a href="{% url 'lesson-train' lesson.id %}" class="back-link">← 返回训练</a>
-                    <a href="{% url 'book-detail' lesson.book.id %}" class="back-link">返回章节页</a>
-                </div>
-
-                <div class="topbar-right">
-                    <a href="{% url 'builder-page' %}?lesson_id={{ lesson.id }}" class="primary-btn">新增素材</a>
-                </div>
+        <div class="topbar">
+            <div class="topbar-left">
+                <a href="{% url 'lesson-train' lesson.id %}" class="back-link">← 返回训练</a>
+                <a href="{% url 'book-detail' lesson.book.id %}" class="back-link">返回章节页</a>
             </div>
 
-            <section class="header-card">
-                <h1 class="title">本课素材</h1>
-                <p class="subtitle">这里专门处理当前课节的素材，不做多余信息干扰。</p>
-
-                <div class="meta-list">
-                    <div class="meta-row">
-                        <div class="meta-label">书册</div>
-                        <div class="meta-value">{{ book_title }}</div>
-                    </div>
-                    <div class="meta-row">
-                        <div class="meta-label">章节</div>
-                        <div class="meta-value">{{ lesson_title }}</div>
-                    </div>
-                    <div class="meta-row">
-                        <span class="chip primary">素材数：{{ questions|length }}</span>
-                    </div>
-                </div>
-            </section>
-
-            <section class="list-card">
-                <div class="card-header">
-                    <h2 class="card-title">素材列表</h2>
-                    <div class="card-subtitle">只保留题干、标准答案和编辑入口。</div>
-                </div>
-
-                <div class="card-body">
-                    {% if questions %}
-                        <div class="question-list">
-                            {% for question in questions %}
-                                {% firstof question.prompt_text question.question_text question.question "未命名题目" as question_prompt %}
-                                {% firstof question.answer_text question.answer "暂无答案" as answer_text %}
-                                {% firstof question.qtype "未分类" as qtype %}
-
-                                <article class="question-item">
-                                    <div class="question-top">
-                                        <h3 class="question-title">{{ question_prompt }}</h3>
-
-                                        <div class="question-meta">
-                                            <span class="chip warning">{{ qtype }}</span>
-                                            <span class="chip">ID：{{ question.id }}</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="answer-box">
-                                        <div class="answer-label">标准答案</div>
-                                        <div class="answer-value">{{ answer_text }}</div>
-                                    </div>
-
-                                    <div class="actions">
-                                        <a href="{% url 'question-edit' question.id %}?next={{ request.path }}" class="primary-btn">编辑题干/答案</a>
-                                    </div>
-                                </article>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="empty-card">
-                            <div class="empty-title">还没有素材</div>
-                            <div>先新增第一条素材，再回到训练页继续处理。</div>
-                        </div>
-                    {% endif %}
-                </div>
-            </section>
-
-            <div class="footer-note">Question List Page</div>
+            <div class="topbar-right">
+                <a href="{% url 'builder-page' %}?lesson_id={{ lesson.id }}" class="primary-btn">新增素材</a>
+            </div>
         </div>
+
+        <section class="header-card">
+            <h1 class="title">本课素材</h1>
+            <p class="subtitle">这里专门处理当前课节的素材，不做多余信息干扰。</p>
+
+            <div class="meta-list">
+                <div class="meta-row">
+                    <div class="meta-label">书册</div>
+                    <div class="meta-value">{{ book_title }}</div>
+                </div>
+                <div class="meta-row">
+                    <div class="meta-label">章节</div>
+                    <div class="meta-value">{{ lesson_title }}</div>
+                </div>
+                <div class="meta-row">
+                    <span class="chip primary">素材数：{{ questions|length }}</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="list-card">
+            <div class="card-header">
+                <h2 class="card-title">素材列表</h2>
+                <div class="card-subtitle">只保留题干、标准答案和编辑入口。</div>
+            </div>
+
+            <div class="card-body">
+                {% if questions %}
+                    <div class="question-list">
+                        {% for question in questions %}
+                            {% firstof question.prompt_text question.question_text question.question "未命名题目" as question_prompt %}
+                            {% firstof question.answer_text question.answer "暂无答案" as answer_text %}
+                            {% firstof question.qtype "未分类" as qtype %}
+
+                            <article class="question-item">
+                                <div class="question-top">
+                                    <h3 class="question-title">{{ question_prompt }}</h3>
+
+                                    <div class="question-meta">
+                                        <span class="chip warning">{{ qtype }}</span>
+                                        <span class="chip">ID：{{ question.id }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="answer-box">
+                                    <div class="answer-label">标准答案</div>
+                                    <div class="answer-value">{{ answer_text }}</div>
+                                </div>
+
+                                <div class="actions">
+                                    <a href="{% url 'question-edit' question.id %}?next={{ request.path }}" class="primary-btn">编辑题干/答案</a>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-card">
+                        <div class="empty-title">还没有素材</div>
+                        <div>先新增第一条素材，再回到训练页继续处理。</div>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <div class="footer-note">Question List Page</div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.question-list {
+    display: grid;
+    gap: 14px;
+}
+
+.question-item {
+    padding: 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.question-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.question-title {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.28;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    word-break: break-word;
+}
+
+.question-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.answer-box {
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.answer-label {
+    font-size: 12px;
+    color: var(--text-faint);
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.answer-value {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 800;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+</style>
+{% endblock %}

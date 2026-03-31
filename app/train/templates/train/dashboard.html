@@ -1,1092 +1,1055 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>我的学习</title>
-
-<style>
-body {
-    margin: 0;
-    background: #f5f6fa;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    color: #111827;
-}
-
-.topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 20px;
-}
-
-.header {
-    margin: 0;
-    font-size: 28px;
-    font-weight: 800;
-    color: #111827;
-}
-
-.account-anchor {
-    position: relative;
-    flex-shrink: 0;
-}
-
-.account-trigger {
-    border: none;
-    background: white;
-    border-radius: 999px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    padding: 10px 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-}
-
-.account-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: linear-gradient(90deg, #4facfe, #00b7ff);
-    color: white;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 15px;
-    flex-shrink: 0;
-}
-
-.account-name {
-    font-size: 14px;
-    font-weight: 700;
-    color: #222;
-    line-height: 1;
-}
-
-.account-arrow {
-    font-size: 14px;
-    color: #666;
-    transition: transform 0.2s ease;
-}
-
-.account-panel {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 8px);
-    width: min(280px, 78vw);
-    background: white;
-    border-radius: 14px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.10);
-    padding: 12px;
-    z-index: 20;
-}
-
-/* =========================
-   顶部导航统一：dashboard
-========================= */
-.topbar-left {
-    min-width: 0;
-}
-
-.page-title-wrap {
-    min-width: 0;
-}
-
-.page-subtitle {
-    margin-top: 6px;
-    font-size: 13px;
-    color: #6b7280;
-    line-height: 1.7;
-}
-
-.account-trigger {
-    min-height: 44px;
-    padding: 10px 14px;
-    border-radius: 12px;
-}
-
-.auth-panel-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    font-size: 13px;
-    line-height: 1.7;
-    padding: 4px 0;
-}
-
-.auth-panel-label {
-    color: #666;
-    flex-shrink: 0;
-}
-
-.auth-panel-value {
-    color: #222;
-    text-align: right;
-    word-break: break-all;
-}
-
-.auth-panel-actions {
-    margin-top: 10px;
-}
-
-.auth-panel-actions form {
-    width: 100%;
-}
-
-.logout-btn {
-    width: 100%;
-    background: #f3f6fb;
-    color: #333;
-    border: none;
-    border-radius: 12px;
-    padding: 11px 14px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.account-menu-actions {
-    margin-top: 12px;
-}
-
-.account-menu-btn {
-    width: 100%;
-    border: none;
-    background: #eef3f8;
-    color: #333;
-    border-radius: 12px;
-    padding: 11px 14px;
-    cursor: pointer;
-    font-size: 14px;
-    text-align: center;
-}
-
-.account-create-book-panel {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #eef1f4;
-}
-
-.account-create-book-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.account-form-block {
-    width: 100%;
-}
-
-.account-form-label {
-    display: block;
-    font-size: 13px;
-    font-weight: 700;
-    color: #444;
-    margin-bottom: 6px;
-}
-
-.account-form-input,
-.account-form-textarea {
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid #d7dce3;
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-size: 14px;
-    background: white;
-}
-
-.account-form-textarea {
-    min-height: 88px;
-    resize: vertical;
-}
-
-.account-form-actions {
-    margin-top: 2px;
-}
-
-.account-submit-btn {
-    width: 100%;
-    border: none;
-    background: #1677ff;
-    color: white;
-    border-radius: 12px;
-    padding: 11px 14px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.books-home-section {
-    margin: 0 20px 18px;
-}
-
-.books-home-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 12px;
-}
-
-.books-home-title {
-    font-size: 22px;
-    font-weight: 800;
-    color: #111827;
-    line-height: 1.4;
-}
-
-.books-home-sub {
-    font-size: 13px;
-    color: #6b7280;
-    line-height: 1.7;
-    margin-top: 4px;
-}
-
-.books-toggle-btn {
-    display: inline-block;
-    border: none;
-    background: #eef3f8;
-    color: #333;
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-#allBooksWrap {
-    display: none;
-}
-
-.book-card {
-    background: white;
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 14px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-}
-
-.monoxer-book-card {
-    padding: 16px;
-}
-
-.book-main-row {
-    display: grid;
-    grid-template-columns: 68px 1fr 92px;
-    gap: 14px;
-    align-items: center;
-}
-
-.book-main-left {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.book-icon-box {
-    width: 64px;
-    height: 64px;
-    border-radius: 14px;
-    background: #1677ff;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-}
-
-.book-main-center {
-    min-width: 0;
-}
-
-.title {
-    font-size: 20px;
-    font-weight: 800;
-    color: #111827;
-    line-height: 1.5;
-}
-
-.meta {
-    margin-top: 4px;
-    font-size: 14px;
-    color: #6b7280;
-    line-height: 1.7;
-}
-
-.book-status-line {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 8px;
-    margin-bottom: 8px;
-}
-
-.book-risk {
-    display: inline-block;
-    padding: 6px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-.book-risk.high {
-    background: #fff1f2;
-    color: #dc2626;
-}
-
-.book-risk.mid {
-    background: #fff7ed;
-    color: #c2410c;
-}
-
-.book-risk.low {
-    background: #ecfdf5;
-    color: #15803d;
-}
-
-.book-stage-chip {
-    display: inline-block;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: #eef3f8;
-    color: #334155;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-.book-stage-meta {
-    font-size: 14px;
-    color: #475569;
-    line-height: 1.8;
-}
-
-.book-main-right {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-}
-
-.book-progress-ring {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    border: 6px solid #dbeafe;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: white;
-}
-
-.book-progress-value {
-    font-size: 24px;
-    font-weight: 800;
-    color: #1677ff;
-    line-height: 1;
-}
-
-.book-progress-sub {
-    font-size: 12px;
-    color: #6b7280;
-    text-align: center;
-}
-
-.book-study-btn {
-    display: inline-block;
-    text-decoration: none;
-    background: #1677ff;
-    color: white;
-    border-radius: 999px;
-    padding: 10px 18px;
-    font-size: 14px;
-    text-align: center;
-}
-
-.book-cycle-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
-    margin-top: 12px;
-}
-
-.book-cycle-pill {
-    background: #eef3f8;
-    border-radius: 10px;
-    padding: 8px 10px;
-    font-size: 12px;
-    color: #333;
-    display: flex;
-    justify-content: space-between;
-    gap: 6px;
-}
-
-.book-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 12px;
-}
-
-.btn {
-    display: inline-block;
-    text-decoration: none;
-    background: #1677ff;
-    color: white;
-    border-radius: 12px;
-    padding: 10px 14px;
-    font-size: 14px;
-    text-align: center;
-}
-
-.compact-book-card {
-    padding: 14px;
-}
-
-.compact-book-top {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-}
-
-.compact-book-main {
-    flex: 1;
-    min-width: 0;
-}
-
-.minimal-book-card {
-    padding: 14px 16px;
-}
-
-.minimal-book-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
-
-.minimal-book-main {
-    flex: 1;
-    min-width: 0;
-}
-
-.minimal-book-meta {
-    margin-top: 6px;
-    font-size: 13px;
-    color: #6b7280;
-    line-height: 1.7;
-}
-
-.minimal-book-actions {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-}
-
-.minimal-btn {
-    min-width: 72px;
-    padding: 10px 12px;
-    font-size: 13px;
-}
-
-.secondary-btn {
-    background: #eef3f8;
-    color: #334155;
-}
-
-/* =========================
-   统一收口：dashboard
-========================= */
-.top-action-btn,
-.book-study-btn,
-.btn,
-.account-menu-btn,
-.account-submit-btn {
-    border-radius: 12px;
-    font-size: 14px;
-    line-height: 1.2;
-}
-
-.book-study-btn,
-.account-submit-btn {
-    background: #1677ff;
-    color: #fff;
-    font-weight: 700;
-    padding: 11px 14px;
-}
-
-.top-action-btn,
-.btn,
-.account-menu-btn,
-.secondary-btn {
-    background: #eef3f8;
-    color: #334155;
-    font-weight: 600;
-    padding: 11px 14px;
-}
-
-.books-toggle-btn {
-    border-radius: 12px;
-    font-size: 14px;
-    line-height: 1.2;
-    padding: 11px 14px;
-    background: #eef3f8;
-    color: #334155;
-    font-weight: 600;
-}
-
-.book-risk,
-.book-stage-chip {
-    padding: 6px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-.header {
-    font-size: 28px;
-    font-weight: 800;
-}
-
-.books-home-title {
-    font-size: 22px;
-    font-weight: 800;
-}
-
-.title {
-    font-size: 20px;
-    font-weight: 800;
-}
-
-.meta,
-.book-stage-meta {
-    font-size: 14px;
-    line-height: 1.7;
-}
-
-.books-home-sub,
-.minimal-book-meta,
-.auth-panel-row {
-    font-size: 13px;
-    line-height: 1.7;
-}
-
-@media (max-width: 768px) {
-    body {
-        font-size: 15px;
-    }
-
-    .topbar {
-        padding: 16px 12px;
-    }
-
-    .header {
-        font-size: 22px;
-    }
-
-    .account-trigger {
-        padding: 10px 12px;
-        gap: 8px;
-    }
-
-    .account-avatar {
-        width: 36px;
-        height: 36px;
-        font-size: 15px;
-    }
-
-    .account-name {
-        font-size: 15px;
-    }
-
-    .account-arrow {
-        font-size: 15px;
-    }
-
-    .account-panel {
-        width: min(300px, 86vw);
-        padding: 12px;
-    }
-
-    .auth-panel-row {
-        flex-direction: column;
-        gap: 2px;
-        font-size: 14px;
-    }
-
-    .auth-panel-value {
-        text-align: left;
-    }
-
-    .logout-btn {
-        width: 100%;
-        font-size: 14px;
-        padding: 12px 14px;
-    }
-
-    .account-menu-btn,
-    .account-submit-btn,
-    .account-form-input,
-    .account-form-textarea {
-        font-size: 14px;
-    }
-
-    .account-form-label {
-        font-size: 13px;
-    }
-
-    .account-create-book-panel {
-        margin-top: 12px;
-        padding-top: 12px;
-    }
-
-    .page-subtitle {
-        font-size: 13px;
-        margin-top: 6px;
-    }
-
-    .account-trigger {
-        min-height: 44px;
-        padding: 10px 12px;
-    }
-
-    .books-home-section {
-        margin: 0 12px 16px;
-    }
-
-    .books-home-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-    }
-
-    .books-home-title {
-        font-size: 18px;
-    }
-
-    .books-home-sub {
-        font-size: 13px;
-    }
-
-    .books-toggle-btn {
-        width: 100%;
-    }
-
-    .book-card {
-        padding: 14px;
-    }
-
-    .book-main-row {
-        grid-template-columns: 56px 1fr;
-        gap: 12px;
-    }
-
-    .book-main-right {
-        grid-column: 1 / -1;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 4px;
-    }
-
-    .book-icon-box {
-        width: 52px;
-        height: 52px;
-        font-size: 22px;
-        border-radius: 12px;
-    }
-
-    .title {
-        font-size: 18px;
-    }
-
-    .meta,
-    .book-stage-meta {
-        font-size: 13px;
-        line-height: 1.7;
-    }
-
-    .book-progress-ring {
-        width: 54px;
-        height: 54px;
-        border-width: 5px;
-    }
-
-    .book-progress-value {
-        font-size: 18px;
-    }
-
-    .book-progress-sub {
-        font-size: 12px;
-    }
-
-    .book-study-btn {
-        padding: 10px 16px;
-        font-size: 14px;
-    }
-
-    .book-cycle-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-    }
-
-    .book-actions {
-        width: 100%;
-    }
-
-    .book-actions .btn {
-        flex: 1 1 calc(50% - 8px);
-        box-sizing: border-box;
-        text-align: center;
-    }
-}
-
-    .minimal-book-row {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-    }
-
-    .minimal-book-actions {
-        width: 100%;
-    }
-
-    .minimal-book-actions .minimal-btn {
-        flex: 1 1 calc(50% - 8px);
-        text-align: center;
-        box-sizing: border-box;
-    }
-
-@media (max-width: 480px) {
-    .book-main-row {
-        grid-template-columns: 1fr;
-    }
-
-    .book-main-left {
-        justify-content: flex-start;
-    }
-
-    .book-main-right {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .book-study-btn,
-    .book-actions .btn,
-    .books-toggle-btn {
-        width: 100%;
-        box-sizing: border-box;
-        text-align: center;
-    }
-
-    .book-cycle-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .minimal-book-actions {
-        flex-direction: column;
-    }
-
-    .minimal-book-actions .minimal-btn {
-        width: 100%;
-    }
-}
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的学习</title>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --bg-soft: #11182d;
+            --panel: rgba(17, 24, 45, 0.94);
+            --panel-2: rgba(20, 29, 52, 0.94);
+            --panel-3: rgba(13, 20, 38, 0.96);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-strong: rgba(255, 255, 255, 0.14);
+            --text: #ecf2ff;
+            --text-soft: #b7c3e0;
+            --text-faint: #7f8aa6;
+            --primary: #6ea8ff;
+            --primary-2: #84f3d1;
+            --success: #33d17a;
+            --warning: #ffbe55;
+            --danger: #ff7272;
+            --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+            --radius-xl: 24px;
+            --radius-lg: 18px;
+            --radius-md: 14px;
+            --radius-sm: 10px;
+            --transition: 0.2s ease;
+            --max-width: 1440px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            background:
+                radial-gradient(circle at top left, rgba(110, 168, 255, 0.20), transparent 28%),
+                radial-gradient(circle at top right, rgba(132, 243, 209, 0.10), transparent 24%),
+                linear-gradient(180deg, #0b1020 0%, #0a0f1c 100%);
+            color: var(--text);
+            font-family:
+                "Inter",
+                "Noto Sans JP",
+                "Hiragino Sans",
+                "Yu Gothic",
+                "Microsoft YaHei",
+                sans-serif;
+        }
+
+        body {
+            line-height: 1.6;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            font: inherit;
+        }
+
+        .dashboard-page {
+            width: min(var(--max-width), calc(100% - 32px));
+            margin: 28px auto 48px;
+        }
+
+        .dashboard-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .topbar-left,
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .brand-pill,
+        .user-pill,
+        .hero-chip,
+        .status-chip,
+        .book-chip,
+        .mini-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 38px;
+            padding: 0 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 800;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        .brand-pill {
+            background: rgba(110, 168, 255, 0.12);
+            border-color: rgba(110, 168, 255, 0.26);
+            color: #dbe9ff;
+        }
+
+        .status-chip.primary,
+        .hero-chip.primary,
+        .book-chip.primary {
+            background: rgba(110, 168, 255, 0.14);
+            border-color: rgba(110, 168, 255, 0.30);
+            color: #dbe9ff;
+        }
+
+        .status-chip.success,
+        .hero-chip.success,
+        .book-chip.success {
+            background: rgba(51, 209, 122, 0.14);
+            border-color: rgba(51, 209, 122, 0.28);
+            color: #d9ffe9;
+        }
+
+        .status-chip.warning,
+        .hero-chip.warning,
+        .book-chip.warning {
+            background: rgba(255, 190, 85, 0.14);
+            border-color: rgba(255, 190, 85, 0.28);
+            color: #fff2d6;
+        }
+
+        .status-chip.danger,
+        .hero-chip.danger,
+        .book-chip.danger {
+            background: rgba(255, 114, 114, 0.14);
+            border-color: rgba(255, 114, 114, 0.28);
+            color: #ffe0e0;
+        }
+
+        .primary-btn,
+        .secondary-btn,
+        .ghost-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 44px;
+            padding: 0 18px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 900;
+            transition: var(--transition);
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #7ab2ff, #4f8dff);
+            color: #08111f;
+            box-shadow: 0 12px 28px rgba(79, 141, 255, 0.34);
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 34px rgba(79, 141, 255, 0.40);
+        }
+
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            border-color: var(--border);
+        }
+
+        .secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.10);
+            border-color: var(--border-strong);
+            transform: translateY(-1px);
+        }
+
+        .ghost-btn {
+            background: transparent;
+            color: var(--text-soft);
+            border-color: var(--border);
+        }
+
+        .ghost-btn:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .hero-card,
+        .stat-card,
+        .priority-card,
+        .book-card,
+        .section-card,
+        .empty-card {
+            background: linear-gradient(180deg, rgba(17, 24, 45, 0.96), rgba(12, 18, 34, 0.96));
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .hero-card {
+            padding: 26px 26px 22px;
+            position: relative;
+        }
+
+        .hero-card::before {
+            content: "";
+            position: absolute;
+            inset: auto -80px -80px auto;
+            width: 240px;
+            height: 240px;
+            background: radial-gradient(circle, rgba(110, 168, 255, 0.22), transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-inner {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .hero-main {
+            flex: 1 1 620px;
+            min-width: 280px;
+        }
+
+        .hero-side {
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--primary-2);
+            margin-bottom: 10px;
+        }
+
+        .hero-title {
+            margin: 0;
+            font-size: clamp(30px, 4vw, 44px);
+            line-height: 1.12;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            word-break: break-word;
+        }
+
+        .hero-subtitle {
+            margin: 12px 0 0;
+            color: var(--text-soft);
+            font-size: 15px;
+            max-width: 860px;
+        }
+
+        .hero-chips {
+            margin-top: 18px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .stat-card {
+            padding: 18px 18px 16px;
+            min-height: 118px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: "";
+            position: absolute;
+            inset: auto -20px -20px auto;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.07), transparent 70%);
+            pointer-events: none;
+        }
+
+        .stat-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-soft);
+            letter-spacing: 0.02em;
+        }
+
+        .stat-value {
+            font-size: clamp(26px, 3vw, 38px);
+            line-height: 1.05;
+            font-weight: 900;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+
+        .stat-sub {
+            font-size: 12px;
+            color: var(--text-faint);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+            flex-wrap: wrap;
+        }
+
+        .section-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: -0.01em;
+            color: var(--text);
+        }
+
+        .section-subtitle {
+            font-size: 12px;
+            color: var(--text-faint);
+        }
+
+        .section-body {
+            padding: 22px;
+        }
+
+        .priority-list {
+            display: grid;
+            gap: 16px;
+        }
+
+        .priority-card {
+            padding: 22px;
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.7fr);
+            gap: 18px;
+            align-items: stretch;
+        }
+
+        .priority-main {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .priority-title {
+            margin: 0;
+            font-size: clamp(24px, 3vw, 34px);
+            line-height: 1.18;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            word-break: break-word;
+        }
+
+        .priority-desc {
+            color: var(--text-soft);
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .priority-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .priority-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .priority-side {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .mini-stat {
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .mini-stat-label {
+            font-size: 12px;
+            color: var(--text-faint);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .mini-stat-value {
+            font-size: 24px;
+            line-height: 1.08;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        .mini-stat-sub {
+            margin-top: 4px;
+            font-size: 12px;
+            color: var(--text-soft);
+        }
+
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .book-card {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .book-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .book-card-title {
+            margin: 0;
+            font-size: 22px;
+            line-height: 1.2;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            word-break: break-word;
+        }
+
+        .book-card-desc {
+            color: var(--text-soft);
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .book-card-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .book-card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .book-card-field {
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            min-width: 0;
+        }
+
+        .book-card-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-faint);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .book-card-value {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        .book-card-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .empty-card {
+            padding: 30px 22px;
+            text-align: center;
+            color: var(--text-soft);
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .footer-note {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-faint);
+        }
+
+        @media (max-width: 1180px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .priority-card {
+                grid-template-columns: 1fr;
+            }
+
+            .books-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 780px) {
+            .dashboard-page {
+                width: min(100% - 20px, var(--max-width));
+                margin: 16px auto 28px;
+            }
+
+            .hero-card,
+            .priority-card {
+                padding: 18px 16px;
+            }
+
+            .section-header,
+            .section-body {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            .topbar {
+                align-items: stretch;
+            }
+
+            .topbar-left,
+            .topbar-right,
+            .hero-side,
+            .priority-actions,
+            .book-card-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .primary-btn,
+            .secondary-btn,
+            .ghost-btn,
+            .brand-pill,
+            .user-pill {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .book-card-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
-
 <body>
+    {% firstof total_books books|length all_books|length priority_books|length prioritized_books|length "0" as dashboard_total_books %}
+    {% firstof due_total today_due_total pending_total "0" as dashboard_due_total %}
+    {% firstof overdue_total today_overdue_total "0" as dashboard_overdue_total %}
+    {% firstof done_total completed_total "0" as dashboard_done_total %}
 
-<!-- =========================
-     标题
-========================= -->
-<div class="topbar">
-    <div class="topbar-left">
-        <div class="page-title-wrap">
-            <div class="header">我的学习</div>
-            <div class="page-subtitle">先看优先处理的书，再看全部书册。</div>
-        </div>
-    </div>
+    <div class="dashboard-page">
+        <div class="dashboard-shell">
 
-    <div class="account-anchor">
-        <button type="button" class="account-trigger" onclick="toggleUserPanel()">
-            <span class="account-avatar">
-                {{ request.user.username|default:"U"|first|upper }}
-            </span>
-
-            {% if request.user.is_authenticated %}
-                <span class="account-name">
-                    {{ request.user.username|default:"未命名用户" }}
-                </span>
-                <span class="account-arrow" id="authLiteArrow">▾</span>
-            {% else %}
-                <span class="account-name">登录</span>
-            {% endif %}
-        </button>
-
-        <div class="account-panel" id="authLitePanel" style="display:none;">
-            <div class="auth-panel-row">
-                <span class="auth-panel-label">用户名</span>
-                <span class="auth-panel-value">{{ request.user.username|default:"未命名用户" }}</span>
-            </div>
-
-            <div class="auth-panel-row">
-                <span class="auth-panel-label">邮箱</span>
-                <span class="auth-panel-value">{{ request.user.email|default:"未设置邮箱" }}</span>
-            </div>
-
-            <div class="account-menu-actions">
-                <button type="button" class="account-menu-btn" onclick="toggleCreateBookPanel()">
-                    新建书册
-                </button>
-            </div>
-
-            <div class="account-create-book-panel" id="createBookPanel" style="display:none;">
-                <form method="post" class="account-create-book-form">
-                    {% csrf_token %}
-
-                    <div class="account-form-block">
-                        <label class="account-form-label">书册名称</label>
-                        <input
-                            type="text"
-                            name="title"
-                            class="account-form-input"
-                            placeholder="例如：英语口语 1"
-                            required
-                        >
-                    </div>
-
-                    <div class="account-form-block">
-                        <label class="account-form-label">书册说明</label>
-                        <textarea
-                            name="description"
-                            class="account-form-textarea"
-                            placeholder="可不填"
-                        ></textarea>
-                    </div>
-
-                    <div class="account-form-actions">
-                        <button type="submit" class="account-submit-btn">保存书册</button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="auth-panel-actions">
-                <form method="post" action="{% url 'logout' %}">
-                    {% csrf_token %}
-                    <button type="submit" class="logout-btn">退出登录</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- =========================
-     书册列表
-========================= -->
-<div id="priority-books"></div>
-
-{% if books %}
-    <div class="books-home-section">
-        <div class="books-home-header">
-            <div>
-                <div class="books-home-title">优先处理的书</div>
-                <div class="books-home-sub">
-                    已逾期、今日到期、当前仍需推进的书会排在前面。
-                </div>
-            </div>
-        </div>
-
-        {% for item in priority_books %}
-            <div class="book-card monoxer-book-card priority-book-card">
-                <div class="book-main-row">
-                    <div class="book-main-left">
-                        <div class="book-icon-box">📘</div>
-                    </div>
-
-                    <div class="book-main-center">
-                        <div class="title">{{ item.book.title }}</div>
-                        <div class="meta">{{ item.book.description|default:"暂无描述" }}</div>
-
-                        <div class="book-status-line">
-                            {% if item.risk_level == "高风险" %}
-                                <span class="book-risk high">高风险</span>
-                            {% elif item.risk_level == "中风险" %}
-                                <span class="book-risk mid">今日到期</span>
-                            {% else %}
-                                <span class="book-risk low">稳定</span>
-                            {% endif %}
-
-                            <span class="book-stage-chip">{{ item.main_stage }}</span>
-                        </div>
-
-                        <div class="book-stage-meta">
-                            下一次复习：{{ item.next_review_text }}
-                        </div>
-
-                        <div class="priority-stats-row">
-                            <div class="priority-stat-pill">
-                                <span>待处理</span>
-                                <strong>{{ item.today_due_count }}</strong>
-                            </div>
-                            <div class="priority-stat-pill">
-                                <span>已逾期</span>
-                                <strong>{{ item.overdue_count }}</strong>
-                            </div>
-                            <div class="priority-stat-pill">
-                                <span>巩固中</span>
-                                <strong>{{ item.short_count }}</strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="book-main-right priority-main-right">
-                        <div class="priority-state-block">
-                            <div class="book-progress-ring priority-ring">
-                                <div class="book-progress-value">
-                                    {% if item.overdue_count > 0 %}
-                                        !
-                                    {% elif item.today_due_count > 0 %}
-                                        !
-                                    {% else %}
-                                        ✓
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <div class="book-progress-sub priority-progress-sub">
-                                {% if item.overdue_count > 0 %}
-                                    需要优先处理
-                                {% elif item.today_due_count > 0 %}
-                                    今天该复习
-                                {% else %}
-                                    可以继续推进
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <a href="/book/{{ item.book.id }}/" class="book-study-btn primary-study-btn">
-                            开始学习
-                        </a>
-                    </div>
+            <div class="topbar">
+                <div class="topbar-left">
+                    <div class="brand-pill">Memory Loop Dashboard</div>
                 </div>
 
-                <div class="book-actions secondary-actions">
-                    <a href="/book/{{ item.book.id }}/" class="btn secondary-btn">查看详情</a>
-                    <a href="/book/{{ item.book.id }}/edit/?next=/" class="btn secondary-btn">编辑书册</a>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-
-    <div class="books-home-section">
-        <div class="books-home-header">
-            <div>
-                <div class="books-home-title">全部书册</div>
-                <div class="books-home-sub">
-                    首页先看优先处理的书；全部书册按需展开查看。
+                <div class="topbar-right">
+                    <a href="{% url 'stats-page' %}" class="secondary-btn">学习统计</a>
+                    <div class="user-pill">{{ request.user.username }}</div>
                 </div>
             </div>
 
-            <button type="button" class="books-toggle-btn" onclick="toggleAllBooks()">
-                查看全部书册（{{ all_books_count }}）
-            </button>
-        </div>
+            <section class="hero-card">
+                <div class="hero-inner">
+                    <div class="hero-main">
+                        <div class="hero-eyebrow">Study Control Center</div>
+                        <h1 class="hero-title">我的学习</h1>
+                        <p class="hero-subtitle">
+                            先看今天优先处理的书，再进入当前记忆焦点。整站统一使用深色训练风格，不再回到旧后台视觉。
+                        </p>
 
-        <div id="allBooksWrap">
-            {% for item in book_cycle_summary %}
-                <div class="book-card compact-book-card minimal-book-card">
-                    <div class="minimal-book-row">
-                        <div class="minimal-book-main">
-                            <div class="title">{{ item.book.title }}</div>
-
-                            <div class="book-status-line">
-                                {% if item.risk_level == "高风险" %}
-                                    <span class="book-risk high">高风险</span>
-                                {% elif item.risk_level == "中风险" %}
-                                    <span class="book-risk mid">今日到期</span>
-                                {% else %}
-                                    <span class="book-risk low">稳定</span>
-                                {% endif %}
-
-                                <span class="book-stage-chip">{{ item.main_stage }}</span>
-                            </div>
-
-                            <div class="minimal-book-meta">
-                                下一次复习：{{ item.next_review_text }}
-                            </div>
-                        </div>
-
-                        <div class="minimal-book-actions">
-                            <a href="/book/{{ item.book.id }}/" class="btn minimal-btn">进入</a>
-                            <a href="/book/{{ item.book.id }}/edit/?next=/" class="btn minimal-btn secondary-btn">编辑</a>
+                        <div class="hero-chips">
+                            <span class="hero-chip primary">书册总数：{{ dashboard_total_books }}</span>
+                            <span class="hero-chip warning">今日到期 / 待处理：{{ dashboard_due_total }}</span>
+                            <span class="hero-chip danger">已逾期：{{ dashboard_overdue_total }}</span>
+                            <span class="hero-chip success">已完成：{{ dashboard_done_total }}</span>
                         </div>
                     </div>
+
+                    <div class="hero-side">
+                        <a href="#priority-books" class="primary-btn">开始今日学习</a>
+                        <a href="#all-books" class="secondary-btn">查看全部书册</a>
+                    </div>
                 </div>
-            {% endfor %}
+            </section>
+
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">优先处理</div>
+                    <div class="stat-value">
+                        {% if priority_books %}{{ priority_books|length }}
+                        {% elif prioritized_books %}{{ prioritized_books|length }}
+                        {% elif books %}{{ books|length }}
+                        {% else %}0{% endif %}
+                    </div>
+                    <div class="stat-sub">优先进入这些书继续循环</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-title">今日到期</div>
+                    <div class="stat-value">{{ dashboard_due_total }}</div>
+                    <div class="stat-sub">今天应该处理的内容</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-title">已逾期</div>
+                    <div class="stat-value">{{ dashboard_overdue_total }}</div>
+                    <div class="stat-sub">已经错过复习时间</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-title">已完成</div>
+                    <div class="stat-value">{{ dashboard_done_total }}</div>
+                    <div class="stat-sub">今天已经推进的内容</div>
+                </div>
+            </section>
+
+            <section class="section-card" id="priority-books">
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-title">优先处理的书</h2>
+                        <div class="section-subtitle">学习入口放在最前面，先处理待办，再看全部书册。</div>
+                    </div>
+                </div>
+
+                <div class="section-body">
+                    <div class="priority-list">
+                        {% if priority_books %}
+                            {% for book in priority_books %}
+                                {% firstof book.focus_lesson_id book.current_lesson_id book.first_lesson_id as start_lesson_id %}
+                                {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
+                                {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
+                                {% firstof book.pending_count book_stats.pending_count "0" as book_pending_count %}
+                                {% firstof book.overdue_count "0" as book_overdue_count %}
+                                {% firstof book.in_progress_count "0" as book_in_progress_count %}
+
+                                <article class="priority-card">
+                                    <div class="priority-main">
+                                        <h3 class="priority-title">{{ book.title }}</h3>
+                                        <div class="priority-desc">{{ book.description|default:"暂无描述" }}</div>
+
+                                        <div class="priority-meta">
+                                            <span class="status-chip warning">当前阶段：{{ book_stage }}</span>
+                                            <span class="status-chip primary">下一次复习：{{ book_next_review }}</span>
+                                            {% if book_overdue_count != "0" %}
+                                                <span class="status-chip danger">已逾期：{{ book_overdue_count }}</span>
+                                            {% else %}
+                                                <span class="status-chip success">可继续推进</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="priority-actions">
+                                            {% if start_lesson_id %}
+                                                <a href="{% url 'lesson-train' start_lesson_id %}" class="primary-btn">开始学习</a>
+                                            {% elif book.id %}
+                                                <a href="{% url 'book-detail' book.id %}" class="primary-btn">进入书册</a>
+                                            {% elif book.book_id %}
+                                                <a href="{% url 'book-detail' book.book_id %}" class="primary-btn">进入书册</a>
+                                            {% else %}
+                                                <span class="ghost-btn">缺少书册ID</span>
+                                            {% endif %}
+
+                                            {% if book.id %}
+                                                <a href="{% url 'book-detail' book.id %}" class="secondary-btn">查看详情</a>
+                                                <a href="{% url 'book-edit' book.id %}" class="ghost-btn">编辑书册</a>
+                                            {% elif book.book_id %}
+                                                <a href="{% url 'book-detail' book.book_id %}" class="secondary-btn">查看详情</a>
+                                                <a href="{% url 'book-edit' book.book_id %}" class="ghost-btn">编辑书册</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="priority-side">
+                                        <div class="mini-stat">
+                                            <div class="mini-stat-label">待处理</div>
+                                            <div class="mini-stat-value">{{ book_pending_count }}</div>
+                                            <div class="mini-stat-sub">当前需要你处理的数量</div>
+                                        </div>
+
+                                        <div class="mini-stat">
+                                            <div class="mini-stat-label">巩固中</div>
+                                            <div class="mini-stat-value">{{ book_in_progress_count }}</div>
+                                            <div class="mini-stat-sub">正在循环中的课节数量</div>
+                                        </div>
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        {% elif prioritized_books %}
+                            {% for book in prioritized_books %}
+                                {% firstof book.focus_lesson_id book.current_lesson_id book.first_lesson_id as start_lesson_id %}
+                                {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
+                                {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
+                                {% firstof book.pending_count "0" as book_pending_count %}
+                                {% firstof book.overdue_count "0" as book_overdue_count %}
+                                {% firstof book.in_progress_count "0" as book_in_progress_count %}
+
+                                <article class="priority-card">
+                                    <div class="priority-main">
+                                        <h3 class="priority-title">{{ book.title }}</h3>
+                                        <div class="priority-desc">{{ book.description|default:"暂无描述" }}</div>
+
+                                        <div class="priority-meta">
+                                            <span class="status-chip warning">当前阶段：{{ book_stage }}</span>
+                                            <span class="status-chip primary">下一次复习：{{ book_next_review }}</span>
+                                            {% if book_overdue_count != "0" %}
+                                                <span class="status-chip danger">已逾期：{{ book_overdue_count }}</span>
+                                            {% else %}
+                                                <span class="status-chip success">可继续推进</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="priority-actions">
+                                            {% if start_lesson_id %}
+                                                <a href="{% url 'lesson-train' start_lesson_id %}" class="primary-btn">开始学习</a>
+                                            {% elif book.id %}
+                                                <a href="{% url 'book-detail' book.id %}" class="primary-btn">进入书册</a>
+                                            {% elif book.book_id %}
+                                                <a href="{% url 'book-detail' book.book_id %}" class="primary-btn">进入书册</a>
+                                            {% else %}
+                                                <span class="ghost-btn">缺少书册ID</span>
+                                            {% endif %}
+
+                                            {% if book.id %}
+                                                <a href="{% url 'book-detail' book.id %}" class="secondary-btn">查看详情</a>
+                                                <a href="{% url 'book-edit' book.id %}" class="ghost-btn">编辑书册</a>
+                                            {% elif book.book_id %}
+                                                <a href="{% url 'book-detail' book.book_id %}" class="secondary-btn">查看详情</a>
+                                                <a href="{% url 'book-edit' book.book_id %}" class="ghost-btn">编辑书册</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="priority-side">
+                                        <div class="mini-stat">
+                                            <div class="mini-stat-label">待处理</div>
+                                            <div class="mini-stat-value">{{ book_pending_count }}</div>
+                                            <div class="mini-stat-sub">当前需要你处理的数量</div>
+                                        </div>
+
+                                        <div class="mini-stat">
+                                            <div class="mini-stat-label">巩固中</div>
+                                            <div class="mini-stat-value">{{ book_in_progress_count }}</div>
+                                            <div class="mini-stat-sub">正在循环中的课节数量</div>
+                                        </div>
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        {% elif books %}
+                            {% for book in books %}
+                                {% firstof book.focus_lesson_id book.current_lesson_id book.first_lesson_id as start_lesson_id %}
+                                {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
+                                {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
+                                {% firstof book.pending_count "0" as book_pending_count %}
+                                {% firstof book.overdue_count "0" as book_overdue_count %}
+                                {% firstof book.in_progress_count "0" as book_in_progress_count %}
+
+                                <article class="priority-card">
+                                    <div class="priority-main">
+                                        <h3 class="priority-title">{{ book.title }}</h3>
+                                        <div class="priority-desc">{{ book.description|default:"暂无描述" }}</div>
+
+                                        <div class="priority-meta">
+                                            <span class="status-chip warning">当前阶段：{{ book_stage }}</span>
+                                            <span class="status-chip primary">下一次复习：{{ book_next_review }}</span>
+                                            {% if book_overdue_count != "0" %}
+                                                <span class="status-chip danger">已逾期：{{ book_overdue_count }}</span>
+                                            {% else %}
+                                                <span class="status-chip success">可继续推进</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="priority-actions">
+                                            {% if start_lesson_id %}
+                                                <a href="{% url 'lesson-train' start_lesson_id %}" class="primary-btn">开始学习</a>
+                                            {% elif book.id %}
+                                                <a href="{% url 'book-detail' book.id %}" class="primary-btn">进入书册</a>
+                                            {% elif book.book_id %}
+                                                <a href="{% url 'book-detail' book.book_id %}" class="primary-btn">进入书册</a>
+                                            {% else %}
+                                                <span class="ghost-btn">缺少书册ID</span>
+                                            {% endif %}
+
+                                            {% if book.id %}
+                                                <a href="{% url 'book-detail' book.id %}" class="secondary-btn">查看详情</a>
+                                                <a href="{% url 'book-edit' book.id %}" class="ghost-btn">编辑书册</a>
+                                            {% elif book.book_id %}
+                                                <a href="{% url 'book-detail' book.book_id %}" class="secondary-btn">查看详情</a>
+                                                <a href="{% url 'book-edit' book.book_id %}" class="ghost-btn">编辑书册</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="priority-side">
+                                        <div class="mini-stat">
+                                            <div class="mini-stat-label">待处理</div>
+                                            <div class="mini-stat-value">{{ book_pending_count }}</div>
+                                            <div class="mini-stat-sub">当前需要你处理的数量</div>
+                                        </div>
+
+                                        <div class="mini-stat">
+                                            <div class="mini-stat-label">巩固中</div>
+                                            <div class="mini-stat-value">{{ book_in_progress_count }}</div>
+                                            <div class="mini-stat-sub">正在循环中的课节数量</div>
+                                        </div>
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-card">
+                                <div class="empty-title">还没有书册</div>
+                                <div>先创建书册，再从这里进入记忆循环。</div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-card" id="all-books">
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-title">全部书册</h2>
+                        <div class="section-subtitle">统一使用和书详情页相同的深色卡片、按钮、状态 chip。</div>
+                    </div>
+                </div>
+
+                <div class="section-body">
+                    <div class="books-grid">
+                        {% if all_books %}
+                            {% for book in all_books %}
+                                {% firstof book.focus_lesson_id book.current_lesson_id book.first_lesson_id as start_lesson_id %}
+                                {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
+                                {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
+                                {% firstof book.pending_count "0" as book_pending_count %}
+                                {% firstof book.overdue_count "0" as book_overdue_count %}
+                                {% firstof book.new_count "0" as book_new_count %}
+                                {% firstof book.in_progress_count "0" as book_in_progress_count %}
+                                {% firstof book.mastered_count "0" as book_mastered_count %}
+
+                                <article class="book-card">
+                                    <div class="book-card-top">
+                                        <div>
+                                            <h3 class="book-card-title">{{ book.title }}</h3>
+                                            <div class="book-card-desc">{{ book.description|default:"暂无描述" }}</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="book-card-chips">
+                                        <span class="book-chip warning">{{ book_stage }}</span>
+                                        {% if book_overdue_count != "0" %}
+                                            <span class="book-chip danger">已逾期 {{ book_overdue_count }}</span>
+                                        {% else %}
+                                            <span class="book-chip success">状态正常</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="book-card-grid">
+                                        <div class="book-card-field">
+                                            <div class="book-card-label">下一次复习</div>
+                                            <div class="book-card-value">{{ book_next_review }}</div>
+                                        </div>
+
+                                        <div class="book-card-field">
+                                            <div class="book-card-label">待处理</div>
+                                            <div class="book-card-value">{{ book_pending_count }}</div>
+                                        </div>
+
+                                        <div class="book-card-field">
+                                            <div class="book-card-label">新学 / 巩固中 / 长期巩固</div>
+                                            <div class="book-card-value">{{ book_new_count }} / {{ book_in_progress_count }} / {{ book_mastered_count }}</div>
+                                        </div>
+
+                                        <div class="book-card-field">
+                                            <div class="book-card-label">书册 ID</div>
+                                            <div class="book-card-value">{{ book.id }}</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="book-card-actions">
+                                        {% if start_lesson_id %}
+                                            <a href="{% url 'lesson-train' start_lesson_id %}" class="primary-btn">开始学习</a>
+                                        {% elif book.id %}
+                                            <a href="{% url 'book-detail' book.id %}" class="primary-btn">进入书册</a>
+                                        {% elif book.book_id %}
+                                            <a href="{% url 'book-detail' book.book_id %}" class="primary-btn">进入书册</a>
+                                        {% else %}
+                                            <span class="ghost-btn">缺少书册ID</span>
+                                        {% endif %}
+
+                                        {% if book.id %}
+                                            <a href="{% url 'book-detail' book.id %}" class="secondary-btn">查看详情</a>
+                                            <a href="{% url 'book-edit' book.id %}" class="ghost-btn">编辑</a>
+                                        {% elif book.book_id %}
+                                            <a href="{% url 'book-detail' book.book_id %}" class="secondary-btn">查看详情</a>
+                                            <a href="{% url 'book-edit' book.book_id %}" class="ghost-btn">编辑</a>
+                                        {% endif %}
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        {% elif books %}
+                            {% for book in books %}
+                                {% firstof book.focus_lesson_id book.current_lesson_id book.first_lesson_id as start_lesson_id %}
+                                {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
+                                {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
+                                {% firstof book.pending_count "0" as book_pending_count %}
+                                {% firstof book.overdue_count "0" as book_overdue_count %}
+                                {% firstof book.new_count "0" as book_new_count %}
+                                {% firstof book.in_progress_count "0" as book_in_progress_count %}
+                                {% firstof book.mastered_count "0" as book_mastered_count %}
+
+                                <article class="book-card">
+                                    <div class="book-card-top">
+                                        <div>
+                                            <h3 class="book-card-title">{{ book.title }}</h3>
+                                            <div class="book-card-desc">{{ book.description|default:"暂无描述" }}</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="book-card-chips">
+                                        <span class="book-chip warning">{{ book_stage }}</span>
+                                        {% if book_overdue_count != "0" %}
+                                            <span class="book-chip danger">已逾期 {{ book_overdue_count }}</span>
+                                        {% else %}
+                                            <span class="book-chip success">状态正常</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="book-card-grid">
+                                        <div class="book-card-field">
+                                            <div class="book-card-label">下一次复习</div>
+                                            <div class="book-card-value">{{ book_next_review }}</div>
+                                        </div>
+
+                                        <div class="book-card-field">
+                                            <div class="book-card-label">待处理</div>
+                                            <div class="book-card-value">{{ book_pending_count }}</div>
+                                        </div>
+
+                                        <div class="book-card-field">
+                                            <div class="book-card-label">新学 / 巩固中 / 长期巩固</div>
+                                            <div class="book-card-value">{{ book_new_count }} / {{ book_in_progress_count }} / {{ book_mastered_count }}</div>
+                                        </div>
+
+                                        <div class="book-card-field">
+                                            <div class="book-card-label">书册 ID</div>
+                                            <div class="book-card-value">{{ book.id }}</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="book-card-actions">
+                                        {% if start_lesson_id %}
+                                            <a href="{% url 'lesson-train' start_lesson_id %}" class="primary-btn">开始学习</a>
+                                        {% elif book.id %}
+                                            <a href="{% url 'book-detail' book.id %}" class="primary-btn">进入书册</a>
+                                        {% elif book.book_id %}
+                                            <a href="{% url 'book-detail' book.book_id %}" class="primary-btn">进入书册</a>
+                                        {% else %}
+                                            <span class="ghost-btn">缺少书册ID</span>
+                                        {% endif %}
+
+                                        {% if book.id %}
+                                            <a href="{% url 'book-detail' book.id %}" class="secondary-btn">查看详情</a>
+                                            <a href="{% url 'book-edit' book.id %}" class="ghost-btn">编辑</a>
+                                        {% elif book.book_id %}
+                                            <a href="{% url 'book-detail' book.book_id %}" class="secondary-btn">查看详情</a>
+                                            <a href="{% url 'book-edit' book.book_id %}" class="ghost-btn">编辑</a>
+                                        {% endif %}
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-card">
+                                <div class="empty-title">还没有可显示的书册</div>
+                                <div>等你创建书册后，这里会统一显示成深色训练风格。</div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <div class="footer-note">Dashboard Page</div>
         </div>
     </div>
-{% else %}
-    <div class="books-home-section">
-        <div class="book-card">
-            还没有书册。请从右上角菜单新建书册。
-        </div>
-    </div>
-{% endif %}
-
-<script>
-
-function getCSRF() {
-    return document.cookie.split('; ')
-        .find(r => r.startsWith('csrftoken='))
-        ?.split('=')[1];
-}
-
-function toggleUserPanel() {
-    const panel = document.getElementById("authLitePanel");
-    const arrow = document.getElementById("authLiteArrow");
-
-    if (!panel || !arrow) return;
-
-    const isOpen = panel.style.display === "block";
-
-    if (isOpen) {
-        panel.style.display = "none";
-        arrow.style.transform = "rotate(0deg)";
-    } else {
-        panel.style.display = "block";
-        arrow.style.transform = "rotate(180deg)";
-    }
-}
-
-
-function toggleCreateBookPanel() {
-    const panel = document.getElementById("createBookPanel");
-    if (!panel) return;
-
-    const isOpen = panel.style.display === "block";
-    panel.style.display = isOpen ? "none" : "block";
-}
-
-function toggleAllBooks() {
-    const wrap = document.getElementById("allBooksWrap");
-    const btn = document.querySelector(".books-toggle-btn");
-
-    if (!wrap || !btn) return;
-
-    const isOpen = wrap.style.display === "block";
-
-    if (isOpen) {
-        wrap.style.display = "none";
-        btn.innerText = "查看全部书册（{{ all_books_count }}）";
-    } else {
-        wrap.style.display = "block";
-        btn.innerText = "收起全部书册";
-    }
-}
-
-</script>
-
 </body>
 </html>

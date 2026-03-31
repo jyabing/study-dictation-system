@@ -5,680 +5,1192 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ book.title }}</title>
     <style>
+        :root {
+            --bg: #0b1020;
+            --bg-soft: #11182d;
+            --panel: rgba(17, 24, 45, 0.94);
+            --panel-2: rgba(20, 29, 52, 0.94);
+            --panel-3: rgba(13, 20, 38, 0.96);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-strong: rgba(255, 255, 255, 0.14);
+            --text: #ecf2ff;
+            --text-soft: #b7c3e0;
+            --text-faint: #7f8aa6;
+            --primary: #6ea8ff;
+            --primary-2: #84f3d1;
+            --success: #33d17a;
+            --warning: #ffbe55;
+            --danger: #ff7272;
+            --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+            --radius-xl: 24px;
+            --radius-lg: 18px;
+            --radius-md: 14px;
+            --radius-sm: 10px;
+            --transition: 0.2s ease;
+            --max-width: 1440px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
         body {
             margin: 0;
-            background: #f5f6fa;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            color: #111827;
+            padding: 0;
+            min-height: 100%;
+            background:
+                radial-gradient(circle at top left, rgba(110, 168, 255, 0.20), transparent 28%),
+                radial-gradient(circle at top right, rgba(132, 243, 209, 0.10), transparent 24%),
+                linear-gradient(180deg, #0b1020 0%, #0a0f1c 100%);
+            color: var(--text);
+            font-family:
+                "Inter",
+                "Noto Sans JP",
+                "Hiragino Sans",
+                "Yu Gothic",
+                "Microsoft YaHei",
+                sans-serif;
         }
 
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 20px;
+        body {
+            line-height: 1.6;
         }
 
-        .topbar-left {
-            min-width: 0;
-        }
-
-        .topbar-actions {
-            flex-shrink: 0;
-        }
-
-        .back-btn {
-            display: inline-block;
+        a {
+            color: inherit;
             text-decoration: none;
-            color: #475569;
-            font-size: 14px;
-            margin-bottom: 8px;
         }
 
-        .page-title-wrap {
-            min-width: 0;
+        button,
+        input,
+        select,
+        textarea {
+            font: inherit;
         }
 
-        .page-title {
-            font-size: 28px;
-            font-weight: 800;
-            line-height: 1.4;
-            color: #111827;
+        button {
+            cursor: pointer;
+            border: none;
+            outline: none;
         }
 
-        .page-subtitle {
-            margin-top: 4px;
-            font-size: 14px;
-            color: #6b7280;
-            line-height: 1.7;
+        .book-page {
+            width: min(var(--max-width), calc(100% - 32px));
+            margin: 28px auto 48px;
         }
 
-        .top-action-btn {
-            display: inline-block;
-            text-decoration: none;
-            background: #eef3f8;
-            color: #334155;
-            border-radius: 12px;
-            padding: 10px 14px;
-            font-size: 14px;
-        }
-
-        .book-overview-card,
-        .lesson-create-card,
-        .lesson-card {
-            background: white;
-            margin: 0 20px 18px;
-            padding: 18px;
-            border-radius: 16px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
-
-        .book-overview-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .book-overview-title {
-            font-size: 22px;
-            font-weight: 800;
-            line-height: 1.4;
-            color: #111827;
-        }
-
-        .book-overview-sub {
-            margin-top: 4px;
-            font-size: 13px;
-            color: #6b7280;
-            line-height: 1.7;
-        }
-
-        .book-overview-risk {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 700;
-            flex-shrink: 0;
-        }
-
-        .book-overview-risk.high {
-            background: #fff1f2;
-            color: #dc2626;
-        }
-
-        .book-overview-risk.mid {
-            background: #fff7ed;
-            color: #c2410c;
-        }
-
-        .book-overview-risk.low {
-            background: #ecfdf5;
-            color: #15803d;
-        }
-
-        .book-overview-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-        }
-
-        .book-overview-pill {
-            background: #eef3f8;
-            border-radius: 12px;
-            padding: 10px 12px;
-            font-size: 12px;
-            color: #334155;
-            display: flex;
-            justify-content: space-between;
-            gap: 8px;
-        }
-
-        .lesson-create-title {
-            font-size: 18px;
-            font-weight: 800;
-            margin-bottom: 12px;
-        }
-
-        .lesson-create-form {
+        .book-shell {
             display: flex;
             flex-direction: column;
+            gap: 18px;
+        }
+
+        .book-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .book-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-soft);
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.04);
+            transition: var(--transition);
+        }
+
+        .book-back-link:hover {
+            color: var(--text);
+            border-color: var(--border-strong);
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .book-top-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .primary-btn,
+        .secondary-btn,
+        .ghost-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 44px;
+            padding: 0 18px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 900;
+            transition: var(--transition);
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #7ab2ff, #4f8dff);
+            color: #08111f;
+            box-shadow: 0 12px 28px rgba(79, 141, 255, 0.34);
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 34px rgba(79, 141, 255, 0.40);
+        }
+
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            border-color: var(--border);
+        }
+
+        .secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.10);
+            border-color: var(--border-strong);
+            transform: translateY(-1px);
+        }
+
+        .ghost-btn {
+            background: transparent;
+            color: var(--text-soft);
+            border-color: var(--border);
+        }
+
+        .ghost-btn:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .book-hero,
+        .focus-card,
+        .section-card,
+        .side-card {
+            background: linear-gradient(180deg, rgba(17, 24, 45, 0.96), rgba(12, 18, 34, 0.96));
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .book-hero {
+            padding: 24px 24px 20px;
+            position: relative;
+        }
+
+        .book-hero::before {
+            content: "";
+            position: absolute;
+            inset: auto -80px -80px auto;
+            width: 240px;
+            height: 240px;
+            background: radial-gradient(circle, rgba(110, 168, 255, 0.22), transparent 70%);
+            pointer-events: none;
+        }
+
+        .book-hero-inner {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .book-hero-main {
+            flex: 1 1 560px;
+            min-width: 280px;
+        }
+
+        .book-hero-side {
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .book-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--primary-2);
+            margin-bottom: 10px;
+        }
+
+        .book-title {
+            margin: 0;
+            font-size: clamp(30px, 4vw, 44px);
+            line-height: 1.12;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            word-break: break-word;
+        }
+
+        .book-subtitle {
+            margin: 12px 0 0;
+            color: var(--text-soft);
+            font-size: 15px;
+            max-width: 880px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .hero-core {
+            margin-top: 18px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .core-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 40px;
+            padding: 0 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 800;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        .core-chip.primary {
+            background: rgba(110, 168, 255, 0.14);
+            border-color: rgba(110, 168, 255, 0.30);
+            color: #dbe9ff;
+        }
+
+        .core-chip.warning {
+            background: rgba(255, 190, 85, 0.14);
+            border-color: rgba(255, 190, 85, 0.30);
+            color: #fff2d6;
+        }
+
+        .focus-card {
+            padding: 22px;
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+            gap: 18px;
+            align-items: stretch;
+            border-color: rgba(110, 168, 255, 0.20);
+            background:
+                radial-gradient(circle at right top, rgba(110, 168, 255, 0.16), transparent 28%),
+                linear-gradient(180deg, rgba(17, 24, 45, 0.98), rgba(10, 16, 30, 0.98));
+        }
+
+        .focus-main {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .focus-label {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--primary-2);
+        }
+
+        .focus-title {
+            margin: 0;
+            font-size: clamp(26px, 3vw, 38px);
+            line-height: 1.18;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        .focus-subtitle {
+            color: var(--text-soft);
+            font-size: 15px;
+        }
+
+        .focus-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .focus-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 38px;
+            padding: 0 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 800;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+
+        .focus-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .focus-side {
+            display: grid;
+            grid-template-columns: 1fr;
             gap: 10px;
         }
 
-        .create-lesson-grid {
-            display: grid;
-            grid-template-columns: 1fr 140px;
-            gap: 12px;
-            align-items: center;
+        .focus-stat {
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.04);
         }
 
-        .create-lesson-input,
-        .create-lesson-order {
-            width: 100%;
-            box-sizing: border-box;
-            border: 1px solid #d7dce3;
-            border-radius: 10px;
-            padding: 10px 12px;
-            font-size: 14px;
-            background: #fff;
+        .focus-stat-label {
+            font-size: 12px;
+            color: var(--text-faint);
+            font-weight: 700;
+            margin-bottom: 6px;
         }
 
-        .create-lesson-submit {
-            border: none;
-            background: #1677ff;
-            color: white;
-            border-radius: 12px;
-            padding: 11px 14px;
-            font-size: 14px;
-            cursor: pointer;
+        .focus-stat-value {
+            font-size: 24px;
+            line-height: 1.08;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            word-break: break-word;
         }
 
-        .section-header {
-            margin: 0 20px 12px;
-        }
-
-        .section-title {
-            font-size: 22px;
-            font-weight: 800;
-            color: #111827;
-            line-height: 1.4;
-        }
-
-        .section-subtitle {
+        .focus-stat-sub {
             margin-top: 4px;
-            font-size: 13px;
-            color: #6b7280;
-            line-height: 1.7;
+            font-size: 12px;
+            color: var(--text-soft);
         }
 
-        .lesson-main-row {
+        .book-main {
             display: grid;
-            grid-template-columns: 56px 1fr 140px;
-            gap: 14px;
-            align-items: center;
+            grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.72fr);
+            gap: 18px;
+            align-items: start;
         }
 
-        .lesson-main-left {
+        .book-left,
+        .book-right {
             display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .lesson-index-box {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            background: #1677ff;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: 800;
-        }
-
-        .lesson-main-center {
+            flex-direction: column;
+            gap: 18px;
             min-width: 0;
         }
 
-        .lesson-title {
-            font-size: 20px;
-            font-weight: 800;
-            line-height: 1.5;
-            color: #111827;
-        }
-
-        .lesson-status-line {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 8px;
-            margin-bottom: 8px;
-        }
-
-        .lesson-risk {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .lesson-risk.high {
-            background: #fff1f2;
-            color: #dc2626;
-        }
-
-        .lesson-risk.mid {
-            background: #fff7ed;
-            color: #c2410c;
-        }
-
-        .lesson-risk.low {
-            background: #ecfdf5;
-            color: #15803d;
-        }
-
-        .lesson-stage-chip {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: #eef3f8;
-            color: #334155;
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .lesson-summary-meta {
-            font-size: 14px;
-            color: #475569;
-            line-height: 1.8;
-        }
-
-        .lesson-summary-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .lesson-summary-pill {
-            background: #eef3f8;
-            border-radius: 12px;
-            padding: 10px 12px;
-            font-size: 12px;
-            color: #334155;
+        .section-header,
+        .side-card-header {
             display: flex;
             justify-content: space-between;
-            gap: 8px;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+            flex-wrap: wrap;
         }
 
-        .lesson-main-right {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            align-items: stretch;
+        .section-title,
+        .side-card-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: -0.01em;
+            color: var(--text);
         }
 
-        .lesson-study-btn,
-        .lesson-edit-btn {
-            display: inline-block;
-            text-decoration: none;
-            text-align: center;
-            border-radius: 12px;
-            padding: 11px 14px;
-            font-size: 14px;
+        .section-subtitle,
+        .side-card-subtitle {
+            font-size: 12px;
+            color: var(--text-faint);
         }
 
-        .lesson-study-btn {
-            background: #1677ff;
-            color: white;
+        .section-body,
+        .side-card-body {
+            padding: 20px 22px 22px;
         }
 
-        .lesson-edit-btn {
-            background: #eef3f8;
-            color: #334155;
+        .compact-form {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(140px, 0.6fr) auto;
+            gap: 12px;
+            align-items: end;
         }
 
-        /* =========================
-        统一收口：book_detail
-        ========================= */
-        .top-action-btn,
-        .create-lesson-submit,
-        .lesson-study-btn,
-        .lesson-edit-btn {
-            border-radius: 12px;
-            font-size: 14px;
-            line-height: 1.2;
-            padding: 11px 14px;
+        .field-group {
+            min-width: 0;
         }
 
-        .create-lesson-submit,
-        .lesson-study-btn {
-            background: #1677ff;
-            color: #fff;
+        .field-label {
+            font-size: 12px;
+            color: var(--text-faint);
             font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: 0.02em;
         }
 
-        .top-action-btn,
-        .lesson-edit-btn {
-            background: #eef3f8;
-            color: #334155;
-            font-weight: 600;
+        .train-input {
+            width: 100%;
+            min-height: 48px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            outline: none;
+            transition: var(--transition);
         }
 
-        .book-overview-risk,
-        .lesson-risk,
-        .lesson-stage-chip {
-            padding: 6px 10px;
+        .train-input::placeholder {
+            color: var(--text-faint);
+        }
+
+        .train-input:focus {
+            border-color: rgba(110, 168, 255, 0.40);
+            background: rgba(255, 255, 255, 0.07);
+            box-shadow: 0 0 0 4px rgba(110, 168, 255, 0.12);
+        }
+
+        .lessons-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .lessons-table {
+            width: 100%;
+            min-width: 1080px;
+            border-collapse: collapse;
+        }
+
+        .lessons-table thead th {
+            text-align: left;
+            padding: 14px 16px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+            background: rgba(255, 255, 255, 0.04);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            white-space: nowrap;
+        }
+
+        .lessons-table tbody td {
+            padding: 16px;
+            font-size: 14px;
+            color: var(--text);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            vertical-align: middle;
+        }
+
+        .lessons-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .lessons-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .col-index {
+            width: 70px;
+        }
+
+        .col-title {
+            width: 40%;
+        }
+
+        .col-stage {
+            width: 150px;
+        }
+
+        .col-next {
+            width: 160px;
+        }
+
+        .col-due,
+        .col-overdue {
+            width: 96px;
+        }
+
+        .col-actions {
+            width: 320px;
+        }
+
+        .table-pill,
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 34px;
+            padding: 0 12px;
             border-radius: 999px;
             font-size: 12px;
-            font-weight: 700;
+            font-weight: 800;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            white-space: nowrap;
         }
 
-        .page-title {
-            font-size: 28px;
-            font-weight: 800;
-        }
-
-        .book-overview-title,
-        .section-title {
-            font-size: 22px;
-            font-weight: 800;
+        .status-chip.warning {
+            background: rgba(255, 190, 85, 0.14);
+            border-color: rgba(255, 190, 85, 0.28);
+            color: #fff2d6;
         }
 
         .lesson-title {
-            font-size: 20px;
-            font-weight: 800;
+            font-size: 19px;
+            line-height: 1.3;
+            font-weight: 900;
+            color: var(--text);
+            word-break: normal;
+            overflow-wrap: break-word;
         }
 
-        .page-subtitle,
-        .book-overview-sub,
-        .section-subtitle {
+        .lesson-subtitle {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-soft);
+            line-height: 1.55;
+        }
+
+        .table-actions,
+        .lesson-card-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .table-actions .secondary-btn,
+        .table-actions .primary-btn,
+        .table-actions .ghost-btn,
+        .lesson-card-actions .secondary-btn,
+        .lesson-card-actions .primary-btn,
+        .lesson-card-actions .ghost-btn {
+            min-height: 36px;
+            padding: 0 14px;
             font-size: 13px;
-            line-height: 1.7;
         }
 
-        .lesson-summary-meta {
+        .lesson-cards {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .lesson-card {
+            padding: 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .lesson-card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .lesson-card-title {
+            font-size: 20px;
+            line-height: 1.3;
+            font-weight: 900;
+            color: var(--text);
+            word-break: normal;
+            overflow-wrap: break-word;
+        }
+
+        .lesson-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .lesson-card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .lesson-card-field {
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            min-width: 0;
+        }
+
+        .lesson-card-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-faint);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .lesson-card-value {
             font-size: 14px;
-            line-height: 1.8;
+            font-weight: 800;
+            color: var(--text);
+            word-break: break-word;
         }
 
-        @media (max-width: 768px) {
-            body {
-                font-size: 15px;
+        .mini-stats {
+            display: grid;
+            gap: 10px;
+        }
+
+        .mini-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .mini-row-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-soft);
+        }
+
+        .mini-row-value {
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--text);
+            text-align: right;
+        }
+
+        .description-box {
+            padding: 16px 18px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: var(--text-soft);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 34px 20px;
+            text-align: center;
+            border-radius: 18px;
+            border: 1px dashed rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-soft);
+        }
+
+        .empty-state-title {
+            font-size: 16px;
+            font-weight: 900;
+            color: var(--text);
+        }
+
+        .empty-state-text {
+            font-size: 13px;
+            color: var(--text-faint);
+        }
+
+        .footer-note {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-faint);
+        }
+
+        @media (max-width: 1180px) {
+            .focus-card {
+                grid-template-columns: 1fr;
             }
 
-            .topbar {
-                padding: 16px 12px;
+            .book-main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 860px) {
+            .compact-form,
+            .lesson-card-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 780px) {
+            .book-page {
+                width: min(100% - 20px, var(--max-width));
+                margin: 16px auto 28px;
+            }
+
+            .book-hero,
+            .focus-card {
+                padding: 18px 16px;
+            }
+
+            .section-header,
+            .side-card-header,
+            .section-body,
+            .side-card-body {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            .book-topbar {
+                align-items: stretch;
+            }
+
+            .book-top-actions,
+            .book-hero-side,
+            .focus-actions {
                 flex-direction: column;
                 align-items: stretch;
             }
 
-            .page-title {
-                font-size: 22px;
-            }
-
-            .page-subtitle {
-                font-size: 13px;
-            }
-
-            .back-btn {
-                display: inline-block;
-                text-decoration: none;
-                color: #475569;
-                font-size: 14px;
-                margin-bottom: 10px;
-                line-height: 1.2;
-            }
-
-            .page-subtitle {
-                margin-top: 6px;
-                font-size: 13px;
-                color: #6b7280;
-                line-height: 1.7;
-            }
-
-            .top-action-btn {
-                display: inline-block;
-                text-decoration: none;
-                background: #eef3f8;
-                color: #334155;
-                border-radius: 12px;
-                padding: 10px 14px;
-                font-size: 14px;
-                line-height: 1.2;
-                min-height: 44px;
-                box-sizing: border-box;
-            }
-
-            .book-overview-card,
-            .lesson-create-card,
-            .lesson-card,
-            .section-header {
-                margin-left: 12px !important;
-                margin-right: 12px !important;
-            }
-
-            .book-overview-top {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .book-overview-title,
-            .section-title {
-                font-size: 18px;
-            }
-
-            .book-overview-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .create-lesson-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .lesson-main-row {
-                grid-template-columns: 48px 1fr;
-                gap: 12px;
-            }
-
-            .lesson-main-right {
-                grid-column: 1 / -1;
-                margin-top: 4px;
-            }
-
-            .lesson-index-box {
-                width: 42px;
-                height: 42px;
-                font-size: 16px;
-            }
-
-            .lesson-title {
-                font-size: 18px;
-            }
-
-            .lesson-summary-meta {
-                font-size: 13px;
-            }
-
-            .lesson-summary-grid {
-                grid-template-columns: 1fr 1fr 1fr;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .book-overview-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .lesson-main-row {
-                grid-template-columns: 1fr;
-            }
-
-            .lesson-main-left {
-                justify-content: flex-start;
-            }
-
-            .lesson-main-right {
-                grid-column: auto;
-            }
-
-            .lesson-summary-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .lesson-study-btn,
-            .lesson-edit-btn,
-            .create-lesson-submit,
-            .top-action-btn {
+            .book-back-link,
+            .primary-btn,
+            .secondary-btn,
+            .ghost-btn {
                 width: 100%;
-                box-sizing: border-box;
+                justify-content: center;
+            }
+
+            .lessons-table-wrap {
+                display: none;
+            }
+
+            .lesson-cards {
+                display: flex;
+            }
+
+            .mini-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .mini-row-value {
+                text-align: left;
             }
         }
-        </style>
+
+        @media (max-width: 520px) {
+            .book-title {
+                font-size: 26px;
+            }
+
+            .focus-title {
+                font-size: 24px;
+            }
+
+            .lesson-title,
+            .lesson-card-title {
+                font-size: 18px;
+            }
+        }
+    </style>
 </head>
 <body>
+    {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
+    {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
+    {% firstof book.new_count book_stats.new_count "0" as book_new_count %}
+    {% firstof book.in_progress_count book_stats.in_progress_count "0" as book_in_progress_count %}
+    {% firstof book.mastered_count book_stats.mastered_count "0" as book_mastered_count %}
+    {% firstof book.pending_count book_stats.pending_count "0" as book_pending_count %}
+    {% firstof book.overdue_count book_stats.overdue_count "0" as book_overdue_count %}
+    {% firstof book.due_count book_stats.due_count "0" as book_due_count %}
+    {% with focus_lesson=lessons|first %}
 
-    <div class="topbar">
-        <div class="topbar-left">
-            <a href="/" class="back-btn">← 返回首页</a>
+    <div class="book-page">
+        <div class="book-shell">
 
-            <div class="page-title-wrap">
-                <div class="page-title">{{ book.title }}</div>
-                <div class="page-subtitle">{{ book.description|default:"暂无说明" }}</div>
-            </div>
-        </div>
+            <div class="book-topbar">
+                <a href="{% url 'dashboard' %}" class="book-back-link">← 返回首页</a>
 
-        <div class="topbar-actions">
-            <a href="/book/{{ book.id }}/edit/?next=/book/{{ book.id }}/" class="top-action-btn">
-                编辑书册
-            </a>
-        </div>
-    </div>
-
-    <div class="book-overview-card">
-        <div class="book-overview-top">
-            <div>
-                <div class="book-overview-title">这本书的循环状态</div>
-                <div class="book-overview-sub">
-                    当前主阶段：{{ book_cycle_summary.main_stage }} ｜ 下一次复习：{{ book_cycle_summary.next_review_text }}
+                <div class="book-top-actions">
+                    <a href="{% url 'book-edit' book.id %}" class="secondary-btn">编辑书</a>
+                    {% if focus_lesson %}
+                        <a href="{% url 'lesson-train' focus_lesson.id %}" class="primary-btn">开始学习</a>
+                    {% else %}
+                        <a href="#create-lesson" class="primary-btn">创建后开始学习</a>
+                    {% endif %}
                 </div>
             </div>
 
-            {% if book_cycle_summary.risk_level == "高风险" %}
-                <div class="book-overview-risk high">高风险</div>
-            {% elif book_cycle_summary.risk_level == "中风险" %}
-                <div class="book-overview-risk mid">今日到期</div>
-            {% else %}
-                <div class="book-overview-risk low">稳定</div>
-            {% endif %}
-        </div>
+            <section class="book-hero">
+                <div class="book-hero-inner">
+                    <div class="book-hero-main">
+                        <div class="book-eyebrow">Memory Loop Book</div>
+                        <h1 class="book-title">{{ book.title }}</h1>
+                        <p class="book-subtitle">{{ book.description|default:"暂无说明" }}</p>
 
-        <div class="book-overview-grid">
-            <div class="book-overview-pill">
-                <span>新学</span>
-                <strong>{{ book_cycle_summary.new_count }}</strong>
-            </div>
-            <div class="book-overview-pill">
-                <span>巩固中</span>
-                <strong>{{ book_cycle_summary.short_count }}</strong>
-            </div>
-            <div class="book-overview-pill">
-                <span>长期巩固</span>
-                <strong>{{ book_cycle_summary.long_count }}</strong>
-            </div>
-            <div class="book-overview-pill">
-                <span>待处理</span>
-                <strong>{{ book_cycle_summary.today_due_count }}</strong>
-            </div>
-            <div class="book-overview-pill">
-                <span>已逾期</span>
-                <strong>{{ book_cycle_summary.overdue_count }}</strong>
-            </div>
-        </div>
-    </div>
-
-    <div class="lesson-create-card">
-        <div class="lesson-create-title">在这本书里新增课节</div>
-
-        <form method="post" class="lesson-create-form">
-            {% csrf_token %}
-
-            <div class="create-lesson-grid">
-                <div>
-                    <input
-                        type="text"
-                        name="title"
-                        class="create-lesson-input"
-                        placeholder="课节名称，例如：第 1 课 / Lesson 1"
-                        required
-                    >
-                </div>
-
-                <div>
-                    <input
-                        type="number"
-                        name="order"
-                        class="create-lesson-order"
-                        placeholder="排序"
-                        value="0"
-                    >
-                </div>
-            </div>
-
-            <button type="submit" class="create-lesson-submit">
-                新建课节
-            </button>
-        </form>
-    </div>
-
-    <div class="section-header">
-        <div class="section-title">章节循环状态</div>
-        <div class="section-subtitle">先看风险，再决定优先进入哪一章。</div>
-    </div>
-
-    {% for item in lesson_cycle_summary %}
-        <div class="lesson-card">
-            <div class="lesson-main-row">
-                <div class="lesson-main-left">
-                    <div class="lesson-index-box">
-                        {{ forloop.counter }}
+                        <div class="hero-core">
+                            <span class="core-chip warning">当前阶段：{{ book_stage }}</span>
+                            <span class="core-chip primary">下一次复习：{{ book_next_review }}</span>
+                        </div>
                     </div>
-                </div>
 
-                <div class="lesson-main-center">
-                    <div class="lesson-title">{{ item.lesson.title }}</div>
-
-                    <div class="lesson-status-line">
-                        {% if item.risk_level == "高风险" %}
-                            <span class="lesson-risk high">高风险</span>
-                        {% elif item.risk_level == "中风险" %}
-                            <span class="lesson-risk mid">今日到期</span>
+                    <div class="book-hero-side">
+                        <a href="{% url 'book-edit' book.id %}" class="secondary-btn">编辑书</a>
+                        {% if focus_lesson %}
+                            <a href="{% url 'lesson-train' focus_lesson.id %}" class="primary-btn">开始学习</a>
                         {% else %}
-                            <span class="lesson-risk low">稳定</span>
+                            <a href="#create-lesson" class="primary-btn">创建后开始学习</a>
                         {% endif %}
-
-                        <span class="lesson-stage-chip">{{ item.main_stage }}</span>
-                    </div>
-
-                    <div class="lesson-summary-meta">
-                        下一次复习：{{ item.next_review_text }}<br>
-                        今日到期：{{ item.today_due_count }} ｜ 已逾期：{{ item.overdue_count }}
-                    </div>
-
-                    <div class="lesson-summary-grid">
-                        <div class="lesson-summary-pill">
-                            <span>新学</span>
-                            <strong>{{ item.new_count }}</strong>
-                        </div>
-                        <div class="lesson-summary-pill">
-                            <span>巩固中</span>
-                            <strong>{{ item.short_count }}</strong>
-                        </div>
-                        <div class="lesson-summary-pill">
-                            <span>长期巩固</span>
-                            <strong>{{ item.long_count }}</strong>
-                        </div>
                     </div>
                 </div>
+            </section>
 
-                <div class="lesson-main-right">
-                    <a href="/lesson/{{ item.lesson.id }}/" class="lesson-study-btn">进入学习</a>
-                    <a href="/lesson/{{ item.lesson.id }}/edit/?next=/book/{{ book.id }}/" class="lesson-edit-btn">编辑章节</a>
+            <section class="focus-card">
+                <div class="focus-main">
+                    <div class="focus-label">当前记忆焦点</div>
+
+                    {% if focus_lesson %}
+                        {% firstof focus_lesson.current_stage_label focus_lesson.stage_label focus_lesson.current_stage "未开始" as focus_lesson_stage %}
+                        {% firstof focus_lesson.next_review_text focus_lesson.next_review_display "未安排" as focus_lesson_next_review %}
+
+                        <h2 class="focus-title">{{ focus_lesson.title }}</h2>
+                        <div class="focus-subtitle">
+                            先从当前焦点课节开始。学习入口必须在最前面，统计放后面。
+                        </div>
+
+                        <div class="focus-meta">
+                            <span class="focus-chip">阶段：{{ focus_lesson_stage }}</span>
+                            <span class="focus-chip">下一次复习：{{ focus_lesson_next_review }}</span>
+                        </div>
+
+                        <div class="focus-actions">
+                            <a href="{% url 'lesson-train' focus_lesson.id %}" class="primary-btn">开始学习</a>
+                            <a href="{% url 'lesson-question-list' focus_lesson.id %}" class="secondary-btn">题目列表</a>
+                            <a href="{% url 'lesson-edit' focus_lesson.id %}" class="ghost-btn">编辑这个课节</a>
+                        </div>
+                    {% else %}
+                        <h2 class="focus-title">还没有进入记忆循环的课节</h2>
+                        <div class="focus-subtitle">
+                            先创建第一课，再进入真正的学习页。
+                        </div>
+
+                        <div class="focus-actions">
+                            <a href="#create-lesson" class="primary-btn">现在创建课节</a>
+                        </div>
+                    {% endif %}
                 </div>
+
+                <div class="focus-side">
+                    <div class="focus-stat">
+                        <div class="focus-stat-label">待处理</div>
+                        <div class="focus-stat-value">{{ book_pending_count }}</div>
+                        <div class="focus-stat-sub">当前需要你处理的课节数量</div>
+                    </div>
+
+                    <div class="focus-stat">
+                        <div class="focus-stat-label">已逾期</div>
+                        <div class="focus-stat-value">{{ book_overdue_count }}</div>
+                        <div class="focus-stat-sub">已经错过复习时间的课节</div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="book-main">
+                <div class="book-left">
+                    <section class="section-card" id="lesson-list">
+                        <div class="section-header">
+                            <div>
+                                <h2 class="section-title">章节列表</h2>
+                                <div class="section-subtitle">这里是学习入口总表。主按钮一律进入 lesson-train。</div>
+                            </div>
+                        </div>
+
+                        <div class="section-body">
+                            {% if lessons %}
+                                <div class="lessons-table-wrap">
+                                    <table class="lessons-table">
+                                        <thead>
+                                            <tr>
+                                                <th class="col-index">序号</th>
+                                                <th class="col-title">课节名称</th>
+                                                <th class="col-stage">阶段</th>
+                                                <th class="col-next">下一次复习</th>
+                                                <th class="col-due">今日到期</th>
+                                                <th class="col-overdue">逾期</th>
+                                                <th class="col-actions">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for lesson in lessons %}
+                                                {% firstof lesson.current_stage_label lesson.stage_label lesson.current_stage "未开始" as lesson_stage %}
+                                                {% firstof lesson.next_review_text lesson.next_review_display "未安排" as lesson_next_review %}
+                                                {% firstof lesson.order forloop.counter as lesson_order %}
+                                                {% firstof lesson.new_count "0" as lesson_new_count %}
+                                                {% firstof lesson.in_progress_count "0" as lesson_in_progress_count %}
+                                                {% firstof lesson.mastered_count "0" as lesson_mastered_count %}
+                                                {% firstof lesson.due_count "0" as lesson_due_count %}
+                                                {% firstof lesson.overdue_count "0" as lesson_overdue_count %}
+
+                                                <tr>
+                                                    <td>
+                                                        <div class="table-pill">{{ lesson_order }}</div>
+                                                    </td>
+
+                                                    <td>
+                                                        <div class="lesson-title">{{ lesson.title }}</div>
+                                                        <div class="lesson-subtitle">
+                                                            新学 {{ lesson_new_count }}
+                                                            ｜巩固中 {{ lesson_in_progress_count }}
+                                                            ｜长期巩固 {{ lesson_mastered_count }}
+                                                        </div>
+                                                    </td>
+
+                                                    <td>
+                                                        <span class="status-chip warning">{{ lesson_stage }}</span>
+                                                    </td>
+
+                                                    <td>{{ lesson_next_review }}</td>
+                                                    <td>{{ lesson_due_count }}</td>
+                                                    <td>{{ lesson_overdue_count }}</td>
+
+                                                    <td>
+                                                        <div class="table-actions">
+                                                            <a href="{% url 'lesson-train' lesson.id %}" class="primary-btn">进入学习</a>
+                                                            <a href="{% url 'lesson-question-list' lesson.id %}" class="secondary-btn">题目列表</a>
+                                                            <a href="{% url 'lesson-edit' lesson.id %}" class="ghost-btn">编辑</a>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="lesson-cards">
+                                    {% for lesson in lessons %}
+                                        {% firstof lesson.current_stage_label lesson.stage_label lesson.current_stage "未开始" as lesson_stage %}
+                                        {% firstof lesson.next_review_text lesson.next_review_display "未安排" as lesson_next_review %}
+                                        {% firstof lesson.order forloop.counter as lesson_order %}
+                                        {% firstof lesson.new_count "0" as lesson_new_count %}
+                                        {% firstof lesson.in_progress_count "0" as lesson_in_progress_count %}
+                                        {% firstof lesson.mastered_count "0" as lesson_mastered_count %}
+                                        {% firstof lesson.due_count "0" as lesson_due_count %}
+                                        {% firstof lesson.overdue_count "0" as lesson_overdue_count %}
+
+                                        <div class="lesson-card">
+                                            <div class="lesson-card-head">
+                                                <div>
+                                                    <div class="lesson-card-title">{{ lesson_order }}. {{ lesson.title }}</div>
+                                                    <div class="lesson-subtitle">
+                                                        新学 {{ lesson_new_count }}
+                                                        ｜巩固中 {{ lesson_in_progress_count }}
+                                                        ｜长期巩固 {{ lesson_mastered_count }}
+                                                    </div>
+                                                </div>
+
+                                                <div class="lesson-card-meta">
+                                                    <span class="status-chip warning">{{ lesson_stage }}</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="lesson-card-grid">
+                                                <div class="lesson-card-field">
+                                                    <div class="lesson-card-label">下一次复习</div>
+                                                    <div class="lesson-card-value">{{ lesson_next_review }}</div>
+                                                </div>
+
+                                                <div class="lesson-card-field">
+                                                    <div class="lesson-card-label">今日到期</div>
+                                                    <div class="lesson-card-value">{{ lesson_due_count }}</div>
+                                                </div>
+
+                                                <div class="lesson-card-field">
+                                                    <div class="lesson-card-label">已逾期</div>
+                                                    <div class="lesson-card-value">{{ lesson_overdue_count }}</div>
+                                                </div>
+
+                                                <div class="lesson-card-field">
+                                                    <div class="lesson-card-label">当前阶段</div>
+                                                    <div class="lesson-card-value">{{ lesson_stage }}</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="lesson-card-actions">
+                                                <a href="{% url 'lesson-train' lesson.id %}" class="primary-btn">进入学习</a>
+                                                <a href="{% url 'lesson-question-list' lesson.id %}" class="secondary-btn">题目列表</a>
+                                                <a href="{% url 'lesson-edit' lesson.id %}" class="ghost-btn">编辑</a>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="empty-state">
+                                    <div class="empty-state-title">还没有课节</div>
+                                    <div class="empty-state-text">先创建第一课，再进入记忆循环。</div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </section>
+
+                    <section class="section-card" id="create-lesson">
+                        <div class="section-header">
+                            <div>
+                                <h2 class="section-title">新增课节</h2>
+                                <div class="section-subtitle">保持简洁，不抢学习入口的主视觉。</div>
+                            </div>
+                        </div>
+
+                        <div class="section-body">
+                            <form method="post">
+                                {% csrf_token %}
+
+                                <div class="compact-form">
+                                    <div class="field-group">
+                                        <div class="field-label">课节名称</div>
+                                        <input
+                                            type="text"
+                                            name="title"
+                                            class="train-input"
+                                            placeholder="课节名称，例如：第 1 课 / Lesson 1"
+                                            required
+                                        >
+                                    </div>
+
+                                    <div class="field-group">
+                                        <div class="field-label">排序</div>
+                                        <input
+                                            type="number"
+                                            name="order"
+                                            class="train-input"
+                                            value="0"
+                                            min="0"
+                                        >
+                                    </div>
+
+                                    <button type="submit" class="primary-btn">新建课节</button>
+                                </div>
+                            </form>
+                        </div>
+                    </section>
+                </div>
+
+                <aside class="book-right">
+                    <section class="side-card">
+                        <div class="side-card-header">
+                            <div>
+                                <h3 class="side-card-title">循环摘要</h3>
+                                <div class="side-card-subtitle">只保留必要信息，不和主入口抢层级。</div>
+                            </div>
+                        </div>
+
+                        <div class="side-card-body">
+                            <div class="mini-stats">
+                                <div class="mini-row">
+                                    <div class="mini-row-label">当前阶段</div>
+                                    <div class="mini-row-value">{{ book_stage }}</div>
+                                </div>
+
+                                <div class="mini-row">
+                                    <div class="mini-row-label">下一次复习</div>
+                                    <div class="mini-row-value">{{ book_next_review }}</div>
+                                </div>
+
+                                <div class="mini-row">
+                                    <div class="mini-row-label">总课节</div>
+                                    <div class="mini-row-value">{{ lessons|length }}</div>
+                                </div>
+
+                                <div class="mini-row">
+                                    <div class="mini-row-label">新学 / 巩固中 / 长期巩固</div>
+                                    <div class="mini-row-value">
+                                        {{ book_new_count }} / {{ book_in_progress_count }} / {{ book_mastered_count }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="side-card">
+                        <div class="side-card-header">
+                            <div>
+                                <h3 class="side-card-title">书本信息</h3>
+                                <div class="side-card-subtitle">基础信息保留，但不抢主视线。</div>
+                            </div>
+                        </div>
+
+                        <div class="side-card-body">
+                            <div class="mini-stats">
+                                <div class="mini-row">
+                                    <div class="mini-row-label">标题</div>
+                                    <div class="mini-row-value">{{ book.title }}</div>
+                                </div>
+
+                                <div class="mini-row">
+                                    <div class="mini-row-label">ID</div>
+                                    <div class="mini-row-value">{{ book.id }}</div>
+                                </div>
+
+                                <div class="mini-row">
+                                    <div class="mini-row-label">创建时间</div>
+                                    <div class="mini-row-value">{{ book.created_at|date:"Y-m-d H:i"|default:"-" }}</div>
+                                </div>
+
+                                <div class="mini-row">
+                                    <div class="mini-row-label">更新时间</div>
+                                    <div class="mini-row-value">{{ book.updated_at|date:"Y-m-d H:i"|default:"-" }}</div>
+                                </div>
+                            </div>
+
+                            <div style="height: 14px;"></div>
+
+                            <div class="description-box">{{ book.description|default:"暂无说明" }}</div>
+                        </div>
+                    </section>
+                </aside>
             </div>
-        </div>
-    {% empty %}
-        <div class="lesson-card">
-            这本书还没有课节。请先新建课节。
-        </div>
-    {% endfor %}
 
+            <div class="footer-note">Book Detail Page</div>
+        </div>
+    </div>
+
+    {% endwith %}
 </body>
 </html>

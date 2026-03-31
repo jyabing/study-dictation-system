@@ -39,9 +39,39 @@ def dashboard(request):
     plan = get_today_plan(request)
     stats = get_stats(request)
     cycle_summary = get_dashboard_cycle_summary(request.user)
-    book_cycle_summary = get_dashboard_books_cycle_summary(request.user, books)
+    raw_book_cycle_summary = get_dashboard_books_cycle_summary(request.user, books)
 
     print("🔥 DEBUG plan =", plan)
+
+    book_cycle_summary = []
+    for item in raw_book_cycle_summary:
+        if not isinstance(item, dict):
+            book_cycle_summary.append(item)
+            continue
+
+        row = dict(item)
+        book_obj = row.get("book")
+
+        if book_obj:
+            row["id"] = row.get("id") or getattr(book_obj, "id", None)
+            row["book_id"] = row.get("book_id") or getattr(book_obj, "id", None)
+            row["title"] = row.get("title") or getattr(book_obj, "title", "")
+            row["description"] = row.get("description") or getattr(book_obj, "description", "")
+        else:
+            row["id"] = row.get("id") or row.get("book_id")
+            row["book_id"] = row.get("book_id") or row.get("id")
+            row["title"] = row.get("title") or ""
+            row["description"] = row.get("description") or ""
+
+        row["pending_count"] = row.get("pending_count", row.get("today_due_count", 0))
+        row["in_progress_count"] = row.get("in_progress_count", row.get("short_count", 0))
+        row["mastered_count"] = row.get("mastered_count", row.get("long_count", 0))
+
+        row["current_stage"] = row.get("current_stage") or row.get("main_stage") or "暂无阶段信息"
+        row["current_stage_label"] = row.get("current_stage_label") or row["current_stage"]
+        row["next_review_display"] = row.get("next_review_display") or row.get("next_review_text") or "未安排"
+
+        book_cycle_summary.append(row)
 
     priority_books = sorted(
         book_cycle_summary,
@@ -49,7 +79,7 @@ def dashboard(request):
             0 if x.get("risk_level") == "高风险" else 1 if x.get("risk_level") == "中风险" else 2,
             -(x.get("overdue_count") or 0),
             -(x.get("today_due_count") or 0),
-            x.get("book").id if x.get("book") else 0,
+            x.get("id") or x.get("book_id") or 0,
         )
     )[:5]
 
@@ -57,6 +87,7 @@ def dashboard(request):
 
     return render(request, "train/dashboard.html", {
         "books": books,
+        "all_books": book_cycle_summary,
         "plan": plan,
         "stats": stats,
         "cycle_summary": cycle_summary,

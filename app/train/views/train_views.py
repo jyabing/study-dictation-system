@@ -565,18 +565,29 @@ def judge_training_answer(training, raw_answer):
     # =========================
     if item_type == "read_cloze":
 
-        try:
-            user_answers = json.loads(raw_answer or "[]")
-        except Exception:
-            user_answers = []
+        parsed = _normalize_raw_answer(raw_answer)
 
-        correct_answers = training.cloze_answers or []
+        if isinstance(parsed, list):
+            user_answers = [
+                str(x).strip()
+                for x in parsed
+                if str(x or "").strip()
+            ]
+        else:
+            single_answer = str(parsed or "").strip()
+            user_answers = [single_answer] if single_answer else []
+
+        correct_answers = [
+            str(x).strip()
+            for x in (training.cloze_answers or [])
+            if str(x or "").strip()
+        ]
 
         if len(correct_answers) == 1 and len(user_answers) == 1:
-            ua = normalize(user_answers[0])
-            ca = normalize(correct_answers[0])
+            ua = user_answers[0]
+            ca = correct_answers[0]
 
-            if ca in ua:
+            if check_answer(ua, ca) or normalize(ca) in normalize(ua):
                 return {
                     "is_correct": True,
                     "correct_answers": correct_answers,
@@ -1675,6 +1686,7 @@ def lesson_train_api(request, lesson_id):
         )
 
         judge = judge_training_answer(training, raw_answer)
+        
         is_correct = judge["is_correct"]
 
         memory = get_item_memory(request.user, training)

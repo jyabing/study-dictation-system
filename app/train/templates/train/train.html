@@ -62,9 +62,9 @@
             </div>
 
             <div class="stat-card">
-                <div class="stat-title">记忆等级</div>
+                <div class="stat-title">循环步</div>
                 <div class="stat-value" id="stat-memory-level">-</div>
-                <div class="stat-sub">当前题目的 memory level</div>
+                <div class="stat-sub">当前题目的严格循环 step</div>
             </div>
         </section>
 
@@ -132,28 +132,53 @@
                     <div class="side-header">
                         <div>
                             <h2 class="side-title">当前训练摘要</h2>
-                            <div class="side-subtitle">辅助信息，不抢主操作区。</div>
+                            <div class="side-subtitle">桌面端表格展示，手机端卡片展示。</div>
                         </div>
                     </div>
 
                     <div class="side-body">
-                        <div class="side-list">
-                            <div class="side-row">
+                        <div class="side-list cycle-side-list">
+                            <div class="side-row cycle-side-row">
                                 <div class="side-row-label">训练类型</div>
                                 <div class="side-row-value" id="side-type">-</div>
                             </div>
 
-                            <div class="side-row">
+                            <div class="side-row cycle-side-row">
                                 <div class="side-row-label">当前题 ID</div>
                                 <div class="side-row-value" id="side-training-id">-</div>
                             </div>
 
-                            <div class="side-row">
+                            <div class="side-row cycle-side-row">
                                 <div class="side-row-label">是否今日计划</div>
                                 <div class="side-row-value" id="side-is-today-plan">-</div>
                             </div>
 
-                            <div class="side-row">
+                            <div class="side-row cycle-side-row">
+                                <div class="side-row-label">循环步</div>
+                                <div class="side-row-value" id="side-cycle-step">-</div>
+                            </div>
+
+                            <div class="side-row cycle-side-row">
+                                <div class="side-row-label">当前阶段</div>
+                                <div class="side-row-value" id="side-step-label">-</div>
+                            </div>
+
+                            <div class="side-row cycle-side-row">
+                                <div class="side-row-label">当前状态</div>
+                                <div class="side-row-value" id="side-status-text">-</div>
+                            </div>
+
+                            <div class="side-row cycle-side-row">
+                                <div class="side-row-label">结果标记</div>
+                                <div class="side-row-value" id="side-last-result">-</div>
+                            </div>
+
+                            <div class="side-row cycle-side-row">
+                                <div class="side-row-label">下一次复习</div>
+                                <div class="side-row-value" id="side-next-review">-</div>
+                            </div>
+
+                            <div class="side-row cycle-side-row">
                                 <div class="side-row-label">标准答案</div>
                                 <div class="side-row-value" id="side-correct-answer">提交后显示</div>
                             </div>
@@ -634,6 +659,48 @@
     word-break: break-word;
 }
 
+.cycle-side-list {
+    display: table;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    gap: 0;
+}
+
+.cycle-side-row {
+    display: table-row;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    border: none;
+}
+
+.cycle-side-row .side-row-label,
+.cycle-side-row .side-row-value {
+    display: table-cell;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    vertical-align: top;
+}
+
+.cycle-side-row .side-row-label {
+    width: 36%;
+    font-weight: 800;
+    color: var(--text-soft);
+    white-space: nowrap;
+}
+
+.cycle-side-row .side-row-value {
+    color: var(--text);
+    word-break: break-word;
+    text-align: left;
+}
+
+.cycle-side-row:last-child .side-row-label,
+.cycle-side-row:last-child .side-row-value {
+    border-bottom: none;
+}
+
 .quick-actions {
     flex-direction: column;
     align-items: stretch;
@@ -675,6 +742,39 @@
 
     .layout-main {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 900px) {
+    .cycle-side-list {
+        display: grid;
+        gap: 12px;
+    }
+
+    .cycle-side-row {
+        display: block;
+        padding: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .cycle-side-row .side-row-label,
+    .cycle-side-row .side-row-value {
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: none;
+    }
+
+    .cycle-side-row .side-row-label {
+        margin-bottom: 6px;
+        font-size: 13px;
+    }
+
+    .cycle-side-row .side-row-value {
+        font-size: 15px;
+        font-weight: 700;
     }
 }
 
@@ -744,6 +844,7 @@ const emptyMessage = document.getElementById("empty-message");
 
 const chipStage = document.getElementById("chip-stage");
 const chipNextReview = document.getElementById("chip-next-review");
+const chipStatus = document.getElementById("chip-status");
 const chipSource = document.getElementById("chip-source");
 
 const statPlanTotal = document.getElementById("stat-plan-total");
@@ -769,6 +870,11 @@ const feedbackBox = document.getElementById("feedback-box");
 const sideType = document.getElementById("side-type");
 const sideTrainingId = document.getElementById("side-training-id");
 const sideIsTodayPlan = document.getElementById("side-is-today-plan");
+const sideCycleStep = document.getElementById("side-cycle-step");
+const sideStepLabel = document.getElementById("side-step-label");
+const sideStatusText = document.getElementById("side-status-text");
+const sideLastResult = document.getElementById("side-last-result");
+const sideNextReview = document.getElementById("side-next-review");
 const sideCorrectAnswer = document.getElementById("side-correct-answer");
 
 const state = {
@@ -803,6 +909,23 @@ function pickText(obj, keys, fallback = "") {
         }
     }
     return fallback;
+}
+
+function formatLastResult(value) {
+    const raw = String(value || "").trim();
+
+    if (!raw) {
+        return "-";
+    }
+
+    const mapping = {
+        "correct": "本题正确",
+        "mastered": "本轮完成",
+        "wrong_reset": "答错重置",
+        "overdue_reset": "超窗重置",
+    };
+
+    return mapping[raw] || raw;
 }
 
 function getChoiceText(choice, index) {
@@ -1004,14 +1127,29 @@ function renderPayload(payload) {
     answerInput.disabled = false;
     reloadBtn.disabled = false;
 
-    chipStage.textContent = `当前阶段：${pickText(payload, ["stage_label", "current_stage_label", "stage"], "进行中")}`;
-    chipNextReview.textContent = `下一次复习：${pickText(payload, ["next_review_text", "next_review_display", "next_review"], "未安排")}`;
+    const stepLabel = pickText(
+        payload,
+        ["step_label", "stage_label", "current_stage_label", "stage"],
+        "进行中"
+    );
+    const nextReviewText = pickText(
+        payload,
+        ["next_review_text", "next_review_display", "next_review"],
+        "未安排"
+    );
+    const cycleStep = pickText(payload, ["cycle_step", "memory_level"], "0");
+    const statusText = pickText(payload, ["status_text"], "进行中");
+    const lastResultText = formatLastResult(pickText(payload, ["last_result"], ""));
+
+    chipStage.textContent = `当前阶段：${stepLabel}`;
+    chipNextReview.textContent = `下一次复习：${nextReviewText}`;
+    chipStatus.textContent = `当前状态：${statusText}`;
     chipSource.textContent = `训练来源：${payload.is_today_plan ? "今日计划" : "本课训练"}`;
 
     statPlanTotal.textContent = pickText(payload, ["plan_total"], "0");
     statPlanDone.textContent = pickText(payload, ["plan_done"], "0");
     statPlanProgress.textContent = `${pickText(payload, ["plan_progress"], "0")}%`;
-    statMemoryLevel.textContent = pickText(payload, ["memory_level"], "0");
+    statMemoryLevel.textContent = cycleStep;
 
     const qType = pickText(payload, ["type", "qtype"], "unknown");
     questionTypeBadge.textContent = `类型：${qType}`;
@@ -1046,6 +1184,11 @@ function renderPayload(payload) {
     sideType.textContent = qType;
     sideTrainingId.textContent = trainingIdInput.value || "-";
     sideIsTodayPlan.textContent = payload.is_today_plan ? "是" : "否";
+    sideCycleStep.textContent = cycleStep;
+    sideStepLabel.textContent = stepLabel;
+    sideStatusText.textContent = statusText;
+    sideLastResult.textContent = lastResultText;
+    sideNextReview.textContent = nextReviewText;
 }
 
 async function loadCurrentQuestion() {
@@ -1065,6 +1208,11 @@ async function loadCurrentQuestion() {
             const kind = data.reason === "today_done" ? "success" : "warning";
             showEmptyMode(data.message || "当前没有可训练内容。", kind);
 
+            chipStage.textContent = "当前阶段：暂无可训练内容";
+            chipNextReview.textContent = "下一次复习：未安排";
+            chipStatus.textContent = data.reason === "today_done"
+                ? "当前状态：今日计划已完成"
+                : "当前状态：暂无可训练内容";
             chipSource.textContent = data.reason === "today_done"
                 ? "训练来源：今日计划已完成"
                 : "训练来源：暂无可训练内容";
@@ -1073,11 +1221,21 @@ async function loadCurrentQuestion() {
             sideType.textContent = "-";
             sideTrainingId.textContent = "-";
             sideIsTodayPlan.textContent = "-";
+            sideCycleStep.textContent = "-";
+            sideStepLabel.textContent = "-";
+            sideStatusText.textContent = "-";
+            sideLastResult.textContent = "-";
+            sideNextReview.textContent = "-";
+            sideCorrectAnswer.textContent = "提交后显示";
             return;
         }
 
         renderPayload(data);
     } catch (error) {
+        chipStage.textContent = "当前阶段：加载失败";
+        chipNextReview.textContent = "下一次复习：未安排";
+        chipStatus.textContent = "当前状态：加载失败";
+        chipSource.textContent = "训练来源：请求失败";
         showEmptyMode("加载当前题目失败，请刷新页面重试。", "warning");
     } finally {
         setLoading(false);

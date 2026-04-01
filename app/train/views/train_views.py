@@ -586,8 +586,12 @@ def build_training_payload(training, memory=None):
     # =========================
     resolved_prompt_audio = question_audio_url
 
-    if not resolved_prompt_audio and training.item_type in {"listen_asr", "speak_read"} and use_tts and prompt_text:
-        # gTTS 的 lang 和前端 asr_lang 不同，这里做简单映射
+    if (
+        not resolved_prompt_audio
+        and training.item_type in {"listen_asr", "speak_read"}
+        and use_tts
+        and prompt_text
+    ):
         tts_lang = "en"
         lang_upper = str(asr_lang).lower()
 
@@ -605,6 +609,8 @@ def build_training_payload(training, memory=None):
             lang=tts_lang,
             prefix=f"prompttts_q{training.question_id}"
         )
+
+    cycle = _build_cycle_status(memory)
 
     payload = {
         "id": training.id,
@@ -632,7 +638,22 @@ def build_training_payload(training, memory=None):
         "cloze_text": training.cloze_text or "",
         "cloze_answers": training.cloze_answers or [],
 
-        "memory_level": memory.memory_level if memory else 0,
+        # =========================
+        # 严格循环字段：直接扁平返回给前端
+        # =========================
+        "memory_level": cycle["level"],
+        "cycle_step": cycle["cycle_step"],
+        "step_label": cycle["step_label"],
+        "stage_label": cycle["stage_label"],
+        "stage_group": cycle["stage_group"],
+        "next_review_text": cycle["next_review_text"],
+        "is_due": cycle["is_due"],
+        "is_overdue": cycle["is_overdue"],
+        "is_mastered": cycle["is_mastered"],
+        "is_reset": cycle["is_reset"],
+        "last_result": cycle["last_result"],
+        "last_reset_reason": cycle["last_reset_reason"],
+        "status_text": cycle["status_text"],
 
         # 听 / 说题型配置也顺便回前端
         "use_tts": use_tts,
@@ -1907,7 +1928,6 @@ def lesson_train_api(request, lesson_id):
 
         payload.update({
             "empty": False,
-            "memory_level": memory.memory_level if memory else 0,
             "plan_total": plan["total"] if lesson_plan_items else len(all_training_items),
             "plan_done": plan["done"] if lesson_plan_items else 0,
             "plan_progress": plan["progress"] if lesson_plan_items else 0,

@@ -928,6 +928,44 @@ function formatLastResult(value) {
     return mapping[raw] || raw;
 }
 
+function applyCyclePanel(payload) {
+    const stepLabel = pickText(
+        payload,
+        ["step_label", "stage_label", "current_stage_label", "stage"],
+        "进行中"
+    );
+
+    const nextReviewText = pickText(
+        payload,
+        ["next_review_text", "next_review_display", "next_review"],
+        "未安排"
+    );
+
+    const cycleStep = pickText(payload, ["cycle_step", "memory_level"], "0");
+    const statusText = pickText(payload, ["status_text"], "进行中");
+    const lastResultText = formatLastResult(pickText(payload, ["last_result"], ""));
+    const qType = pickText(payload, ["type", "qtype"], sideType?.textContent || "unknown");
+
+    chipStage.textContent = `当前阶段：${stepLabel}`;
+    chipNextReview.textContent = `下一次复习：${nextReviewText}`;
+    chipStatus.textContent = `当前状态：${statusText}`;
+    chipSource.textContent = `训练来源：${payload.is_today_plan ? "今日计划" : "本课训练"}`;
+
+    statPlanTotal.textContent = pickText(payload, ["plan_total"], statPlanTotal.textContent || "0");
+    statPlanDone.textContent = pickText(payload, ["plan_done"], statPlanDone.textContent || "0");
+    statPlanProgress.textContent = `${pickText(payload, ["plan_progress"], "0")}%`;
+    statMemoryLevel.textContent = cycleStep;
+
+    sideType.textContent = qType;
+    sideTrainingId.textContent = pickText(payload, ["training_id"], trainingIdInput.value || "-");
+    sideIsTodayPlan.textContent = payload.is_today_plan ? "是" : "否";
+    sideCycleStep.textContent = cycleStep;
+    sideStepLabel.textContent = stepLabel;
+    sideStatusText.textContent = statusText;
+    sideLastResult.textContent = lastResultText;
+    sideNextReview.textContent = nextReviewText;
+}
+
 function getChoiceText(choice, index) {
     return pickText(choice, [
         "text", "label", "value", "content", "answer", "prompt", "display", "title"
@@ -1127,29 +1165,7 @@ function renderPayload(payload) {
     answerInput.disabled = false;
     reloadBtn.disabled = false;
 
-    const stepLabel = pickText(
-        payload,
-        ["step_label", "stage_label", "current_stage_label", "stage"],
-        "进行中"
-    );
-    const nextReviewText = pickText(
-        payload,
-        ["next_review_text", "next_review_display", "next_review"],
-        "未安排"
-    );
-    const cycleStep = pickText(payload, ["cycle_step", "memory_level"], "0");
-    const statusText = pickText(payload, ["status_text"], "进行中");
-    const lastResultText = formatLastResult(pickText(payload, ["last_result"], ""));
-
-    chipStage.textContent = `当前阶段：${stepLabel}`;
-    chipNextReview.textContent = `下一次复习：${nextReviewText}`;
-    chipStatus.textContent = `当前状态：${statusText}`;
-    chipSource.textContent = `训练来源：${payload.is_today_plan ? "今日计划" : "本课训练"}`;
-
-    statPlanTotal.textContent = pickText(payload, ["plan_total"], "0");
-    statPlanDone.textContent = pickText(payload, ["plan_done"], "0");
-    statPlanProgress.textContent = `${pickText(payload, ["plan_progress"], "0")}%`;
-    statMemoryLevel.textContent = cycleStep;
+    applyCyclePanel(payload);
 
     const qType = pickText(payload, ["type", "qtype"], "unknown");
     questionTypeBadge.textContent = `类型：${qType}`;
@@ -1180,15 +1196,6 @@ function renderPayload(payload) {
     answerInput.placeholder = Array.isArray(payload.choices) && payload.choices.length > 0
         ? "可点击选项，也可手动输入答案"
         : "请输入答案，然后提交";
-
-    sideType.textContent = qType;
-    sideTrainingId.textContent = trainingIdInput.value || "-";
-    sideIsTodayPlan.textContent = payload.is_today_plan ? "是" : "否";
-    sideCycleStep.textContent = cycleStep;
-    sideStepLabel.textContent = stepLabel;
-    sideStatusText.textContent = statusText;
-    sideLastResult.textContent = lastResultText;
-    sideNextReview.textContent = nextReviewText;
 }
 
 async function loadCurrentQuestion() {
@@ -1236,6 +1243,18 @@ async function loadCurrentQuestion() {
         chipNextReview.textContent = "下一次复习：未安排";
         chipStatus.textContent = "当前状态：加载失败";
         chipSource.textContent = "训练来源：请求失败";
+
+        statMemoryLevel.textContent = "-";
+        sideType.textContent = "-";
+        sideTrainingId.textContent = "-";
+        sideIsTodayPlan.textContent = "-";
+        sideCycleStep.textContent = "-";
+        sideStepLabel.textContent = "-";
+        sideStatusText.textContent = "-";
+        sideLastResult.textContent = "-";
+        sideNextReview.textContent = "-";
+        sideCorrectAnswer.textContent = "提交后显示";
+
         showEmptyMode("加载当前题目失败，请刷新页面重试。", "warning");
     } finally {
         setLoading(false);
@@ -1299,6 +1318,8 @@ async function submitAnswer(event) {
 
         const correctAnswersText = correctAnswersRaw.join(" / ");
         sideCorrectAnswer.textContent = correctAnswersText || "未返回";
+
+        applyCyclePanel(data);
 
         submitBtn.disabled = true;
         answerInput.disabled = true;

@@ -37,7 +37,7 @@
                 <div class="hero-side">
                     {% if lesson %}
                         <a href="{% url 'lesson-question-list' lesson.id %}" class="secondary-btn">题目列表</a>
-                        <a href="{% url 'lesson-edit' lesson.id %}" class="ghost-btn">编辑本课素材</a>
+                        <a href="{% url 'lesson-edit' lesson.id %}" class="ghost-btn">编辑章节</a>
                     {% else %}
                         <a href="{% url 'book-detail' book.id %}" class="secondary-btn">书册详情</a>
                     {% endif %}
@@ -96,13 +96,41 @@
 
                             <form class="answer-form" id="answer-form">
                                 <input type="hidden" id="training-id" value="">
-                                <input
-                                    type="text"
-                                    id="answer-input"
-                                    class="answer-input"
-                                    placeholder="请输入答案，然后提交"
-                                    autocomplete="off"
-                                >
+
+                                <div class="speech-workspace" id="speech-workspace" style="display:none;">
+                                    <div class="speech-mode-bar">
+                                        <div class="speech-mode-badge" id="speech-mode-badge">语音训练</div>
+                                        <div class="speech-status" id="speech-status">等待开始录音</div>
+                                    </div>
+
+                                    <div class="speech-hint" id="speech-hint">
+                                        当前题型将优先使用麦克风识别。若识别失败，可回退到文本输入。
+                                    </div>
+
+                                    <div class="speech-controls">
+                                        <button type="button" class="primary-btn" id="speech-start-btn">开始录音</button>
+                                        <button type="button" class="secondary-btn" id="speech-stop-btn" style="display:none;">停止录音</button>
+                                        <button type="button" class="ghost-btn" id="speech-retry-btn" style="display:none;">重新录音</button>
+                                        <button type="button" class="ghost-btn" id="speech-use-text-btn">改用文本输入</button>
+                                    </div>
+
+                                    <div class="speech-result-panel" id="speech-result-panel" style="display:none;">
+                                        <div class="speech-result-label">识别结果</div>
+                                        <div class="speech-result-box" id="speech-result-box">暂无识别结果</div>
+                                    </div>
+
+                                    <div class="speech-error" id="speech-error" style="display:none;"></div>
+                                </div>
+
+                                <div class="text-answer-workspace" id="text-answer-workspace">
+                                    <input
+                                        type="text"
+                                        id="answer-input"
+                                        class="answer-input"
+                                        placeholder="请输入答案，然后提交"
+                                        autocomplete="off"
+                                    >
+                                </div>
 
                                 <div class="answer-actions">
                                     <button type="submit" class="primary-btn" id="submit-btn">提交答案</button>
@@ -201,7 +229,7 @@
                         <div class="actions quick-actions">
                             {% if lesson %}
                                 <a href="{% url 'lesson-question-list' lesson.id %}" class="primary-btn">题目列表</a>
-                                <a href="{% url 'lesson-edit' lesson.id %}" class="secondary-btn">编辑本课素材</a>
+                                <a href="{% url 'lesson-edit' lesson.id %}" class="secondary-btn">编辑章节</a>
                                 <a href="{% url 'book-detail' book.id %}" class="ghost-btn">返回书册</a>
                                 <a href="{% url 'dashboard' %}" class="ghost-btn">返回首页</a>
                             {% else %}
@@ -600,6 +628,101 @@
     box-shadow: 0 0 0 4px rgba(110, 168, 255, 0.12);
 }
 
+.text-answer-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.speech-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(110, 168, 255, 0.18);
+    background: rgba(110, 168, 255, 0.06);
+}
+
+.speech-mode-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.speech-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    color: #dce8ff;
+    border: 1px solid rgba(110, 168, 255, 0.30);
+    background: rgba(110, 168, 255, 0.14);
+}
+
+.speech-status {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-soft);
+}
+
+.speech-hint {
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-soft);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.speech-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.speech-result-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.speech-result-label {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-faint);
+    letter-spacing: 0.02em;
+}
+
+.speech-result-box {
+    min-height: 72px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.speech-error {
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 114, 114, 0.24);
+    background: rgba(255, 114, 114, 0.12);
+    color: #ffe3e3;
+    font-size: 13px;
+    font-weight: 800;
+}
+
 .answer-actions {
     display: flex;
     flex-wrap: wrap;
@@ -821,6 +944,15 @@
         grid-template-columns: 1fr;
     }
 
+    .speech-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .speech-mode-bar {
+        align-items: flex-start;
+    }
+
     .side-row {
         flex-direction: column;
         align-items: flex-start;
@@ -875,6 +1007,18 @@ const answerInput = document.getElementById("answer-input");
 const submitBtn = document.getElementById("submit-btn");
 const nextBtn = document.getElementById("next-btn");
 const reloadBtn = document.getElementById("reload-btn");
+const textAnswerWorkspace = document.getElementById("text-answer-workspace");
+const speechWorkspace = document.getElementById("speech-workspace");
+const speechModeBadge = document.getElementById("speech-mode-badge");
+const speechStatus = document.getElementById("speech-status");
+const speechHint = document.getElementById("speech-hint");
+const speechStartBtn = document.getElementById("speech-start-btn");
+const speechStopBtn = document.getElementById("speech-stop-btn");
+const speechRetryBtn = document.getElementById("speech-retry-btn");
+const speechUseTextBtn = document.getElementById("speech-use-text-btn");
+const speechResultPanel = document.getElementById("speech-result-panel");
+const speechResultBox = document.getElementById("speech-result-box");
+const speechError = document.getElementById("speech-error");
 const feedbackBox = document.getElementById("feedback-box");
 
 const sideType = document.getElementById("side-type");
@@ -893,6 +1037,8 @@ const state = {
     selectedChoiceIndex: null,
     loading: false,
     autoNextTimer: null,
+    inputMode: "text",
+    recognizedText: "",
 };
 
 function getCookie(name) {
@@ -1010,6 +1156,200 @@ function getAudioUrl(payload) {
     ], "");
 }
 
+function getQuestionType(payload) {
+    return pickText(payload, [
+        "display_item_type", "type", "qtype", "item_type"
+    ], "unknown");
+}
+
+function isSpeechQuestionType(qType) {
+    return qType === "listen_asr" || qType === "speak_read";
+}
+
+function resetSpeechUi() {
+    state.recognizedText = "";
+
+    if (speechResultPanel) {
+        speechResultPanel.style.display = "none";
+    }
+
+    if (speechResultBox) {
+        speechResultBox.textContent = "暂无识别结果";
+    }
+
+    if (speechError) {
+        speechError.style.display = "none";
+        speechError.textContent = "";
+    }
+
+    if (speechStatus) {
+        speechStatus.textContent = "等待开始录音";
+    }
+
+    if (speechStartBtn) {
+        speechStartBtn.style.display = "inline-flex";
+    }
+
+    if (speechStopBtn) {
+        speechStopBtn.style.display = "none";
+    }
+
+    if (speechRetryBtn) {
+        speechRetryBtn.style.display = "none";
+    }
+}
+
+function showTextWorkspace() {
+    state.inputMode = "text";
+
+    if (textAnswerWorkspace) {
+        textAnswerWorkspace.style.display = "flex";
+    }
+
+    if (speechWorkspace) {
+        speechWorkspace.style.display = "none";
+    }
+}
+
+function showSpeechWorkspace(modeLabel, hintText) {
+    state.inputMode = "speech";
+
+    if (speechWorkspace) {
+        speechWorkspace.style.display = "flex";
+    }
+
+    if (textAnswerWorkspace) {
+        textAnswerWorkspace.style.display = "none";
+    }
+
+    if (speechModeBadge) {
+        speechModeBadge.textContent = modeLabel;
+    }
+
+    if (speechHint) {
+        speechHint.textContent = hintText;
+    }
+
+    resetSpeechUi();
+}
+
+function enableSpeechTextFallback() {
+    state.inputMode = "speech_text_fallback";
+
+    if (speechWorkspace) {
+        speechWorkspace.style.display = "flex";
+    }
+
+    if (textAnswerWorkspace) {
+        textAnswerWorkspace.style.display = "flex";
+    }
+
+    if (speechStatus) {
+        speechStatus.textContent = "已切换到文本输入";
+    }
+
+    if (answerInput) {
+        answerInput.disabled = false;
+        answerInput.focus();
+    }
+}
+
+function applyQuestionInputMode(payload) {
+    const qType = getQuestionType(payload);
+    const questionText = getQuestionText(payload);
+    const extra = getExtraText(payload);
+    const audioUrl = getAudioUrl(payload);
+
+    renderChoices(payload.choices || []);
+
+    if (qType === "listen_asr") {
+        questionTypeBadge.textContent = "类型：listen_asr";
+        questionPrompt.textContent = "请先播放题干音频，然后复述你听到的内容。";
+
+        if (extra) {
+            questionExtra.style.display = "block";
+            questionExtra.textContent = extra;
+        } else {
+            questionExtra.style.display = "none";
+            questionExtra.textContent = "";
+        }
+
+        if (audioUrl) {
+            audioWrap.style.display = "flex";
+            questionAudio.src = audioUrl;
+        } else {
+            audioWrap.style.display = "none";
+            questionAudio.removeAttribute("src");
+            questionAudio.load();
+
+            questionExtra.style.display = "block";
+            questionExtra.textContent = "当前题目没有可播放音频，请先改用文本输入兜底。";
+        }
+
+        showSpeechWorkspace(
+            "听：复述题干",
+            "先播放音频，再开始录音。识别失败可改用文本输入。"
+        );
+
+        answerInput.value = "";
+        answerInput.placeholder = "点击“改用文本输入”后，可手动输入你听到的内容";
+        return;
+    }
+
+    if (qType === "speak_read") {
+        questionTypeBadge.textContent = "类型：speak_read";
+        questionPrompt.textContent = questionText;
+
+        if (extra) {
+            questionExtra.style.display = "block";
+            questionExtra.textContent = extra;
+        } else {
+            questionExtra.style.display = "none";
+            questionExtra.textContent = "";
+        }
+
+        audioWrap.style.display = "none";
+        questionAudio.removeAttribute("src");
+        questionAudio.load();
+
+        showSpeechWorkspace(
+            "说：朗读题干",
+            "请朗读上方文字题干，然后开始录音。识别失败可改用文本输入。"
+        );
+
+        answerInput.value = "";
+        answerInput.placeholder = "点击“改用文本输入”后，可手动输入朗读内容";
+        return;
+    }
+
+    showTextWorkspace();
+
+    questionTypeBadge.textContent = `类型：${qType}`;
+    questionPrompt.textContent = questionText;
+
+    if (extra) {
+        questionExtra.style.display = "block";
+        questionExtra.textContent = extra;
+    } else {
+        questionExtra.style.display = "none";
+        questionExtra.textContent = "";
+    }
+
+    if (audioUrl) {
+        audioWrap.style.display = "flex";
+        questionAudio.src = audioUrl;
+    } else {
+        audioWrap.style.display = "none";
+        questionAudio.removeAttribute("src");
+        questionAudio.load();
+    }
+
+    answerInput.value = "";
+    answerInput.placeholder = Array.isArray(payload.choices) && payload.choices.length > 0
+        ? "可点击选项，也可手动输入答案"
+        : "请输入答案，然后提交";
+}
+
 function setFeedback(message, type = "info") {
     feedbackBox.className = `feedback-box show ${type}`;
     feedbackBox.innerHTML = escapeHtml(message);
@@ -1039,6 +1379,22 @@ function setLoading(isLoading) {
     submitBtn.disabled = isLoading;
     reloadBtn.disabled = isLoading;
     answerInput.disabled = isLoading;
+
+    if (speechStartBtn) {
+        speechStartBtn.disabled = isLoading;
+    }
+
+    if (speechStopBtn) {
+        speechStopBtn.disabled = isLoading;
+    }
+
+    if (speechRetryBtn) {
+        speechRetryBtn.disabled = isLoading;
+    }
+
+    if (speechUseTextBtn) {
+        speechUseTextBtn.disabled = isLoading;
+    }
 }
 
 function showQuestionMode() {
@@ -1176,36 +1532,9 @@ function renderPayload(payload) {
     reloadBtn.disabled = false;
 
     applyCyclePanel(payload);
-
-    const qType = pickText(payload, ["type", "qtype"], "unknown");
-    questionTypeBadge.textContent = `类型：${qType}`;
-    questionPrompt.textContent = getQuestionText(payload);
-
-    const extra = getExtraText(payload);
-    if (extra) {
-        questionExtra.style.display = "block";
-        questionExtra.textContent = extra;
-    } else {
-        questionExtra.style.display = "none";
-        questionExtra.textContent = "";
-    }
-
-    const audioUrl = getAudioUrl(payload);
-    if (audioUrl) {
-        audioWrap.style.display = "flex";
-        questionAudio.src = audioUrl;
-    } else {
-        audioWrap.style.display = "none";
-        questionAudio.removeAttribute("src");
-        questionAudio.load();
-    }
-
-    renderChoices(payload.choices || []);
     trainingIdInput.value = pickText(payload, ["training_id"], "");
-    answerInput.value = "";
-    answerInput.placeholder = Array.isArray(payload.choices) && payload.choices.length > 0
-        ? "可点击选项，也可手动输入答案"
-        : "请输入答案，然后提交";
+
+    applyQuestionInputMode(payload);
 }
 
 async function loadCurrentQuestion() {
@@ -1287,6 +1616,7 @@ async function submitAnswer(event) {
 
     const trainingId = trainingIdInput.value.trim();
     const answer = answerInput.value.trim();
+    const qType = getQuestionType(state.current || {});
 
     if (!trainingId) {
         setFeedback("当前题目还没有准备好，请先重新加载。", "warning");
@@ -1294,7 +1624,11 @@ async function submitAnswer(event) {
     }
 
     if (!answer) {
-        setFeedback("请先输入答案，或者先点选一个选项。", "warning");
+        if (isSpeechQuestionType(qType)) {
+            setFeedback("请先完成语音识别，或点“改用文本输入”后手动填写。", "warning");
+        } else {
+            setFeedback("请先输入答案，或者先点选一个选项。", "warning");
+        }
         return;
     }
 
@@ -1359,6 +1693,49 @@ async function submitAnswer(event) {
 }
 
 answerForm.addEventListener("submit", submitAnswer);
+
+if (speechUseTextBtn) {
+    speechUseTextBtn.addEventListener("click", () => {
+        enableSpeechTextFallback();
+        setFeedback("已切换到文本输入。当前仍可继续保留语音训练模式。", "info");
+    });
+}
+
+if (speechRetryBtn) {
+    speechRetryBtn.addEventListener("click", () => {
+        resetSpeechUi();
+
+        if (state.current && isSpeechQuestionType(getQuestionType(state.current))) {
+            if (textAnswerWorkspace) {
+                textAnswerWorkspace.style.display = "none";
+            }
+        }
+    });
+}
+
+if (speechStartBtn) {
+    speechStartBtn.addEventListener("click", () => {
+        if (!state.current || !isSpeechQuestionType(getQuestionType(state.current))) {
+            return;
+        }
+
+        if (speechStatus) {
+            speechStatus.textContent = "下一步接入真实录音。本步先完成题型分流与回退逻辑。";
+        }
+
+        if (speechRetryBtn) {
+            speechRetryBtn.style.display = "inline-flex";
+        }
+    });
+}
+
+if (speechStopBtn) {
+    speechStopBtn.addEventListener("click", () => {
+        if (speechStatus) {
+            speechStatus.textContent = "当前还没有接入真实录音。";
+        }
+    });
+}
 
 nextBtn.addEventListener("click", () => {
     clearAutoNextTimer();

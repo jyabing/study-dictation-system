@@ -848,15 +848,6 @@
 
             <div class="book-topbar">
                 <a href="{% url 'dashboard' %}" class="book-back-link">← 返回首页</a>
-
-                <div class="book-top-actions">
-                    <a href="{% url 'book-edit' book.id %}" class="secondary-btn">编辑书</a>
-                    {% if focus_lesson %}
-                        <a href="{% url 'lesson-train' focus_lesson.id %}" class="primary-btn">开始学习</a>
-                    {% else %}
-                        <a href="#create-lesson" class="primary-btn">创建后开始学习</a>
-                    {% endif %}
-                </div>
             </div>
 
             <section class="book-hero">
@@ -874,8 +865,8 @@
 
                     <div class="book-hero-side">
                         <a href="{% url 'book-edit' book.id %}" class="secondary-btn">编辑书</a>
-                        {% if focus_lesson %}
-                            <a href="{% url 'lesson-train' focus_lesson.id %}" class="primary-btn">开始学习</a>
+                        {% if lessons %}
+                            <a href="{% url 'book-train' book.id %}" class="primary-btn">整本循环训练</a>
                         {% else %}
                             <a href="#create-lesson" class="primary-btn">创建后开始学习</a>
                         {% endif %}
@@ -939,7 +930,7 @@
                         <div class="section-header">
                             <div>
                                 <h2 class="section-title">章节列表</h2>
-                                <div class="section-subtitle">这里是学习入口总表。主按钮一律进入 lesson-train。</div>
+                                <div class="section-subtitle">这里是学习入口总表。书页主按钮进入整本循环训练，课节按钮进入 lesson-train。</div>
                             </div>
                         </div>
 

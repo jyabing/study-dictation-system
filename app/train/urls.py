@@ -7,6 +7,8 @@ from .views.book_views import (
     lesson_delete_confirm, lesson_delete_submit,
 )
 from .views.train_views import (
+    book_train,
+    book_train_api,
     lesson_train,
     lesson_train_api,
     stats_page,
@@ -38,6 +40,10 @@ urlpatterns = [
     # Book + Lesson
     path("book/<int:book_id>/", book_detail, name="book-detail"),
     path("book/<int:book_id>/edit/", book_edit, name="book-edit"),
+
+    path("book/<int:book_id>/train/", book_train, name="book-train"),
+    path("api/book/<int:book_id>/train/", book_train_api, name="book-train-api"),
+
     path("lesson/<int:lesson_id>/edit/", lesson_edit, name="lesson-edit"),
     path("question/<int:question_id>/edit/", question_edit, name="question-edit"),
     path("question/<int:question_id>/delete/", question_delete, name="question-delete"),

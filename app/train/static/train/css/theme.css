@@ -374,3 +374,434 @@ button {
         padding-bottom: 18px;
     }
 }
+
+/* =========================
+   Dashboard page
+========================= */
+
+body {
+    background:
+        radial-gradient(circle at top left, rgba(110, 168, 255, 0.20), transparent 28%),
+        radial-gradient(circle at top right, rgba(132, 243, 209, 0.10), transparent 24%),
+        linear-gradient(180deg, #0b1020 0%, #0a0f1c 100%);
+    color: var(--text);
+    font-family:
+        "Inter",
+        "Noto Sans JP",
+        "Hiragino Sans",
+        "Yu Gothic",
+        "Microsoft YaHei",
+        sans-serif;
+    line-height: 1.6;
+}
+
+.dashboard-page {
+    width: min(1440px, calc(100% - 32px));
+    margin: 28px auto 48px;
+}
+
+.dashboard-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.brand-pill,
+.user-pill,
+.hero-chip,
+.status-chip,
+.book-chip,
+.mini-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    white-space: nowrap;
+}
+
+.brand-pill {
+    background: rgba(110, 168, 255, 0.12);
+    border-color: rgba(110, 168, 255, 0.26);
+    color: #dbe9ff;
+}
+
+.hero-chip.primary,
+.status-chip.primary,
+.book-chip.primary {
+    background: rgba(110, 168, 255, 0.14);
+    border-color: rgba(110, 168, 255, 0.30);
+    color: #dbe9ff;
+}
+
+.hero-chip.success,
+.status-chip.success,
+.book-chip.success {
+    background: rgba(51, 209, 122, 0.14);
+    border-color: rgba(51, 209, 122, 0.28);
+    color: #d9ffe9;
+}
+
+.hero-chip.warning,
+.status-chip.warning,
+.book-chip.warning {
+    background: rgba(255, 190, 85, 0.14);
+    border-color: rgba(255, 190, 85, 0.28);
+    color: #fff2d6;
+}
+
+.hero-chip.danger,
+.status-chip.danger,
+.book-chip.danger {
+    background: rgba(255, 114, 114, 0.14);
+    border-color: rgba(255, 114, 114, 0.28);
+    color: #ffe0e0;
+}
+
+.hero-card,
+.priority-card,
+.book-card,
+.section-card,
+.empty-card {
+    background: linear-gradient(180deg, rgba(17, 24, 45, 0.96), rgba(12, 18, 34, 0.96));
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.hero-card {
+    padding: 26px 26px 22px;
+    position: relative;
+}
+
+.hero-card::before {
+    content: "";
+    position: absolute;
+    inset: auto -80px -80px auto;
+    width: 240px;
+    height: 240px;
+    background: radial-gradient(circle, rgba(110, 168, 255, 0.22), transparent 70%);
+    pointer-events: none;
+}
+
+.hero-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.hero-main {
+    flex: 1 1 620px;
+    min-width: 280px;
+}
+
+.hero-side {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #84f3d1;
+    margin-bottom: 10px;
+}
+
+.hero-title {
+    margin: 0;
+    font-size: clamp(30px, 4vw, 44px);
+    line-height: 1.12;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    word-break: break-word;
+}
+
+.hero-subtitle {
+    margin: 12px 0 0;
+    color: var(--text-soft);
+    font-size: 15px;
+    max-width: 860px;
+}
+
+.hero-chips {
+    margin-top: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02);
+    flex-wrap: wrap;
+}
+
+.section-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    color: var(--text);
+}
+
+.section-subtitle {
+    font-size: 12px;
+    color: var(--text-faint);
+}
+
+.section-body {
+    padding: 22px;
+}
+
+.priority-list {
+    display: grid;
+    gap: 16px;
+}
+
+.priority-card {
+    padding: 22px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.7fr);
+    gap: 18px;
+    align-items: stretch;
+}
+
+.priority-main {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+.priority-title {
+    margin: 0;
+    font-size: clamp(24px, 3vw, 34px);
+    line-height: 1.18;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    word-break: break-word;
+}
+
+.priority-desc {
+    color: var(--text-soft);
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.priority-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.priority-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.priority-side {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.mini-stat {
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.mini-stat-label {
+    font-size: 12px;
+    color: var(--text-faint);
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.mini-stat-value {
+    font-size: 24px;
+    line-height: 1.08;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    word-break: break-word;
+}
+
+.mini-stat-sub {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-soft);
+}
+
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.book-card {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.book-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.book-card-title {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    word-break: break-word;
+}
+
+.book-card-desc {
+    color: var(--text-soft);
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.book-card-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.book-card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.book-card-field {
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    min-width: 0;
+}
+
+.book-card-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.book-card-value {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text);
+    word-break: break-word;
+}
+
+.book-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.empty-card {
+    padding: 30px 22px;
+    text-align: center;
+    color: var(--text-soft);
+}
+
+.empty-title {
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+@media (max-width: 1180px) {
+    .priority-card {
+        grid-template-columns: 1fr;
+    }
+
+    .books-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 780px) {
+    .dashboard-page {
+        width: min(100% - 20px, 1440px);
+        margin: 16px auto 28px;
+    }
+
+    .hero-card,
+    .priority-card {
+        padding: 18px 16px;
+    }
+
+    .section-header,
+    .section-body {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .topbar {
+        align-items: stretch;
+    }
+
+    .topbar-left,
+    .topbar-right,
+    .hero-side,
+    .priority-actions,
+    .book-card-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .ghost-btn,
+    .brand-pill,
+    .user-pill {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .book-card-grid {
+        grid-template-columns: 1fr;
+    }
+}

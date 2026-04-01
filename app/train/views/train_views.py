@@ -19,6 +19,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 
 from ..models import (
+    Book,
     Lesson,
     Question,
     QuestionMemory,
@@ -1101,35 +1102,56 @@ def get_dashboard_cycle_summary(user):
         question__lesson__book__owner=user
     ).select_related("question__lesson")
 
-    done_ids = set(getattr(user, "_request", None).session.get("today_done_ids", [])) if getattr(user, "_request", None) else set()
+    done_ids = (
+        set(getattr(user, "_request", None).session.get("today_done_ids", []))
+        if getattr(user, "_request", None)
+        else set()
+    )
 
-    level_counter = {
-        0: 0, 1: 0, 2: 0, 3: 0, 4: 0,
-        5: 0, 6: 0, 7: 0, 8: 0,
-    }
-
+    level_counter = {i: 0 for i in range(12)}
     today_due_count = 0
     overdue_count = 0
     next_review_candidates = []
 
     for m in memories:
-        level = int(getattr(m, "memory_level", 0) or 0)
-        if level not in level_counter:
-            level_counter[level] = 0
+        level = int(
+            getattr(m, "cycle_step", None)
+            if getattr(m, "cycle_step", None) is not None
+            else (getattr(m, "memory_level", 0) or 0)
+        )
+        if level < 0:
+            level = 0
+        if level > 11:
+            level = 11
+
         level_counter[level] += 1
 
         next_review_at = getattr(m, "next_review_at", None)
-
         if next_review_at:
             next_review_candidates.append(next_review_at)
 
             local_next = timezone.localtime(next_review_at)
             local_now = timezone.localtime(now)
 
-            if local_next.date() == local_now.date() and next_review_at <= now:
+            rule = _get_strict_step_rule(level)
+            grace = rule.get("grace")
+
+            is_overdue = (
+                level > 0
+                and grace is not None
+                and now > (next_review_at + grace)
+            )
+
+            is_due_today = (
+                local_next.date() == local_now.date()
+                and next_review_at <= now
+                and not is_overdue
+            )
+
+            if is_due_today:
                 today_due_count += 1
 
-            if next_review_at < now:
+            if is_overdue:
                 overdue_count += 1
 
     total_items = sum(level_counter.values())
@@ -1144,7 +1166,7 @@ def get_dashboard_cycle_summary(user):
             main_stage = "新学阶段"
         elif avg_level < 4:
             main_stage = "短期巩固"
-        elif avg_level < 7:
+        elif avg_level < 8:
             main_stage = "中期巩固"
         else:
             main_stage = "长期巩固"
@@ -1154,15 +1176,14 @@ def get_dashboard_cycle_summary(user):
     if future_candidates:
         next_review_text = _next_review_text(future_candidates[0])
 
-    # 这里 done_today_count 仍按 session 里的完成数显示
     done_today_count = len(done_ids)
 
     if overdue_count > 0:
-        danger_text = f"当前最危险的是已逾期内容，共 {overdue_count} 条，建议优先处理。"
+        danger_text = f"当前最危险的是超出允许窗口的内容，共 {overdue_count} 条，建议优先处理。"
     elif today_due_count > 0:
         danger_text = f"今天有 {today_due_count} 条内容到期，建议优先完成今天的循环。"
     else:
-        danger_text = "当前没有逾期内容，系统处于稳定推进状态。"
+        danger_text = "当前没有超窗内容，系统处于稳定推进状态。"
 
     stage_distribution = [
         {"label": "新学", "count": level_counter.get(0, 0)},
@@ -1174,6 +1195,9 @@ def get_dashboard_cycle_summary(user):
         {"label": "4天", "count": level_counter.get(6, 0)},
         {"label": "7天", "count": level_counter.get(7, 0)},
         {"label": "15天", "count": level_counter.get(8, 0)},
+        {"label": "1个月", "count": level_counter.get(9, 0)},
+        {"label": "3个月", "count": level_counter.get(10, 0)},
+        {"label": "6个月", "count": level_counter.get(11, 0)},
     ]
 
     return {
@@ -1218,7 +1242,17 @@ def get_book_lessons_cycle_summary(user, book):
             continue
 
         row = lesson_map[lesson_id]
-        level = int(getattr(m, "memory_level", 0) or 0)
+
+        level = int(
+            getattr(m, "cycle_step", None)
+            if getattr(m, "cycle_step", None) is not None
+            else (getattr(m, "memory_level", 0) or 0)
+        )
+        if level < 0:
+            level = 0
+        if level > 11:
+            level = 11
+
         next_review_at = getattr(m, "next_review_at", None)
 
         if level == 0:
@@ -1232,10 +1266,25 @@ def get_book_lessons_cycle_summary(user, book):
             local_next = timezone.localtime(next_review_at)
             local_now = timezone.localtime(now)
 
-            if local_next.date() == local_now.date() and next_review_at <= now:
+            rule = _get_strict_step_rule(level)
+            grace = rule.get("grace")
+
+            is_overdue = (
+                level > 0
+                and grace is not None
+                and now > (next_review_at + grace)
+            )
+
+            is_due_today = (
+                local_next.date() == local_now.date()
+                and next_review_at <= now
+                and not is_overdue
+            )
+
+            if is_due_today:
                 row["today_due_count"] += 1
 
-            if next_review_at < now:
+            if is_overdue:
                 row["overdue_count"] += 1
 
             if row["next_review_at"] is None or next_review_at < row["next_review_at"]:
@@ -1603,9 +1652,31 @@ def get_today_plan(request):
             question=item.question
         )
 
+        level = int(
+            getattr(memory, "cycle_step", None)
+            if getattr(memory, "cycle_step", None) is not None
+            else (getattr(memory, "memory_level", 0) or 0)
+        )
+        if level < 0:
+            level = 0
+        if level > 11:
+            level = 11
+
+        next_review_at = getattr(memory, "next_review_at", None)
+        rule = _get_strict_step_rule(level)
+        grace = rule.get("grace")
+
+        is_overdue = (
+            level > 0
+            and next_review_at is not None
+            and grace is not None
+            and now > (next_review_at + grace)
+        )
+
         due = (
-            memory.next_review_at is None
-            or memory.next_review_at <= now
+            next_review_at is None
+            or next_review_at <= now
+            or is_overdue
         )
 
         is_new = (memory.total_correct or 0) == 0 and (memory.total_wrong or 0) == 0
@@ -1615,7 +1686,8 @@ def get_today_plan(request):
             "question": item.question,
             "lesson": item.question.lesson,
             "due": due,
-            "level": memory.memory_level or 0,
+            "is_overdue": is_overdue,
+            "level": level,
             "wrong_boost": _get_wrong_boost(memory),
             "last_wrong_at": getattr(memory, "last_wrong_at", None),
             "is_new": is_new,
@@ -1627,10 +1699,11 @@ def get_today_plan(request):
             last_wrong_ts = -x["last_wrong_at"].timestamp()
 
         return (
+            not x["is_overdue"],     # 超窗最优先
             not x["due"],            # 到期优先
             -x["wrong_boost"],       # 错题强化优先
             not x["is_new"],         # 新题优先
-            x["level"],              # level 低优先
+            x["level"],              # step 低优先
             last_wrong_ts,           # 最近错的更优先
         )
 
@@ -1661,12 +1734,13 @@ def get_today_plan(request):
 # =========================
 def build_smart_queue(request, lesson, limit=QUEUE_BATCH_SIZE):
     """
-    优化版智能队列：
-    1. due 题优先
-    2. wrong_boost 高的题优先
-    3. 新题按比例进入
-    4. level 低的题优先
-    5. 避免重复塞满同一题
+    严格艾宾浩斯版智能队列：
+    1. 超窗题优先
+    2. 到期题优先
+    3. wrong_boost 高的题优先
+    4. 新题适度进入
+    5. cycle_step 低的优先
+    6. 已完成本轮严格循环的题跳过
     """
 
     user = request.user
@@ -1683,35 +1757,69 @@ def build_smart_queue(request, lesson, limit=QUEUE_BATCH_SIZE):
         if not memory:
             continue
 
-        level = memory.memory_level or 0
-        wrong_boost = _get_wrong_boost(memory)
-        next_review_at = memory.next_review_at
-        total_correct = memory.total_correct or 0
-        total_wrong = memory.total_wrong or 0
+        level = int(
+            getattr(memory, "cycle_step", None)
+            if getattr(memory, "cycle_step", None) is not None
+            else (getattr(memory, "memory_level", 0) or 0)
+        )
+        if level < 0:
+            level = 0
+        if level > 11:
+            level = 11
 
-        is_due = (next_review_at is None) or (next_review_at <= now)
+        wrong_boost = _get_wrong_boost(memory)
+        next_review_at = getattr(memory, "next_review_at", None)
+        total_correct = getattr(memory, "total_correct", 0) or 0
+        total_wrong = getattr(memory, "total_wrong", 0) or 0
+        mastered_at = getattr(memory, "mastered_at", None)
+
+        rule = _get_strict_step_rule(level)
+        grace = rule.get("grace")
+
+        is_overdue = (
+            level > 0
+            and next_review_at is not None
+            and grace is not None
+            and now > (next_review_at + grace)
+        )
+
+        is_due = (
+            next_review_at is None
+            or next_review_at <= now
+            or is_overdue
+        )
+
         is_new = (total_correct == 0 and total_wrong == 0)
+        is_mastered = bool(mastered_at) or (level >= 11 and next_review_at is None)
+
+        if is_mastered:
+            continue
 
         score = 0
 
-        # 1) 到期题最高优先
-        if is_due:
+        # 1) 超窗题最高优先
+        if is_overdue:
+            score += 2000
+        # 2) 正常到期题其次
+        elif is_due:
             score += 1000
 
-        # 2) 错题强化
+        # 3) 错题强化
         score += wrong_boost * 100
 
-        # 3) 新题适度优先
+        # 4) 新题适度优先
         if is_new:
             score += 80
 
-        # 4) level 越低越优先
-        score += max(0, 20 - level * 2)
+        # 5) step 越低越优先
+        score += max(0, 30 - level * 2)
 
-        # 5) 最近错过，稍微再提一点
+        # 6) 最近错过的再轻微提权
         last_wrong_at = getattr(memory, "last_wrong_at", None)
+        last_wrong_ts = 0
         if last_wrong_at:
             minutes_since_wrong = max((now - last_wrong_at).total_seconds() / 60, 0)
+            last_wrong_ts = -last_wrong_at.timestamp()
             if minutes_since_wrong <= 30:
                 score += 40
             elif minutes_since_wrong <= 180:
@@ -1720,10 +1828,12 @@ def build_smart_queue(request, lesson, limit=QUEUE_BATCH_SIZE):
         pool.append({
             "id": item.id,
             "score": score,
+            "is_overdue": is_overdue,
             "is_due": is_due,
             "is_new": is_new,
             "wrong_boost": wrong_boost,
             "level": level,
+            "last_wrong_ts": last_wrong_ts,
         })
 
     if not pool:
@@ -1732,26 +1842,32 @@ def build_smart_queue(request, lesson, limit=QUEUE_BATCH_SIZE):
     # =========================
     # 分桶
     # =========================
-    due_items = [x for x in pool if x["is_due"]]
-    wrong_items = [x for x in pool if x["wrong_boost"] > 0]
-    new_items = [x for x in pool if x["is_new"]]
+    overdue_items = [x for x in pool if x["is_overdue"]]
+    due_items = [x for x in pool if x["is_due"] and not x["is_overdue"]]
+    wrong_items = [x for x in pool if x["wrong_boost"] > 0 and not x["is_overdue"]]
+    new_items = [x for x in pool if x["is_new"] and not x["is_due"]]
     normal_items = [x for x in pool if not x["is_due"] and not x["is_new"]]
 
     # 各桶内部排序
-    due_items.sort(key=lambda x: (-x["score"], x["level"]))
-    wrong_items.sort(key=lambda x: (-x["score"], x["level"]))
-    new_items.sort(key=lambda x: (-x["score"], x["level"]))
-    normal_items.sort(key=lambda x: (-x["score"], x["level"]))
+    sort_key = lambda x: (-x["score"], x["level"], x["last_wrong_ts"], x["id"])
+
+    overdue_items.sort(key=sort_key)
+    due_items.sort(key=sort_key)
+    wrong_items.sort(key=sort_key)
+    new_items.sort(key=sort_key)
+    normal_items.sort(key=sort_key)
 
     # =========================
     # 配比
     # =========================
-    due_quota = max(1, int(limit * 0.5))
+    overdue_quota = max(1, int(limit * 0.3))
+    due_quota = max(1, int(limit * 0.3))
     wrong_quota = max(1, int(limit * 0.2))
-    new_quota = max(1, int(limit * 0.2))
+    new_quota = max(1, int(limit * 0.1))
 
     selected = []
 
+    selected += overdue_items[:overdue_quota]
     selected += due_items[:due_quota]
     selected += wrong_items[:wrong_quota]
     selected += new_items[:new_quota]
@@ -1768,8 +1884,7 @@ def build_smart_queue(request, lesson, limit=QUEUE_BATCH_SIZE):
     selected = deduped
 
     # 不够就从 normal_items 补
-    remain = limit - len(selected)
-    if remain > 0:
+    if len(selected) < limit:
         for x in normal_items:
             if x["id"] in seen:
                 continue
@@ -1780,7 +1895,7 @@ def build_smart_queue(request, lesson, limit=QUEUE_BATCH_SIZE):
 
     # 还不够，再从所有池子高分补齐
     if len(selected) < limit:
-        fallback = sorted(pool, key=lambda x: (-x["score"], x["level"]))
+        fallback = sorted(pool, key=sort_key)
         for x in fallback:
             if x["id"] in seen:
                 continue
@@ -1789,9 +1904,7 @@ def build_smart_queue(request, lesson, limit=QUEUE_BATCH_SIZE):
             if len(selected) >= limit:
                 break
 
-    # =========================
     # 轻度打散，避免完全固定顺序
-    # =========================
     top = selected[:5]
     rest = selected[5:]
 
@@ -1805,8 +1918,109 @@ def build_smart_queue(request, lesson, limit=QUEUE_BATCH_SIZE):
     return [x["id"] for x in final_items[:limit]]
 
 # =========================
+# 训练范围工具
+# =========================
+def _get_train_scope_label(scope):
+    return "整本训练" if scope == "book" else "本课训练"
+
+
+def _get_train_scope_target_text(scope):
+    return "这本书" if scope == "book" else "这课"
+
+
+def _get_scope_training_qs(scope, obj):
+    qs = TrainingItem.objects.select_related("question__lesson")
+
+    if scope == "book":
+        return qs.filter(question__lesson__book=obj)
+
+    return qs.filter(question__lesson=obj)
+
+
+def _training_in_scope(training, scope, obj):
+    if scope == "book":
+        return training.question.lesson.book_id == obj.id
+
+    return training.question.lesson_id == obj.id
+
+
+def _wrong_word_item_in_scope(item, scope, obj):
+    lesson_id = item.get("lesson_id")
+
+    if scope == "book":
+        return Lesson.objects.filter(
+            id=lesson_id,
+            book_id=obj.id
+        ).exists()
+
+    return lesson_id == obj.id
+
+
+def _get_scope_plan_items(plan_items, scope, obj):
+    return [
+        item for item in plan_items
+        if _training_in_scope(item["training"], scope, obj)
+    ]
+
+
+def _build_scope_plan_stats(request, scope_items):
+    done_ids = set(request.session.get("today_done_ids", []))
+    total = len(scope_items)
+
+    done = sum(
+        1 for item in scope_items
+        if item["training"].id in done_ids
+    )
+
+    progress = int(done * 100 / total) if total > 0 else 0
+
+    return {
+        "total": total,
+        "done": done,
+        "progress": progress,
+    }
+
+
+def _render_train_page(request, scope, obj):
+    plan = get_today_plan(request)
+    scope_plan_items = _get_scope_plan_items(plan["items"], scope, obj)
+    scope_plan_stats = _build_scope_plan_stats(request, scope_plan_items)
+    all_count = _get_scope_training_qs(scope, obj).count()
+
+    context = {
+        "train_scope": scope,
+        "train_scope_label": _get_train_scope_label(scope),
+        "train_title": obj.title,
+        "book": obj if scope == "book" else obj.book,
+        "lesson": obj if scope == "lesson" else None,
+        "plan_total": scope_plan_stats["total"] if scope_plan_items else all_count,
+        "plan_done": scope_plan_stats["done"] if scope_plan_items else 0,
+        "plan_progress": scope_plan_stats["progress"] if scope_plan_items else 0,
+    }
+
+    if scope == "lesson":
+        context.update({
+            "lesson_cycle_summary": get_lesson_cycle_summary(request.user, obj),
+            "lesson_round_progress": get_lesson_round_progress(request, obj),
+        })
+
+    return render(request, "train/train.html", context)
+
+
+# =========================
 # 页面：训练页
 # =========================
+@login_required
+def book_train(request, book_id):
+    book = get_object_or_404(
+        Book,
+        id=book_id,
+        owner=request.user
+    )
+
+    return _render_train_page(request, "book", book)
+
+
 @login_required
 def lesson_train(request, lesson_id):
     lesson = get_object_or_404(
@@ -1815,32 +2029,17 @@ def lesson_train(request, lesson_id):
         book__owner=request.user
     )
 
-    plan = get_today_plan(request)
-    lesson_cycle_summary = get_lesson_cycle_summary(request.user, lesson)
-    lesson_round_progress = get_lesson_round_progress(request, lesson)
-
-    return render(request, "train/train.html", {
-        "lesson": lesson,
-        "plan_total": plan["total"],
-        "plan_done": plan["done"],
-        "plan_progress": plan["progress"],
-        "lesson_cycle_summary": lesson_cycle_summary,
-        "lesson_round_progress": lesson_round_progress,
-    })
+    return _render_train_page(request, "lesson", lesson)
 
 
 # =========================
 # API：无刷新训练（完整版）
 # =========================
-def lesson_train_api(request, lesson_id):
+def _train_api_by_scope(request, scope, obj):
     print("🔥🔥🔥 API HIT")
 
-    lesson = get_object_or_404(
-        Lesson,
-        id=lesson_id,
-        book__owner=request.user
-    )
-
+    scope_label = _get_train_scope_label(scope)
+    target_text = _get_train_scope_target_text(scope)
 
     # =========================
     # GET：出题（走SRS调度）
@@ -1852,37 +2051,30 @@ def lesson_train_api(request, lesson_id):
         done_ids = request.session.get("today_done_ids", [])
 
         # =========================
-        # 1) 先拿当前课自己的全部训练项
+        # 1) 当前范围内的全部训练项
+        #    lesson -> 当前课
+        #    book   -> 当前书
         # =========================
         all_training_items = list(
-            TrainingItem.objects.select_related("question__lesson")
-            .filter(question__lesson=lesson)
-            .order_by("id")
+            _get_scope_training_qs(scope, obj).order_by("id")
         )
 
         if not all_training_items:
             return JsonResponse({
                 "empty": True,
                 "reason": "no_material",
-                "message": "这课还没有循环记忆素材，请先新增循环记忆素材。"
+                "message": f"{target_text}还没有循环记忆素材，请先新增循环记忆素材。"
             })
 
         # =========================
-        # 2) 再看“今天计划”里有没有这课
-        #    有就优先走今天计划
-        #    没有就直接进入本课训练
+        # 2) 今天计划中，先只取当前范围的计划项
         # =========================
         plan = get_today_plan(request)
-        
-        plan_items = plan["items"]
+        scope_plan_items = _get_scope_plan_items(plan["items"], scope, obj)
+        scope_plan_stats = _build_scope_plan_stats(request, scope_plan_items)
 
-        lesson_plan_items = [
-            i for i in plan_items
-            if i["training"].question.lesson_id == lesson.id
-        ]
-
-        if lesson_plan_items:
-            source_items = lesson_plan_items
+        if scope_plan_items:
+            source_items = scope_plan_items
         else:
             source_items = [
                 {"training": item}
@@ -1890,24 +2082,24 @@ def lesson_train_api(request, lesson_id):
             ]
 
         remaining = [
-            i for i in source_items
-            if i["training"].id not in done_ids
+            item for item in source_items
+            if item["training"].id not in done_ids
         ]
 
         # =========================
-        # 3) 只有“今天计划里确实有这课，并且都做完了”
+        # 3) 只有“今天计划里确实有当前范围，并且都做完了”
         #    才显示今日完成
         # =========================
-        if lesson_plan_items and not remaining:
+        if scope_plan_items and not remaining:
             return JsonResponse({
                 "empty": True,
                 "reason": "today_done",
-                "message": "今天这课的学习计划已经完成了。"
+                "message": f"今天{scope_label}的学习计划已经完成了。"
             })
 
         # =========================
-        # 4) 如果今天计划里没有这课，
-        #    就直接给这课的第一题 / 未做题，不显示今日完成
+        # 4) 如果今天计划里没有当前范围，
+        #    就直接进入当前范围训练
         # =========================
         if not remaining:
             remaining = [
@@ -1921,17 +2113,66 @@ def lesson_train_api(request, lesson_id):
                 {"training": all_training_items[0]}
             ]
 
-        training = remaining[0]["training"]
+        ranked_remaining = []
 
-        memory = get_item_memory(request.user, training)
+        for entry in remaining:
+            training_obj = entry["training"]
+            memory_obj = get_item_memory(request.user, training_obj)
+            cycle_obj = _build_cycle_status(memory_obj)
+
+            if cycle_obj.get("is_mastered"):
+                continue
+
+            wrong_boost = _get_wrong_boost(memory_obj) if memory_obj else 0
+            total_correct = getattr(memory_obj, "total_correct", 0) or 0
+            total_wrong = getattr(memory_obj, "total_wrong", 0) or 0
+            is_new = (total_correct == 0 and total_wrong == 0)
+
+            last_wrong_at = getattr(memory_obj, "last_wrong_at", None)
+            last_wrong_ts = 0
+            if last_wrong_at:
+                last_wrong_ts = -last_wrong_at.timestamp()
+
+            ranked_remaining.append({
+                "training": training_obj,
+                "memory": memory_obj,
+                "cycle": cycle_obj,
+                "wrong_boost": wrong_boost,
+                "is_new": is_new,
+                "last_wrong_ts": last_wrong_ts,
+            })
+
+        ranked_remaining.sort(
+            key=lambda x: (
+                not x["cycle"].get("is_overdue", False),
+                not x["cycle"].get("is_due", False),
+                -x["wrong_boost"],
+                not x["is_new"],
+                x["cycle"].get("cycle_step", 0),
+                x["last_wrong_ts"],
+                x["training"].id,
+            )
+        )
+
+        if not ranked_remaining:
+            return JsonResponse({
+                "empty": True,
+                "reason": "all_mastered",
+                "message": f"{target_text}当前已全部完成本轮严格循环。"
+            })
+
+        training = ranked_remaining[0]["training"]
+        memory = ranked_remaining[0]["memory"]
         payload = build_training_payload(training, memory)
 
         payload.update({
             "empty": False,
-            "plan_total": plan["total"] if lesson_plan_items else len(all_training_items),
-            "plan_done": plan["done"] if lesson_plan_items else 0,
-            "plan_progress": plan["progress"] if lesson_plan_items else 0,
-            "is_today_plan": bool(lesson_plan_items),
+            "plan_total": scope_plan_stats["total"] if scope_plan_items else len(all_training_items),
+            "plan_done": scope_plan_stats["done"] if scope_plan_items else 0,
+            "plan_progress": scope_plan_stats["progress"] if scope_plan_items else 0,
+            "is_today_plan": bool(scope_plan_items),
+            "train_scope": scope,
+            "train_scope_label": scope_label,
         })
 
         return JsonResponse(payload)
@@ -1954,7 +2195,10 @@ def lesson_train_api(request, lesson_id):
 
             target = None
             for item in wrong_word_queue:
-                if item.get("replay_id") == training_id and item.get("lesson_id") == lesson.id:
+                if (
+                    item.get("replay_id") == training_id
+                    and _wrong_word_item_in_scope(item, scope, obj)
+                ):
                     target = item
                     break
 
@@ -2001,15 +2245,16 @@ def lesson_train_api(request, lesson_id):
                 "cloze_text": target.get("cloze_text", ""),
                 "choices": [],
                 "audio": "",
+                "train_scope": scope,
+                "train_scope_label": scope_label,
             })
 
         # -------------------------
         # 正常 TrainingItem
         # -------------------------
         training = get_object_or_404(
-            TrainingItem.objects.select_related("question__lesson"),
-            id=training_id,
-            question__lesson=lesson
+            _get_scope_training_qs(scope, obj),
+            id=training_id
         )
 
         judge = judge_training_answer(training, raw_answer)
@@ -2044,7 +2289,7 @@ def lesson_train_api(request, lesson_id):
             correct_answers = judge.get("correct_answers", [])
             _session_push_wrong_word_items(
                 request=request,
-                lesson_id=lesson.id,
+                lesson_id=training.question.lesson_id,
                 training=training,
                 user_answers=user_answers,
                 correct_answers=correct_answers,
@@ -2061,13 +2306,19 @@ def lesson_train_api(request, lesson_id):
             current_id = queue.pop(0)
 
             if not is_correct:
-                # 错题插到第2位，更合理
                 queue.insert(1 if len(queue) > 0 else 0, current_id)
 
             request.session["training_queue"] = queue
 
         plan = get_today_plan(request)
-        lesson_round_progress = get_lesson_round_progress(request, lesson)
+        scope_plan_items = _get_scope_plan_items(plan["items"], scope, obj)
+        scope_plan_stats = _build_scope_plan_stats(request, scope_plan_items)
+        all_count = _get_scope_training_qs(scope, obj).count()
+
+        lesson_round_progress = None
+        if scope == "lesson":
+            lesson_round_progress = get_lesson_round_progress(request, obj)
+
         return JsonResponse({
             "ok": True,
             "is_correct": is_correct,
@@ -2080,12 +2331,10 @@ def lesson_train_api(request, lesson_id):
             "xp": xp,
             "memory_level": memory.memory_level if memory else 0,
             "correct_answers": judge["correct_answers"],
-            "plan_total": plan["total"],
-            "plan_done": plan["done"],
-            "plan_progress": plan["progress"],
-
+            "plan_total": scope_plan_stats["total"] if scope_plan_items else all_count,
+            "plan_done": scope_plan_stats["done"] if scope_plan_items else 0,
+            "plan_progress": scope_plan_stats["progress"] if scope_plan_items else 0,
             "lesson_round_progress": lesson_round_progress,
-
             "cycle_before": cycle_before,
             "cycle_after": cycle_after,
             "cycle_feedback": (
@@ -2093,11 +2342,32 @@ def lesson_train_api(request, lesson_id):
                 if is_correct else
                 f"回答错误，已回退到：{cycle_after['stage_label']}；{cycle_after['status_text']}"
             ),
-
+            "train_scope": scope,
+            "train_scope_label": scope_label,
             **build_training_payload(training, memory),
         })
 
     return JsonResponse({"ok": False, "error": "method not allowed"}, status=405)
+
+
+def book_train_api(request, book_id):
+    book = get_object_or_404(
+        Book,
+        id=book_id,
+        owner=request.user
+    )
+
+    return _train_api_by_scope(request, "book", book)
+
+
+def lesson_train_api(request, lesson_id):
+    lesson = get_object_or_404(
+        Lesson,
+        id=lesson_id,
+        book__owner=request.user
+    )
+
+    return _train_api_by_scope(request, "lesson", lesson)
 
 @login_required
 def lesson_question_list(request, lesson_id):

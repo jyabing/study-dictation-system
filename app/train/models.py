@@ -141,6 +141,29 @@ class QuestionMemory(models.Model):
     last_wrong_at = models.DateTimeField(null=True, blank=True)
     # =========================
 
+    # =========================
+    # P0：严格艾宾浩斯循环字段（兼容扩展）
+    # 先加字段，不删除旧逻辑字段
+    # 下一步由 train_views.py 同步写入
+    # =========================
+    cycle_step = models.PositiveSmallIntegerField(default=0)
+    cycle_started_at = models.DateTimeField(null=True, blank=True)
+    cycle_version = models.PositiveIntegerField(default=1)
+
+    mastered_at = models.DateTimeField(null=True, blank=True)
+
+    last_result = models.CharField(
+        max_length=20,
+        blank=True,
+        default=""
+    )
+
+    last_reset_reason = models.CharField(
+        max_length=30,
+        blank=True,
+        default=""
+    )
+
     next_review_at = models.DateTimeField(null=True, blank=True)
 
     correct_streak = models.IntegerField(default=0)

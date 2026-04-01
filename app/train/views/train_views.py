@@ -118,11 +118,120 @@ def check_answer(user_answer, correct_answer):
     return False
 
 
-def get_next_review(level: int):
-    if level in SRS_STEPS:
-        return timezone.now() + SRS_STEPS[level]
 
-    return timezone.now() + timedelta(days=30)
+def _get_strict_step_rule(step: int):
+    """
+    严格艾宾浩斯锚点：
+    0 = 新学（未进入正式循环）
+    1 = 5分钟
+    2 = 30分钟
+    3 = 12小时
+    4 = 1天
+    5 = 2天
+    6 = 4天
+    7 = 7天
+    8 = 15天
+    9 = 1个月
+    10 = 3个月
+    11 = 6个月
+    """
+    rules = {
+        0: {
+            "label": "新学",
+            "interval": None,
+            "grace": None,
+            "kind": "init",
+        },
+        1: {
+            "label": "5分钟",
+            "interval": timedelta(minutes=5),
+            "grace": timedelta(minutes=7),
+            "kind": "short",
+        },
+        2: {
+            "label": "30分钟",
+            "interval": timedelta(minutes=30),
+            "grace": timedelta(minutes=7),
+            "kind": "short",
+        },
+        3: {
+            "label": "12小时",
+            "interval": timedelta(hours=12),
+            "grace": timedelta(minutes=7),
+            "kind": "short",
+        },
+        4: {
+            "label": "1天",
+            "interval": timedelta(days=1),
+            "grace": timedelta(days=1),
+            "kind": "long",
+        },
+        5: {
+            "label": "2天",
+            "interval": timedelta(days=2),
+            "grace": timedelta(days=1),
+            "kind": "long",
+        },
+        6: {
+            "label": "4天",
+            "interval": timedelta(days=4),
+            "grace": timedelta(days=1),
+            "kind": "long",
+        },
+        7: {
+            "label": "7天",
+            "interval": timedelta(days=7),
+            "grace": timedelta(days=1),
+            "kind": "long",
+        },
+        8: {
+            "label": "15天",
+            "interval": timedelta(days=15),
+            "grace": timedelta(days=1),
+            "kind": "long",
+        },
+        9: {
+            "label": "1个月",
+            "interval": timedelta(days=30),
+            "grace": timedelta(days=1),
+            "kind": "long",
+        },
+        10: {
+            "label": "3个月",
+            "interval": timedelta(days=90),
+            "grace": timedelta(days=1),
+            "kind": "long",
+        },
+        11: {
+            "label": "6个月",
+            "interval": timedelta(days=180),
+            "grace": timedelta(days=1),
+            "kind": "long",
+        },
+    }
+
+    try:
+        step = int(step or 0)
+    except Exception:
+        step = 0
+
+    return rules.get(step, rules[0])
+
+
+def get_next_review(level: int, base_time=None):
+    """
+    兼容旧调用：
+    现在仍然允许传 level，
+    但这里的含义已经切换为“严格循环 step”。
+    """
+    now = base_time or timezone.now()
+    rule = _get_strict_step_rule(level)
+    interval = rule.get("interval")
+
+    if interval is None:
+        return now
+
+    return now + interval
 
 
 def _get_wrong_boost(memory):
@@ -723,26 +832,102 @@ def update_memory_after_answer(memory, is_correct):
 
     now = timezone.now()
 
+    current_step = int(
+        getattr(memory, "cycle_step", None)
+        if getattr(memory, "cycle_step", None) is not None
+        else (getattr(memory, "memory_level", 0) or 0)
+    )
+
+    if current_step < 0:
+        current_step = 0
+
+    current_rule = _get_strict_step_rule(current_step)
+    next_review_at = getattr(memory, "next_review_at", None)
+    grace = current_rule.get("grace")
+
+    # =========================
+    # 1) 先判定是否已经超出当前锚点容忍窗口
+    #    一旦超窗，本轮直接作废，不允许“补做后继续往下”
+    # =========================
+    is_overdue_reset = (
+        current_step > 0
+        and next_review_at is not None
+        and grace is not None
+        and now > (next_review_at + grace)
+    )
+
+    if is_overdue_reset:
+        memory.cycle_step = 0
+        memory.memory_level = 0
+        memory.correct_streak = 0
+        memory.next_review_at = now
+        memory.last_review_at = now
+        memory.cycle_started_at = None
+        memory.mastered_at = None
+        memory.cycle_version = (getattr(memory, "cycle_version", 1) or 1) + 1
+        memory.last_result = "overdue_reset"
+        memory.last_reset_reason = (
+            "short_overdue"
+            if current_rule.get("kind") == "short"
+            else "long_overdue"
+        )
+        memory.save()
+        return
+
+    # =========================
+    # 2) 正确：严格按 step 推进
+    # =========================
     if is_correct:
-        memory.memory_level = min((memory.memory_level or 0) + 1, 8)
         memory.correct_streak = (memory.correct_streak or 0) + 1
         memory.total_correct = (memory.total_correct or 0) + 1
         _set_wrong_boost(memory, 0)
-        memory.next_review_at = get_next_review(memory.memory_level)
+        memory.last_result = "correct"
+        memory.last_reset_reason = ""
+
+        # 第一次答对：正式开始一轮循环
+        if current_step == 0:
+            memory.cycle_started_at = now
+            next_step = 1
+        else:
+            next_step = current_step + 1
+
+        # 已完成最后一锚点（6个月）
+        if next_step > 11:
+            next_step = 11
+            memory.cycle_step = 11
+            memory.memory_level = 11
+            memory.mastered_at = now
+            memory.next_review_at = None
+            memory.last_result = "mastered"
+        else:
+            memory.cycle_step = next_step
+            memory.memory_level = next_step
+            memory.next_review_at = get_next_review(next_step, base_time=now)
+
+    # =========================
+    # 3) 错误：当前循环直接重置
+    # =========================
     else:
-        memory.memory_level = max((memory.memory_level or 0) - 1, 0)
+        memory.cycle_step = 0
+        memory.memory_level = 0
         memory.correct_streak = 0
         memory.total_wrong = (memory.total_wrong or 0) + 1
         _set_wrong_boost(memory, min(_get_wrong_boost(memory) + 3, 10))
         _set_last_wrong_at(memory, now)
-        memory.next_review_at = now + timedelta(minutes=5)
+        memory.next_review_at = now
+        memory.cycle_started_at = None
+        memory.mastered_at = None
+        memory.cycle_version = (getattr(memory, "cycle_version", 1) or 1) + 1
+        memory.last_result = "wrong_reset"
+        memory.last_reset_reason = "wrong_answer"
 
     memory.last_review_at = now
     memory.save()
 
 def _memory_stage_label(level):
     """
-    按你当前代码的 memory_level 上限 8 来显示
+    严格艾宾浩斯循环阶段显示：
+    0 ~ 11
     """
     mapping = {
         0: "新学",
@@ -754,6 +939,9 @@ def _memory_stage_label(level):
         6: "第6轮巩固（4天）",
         7: "第7轮巩固（7天）",
         8: "第8轮巩固（15天）",
+        9: "第9轮巩固（1个月）",
+        10: "第10轮巩固（3个月）",
+        11: "第11轮巩固（6个月）",
     }
     try:
         level = int(level or 0)
@@ -798,37 +986,78 @@ def _build_cycle_status(memory):
     if not memory:
         return {
             "level": 0,
+            "cycle_step": 0,
+            "step_label": _memory_stage_label(0),
             "stage_label": _memory_stage_label(0),
             "stage_group": _memory_stage_group(0),
             "next_review_text": "待安排",
             "is_due": True,
             "is_overdue": False,
+            "is_mastered": False,
+            "is_reset": False,
+            "last_result": "",
+            "last_reset_reason": "",
             "status_text": "新内容，等待开始第一轮巩固",
         }
 
-    level = int(getattr(memory, "memory_level", 0) or 0)
+    level = int(
+        getattr(memory, "cycle_step", None)
+        if getattr(memory, "cycle_step", None) is not None
+        else (getattr(memory, "memory_level", 0) or 0)
+    )
+
     next_review_at = getattr(memory, "next_review_at", None)
+    mastered_at = getattr(memory, "mastered_at", None)
+    last_result = getattr(memory, "last_result", "") or ""
+    last_reset_reason = getattr(memory, "last_reset_reason", "") or ""
+
     now = timezone.now()
+    rule = _get_strict_step_rule(level)
+    grace = rule.get("grace")
 
     is_due = (next_review_at is None) or (next_review_at <= now)
-    is_overdue = (next_review_at is not None) and (next_review_at < now)
+    is_overdue = (
+        level > 0
+        and next_review_at is not None
+        and grace is not None
+        and now > (next_review_at + grace)
+    )
+    is_mastered = bool(mastered_at) or (level >= 11 and next_review_at is None)
+    is_reset = last_result in {"wrong_reset", "overdue_reset"}
 
-    if next_review_at is None:
-        status_text = "新内容，等待进入下一轮"
+    if is_mastered:
+        status_text = "本轮严格循环已完成（6个月）"
+    elif last_result == "wrong_reset":
+        status_text = "上一题答错，当前循环已重置，需从头开始"
+    elif last_result == "overdue_reset":
+        if last_reset_reason == "short_overdue":
+            status_text = "短期锚点超出允许时间窗，当前循环已重置"
+        elif last_reset_reason == "long_overdue":
+            status_text = "长期锚点超出允许时间窗，当前循环已重置"
+        else:
+            status_text = "已超出允许时间窗，当前循环已重置"
+    elif next_review_at is None and level == 0:
+        status_text = "新内容，等待开始第一轮巩固"
     elif is_overdue:
-        status_text = f"已逾期，原定复习时间：{_next_review_text(next_review_at)}"
+        status_text = f"已超出允许窗口，原定复习时间：{_next_review_text(next_review_at)}"
     elif is_due:
-        status_text = f"今日到期，复习时间：{_next_review_text(next_review_at)}"
+        status_text = f"当前锚点已到期：{_memory_stage_label(level)}"
     else:
         status_text = f"下一次复习：{_next_review_text(next_review_at)}"
 
     return {
         "level": level,
+        "cycle_step": level,
+        "step_label": _memory_stage_label(level),
         "stage_label": _memory_stage_label(level),
         "stage_group": _memory_stage_group(level),
         "next_review_text": _next_review_text(next_review_at),
         "is_due": is_due,
         "is_overdue": is_overdue,
+        "is_mastered": is_mastered,
+        "is_reset": is_reset,
+        "last_result": last_result,
+        "last_reset_reason": last_reset_reason,
         "status_text": status_text,
     }
 
@@ -1057,7 +1286,16 @@ def get_lesson_cycle_summary(user, lesson):
     next_review_at = None
 
     for m in memories:
-        level = int(getattr(m, "memory_level", 0) or 0)
+        level = int(
+            getattr(m, "cycle_step", None)
+            if getattr(m, "cycle_step", None) is not None
+            else (getattr(m, "memory_level", 0) or 0)
+        )
+        if level < 0:
+            level = 0
+        if level > 11:
+            level = 11
+
         nr = getattr(m, "next_review_at", None)
 
         if level == 0:
@@ -1071,10 +1309,25 @@ def get_lesson_cycle_summary(user, lesson):
             local_next = timezone.localtime(nr)
             local_now = timezone.localtime(now)
 
-            if local_next.date() == local_now.date() and nr <= now:
+            rule = _get_strict_step_rule(level)
+            grace = rule.get("grace")
+
+            is_overdue = (
+                level > 0
+                and grace is not None
+                and now > (nr + grace)
+            )
+
+            is_due_today = (
+                local_next.date() == local_now.date()
+                and nr <= now
+                and not is_overdue
+            )
+
+            if is_due_today:
                 today_due_count += 1
 
-            if nr < now:
+            if is_overdue:
                 overdue_count += 1
 
             if next_review_at is None or nr < next_review_at:
@@ -1135,8 +1388,32 @@ def get_lesson_round_progress(request, lesson):
             question=item.question
         )
 
+        level = int(
+            getattr(memory, "cycle_step", None)
+            if getattr(memory, "cycle_step", None) is not None
+            else (getattr(memory, "memory_level", 0) or 0)
+        )
+        if level < 0:
+            level = 0
+        if level > 11:
+            level = 11
+
         next_review_at = getattr(memory, "next_review_at", None)
-        is_due = (next_review_at is None) or (next_review_at <= now)
+        rule = _get_strict_step_rule(level)
+        grace = rule.get("grace")
+
+        is_overdue = (
+            level > 0
+            and next_review_at is not None
+            and grace is not None
+            and now > (next_review_at + grace)
+        )
+
+        is_due = (
+            next_review_at is None
+            or next_review_at <= now
+            or is_overdue
+        )
 
         if is_due:
             due_ids.append(item.id)
@@ -1177,12 +1454,25 @@ def get_dashboard_books_cycle_summary(user, books):
     }
 
     for m in memories:
-        book_id = getattr(m.question.lesson, "book_id", None)
+        question = getattr(m, "question", None)
+        lesson = getattr(question, "lesson", None) if question else None
+        book_id = getattr(lesson, "book_id", None)
+
         if book_id not in book_map:
             continue
 
         row = book_map[book_id]
-        level = int(getattr(m, "memory_level", 0) or 0)
+
+        level = int(
+            getattr(m, "cycle_step", None)
+            if getattr(m, "cycle_step", None) is not None
+            else (getattr(m, "memory_level", 0) or 0)
+        )
+        if level < 0:
+            level = 0
+        if level > 11:
+            level = 11
+
         next_review_at = getattr(m, "next_review_at", None)
 
         if level == 0:
@@ -1196,10 +1486,25 @@ def get_dashboard_books_cycle_summary(user, books):
             local_next = timezone.localtime(next_review_at)
             local_now = timezone.localtime(now)
 
-            if local_next.date() == local_now.date() and next_review_at <= now:
+            rule = _get_strict_step_rule(level)
+            grace = rule.get("grace")
+
+            is_overdue = (
+                level > 0
+                and grace is not None
+                and now > (next_review_at + grace)
+            )
+
+            is_due_today = (
+                local_next.date() == local_now.date()
+                and next_review_at <= now
+                and not is_overdue
+            )
+
+            if is_due_today:
                 row["today_due_count"] += 1
 
-            if next_review_at < now:
+            if is_overdue:
                 row["overdue_count"] += 1
 
             if row["next_review_at"] is None or next_review_at < row["next_review_at"]:
@@ -1238,9 +1543,11 @@ def get_dashboard_books_cycle_summary(user, books):
             "main_stage": main_stage,
             "next_review_text": _next_review_text(row["next_review_at"]),
             "risk_level": risk_level,
+            "total_count": total,
         })
 
     return result
+
 
 def add_xp(request, is_correct):
     xp = request.session.get("xp", 0)
@@ -1686,7 +1993,7 @@ def lesson_train_api(request, lesson_id):
         )
 
         judge = judge_training_answer(training, raw_answer)
-        
+
         is_correct = judge["is_correct"]
 
         memory = get_item_memory(request.user, training)

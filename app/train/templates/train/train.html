@@ -1039,6 +1039,13 @@ const state = {
     autoNextTimer: null,
     inputMode: "text",
     recognizedText: "",
+
+    recognition: null,
+    recognitionLang: "en-US",
+    isRecognizing: false,
+    recognitionFinalText: "",
+    recognitionInterimText: "",
+    recognitionShouldAutoSubmit: false,
 };
 
 function getCookie(name) {
@@ -1168,6 +1175,9 @@ function isSpeechQuestionType(qType) {
 
 function resetSpeechUi() {
     state.recognizedText = "";
+    state.recognitionFinalText = "";
+    state.recognitionInterimText = "";
+    state.recognitionShouldAutoSubmit = false;
 
     if (speechResultPanel) {
         speechResultPanel.style.display = "none";
@@ -1254,12 +1264,271 @@ function enableSpeechTextFallback() {
     }
 }
 
+function getSpeechRecognitionCtor() {
+    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+function hasSpeechRecognitionSupport() {
+    return Boolean(getSpeechRecognitionCtor());
+}
+
+function showSpeechError(message) {
+    if (speechError) {
+        speechError.style.display = "block";
+        speechError.textContent = message;
+    }
+
+    if (speechRetryBtn) {
+        speechRetryBtn.style.display = "inline-flex";
+    }
+}
+
+function clearSpeechError() {
+    if (speechError) {
+        speechError.style.display = "none";
+        speechError.textContent = "";
+    }
+}
+
+function updateSpeechResult(finalText = "", interimText = "") {
+    if (!speechResultPanel || !speechResultBox) {
+        return;
+    }
+
+    const finalClean = String(finalText || "").trim();
+    const interimClean = String(interimText || "").trim();
+
+    if (!finalClean && !interimClean) {
+        speechResultPanel.style.display = "none";
+        speechResultBox.textContent = "暂无识别结果";
+        return;
+    }
+
+    speechResultPanel.style.display = "flex";
+
+    if (finalClean && interimClean) {
+        speechResultBox.innerHTML = `
+            <div>最终结果：${escapeHtml(finalClean)}</div>
+            <div style="margin-top:8px;color:var(--text-soft);">识别中：${escapeHtml(interimClean)}</div>
+        `;
+        return;
+    }
+
+    if (finalClean) {
+        speechResultBox.textContent = finalClean;
+        return;
+    }
+
+    speechResultBox.innerHTML = `<span style="color:var(--text-soft);">识别中：${escapeHtml(interimClean)}</span>`;
+}
+
+function submitRecognizedAnswer() {
+    const finalText = String(state.recognitionFinalText || "").trim();
+
+    if (!finalText) {
+        showSpeechError("没有得到可用的识别结果，请重新录音或改用文本输入。");
+        return;
+    }
+
+    state.recognizedText = finalText;
+    answerInput.value = finalText;
+
+    if (speechStatus) {
+        speechStatus.textContent = "识别完成，正在提交...";
+    }
+
+    if (typeof answerForm.requestSubmit === "function") {
+        answerForm.requestSubmit();
+    } else {
+        answerForm.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    }
+}
+
+function stopSpeechRecognition(cancelSubmit = false) {
+    if (!state.recognition) {
+        return;
+    }
+
+    if (cancelSubmit) {
+        state.recognitionShouldAutoSubmit = false;
+    }
+
+    try {
+        state.recognition.stop();
+    } catch (error) {
+        console.warn("stop recognition failed:", error);
+    }
+}
+
+function startSpeechRecognition() {
+    if (!state.current || !isSpeechQuestionType(getQuestionType(state.current))) {
+        return;
+    }
+
+    const RecognitionCtor = getSpeechRecognitionCtor();
+
+    if (!RecognitionCtor) {
+        enableSpeechTextFallback();
+        showSpeechError("当前浏览器不支持 SpeechRecognition / webkitSpeechRecognition，已切换到文本输入。");
+        return;
+    }
+
+    if (state.isRecognizing) {
+        return;
+    }
+
+    clearFeedback();
+    clearSpeechError();
+
+    state.recognitionFinalText = "";
+    state.recognitionInterimText = "";
+    state.recognitionShouldAutoSubmit = true;
+
+    updateSpeechResult("", "");
+
+    const recognition = new RecognitionCtor();
+    recognition.lang = state.recognitionLang || "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    state.recognition = recognition;
+
+    recognition.onstart = () => {
+        state.isRecognizing = true;
+
+        if (speechStatus) {
+            speechStatus.textContent = "录音中，请开始说话...";
+        }
+
+        if (speechStartBtn) {
+            speechStartBtn.style.display = "none";
+        }
+
+        if (speechStopBtn) {
+            speechStopBtn.style.display = "inline-flex";
+        }
+
+        if (speechRetryBtn) {
+            speechRetryBtn.style.display = "none";
+        }
+    };
+
+    recognition.onresult = (event) => {
+        let finalText = state.recognitionFinalText || "";
+        let interimText = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            const transcript = String(event.results[i][0]?.transcript || "").trim();
+
+            if (!transcript) {
+                continue;
+            }
+
+            if (event.results[i].isFinal) {
+                finalText = `${finalText} ${transcript}`.trim();
+            } else {
+                interimText = `${interimText} ${transcript}`.trim();
+            }
+        }
+
+        state.recognitionFinalText = finalText.trim();
+        state.recognitionInterimText = interimText.trim();
+
+        updateSpeechResult(state.recognitionFinalText, state.recognitionInterimText);
+
+        const merged = (state.recognitionFinalText || state.recognitionInterimText || "").trim();
+        if (merged) {
+            answerInput.value = merged;
+        }
+
+        if (speechStatus) {
+            speechStatus.textContent = state.recognitionFinalText
+                ? "已识别到可用文本，停止后将自动提交。"
+                : "识别中...";
+        }
+    };
+
+    recognition.onerror = (event) => {
+        state.recognitionShouldAutoSubmit = false;
+
+        const code = String(event.error || "");
+        const mapping = {
+            "no-speech": "没有检测到语音，请重新录音。",
+            "audio-capture": "没有检测到可用麦克风，请检查设备。",
+            "not-allowed": "麦克风权限被拒绝，请允许浏览器访问麦克风。",
+            "service-not-allowed": "当前环境不允许语音识别服务，请改用文本输入。",
+            "network": "语音识别网络异常，请稍后重试或改用文本输入。",
+            "aborted": "录音被中断，请重新录音。",
+        };
+
+        if (speechStatus) {
+            speechStatus.textContent = "识别失败";
+        }
+
+        showSpeechError(mapping[code] || `语音识别失败：${code || "未知错误"}`);
+    };
+
+    recognition.onend = () => {
+        const shouldAutoSubmit = state.recognitionShouldAutoSubmit;
+        const finalText = String(state.recognitionFinalText || "").trim();
+
+        state.isRecognizing = false;
+        state.recognition = null;
+
+        if (speechStartBtn) {
+            speechStartBtn.style.display = "inline-flex";
+        }
+
+        if (speechStopBtn) {
+            speechStopBtn.style.display = "none";
+        }
+
+        if (speechRetryBtn) {
+            speechRetryBtn.style.display = "inline-flex";
+        }
+
+        if (finalText) {
+            if (speechStatus) {
+                speechStatus.textContent = shouldAutoSubmit
+                    ? "识别完成，正在提交..."
+                    : "识别完成";
+            }
+
+            if (shouldAutoSubmit && state.inputMode === "speech" && !state.loading) {
+                submitRecognizedAnswer();
+            }
+
+            return;
+        }
+
+        if (speechStatus) {
+            speechStatus.textContent = "未识别到可用文本";
+        }
+
+        showSpeechError("没有得到可用的识别结果，请重新录音或改用文本输入。");
+    };
+
+    try {
+        recognition.start();
+    } catch (error) {
+        state.recognition = null;
+        state.isRecognizing = false;
+        state.recognitionShouldAutoSubmit = false;
+
+        showSpeechError("无法启动麦克风，请检查浏览器权限后重试。");
+    }
+}
+
 function applyQuestionInputMode(payload) {
     const qType = getQuestionType(payload);
     const questionText = getQuestionText(payload);
     const extra = getExtraText(payload);
     const audioUrl = getAudioUrl(payload);
 
+    state.recognitionLang = pickText(payload, ["asr_lang"], "en-US");
+
+    stopSpeechRecognition(true);
     renderChoices(payload.choices || []);
 
     if (qType === "listen_asr") {
@@ -1313,12 +1582,17 @@ function applyQuestionInputMode(payload) {
         questionAudio.load();
 
         showSpeechWorkspace(
-            "说：朗读题干",
-            "请朗读上方文字题干，然后开始录音。识别失败可改用文本输入。"
+            "听：复述题干",
+            "先播放音频，再开始录音。识别失败可改用文本输入。"
         );
 
+        if (!hasSpeechRecognitionSupport()) {
+            enableSpeechTextFallback();
+            showSpeechError("当前浏览器不支持 SpeechRecognition / webkitSpeechRecognition，请改用文本输入。");
+        }
+
         answerInput.value = "";
-        answerInput.placeholder = "点击“改用文本输入”后，可手动输入朗读内容";
+        answerInput.placeholder = "点击“改用文本输入”后，可手动输入你听到的内容";
         return;
     }
 
@@ -1696,19 +1970,23 @@ answerForm.addEventListener("submit", submitAnswer);
 
 if (speechUseTextBtn) {
     speechUseTextBtn.addEventListener("click", () => {
+        stopSpeechRecognition(true);
         enableSpeechTextFallback();
-        setFeedback("已切换到文本输入。当前仍可继续保留语音训练模式。", "info");
+        setFeedback("已切换到文本输入兜底。", "info");
     });
 }
 
 if (speechRetryBtn) {
     speechRetryBtn.addEventListener("click", () => {
+        stopSpeechRecognition(true);
         resetSpeechUi();
 
         if (state.current && isSpeechQuestionType(getQuestionType(state.current))) {
             if (textAnswerWorkspace) {
                 textAnswerWorkspace.style.display = "none";
             }
+
+            startSpeechRecognition();
         }
     });
 }
@@ -1719,31 +1997,33 @@ if (speechStartBtn) {
             return;
         }
 
-        if (speechStatus) {
-            speechStatus.textContent = "下一步接入真实录音。本步先完成题型分流与回退逻辑。";
-        }
-
-        if (speechRetryBtn) {
-            speechRetryBtn.style.display = "inline-flex";
-        }
+        startSpeechRecognition();
     });
 }
 
 if (speechStopBtn) {
     speechStopBtn.addEventListener("click", () => {
-        if (speechStatus) {
-            speechStatus.textContent = "当前还没有接入真实录音。";
+        if (!state.isRecognizing) {
+            return;
         }
+
+        if (speechStatus) {
+            speechStatus.textContent = "已停止录音，正在结束识别...";
+        }
+
+        stopSpeechRecognition(false);
     });
 }
 
 nextBtn.addEventListener("click", () => {
     clearAutoNextTimer();
+    stopSpeechRecognition(true);
     loadCurrentQuestion();
 });
 
 reloadBtn.addEventListener("click", () => {
     clearAutoNextTimer();
+    stopSpeechRecognition(true);
     loadCurrentQuestion();
 });
 

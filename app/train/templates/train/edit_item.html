@@ -86,11 +86,11 @@
                             <div class="field-group">
                                 <div class="field-label">题型</div>
                                 <select name="qtype" class="select">
-                                    <option value="read_cloze" {% if obj.qtype == "read_cloze" %}selected{% endif %}>read_cloze</option>
-                                    <option value="read_choice" {% if obj.qtype == "read_choice" %}selected{% endif %}>read_choice</option>
-                                    <option value="listen_asr" {% if obj.qtype == "listen_asr" %}selected{% endif %}>listen_asr</option>
-                                    <option value="speak_read" {% if obj.qtype == "speak_read" %}selected{% endif %}>speak_read</option>
-                                    <option value="write" {% if obj.qtype == "write" %}selected{% endif %}>write</option>
+                                    <option value="read_cloze" {% if display_qtype == "read_cloze" %}selected{% endif %}>read_cloze</option>
+                                    <option value="read_choice" {% if display_qtype == "read_choice" %}selected{% endif %}>read_choice</option>
+                                    <option value="listen_asr" {% if display_qtype == "listen_asr" %}selected{% endif %}>listen_asr</option>
+                                    <option value="speak_read" {% if display_qtype == "speak_read" %}selected{% endif %}>speak_read</option>
+                                    <option value="write" {% if display_qtype == "write" %}selected{% endif %}>write</option>
                                 </select>
                             </div>
 
@@ -101,9 +101,10 @@
 
                             <div class="field-group full">
                                 <div class="field-label">题干</div>
-                                <textarea id="question-display" class="textarea" placeholder="请输入题干" required>{% firstof obj.question_text obj.question "" %}</textarea>
-                                <input type="hidden" name="question" id="question-hidden-1" value="{% firstof obj.question_text obj.question '' %}">
-                                <input type="hidden" name="question_text" id="question-hidden-2" value="{% firstof obj.question_text obj.question '' %}">
+                                <textarea id="question-display" class="textarea" placeholder="请输入题干" required>{% firstof obj.prompt_text obj.question_text obj.question "" %}</textarea>
+                                <input type="hidden" name="question" id="question-hidden-1" value="{% firstof obj.prompt_text obj.question_text obj.question '' %}">
+                                <input type="hidden" name="question_text" id="question-hidden-2" value="{% firstof obj.prompt_text obj.question_text obj.question '' %}">
+                                <input type="hidden" name="prompt_text" id="question-hidden-3" value="{% firstof obj.prompt_text obj.question_text obj.question '' %}">
                             </div>
 
                             <div class="field-group full">
@@ -112,6 +113,20 @@
                                 <input type="hidden" name="answer" id="answer-hidden-1" value="{% firstof obj.answer_text obj.answer '' %}">
                                 <input type="hidden" name="answer_text" id="answer-hidden-2" value="{% firstof obj.answer_text obj.answer '' %}">
                             </div>
+
+                            {% if item_type == "read_cloze" %}
+                                <div class="field-group full">
+                                    <div class="field-label">克漏字题干</div>
+                                    <textarea name="cloze_text" class="textarea" placeholder="请输入带 ____ 的题干">{% firstof training.cloze_text obj.prompt_text "" %}</textarea>
+                                    <div class="field-help">必须包含 ____ 占位符，例如：Ask me ____ I do</div>
+                                </div>
+
+                                <div class="field-group full">
+                                    <div class="field-label">克漏字答案</div>
+                                    <textarea name="cloze_answers_text" class="textarea" placeholder="每行一个答案，或用逗号分隔">{{ cloze_answers_text|default:'' }}</textarea>
+                                    <div class="field-help">多个空可用换行、逗号、分号分隔。</div>
+                                </div>
+                            {% endif %}
 
                             <div class="field-group full">
                                 <div class="field-label">备注</div>
@@ -241,13 +256,15 @@ const questionDisplay = document.getElementById("question-display");
 const answerDisplay = document.getElementById("answer-display");
 const questionHidden1 = document.getElementById("question-hidden-1");
 const questionHidden2 = document.getElementById("question-hidden-2");
+const questionHidden3 = document.getElementById("question-hidden-3");
 const answerHidden1 = document.getElementById("answer-hidden-1");
 const answerHidden2 = document.getElementById("answer-hidden-2");
 
 function syncQuestionAnswerFields() {
-    if (questionDisplay && questionHidden1 && questionHidden2) {
+    if (questionDisplay && questionHidden1 && questionHidden2 && questionHidden3) {
         questionHidden1.value = questionDisplay.value;
         questionHidden2.value = questionDisplay.value;
+        questionHidden3.value = questionDisplay.value;
     }
 
     if (answerDisplay && answerHidden1 && answerHidden2) {

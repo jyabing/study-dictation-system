@@ -51,7 +51,7 @@
                         {% for question in questions %}
                             {% firstof question.prompt_text question.question_text question.question "未命名题目" as question_prompt %}
                             {% firstof question.answer_text question.answer "暂无答案" as answer_text %}
-                            {% firstof question.qtype "未分类" as qtype %}
+                            {% firstof question.display_qtype "未分类" as qtype %}
 
                             <article class="question-item">
                                 <div class="question-top">

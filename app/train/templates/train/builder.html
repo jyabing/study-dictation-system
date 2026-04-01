@@ -411,7 +411,10 @@
                             <label for="lesson">所属课节</label>
                             <select id="lesson">
                                 {% for l in lessons %}
-                                <option value="{{ l.id }}">{{ l.title }}</option>
+                                <option value="{{ l.id }}"
+                                    {% if current_lesson and l.id == current_lesson.id %}selected{% endif %}>
+                                    {{ l.title }}
+                                </option>
                                 {% endfor %}
                             </select>
                         </div>

@@ -17,6 +17,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+from app.train.services.cloze_engine import generate_cloze
 
 from ..models import (
     Book,
@@ -288,6 +289,36 @@ def _session_get_wrong_word_queue(request):
 def _session_set_wrong_word_queue(request, queue):
     request.session["wrong_word_queue"] = queue
 
+def _session_get_pinned_cloze_map(request):
+    return request.session.get("pinned_cloze_map", {})
+
+
+def _session_set_pinned_cloze_map(request, data):
+    request.session["pinned_cloze_map"] = data
+
+
+def _session_pin_cloze_layout(request, question_id, cloze_text, cloze_answers, level_name):
+    pinned = _session_get_pinned_cloze_map(request)
+    pinned[str(question_id)] = {
+        "cloze_text": cloze_text,
+        "cloze_answers": cloze_answers,
+        "level_name": level_name,
+    }
+    _session_set_pinned_cloze_map(request, pinned)
+
+
+def _session_get_pinned_cloze_layout(request, question_id):
+    pinned = _session_get_pinned_cloze_map(request)
+    return pinned.get(str(question_id))
+
+
+def _session_clear_pinned_cloze_layout(request, question_id):
+    pinned = _session_get_pinned_cloze_map(request)
+    key = str(question_id)
+    if key in pinned:
+        pinned.pop(key)
+        _session_set_pinned_cloze_map(request, pinned)
+
 
 def _session_push_wrong_word_items(request, lesson_id, training, user_answers, correct_answers):
     """
@@ -383,24 +414,14 @@ def _choose_dynamic_item_type(training, memory):
         return explicit_item_type
 
     # =========================
-    # 下面保留旧逻辑，只给旧数据用
+    # 🔥 新逻辑：禁止自动改题型
     # =========================
-    item_type = training.item_type
-    level = memory.memory_level or 0
-    wrong_boost = _get_wrong_boost(memory)
+    if explicit_item_type:
+        return explicit_item_type
 
-    if wrong_boost >= 5:
-        return "read_cloze"
-
-    if level <= 2:
-        if training.choices:
-            return "read_choice"
-        return "read_cloze"
-
-    if level >= 5:
-        return "write"
-
-    return item_type
+    # fallback：仅旧数据使用
+    return training.item_type
+    
 
 def _extract_training_meta(training):
     choices = training.choices or []
@@ -553,9 +574,52 @@ def _build_tts_audio(text, lang="en", prefix="prompttts"):
     return f"{settings.MEDIA_URL}{rel_dir}/{filename}"
 
 # =========================
+# 根据记忆等级决定克漏字难度
+# =========================
+def _resolve_cloze_level_by_memory(memory):
+    level = 0
+
+    if memory:
+        level = int(
+            getattr(memory, "cycle_step", None)
+            if getattr(memory, "cycle_step", None) is not None
+            else (getattr(memory, "memory_level", 0) or 0)
+        )
+
+    # 新题 / 低等级：初级
+    if level <= 2:
+        return "easy"
+
+    # 中等级：中级
+    if level <= 5:
+        return "medium"
+
+    # 更高等级：高级
+    return "hard"
+
+
+# =========================
+# 根据难度给出 blank 范围
+# =========================
+def _resolve_cloze_blank_range(level_name, base_min, base_max):
+    base_min = int(base_min or 1)
+    base_max = int(base_max or base_min)
+
+    if base_max < base_min:
+        base_max = base_min
+
+    if level_name == "easy":
+        return 1, 1
+
+    if level_name == "medium":
+        return max(1, base_min), min(2, max(base_max, 2))
+
+    return max(2, base_min), min(3, max(base_max, 3))
+
+# =========================
 # 🔥 训练数据构建（最终版）
 # =========================
-def build_training_payload(training, memory=None):
+def build_training_payload(training, memory=None, request=None):
     item_type = _extract_training_meta(training).get("item_type") or training.item_type
     meta = _get_training_meta_dict(training)
 
@@ -581,6 +645,52 @@ def build_training_payload(training, memory=None):
     use_tts = bool(meta.get("use_tts", False))
     asr_cfg = meta.get("asr", {}) if isinstance(meta.get("asr"), dict) else {}
     asr_lang = asr_cfg.get("lang") or "en-US"
+
+    # =========================
+    # read_cloze：根据记忆等级动态增加空格
+    # =========================
+    resolved_cloze_text = training.cloze_text or ""
+    resolved_cloze_answers = training.cloze_answers or []
+
+    if training.item_type == "read_cloze":
+        cloze_meta = meta.get("cloze", {}) if isinstance(meta.get("cloze"), dict) else {}
+        auto_increase_blank = bool(cloze_meta.get("auto_increase_blank", False))
+
+        level_name = _resolve_cloze_level_by_memory(memory)
+
+        # =========================
+        # 优先读取 session 冻结空位
+        # =========================
+        pinned_layout = None
+        if request is not None:
+            pinned_layout = _session_get_pinned_cloze_layout(request, training.question_id)
+
+        if pinned_layout:
+            resolved_cloze_text = pinned_layout.get("cloze_text") or resolved_cloze_text
+            resolved_cloze_answers = pinned_layout.get("cloze_answers") or resolved_cloze_answers
+
+        elif auto_increase_blank:
+            base_min = cloze_meta.get("min_blank", 1)
+            base_max = cloze_meta.get("max_blank", 2)
+
+            dynamic_min, dynamic_max = _resolve_cloze_blank_range(
+                level_name,
+                base_min,
+                base_max
+            )
+
+            cloze_seed_key = f"q{training.question_id}-lvl{level_name}-range{dynamic_min}-{dynamic_max}"
+
+            dynamic_cloze_text, dynamic_cloze_answers = generate_cloze(
+                prompt_text,
+                min_blank=dynamic_min,
+                max_blank=dynamic_max,
+                seed_key=cloze_seed_key
+            )
+
+            if dynamic_cloze_text and dynamic_cloze_answers:
+                resolved_cloze_text = dynamic_cloze_text
+                resolved_cloze_answers = dynamic_cloze_answers
 
     # =========================
     # 听 / 说题型：题干音频 fallback
@@ -636,8 +746,8 @@ def build_training_payload(training, memory=None):
         "choices": choices,
         "selection_mode": selection_mode,
 
-        "cloze_text": training.cloze_text or "",
-        "cloze_answers": training.cloze_answers or [],
+        "cloze_text": resolved_cloze_text,
+        "cloze_answers": resolved_cloze_answers,
 
         # =========================
         # 严格循环字段：直接扁平返回给前端
@@ -2051,6 +2161,28 @@ def _train_api_by_scope(request, scope, obj):
         done_ids = request.session.get("today_done_ids", [])
 
         # =========================
+        # 0) 错词回炉优先：只回炉错掉的那个 blank
+        # =========================
+        wrong_word_queue = _session_get_wrong_word_queue(request)
+
+        scoped_wrong_items = [
+            item for item in wrong_word_queue
+            if _wrong_word_item_in_scope(item, scope, obj)
+        ]
+
+        if scoped_wrong_items:
+            replay_payload = _build_wrong_word_payload(scoped_wrong_items[0])
+
+            replay_payload.update({
+                "empty": False,
+                "train_scope": scope,
+                "train_scope_label": scope_label,
+                "is_wrong_word_replay": True,
+            })
+
+            return JsonResponse(replay_payload)
+
+        # =========================
         # 1) 当前范围内的全部训练项
         #    lesson -> 当前课
         #    book   -> 当前书
@@ -2163,7 +2295,7 @@ def _train_api_by_scope(request, scope, obj):
 
         training = ranked_remaining[0]["training"]
         memory = ranked_remaining[0]["memory"]
-        payload = build_training_payload(training, memory)
+        payload = build_training_payload(training, memory, request=request)
 
         payload.update({
             "empty": False,
@@ -2268,7 +2400,19 @@ def _train_api_by_scope(request, scope, obj):
                 question=training.question
             )
 
+        current_payload_before_update = build_training_payload(
+            training,
+            memory,
+            request=request
+        )
+
         cycle_before = _build_cycle_status(memory)
+
+        update_memory_after_answer(memory, is_correct)
+        memory.save()
+        memory.refresh_from_db()
+
+        cycle_after = _build_cycle_status(memory)
 
         update_memory_after_answer(memory, is_correct)
         memory.save()
@@ -2283,17 +2427,29 @@ def _train_api_by_scope(request, scope, obj):
                 done_ids.append(training.id)
             request.session["today_done_ids"] = done_ids
 
-        # Cloze 错词进入错词复盘队列
-        if training.item_type == "read_cloze" and not is_correct:
-            user_answers = judge.get("user_answers", [])
-            correct_answers = judge.get("correct_answers", [])
-            _session_push_wrong_word_items(
-                request=request,
-                lesson_id=training.question.lesson_id,
-                training=training,
-                user_answers=user_answers,
-                correct_answers=correct_answers,
-            )
+        # Cloze：答错时冻结当前空位，并进入错词复盘队列；答对时清除冻结
+        if training.item_type == "read_cloze":
+            if not is_correct:
+                user_answers = judge.get("user_answers", [])
+                correct_answers = judge.get("correct_answers", [])
+
+                _session_pin_cloze_layout(
+                    request=request,
+                    question_id=training.question_id,
+                    cloze_text=current_payload_before_update.get("cloze_text", ""),
+                    cloze_answers=current_payload_before_update.get("cloze_answers", []),
+                    level_name=_resolve_cloze_level_by_memory(memory),
+                )
+
+                _session_push_wrong_word_items(
+                    request=request,
+                    lesson_id=training.question.lesson_id,
+                    training=training,
+                    user_answers=user_answers,
+                    correct_answers=correct_answers,
+                )
+            else:
+                _session_clear_pinned_cloze_layout(request, training.question_id)
 
         xp = add_xp(request, is_correct)
 
@@ -2344,7 +2500,7 @@ def _train_api_by_scope(request, scope, obj):
             ),
             "train_scope": scope,
             "train_scope_label": scope_label,
-            **build_training_payload(training, memory),
+            **build_training_payload(training, memory, request=request),
         })
 
     return JsonResponse({"ok": False, "error": "method not allowed"}, status=405)
@@ -2377,16 +2533,21 @@ def lesson_question_list(request, lesson_id):
         book__owner=request.user
     )
 
-    questions = Question.objects.filter(
-        lesson=lesson
-    ).order_by("id")
+    questions = list(
+        Question.objects.filter(
+            lesson=lesson
+        ).order_by("id")
+    )
+
+    for question in questions:
+        training = question.training_items.order_by("id").first()
+        question.display_qtype = training.item_type if training else ""
 
     return render(request, "train/question_list.html", {
         "lesson": lesson,
         "book": lesson.book,
         "questions": questions,
     })
-
 
 # =========================
 # 统计页
@@ -2480,12 +2641,38 @@ def get_stats(request):
 # =========================
 @login_required
 def builder_page(request):
-    lessons = Lesson.objects.filter(book__owner=request.user).order_by("book_id", "order", "id")
 
+    # =========================
+    # ① 读取 lesson_id（来自 ?lesson_id=4）
+    # =========================
+    lesson_id = request.GET.get("lesson_id")
+
+    current_lesson = None
+    current_book = None
+
+    from ..models import Lesson
+
+    if lesson_id:
+        try:
+            current_lesson = Lesson.objects.select_related("book").get(id=lesson_id)
+            current_book = current_lesson.book
+        except Lesson.DoesNotExist:
+            current_lesson = None
+            current_book = None
+
+    # =========================
+    # ② 提供 lesson 列表（给下拉框）
+    # =========================
+    lessons = Lesson.objects.select_related("book").all().order_by("id")
+
+    # =========================
+    # ③ 渲染
+    # =========================
     return render(request, "train/builder.html", {
-        "lessons": lessons
+        "lessons": lessons,
+        "current_lesson": current_lesson,
+        "current_book": current_book,
     })
-
 
 # =========================
 # Builder 工具
@@ -2593,15 +2780,14 @@ def builder_save(request):
 
     # 听 / 说：如果没单独填 answer_text，默认用 prompt_text 当识别比对文本
     if item_type in {"listen_asr", "speak_read"} and not answer_text:
-        answer_text = prompt_text
-
-    question = Question.objects.create(
-        lesson=lesson,
-        prompt_text=prompt_text,
-        answer_text=answer_text,
-        audio_url=prompt_audio or ""
-    )
-
+        answer_text = prompt_text    
+        
+        question = Question.objects.create(
+            lesson=lesson,
+            prompt_text=prompt_text,
+            answer_text=answer_text,
+            audio_url=prompt_audio or ""
+        )
     created_items = []
 
     # =========================
@@ -2647,44 +2833,70 @@ def builder_save(request):
             "saved_as": "read_choice",
             "selection_mode": selection_mode
         })
+    # =========================
+    # 读：克漏字（自动克漏）
+    # 现阶段：
+    # - prompt_text 写完整句
+    # - 系统自动生成 cloze_text / cloze_answers
+    # - 如果用户手工写了 {word}，则优先走手工 parse 逻辑
+    # =========================
+    # =========================
+    # 先创建 question（必须在所有分支之前）
+    # =========================
+    question = Question.objects.create(
+        lesson=lesson,
+        prompt_text=prompt_text,
+        answer_text=answer_text,
+        audio_url=prompt_audio or ""
+    )
 
     # =========================
-    # 读：克漏字
-    # 现阶段：
-    # - prompt_text 直接当 cloze_text
-    # - answer_text 支持多答案拆分
+    # read_cloze 分支
     # =========================
     if item_type == "read_cloze":
-        cloze_text = prompt_text
-        cloze_answers = _split_answer_text(answer_text)
 
-        if "____" not in cloze_text:
+        min_blank = int(cloze_cfg.get("min_blank", 1) or 1)
+        max_blank = int(cloze_cfg.get("max_blank", 2) or 2)
+
+        if max_blank < min_blank:
+            max_blank = min_blank
+
+        cloze_text, cloze_answers = generate_cloze(
+            prompt_text,
+            min_blank=min_blank,
+            max_blank=max_blank
+        )
+
+        if not cloze_text or "____" not in cloze_text:
             question.delete()
             return JsonResponse({
                 "ok": False,
-                "error": "克漏字题干里必须包含 ____ 占位符"
+                "error": "自动克漏生成失败，请检查题干内容"
             }, status=400)
 
         if not cloze_answers:
             question.delete()
             return JsonResponse({
                 "ok": False,
-                "error": "克漏字必须填写答案，多个答案可用换行/逗号/分号分隔"
+                "error": "自动克漏未生成答案，请检查题干内容"
             }, status=400)
 
         training = TrainingItem.objects.create(
             question=question,
             item_type="read_cloze",
+            prompt_text=prompt_text,
             cloze_text=cloze_text,
             cloze_answers=cloze_answers,
             choices=[{
                 "_meta": {
                     "skill": skill,
                     "item_type": item_type,
-                    "cloze": cloze_cfg
+                    "cloze": cloze_cfg,
+                    "auto_generated": True
                 }
             }]
         )
+
         created_items.append(training.id)
 
         return JsonResponse({
@@ -2693,6 +2905,7 @@ def builder_save(request):
             "training_ids": created_items,
             "saved_as": "read_cloze"
         })
+    
 
     # =========================
     # 写：文字作答
@@ -2773,6 +2986,8 @@ def question_edit(request, question_id):
     training = question.training_items.order_by("id").first()
     item_type = training.item_type if training else ""
 
+    display_qtype = item_type or question.qtype or ""
+
     if request.method == "POST":
         prompt_text = (request.POST.get("prompt_text") or "").strip()
         answer_text = (request.POST.get("answer_text") or "").strip()
@@ -2784,6 +2999,7 @@ def question_edit(request, question_id):
                 "obj": question,
                 "training": training,
                 "item_type": item_type,
+                "display_qtype": display_qtype,
                 "next": next_url,
                 "page_title": "按原题型编辑",
                 "error": "题干不能为空",
@@ -2940,6 +3156,7 @@ def question_edit(request, question_id):
         "obj": question,
         "training": training,
         "item_type": item_type,
+        "display_qtype": display_qtype,
         "next": next_url,
         "page_title": "按原题型编辑",
         "choices_json": json.dumps(training.choices or [], ensure_ascii=False) if training else "[]",

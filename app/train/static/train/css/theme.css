@@ -805,3 +805,78 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* =========================
+    dashboard 首屏重排补充
+    只影响 dashboard 首页
+   ========================= */
+
+.dashboard-topbar-compact {
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.page-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dashboard-page-title {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #ffffff;
+}
+
+.dashboard-page-subtitle {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.today-summary-card {
+    margin-bottom: 20px;
+}
+
+.today-summary-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.section-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 手机端 = 卡片继续保持纵向清晰 */
+@media (max-width: 768px) {
+    .dashboard-topbar-compact {
+        align-items: flex-start;
+    }
+
+    .dashboard-page-title {
+        font-size: 26px;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .section-header-actions {
+        width: 100%;
+    }
+
+    .section-header-actions .secondary-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .today-summary-chips {
+        gap: 8px;
+    }
+}

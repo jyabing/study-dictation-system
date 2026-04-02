@@ -1,0 +1,107 @@
+{% extends "train/base_train.html" %}
+
+{% block content %}
+<div class="stats-page">
+    <div class="stats-header">
+        <h1>学习统计</h1>
+        <p>查看今日学习、连续打卡、正确率和经验值进度。</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stats-card">
+            <div class="stats-label">今日完成</div>
+            <div class="stats-value">{{ stats.today|default:0 }}</div>
+        </div>
+
+        <div class="stats-card">
+            <div class="stats-label">近 7 天完成</div>
+            <div class="stats-value">{{ stats.week|default:0 }}</div>
+        </div>
+
+        <div class="stats-card">
+            <div class="stats-label">连续天数</div>
+            <div class="stats-value">{{ stats.streak|default:0 }}</div>
+        </div>
+
+        <div class="stats-card">
+            <div class="stats-label">正确率</div>
+            <div class="stats-value">{{ stats.accuracy|default:0 }}%</div>
+        </div>
+
+        <div class="stats-card">
+            <div class="stats-label">经验值</div>
+            <div class="stats-value">{{ stats.xp|default:0 }}</div>
+        </div>
+
+        <div class="stats-card">
+            <div class="stats-label">等级</div>
+            <div class="stats-value">Lv. {{ stats.level|default:0 }}</div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stats-page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 24px;
+    }
+
+    .stats-header {
+        margin-bottom: 24px;
+    }
+
+    .stats-header h1 {
+        margin: 0 0 8px 0;
+        font-size: 32px;
+        font-weight: 700;
+    }
+
+    .stats-header p {
+        margin: 0;
+        color: #666;
+        font-size: 15px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+    }
+
+    .stats-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+    }
+
+    .stats-label {
+        font-size: 14px;
+        color: #6b7280;
+        margin-bottom: 10px;
+    }
+
+    .stats-value {
+        font-size: 30px;
+        font-weight: 700;
+        color: #111827;
+        line-height: 1.2;
+    }
+
+    @media (max-width: 768px) {
+        .stats-page {
+            padding: 16px;
+        }
+
+        .stats-header h1 {
+            font-size: 26px;
+        }
+
+        .stats-value {
+            font-size: 26px;
+        }
+    }
+</style>
+{% endblock %}

@@ -16,9 +16,12 @@
     <div class="dashboard-page">
         <div class="dashboard-shell">
 
-            <div class="topbar">
+            <div class="topbar dashboard-topbar-compact">
                 <div class="topbar-left">
-                    <div class="brand-pill">Memory Loop Dashboard</div>
+                    <div class="page-title-group">
+                        <h1 class="dashboard-page-title">今日学习</h1>
+                        <div class="dashboard-page-subtitle">优先处理逾期与今日到期内容</div>
+                    </div>
                 </div>
 
                 <div class="topbar-right">
@@ -27,35 +30,24 @@
                 </div>
             </div>
 
-            <section class="hero-card">
-                <div class="hero-inner">
-                    <div class="hero-main">
-                        <div class="hero-eyebrow">Study Control Center</div>
-                        <h1 class="hero-title">我的学习</h1>
-                        <p class="hero-subtitle">
-                            先看今天优先处理的书，再进入当前记忆焦点。整站统一使用深色训练风格，不再回到旧后台视觉。
-                        </p>
-
-                        <div class="hero-chips">
-                            <span class="hero-chip primary">书册总数：{{ dashboard_total_books }}</span>
-                            <span class="hero-chip warning">今日到期 / 待处理：{{ dashboard_due_total }}</span>
-                            <span class="hero-chip danger">已逾期：{{ dashboard_overdue_total }}</span>
-                            <span class="hero-chip success">已完成：{{ dashboard_done_total }}</span>
-                        </div>
-                    </div>
-
-                    <div class="hero-side">
-                        <a href="#priority-books" class="primary-btn">开始今日学习</a>
-                        <a href="#all-books" class="secondary-btn">查看全部书册</a>
-                    </div>
+            <section class="section-card today-summary-card">
+                <div class="today-summary-chips">
+                    <span class="hero-chip primary">书册总数：{{ dashboard_total_books }}</span>
+                    <span class="hero-chip warning">今日待处理：{{ dashboard_due_total }}</span>
+                    <span class="hero-chip danger">已逾期：{{ dashboard_overdue_total }}</span>
+                    <span class="hero-chip success">已完成：{{ dashboard_done_total }}</span>
                 </div>
             </section>
 
             <section class="section-card" id="priority-books">
                 <div class="section-header">
                     <div>
-                        <h2 class="section-title">优先处理的书</h2>
-                        <div class="section-subtitle">学习入口放在最前面，先处理待办，再看全部书册。</div>
+                        <h2 class="section-title">今日待学</h2>
+                        <div class="section-subtitle">首页首屏直接显示今天最该先学的书，先处理待办，再看全部书册。</div>
+                    </div>
+
+                    <div class="section-header-actions">
+                        <a href="#all-books" class="secondary-btn">查看全部书册</a>
                     </div>
                 </div>
 
@@ -76,13 +68,13 @@
                                         <div class="priority-desc">{{ book.description|default:"暂无描述" }}</div>
 
                                         <div class="priority-meta">
-                                            <span class="status-chip warning">当前阶段：{{ book_stage }}</span>
-                                            <span class="status-chip primary">下一次复习：{{ book_next_review }}</span>
                                             {% if book_overdue_count != "0" %}
                                                 <span class="status-chip danger">已逾期：{{ book_overdue_count }}</span>
                                             {% else %}
                                                 <span class="status-chip success">可继续推进</span>
                                             {% endif %}
+                                            <span class="status-chip warning">当前阶段：{{ book_stage }}</span>
+                                            <span class="status-chip primary">下一次复习：{{ book_next_review }}</span>
                                         </div>
 
                                         <div class="priority-actions">
@@ -136,13 +128,13 @@
                                         <div class="priority-desc">{{ book.description|default:"暂无描述" }}</div>
 
                                         <div class="priority-meta">
-                                            <span class="status-chip warning">当前阶段：{{ book_stage }}</span>
-                                            <span class="status-chip primary">下一次复习：{{ book_next_review }}</span>
                                             {% if book_overdue_count != "0" %}
                                                 <span class="status-chip danger">已逾期：{{ book_overdue_count }}</span>
                                             {% else %}
                                                 <span class="status-chip success">可继续推进</span>
                                             {% endif %}
+                                            <span class="status-chip warning">当前阶段：{{ book_stage }}</span>
+                                            <span class="status-chip primary">下一次复习：{{ book_next_review }}</span>
                                         </div>
 
                                         <div class="priority-actions">
@@ -196,13 +188,13 @@
                                         <div class="priority-desc">{{ book.description|default:"暂无描述" }}</div>
 
                                         <div class="priority-meta">
-                                            <span class="status-chip warning">当前阶段：{{ book_stage }}</span>
-                                            <span class="status-chip primary">下一次复习：{{ book_next_review }}</span>
                                             {% if book_overdue_count != "0" %}
                                                 <span class="status-chip danger">已逾期：{{ book_overdue_count }}</span>
                                             {% else %}
                                                 <span class="status-chip success">可继续推进</span>
                                             {% endif %}
+                                            <span class="status-chip warning">当前阶段：{{ book_stage }}</span>
+                                            <span class="status-chip primary">下一次复习：{{ book_next_review }}</span>
                                         </div>
 
                                         <div class="priority-actions">

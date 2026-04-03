@@ -1249,11 +1249,11 @@ body {
     }
 
     #all-books .all-books-desktop {
-        display: none !important;
+        display: none;
     }
 
     #all-books .all-books-mobile {
-        display: block !important;
+        display: block;
     }
 
     #all-books .section-body {

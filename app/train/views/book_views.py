@@ -1,9 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from ..models import Book, Lesson, Question
 from .train_views import (
-    get_today_plan,
-    get_stats,
-    get_dashboard_cycle_summary,
     get_book_lessons_cycle_summary,
     get_dashboard_books_cycle_summary,
 
@@ -11,6 +8,7 @@ from .train_views import (
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 
+@login_required
 @login_required
 def dashboard(request):
 
@@ -35,13 +33,7 @@ def dashboard(request):
             return redirect("dashboard")
 
     books = list(Book.objects.filter(owner=request.user).order_by("-id"))
-
-    plan = get_today_plan(request)
-    stats = get_stats(request)
-    cycle_summary = get_dashboard_cycle_summary(request.user)
     raw_book_cycle_summary = get_dashboard_books_cycle_summary(request.user, books)
-
-    print("🔥 DEBUG plan =", plan)
 
     book_cycle_summary = []
     for item in raw_book_cycle_summary:
@@ -73,27 +65,39 @@ def dashboard(request):
 
         book_cycle_summary.append(row)
 
-    priority_books = sorted(
-        book_cycle_summary,
-        key=lambda x: (
-            0 if x.get("risk_level") == "高风险" else 1 if x.get("risk_level") == "中风险" else 2,
-            -(x.get("overdue_count") or 0),
-            -(x.get("today_due_count") or 0),
+    def _priority_sort_key(x):
+        risk_rank = (
+            0 if x.get("risk_level") == "高风险"
+            else 1 if x.get("risk_level") == "中风险"
+            else 2
+        )
+
+        overdue_count = x.get("overdue_count") or 0
+        pending_count = x.get("pending_count") or 0
+        today_due_count = x.get("today_due_count") or 0
+
+        next_review_text = x.get("next_review_text") or ""
+        next_review_missing = 1 if next_review_text in {"", "未安排", "待安排"} else 0
+
+        return (
+            risk_rank,
+            -overdue_count,
+            -pending_count,
+            -today_due_count,
+            next_review_missing,
+            next_review_text,
             x.get("id") or x.get("book_id") or 0,
         )
-    )[:5]
 
-    all_books_count = len(book_cycle_summary)
+    priority_books = sorted(
+        book_cycle_summary,
+        key=_priority_sort_key
+    )[:5]
 
     return render(request, "train/dashboard.html", {
         "books": books,
         "all_books": book_cycle_summary,
-        "plan": plan,
-        "stats": stats,
-        "cycle_summary": cycle_summary,
-        "book_cycle_summary": book_cycle_summary,
         "priority_books": priority_books,
-        "all_books_count": all_books_count,
     })
 
 # =========================

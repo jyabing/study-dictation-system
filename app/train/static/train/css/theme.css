@@ -880,3 +880,419 @@ body {
         gap: 8px;
     }
 }
+
+/* =========================
+   dashboard 全部书册
+   桌面端表格 / 手机端卡片
+   ========================= */
+
+.all-books-desktop {
+    display: block;
+}
+
+.all-books-mobile {
+    display: none;
+}
+
+.books-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(7, 18, 44, 0.72);
+}
+
+.books-table {
+    width: 100%;
+    min-width: 1100px;
+    border-collapse: collapse;
+}
+
+.books-table thead th {
+    padding: 16px 14px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    white-space: nowrap;
+}
+
+.books-table tbody td {
+    padding: 16px 14px;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.books-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.books-table-title-cell {
+    min-width: 220px;
+}
+
+.books-table-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.3;
+    margin-bottom: 6px;
+}
+
+.books-table-desc {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.64);
+    line-height: 1.5;
+}
+
+.books-table-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 200px;
+}
+
+.books-table-actions .primary-btn,
+.books-table-actions .secondary-btn,
+.books-table-actions .ghost-btn {
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 13px;
+}
+
+/* 手机端切换成卡片 */
+@media (max-width: 768px) {
+    .all-books-desktop {
+        display: none;
+    }
+
+    .all-books-mobile {
+        display: block;
+    }
+}
+
+/* =========================
+   dashboard 全部书册显示兜底
+   桌面只显示表格，手机只显示卡片
+   ========================= */
+
+#all-books .all-books-desktop {
+    display: block !important;
+}
+
+#all-books .all-books-mobile {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    #all-books .all-books-desktop {
+        display: none !important;
+    }
+
+    #all-books .all-books-mobile {
+        display: block !important;
+    }
+}
+
+/* =========================
+   dashboard 全部书册表格精简版
+   只优化桌面端 books-table
+   ========================= */
+
+.books-table-wrap-compact {
+    background: rgba(7, 18, 44, 0.82);
+}
+
+.books-table-compact {
+    min-width: 980px;
+}
+
+.books-table-compact thead th {
+    padding: 14px 14px;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+}
+
+.books-table-compact tbody td {
+    padding: 14px;
+}
+
+.books-table-main-cell {
+    width: 32%;
+}
+
+.books-table-status-cell {
+    width: 24%;
+}
+
+.books-table-number-cell {
+    width: 10%;
+    white-space: nowrap;
+}
+
+.books-table-state-cell {
+    width: 12%;
+    white-space: nowrap;
+}
+
+.books-table-action-cell {
+    width: 22%;
+}
+
+.books-table-mini-meta {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.books-table-info-block + .books-table-info-block {
+    margin-top: 10px;
+}
+
+.books-table-info-label {
+    font-size: 11px;
+    color: var(--text-faint);
+    font-weight: 700;
+    margin-bottom: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.books-table-info-value {
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 800;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.books-table-number {
+    font-size: 24px;
+    line-height: 1;
+    font-weight: 900;
+    color: #ffffff;
+}
+
+.books-table-actions-compact {
+    min-width: 0;
+    gap: 6px;
+}
+
+.books-table-actions-compact .primary-btn,
+.books-table-actions-compact .secondary-btn,
+.books-table-actions-compact .ghost-btn {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 12px;
+}
+
+/* =========================
+   dashboard 今日待学卡片
+   书名更强，统计更弱
+   ========================= */
+
+.priority-card {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 22px 22px 20px;
+}
+
+.priority-main-full {
+    width: 100%;
+}
+
+.priority-title {
+    font-size: clamp(32px, 4vw, 44px);
+    line-height: 1.08;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    margin-bottom: 8px;
+}
+
+.priority-desc {
+    font-size: 13px;
+    color: var(--text-faint);
+    margin-bottom: 12px;
+}
+
+.priority-meta {
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.priority-inline-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.priority-actions {
+    gap: 8px;
+}
+
+.priority-actions .primary-btn,
+.priority-actions .secondary-btn,
+.priority-actions .ghost-btn {
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 13px;
+}
+
+/* 旧的大统计侧栏彻底隐藏 */
+.priority-side {
+    display: none !important;
+}
+
+/* 手机端：书名仍然最大，但按钮可换行 */
+@media (max-width: 768px) {
+    .priority-card {
+        padding: 18px 16px 16px;
+    }
+
+    .priority-title {
+        font-size: 22px;
+        line-height: 1.15;
+    }
+
+    .priority-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .priority-actions .primary-btn,
+    .priority-actions .secondary-btn,
+    .priority-actions .ghost-btn {
+        width: auto;
+        min-width: 84px;
+        justify-content: center;
+    }
+}
+
+/* =========================
+   dashboard 今日待学卡片
+   书名更强，统计更弱，按钮更精简
+   ========================= */
+
+.priority-card {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 22px 22px 20px;
+}
+
+.priority-main-full {
+    width: 100%;
+}
+
+.priority-title {
+    font-size: clamp(32px, 4vw, 44px);
+    line-height: 1.08;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    margin-bottom: 8px;
+}
+
+.priority-desc {
+    font-size: 13px;
+    color: var(--text-faint);
+    margin-bottom: 12px;
+}
+
+.priority-meta {
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.priority-inline-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.priority-actions {
+    gap: 8px;
+}
+
+.priority-actions .primary-btn,
+.priority-actions .ghost-btn {
+    min-height: 38px;
+    padding: 0 14px;
+    font-size: 13px;
+    width: auto;
+    min-width: 88px;
+    justify-content: center;
+}
+
+.priority-actions .primary-btn {
+    box-shadow: 0 10px 24px rgba(79, 141, 255, 0.24);
+}
+
+/* 旧的大统计侧栏彻底隐藏 */
+.priority-side {
+    display: none !important;
+}
+
+/* 今日统计下移后弱化一点存在感 */
+.today-summary-card {
+    margin-top: -4px;
+}
+
+.today-summary-chips {
+    gap: 8px;
+}
+
+.today-summary-chips .hero-chip {
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 12px;
+    opacity: 0.92;
+}
+
+/* 全部书册操作按钮同步精简 */
+.books-table-actions-compact .primary-btn,
+.books-table-actions-compact .ghost-btn {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 12px;
+}
+
+.books-table-actions-compact {
+    min-width: 0;
+    gap: 6px;
+}
+
+/* 手机端：书名仍然最大，但按钮不要占满整行 */
+@media (max-width: 768px) {
+    .priority-card {
+        padding: 18px 16px 16px;
+    }
+
+    .priority-title {
+        font-size: 22px;
+        line-height: 1.15;
+    }
+
+    .priority-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .priority-actions .primary-btn,
+    .priority-actions .ghost-btn {
+        width: auto;
+        min-width: 84px;
+        justify-content: center;
+    }
+
+    .today-summary-card {
+        margin-top: 0;
+    }
+}

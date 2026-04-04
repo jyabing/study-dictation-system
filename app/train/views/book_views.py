@@ -9,13 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 
 @login_required
-@login_required
 def dashboard(request):
-
-    print("SESSION:", request.session.get("today_done_ids"))
-    print("USER:", request.user)
-    print("BOOK COUNT:", Book.objects.count())
-    print("MY BOOKS:", Book.objects.filter(owner=request.user).count())
 
     # =========================
     # 新建自己的书册
@@ -94,10 +88,17 @@ def dashboard(request):
         key=_priority_sort_key
     )[:5]
 
+    today_due_total = sum((row.get("pending_count") or 0) for row in book_cycle_summary)
+    today_overdue_total = sum((row.get("overdue_count") or 0) for row in book_cycle_summary)
+    completed_total = sum((row.get("mastered_count") or 0) for row in book_cycle_summary)
+
     return render(request, "train/dashboard.html", {
         "books": books,
         "all_books": book_cycle_summary,
         "priority_books": priority_books,
+        "today_due_total": today_due_total,
+        "today_overdue_total": today_overdue_total,
+        "completed_total": completed_total,
     })
 
 # =========================

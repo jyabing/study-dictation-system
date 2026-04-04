@@ -2,6 +2,18 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+
+    <script>
+        (function () {
+            try {
+                var savedTheme = localStorage.getItem("study_theme") || "dark";
+                document.documentElement.setAttribute("data-theme", savedTheme);
+            } catch (e) {
+                document.documentElement.setAttribute("data-theme", "dark");
+            }
+        })();
+    </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Study System{% endblock %}</title>
@@ -10,7 +22,45 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="train-body {% block body_class %}{% endblock %}">
+        <div class="global-theme-switch">
+            <button id="themeToggleBtn">
+                🌙 暗色
+            </button>
+        </div>
     {% block content %}{% endblock %}
+
+        <script>
+            (function () {
+                var root = document.documentElement;
+                var btn = document.getElementById("themeToggleBtn");
+
+                if (!btn) return;
+
+                function getTheme() {
+                    return root.getAttribute("data-theme") || "dark";
+                }
+
+                function updateLabel(theme) {
+                    btn.textContent = theme === "light-jp" ? "🌸 明快" : "🌙 暗色";
+                }
+
+                updateLabel(getTheme());
+
+                btn.addEventListener("click", function () {
+                    var current = getTheme();
+                    var next = current === "light-jp" ? "dark" : "light-jp";
+
+                    root.setAttribute("data-theme", next);
+
+                    try {
+                        localStorage.setItem("study_theme", next);
+                    } catch (e) {}
+
+                    updateLabel(next);
+                });
+            })();
+        </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

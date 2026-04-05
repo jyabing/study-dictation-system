@@ -20,6 +20,23 @@
     --max-width: 980px;
 }
 
+html[data-theme="light-jp"] {
+    --bg: #f8fbff;
+    --bg-soft: #eef5ff;
+    --panel: rgba(255, 255, 255, 0.96);
+    --panel-2: rgba(248, 251, 255, 0.98);
+    --border: rgba(117, 147, 196, 0.18);
+    --border-strong: rgba(117, 147, 196, 0.30);
+    --text: #24324a;
+    --text-soft: #5f6f8d;
+    --text-faint: #8d9ab2;
+    --primary: #7aa8ff;
+    --success: #58c99b;
+    --warning: #f3b85a;
+    --danger: #f18484;
+    --shadow: 0 16px 40px rgba(123, 145, 184, 0.16);
+}
+
 * {
     box-sizing: border-box;
 }
@@ -33,9 +50,9 @@ body {
 
 body.train-body {
     background:
-        radial-gradient(circle at top left, rgba(110, 168, 255, 0.20), transparent 28%),
-        radial-gradient(circle at top right, rgba(132, 243, 209, 0.10), transparent 24%),
-        linear-gradient(180deg, #0b1020 0%, #0a0f1c 100%);
+        radial-gradient(circle at top left, rgba(122, 168, 255, 0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(255, 182, 193, 0.12), transparent 24%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
     color: var(--text);
     font-family:
         "Inter",
@@ -45,6 +62,7 @@ body.train-body {
         "Microsoft YaHei",
         sans-serif;
     line-height: 1.6;
+    transition: background var(--transition), color var(--transition);
 }
 
 a {
@@ -379,11 +397,11 @@ button {
    Dashboard page
 ========================= */
 
-body {
+body.train-body {
     background:
-        radial-gradient(circle at top left, rgba(110, 168, 255, 0.20), transparent 28%),
-        radial-gradient(circle at top right, rgba(132, 243, 209, 0.10), transparent 24%),
-        linear-gradient(180deg, #0b1020 0%, #0a0f1c 100%);
+        radial-gradient(circle at top left, rgba(122, 168, 255, 0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(255, 182, 193, 0.12), transparent 24%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
     color: var(--text);
     font-family:
         "Inter",
@@ -393,6 +411,7 @@ body {
         "Microsoft YaHei",
         sans-serif;
     line-height: 1.6;
+    transition: background var(--transition), color var(--transition);
 }
 
 .dashboard-page {
@@ -1244,6 +1263,26 @@ body {
         font-size: 11px;
     }
 
+    .dashboard-topbar-compact .topbar-right {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+
+    .priority-content-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .priority-content-right {
+        align-items: flex-start;
+    }
+
+    .priority-side-line {
+        justify-content: flex-start;
+    }
+
     .today-summary-card {
         margin-top: 0;
     }
@@ -1264,4 +1303,970 @@ body {
         grid-template-columns: 1fr;
         gap: 12px;
     }
+}
+
+.global-theme-switch {
+    display: inline-flex;
+    align-items: center;
+}
+
+.global-theme-switch button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    color: var(--text);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: var(--transition);
+    line-height: 1;
+}
+
+.global-theme-switch button:hover {
+    border-color: var(--border-strong);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="light-jp"] .hero-card,
+html[data-theme="light-jp"] .priority-card,
+html[data-theme="light-jp"] .book-card,
+html[data-theme="light-jp"] .section-card,
+html[data-theme="light-jp"] .empty-card {
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+}
+html[data-theme="light-jp"] .card-header,
+html[data-theme="light-jp"] .section-header {
+    background: rgba(122, 168, 255, 0.06);
+    border-bottom-color: var(--border);
+}
+
+html[data-theme="light-jp"] .dashboard-page-title,
+html[data-theme="light-jp"] .priority-title,
+html[data-theme="light-jp"] .book-card-title,
+html[data-theme="light-jp"] .books-table-title,
+html[data-theme="light-jp"] .section-title,
+html[data-theme="light-jp"] .empty-title,
+html[data-theme="light-jp"] .books-table-number {
+    color: var(--text);
+}
+
+html[data-theme="light-jp"] .dashboard-page-subtitle,
+html[data-theme="light-jp"] .priority-desc,
+html[data-theme="light-jp"] .book-card-desc,
+html[data-theme="light-jp"] .books-table-desc,
+html[data-theme="light-jp"] .section-subtitle,
+html[data-theme="light-jp"] .compact-book-stats,
+html[data-theme="light-jp"] .books-table tbody td {
+    color: var(--text-soft);
+}
+
+html[data-theme="light-jp"] .books-table-info-value,
+html[data-theme="light-jp"] .compact-value,
+html[data-theme="light-jp"] .book-card-value,
+html[data-theme="light-jp"] .mini-stat-value {
+    color: var(--text);
+}
+
+html[data-theme="light-jp"] .books-table-info-label,
+html[data-theme="light-jp"] .compact-label,
+html[data-theme="light-jp"] .book-card-label,
+html[data-theme="light-jp"] .mini-stat-label {
+    color: var(--text-faint);
+}
+
+html[data-theme="light-jp"] .icon-action-btn,
+html[data-theme="light-jp"] .ghost-btn,
+html[data-theme="light-jp"] .secondary-btn,
+html[data-theme="light-jp"] .user-pill,
+html[data-theme="light-jp"] .mini-chip,
+html[data-theme="light-jp"] .book-chip,
+html[data-theme="light-jp"] .status-chip,
+html[data-theme="light-jp"] .hero-chip {
+    color: var(--text);
+}
+
+html[data-theme="light-jp"] .dashboard-page-title,
+html[data-theme="light-jp"] .books-table-title,
+html[data-theme="light-jp"] .book-card-title,
+html[data-theme="light-jp"] .priority-title {
+    text-shadow: none;
+}
+
+@media (max-width: 768px) {
+    .topbar-right .global-theme-switch,
+    .topbar-right .global-theme-switch button,
+    .topbar-right .secondary-btn,
+    .topbar-right .user-pill {
+        width: auto;
+    }
+}
+
+/* =========================
+   dashboard 今日待学卡片
+   左描述 / 右状态
+   ========================= */
+
+.priority-content-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    gap: 16px;
+    align-items: start;
+}
+
+.priority-content-left {
+    min-width: 0;
+}
+
+.priority-content-right {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.priority-side-line {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.priority-side-line .status-chip {
+    max-width: 100%;
+}
+
+.priority-desc {
+    min-height: 44px;
+}
+
+.priority-inline-stats {
+    margin-top: 10px;
+}
+
+/* =========================
+   dashboard 右上角操作区
+   主题按钮 / 学习统计 / 用户名 横向排列
+   ========================= */
+
+.dashboard-topbar-compact .topbar-right {
+    display: flex;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.dashboard-topbar-compact .topbar-right .global-theme-switch,
+.dashboard-topbar-compact .topbar-right .secondary-btn,
+.dashboard-topbar-compact .topbar-right .user-pill {
+    width: auto !important;
+    flex: 0 0 auto;
+}
+/* =========================
+   dashboard 全部书册
+   明快主题下桌面表格改浅色
+   ========================= */
+
+html[data-theme="light-jp"] .books-table-wrap {
+    background: rgba(255, 255, 255, 0.90);
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+}
+
+html[data-theme="light-jp"] .books-table thead th {
+    background: rgba(122, 168, 255, 0.08);
+    color: var(--text-soft);
+    border-bottom-color: var(--border);
+}
+
+html[data-theme="light-jp"] .books-table tbody td {
+    background: transparent;
+    color: var(--text);
+    border-bottom-color: rgba(117, 147, 196, 0.12);
+}
+
+html[data-theme="light-jp"] .books-table-title {
+    color: var(--text);
+}
+
+html[data-theme="light-jp"] .books-table-desc {
+    color: var(--text-soft);
+}
+
+html[data-theme="light-jp"] .books-table-number {
+    color: var(--text);
+}
+
+html[data-theme="light-jp"] .books-table-actions .ghost-btn {
+    background: rgba(122, 168, 255, 0.06);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+html[data-theme="light-jp"] .books-table-actions .ghost-btn:hover {
+    background: rgba(122, 168, 255, 0.12);
+    border-color: var(--border-strong);
+}
+
+/* =========================
+   dashboard 全部书册
+   明快主题下桌面表格 / 手机卡片视觉统一
+   ========================= */
+
+html[data-theme="light-jp"] .books-table-wrap {
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+}
+
+html[data-theme="light-jp"] .books-table thead th {
+    background: rgba(122, 168, 255, 0.08);
+    color: var(--text-soft);
+    border-bottom-color: var(--border);
+}
+
+html[data-theme="light-jp"] .books-table tbody td {
+    color: var(--text);
+    border-bottom-color: rgba(117, 147, 196, 0.12);
+}
+
+html[data-theme="light-jp"] .books-table-title,
+html[data-theme="light-jp"] .book-card-title {
+    color: var(--text);
+}
+
+html[data-theme="light-jp"] .books-table-desc,
+html[data-theme="light-jp"] .book-card-desc {
+    color: var(--text-soft);
+}
+
+html[data-theme="light-jp"] .books-table-number,
+html[data-theme="light-jp"] .compact-value {
+    color: var(--text);
+}
+
+html[data-theme="light-jp"] .books-table-info-block,
+html[data-theme="light-jp"] .book-card-field {
+    background: rgba(122, 168, 255, 0.05);
+    border: 1px solid rgba(117, 147, 196, 0.12);
+    border-radius: 14px;
+}
+
+html[data-theme="light-jp"] .books-table-info-label,
+html[data-theme="light-jp"] .book-card-label,
+html[data-theme="light-jp"] .compact-label {
+    color: var(--text-faint);
+}
+
+html[data-theme="light-jp"] .books-table-info-value,
+html[data-theme="light-jp"] .book-card-value,
+html[data-theme="light-jp"] .compact-value {
+    color: var(--text);
+}
+
+html[data-theme="light-jp"] .books-table-mini-meta .mini-chip,
+html[data-theme="light-jp"] .compact-book-stats,
+html[data-theme="light-jp"] .compact-book-chips .book-chip {
+    color: var(--text);
+}
+
+html[data-theme="light-jp"] .books-table-actions .primary-btn,
+html[data-theme="light-jp"] .compact-book-actions .primary-btn {
+    background: linear-gradient(135deg, #9dc2ff, #7aa8ff);
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(122, 168, 255, 0.24);
+}
+
+html[data-theme="light-jp"] .books-table-actions .ghost-btn,
+html[data-theme="light-jp"] .compact-book-actions .ghost-btn {
+    background: rgba(122, 168, 255, 0.06);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+html[data-theme="light-jp"] .books-table-actions .ghost-btn:hover,
+html[data-theme="light-jp"] .compact-book-actions .ghost-btn:hover {
+    background: rgba(122, 168, 255, 0.12);
+    border-color: var(--border-strong);
+}
+
+/* =========================
+   dashboard 区块层级统一
+   今天先学 / 全部书册
+   ========================= */
+
+.dashboard-shell > .section-card {
+    border-radius: 24px;
+}
+
+#priority-books,
+#all-books {
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+
+#priority-books {
+    margin-bottom: 18px;
+}
+
+#all-books {
+    margin-top: 10px;
+}
+
+.today-summary-card {
+    border: 1px solid var(--border);
+    box-shadow: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+}
+
+html[data-theme="light-jp"] #priority-books,
+html[data-theme="light-jp"] #all-books {
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border-color: var(--border);
+    box-shadow: 0 12px 28px rgba(123, 145, 184, 0.10);
+}
+
+html[data-theme="light-jp"] .today-summary-card {
+    background: linear-gradient(180deg, rgba(122, 168, 255, 0.04), rgba(255, 255, 255, 0.72));
+    border-color: rgba(117, 147, 196, 0.14);
+    box-shadow: none;
+}
+
+html[data-theme="light-jp"] #priority-books .section-header,
+html[data-theme="light-jp"] #all-books .section-header {
+    background: rgba(122, 168, 255, 0.05);
+    border-bottom-color: rgba(117, 147, 196, 0.14);
+}
+
+html[data-theme="light-jp"] #priority-books .section-body,
+html[data-theme="light-jp"] #all-books .section-body {
+    background: transparent;
+}
+
+html[data-theme="light-jp"] #priority-books .priority-card,
+html[data-theme="light-jp"] #all-books .book-card,
+html[data-theme="light-jp"] #all-books .books-table-wrap {
+    box-shadow: 0 8px 20px rgba(123, 145, 184, 0.08);
+}
+
+@media (max-width: 768px) {
+    #priority-books {
+        margin-bottom: 14px;
+    }
+
+    #all-books {
+        margin-top: 8px;
+    }
+
+    .today-summary-card {
+        margin-bottom: 14px;
+    }
+}
+
+/* =========================
+   dashboard 今天先学卡片
+   左内容 / 右状态 / 弱分隔 / 高留白
+   ========================= */
+
+#priority-books .priority-card {
+    padding: 26px 28px;
+    border-radius: 22px;
+}
+
+#priority-books .priority-headline {
+    margin-bottom: 14px;
+}
+
+#priority-books .priority-title {
+    line-height: 1.06;
+    letter-spacing: -0.03em;
+}
+
+#priority-books .priority-content-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 24px;
+    align-items: start;
+}
+
+#priority-books .priority-content-left {
+    min-width: 0;
+    padding-right: 4px;
+}
+
+#priority-books .priority-desc {
+    min-height: 54px;
+    margin-bottom: 0;
+    line-height: 1.65;
+}
+
+#priority-books .priority-inline-stats {
+    margin-top: 14px;
+    gap: 10px;
+}
+
+#priority-books .priority-content-right {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+    padding-left: 18px;
+}
+
+#priority-books .priority-content-right::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 2px;
+    bottom: 2px;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+#priority-books .priority-side-line {
+    justify-content: flex-end;
+}
+
+#priority-books .priority-side-line .status-chip {
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+#priority-books .priority-head-actions .icon-action-btn {
+    min-height: 28px;
+    padding: 0 9px;
+    font-size: 11px;
+}
+
+html[data-theme="light-jp"] #priority-books .priority-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 251, 255, 0.96));
+    border-color: rgba(117, 147, 196, 0.14);
+    box-shadow: 0 10px 24px rgba(123, 145, 184, 0.08);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-content-right::before {
+    background: rgba(117, 147, 196, 0.14);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-desc {
+    color: var(--text-soft);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-inline-stats .mini-chip {
+    background: rgba(122, 168, 255, 0.05);
+    border-color: rgba(117, 147, 196, 0.14);
+    color: var(--text);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-side-line .status-chip.success {
+    background: rgba(88, 201, 155, 0.14);
+    border-color: rgba(88, 201, 155, 0.24);
+    color: #2f8e6a;
+}
+
+html[data-theme="light-jp"] #priority-books .priority-side-line .status-chip.warning {
+    background: rgba(243, 184, 90, 0.14);
+    border-color: rgba(243, 184, 90, 0.24);
+    color: #a97317;
+}
+
+html[data-theme="light-jp"] #priority-books .priority-side-line .status-chip.primary {
+    background: rgba(122, 168, 255, 0.14);
+    border-color: rgba(122, 168, 255, 0.24);
+    color: #3560a8;
+}
+
+@media (max-width: 980px) {
+    #priority-books .priority-content-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    #priority-books .priority-content-right {
+        padding-left: 0;
+        align-items: flex-start;
+    }
+
+    #priority-books .priority-content-right::before {
+        display: none;
+    }
+
+    #priority-books .priority-side-line {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    #priority-books .priority-card {
+        padding: 18px 16px 16px;
+    }
+
+    #priority-books .priority-headline {
+        margin-bottom: 10px;
+    }
+
+    #priority-books .priority-desc {
+        min-height: 0;
+    }
+
+    #priority-books .priority-inline-stats {
+        margin-top: 10px;
+    }
+
+    #priority-books .priority-side-line .status-chip {
+        min-height: 32px;
+        font-size: 11px;
+    }
+}
+
+/* =========================
+   dashboard 今天先学卡片
+   字号层级精修
+   ========================= */
+
+#priority-books .priority-title {
+    font-size: clamp(26px, 3.2vw, 38px);
+    font-weight: 850;
+    line-height: 1.08;
+    letter-spacing: -0.028em;
+}
+
+#priority-books .priority-desc {
+    font-size: 13px;
+    line-height: 1.72;
+    font-weight: 500;
+}
+
+#priority-books .priority-inline-stats .mini-chip {
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+#priority-books .priority-side-line .status-chip {
+    min-height: 32px;
+    padding: 0 11px;
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0;
+}
+
+#priority-books .priority-head-actions .icon-action-btn {
+    min-height: 26px;
+    padding: 0 8px;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+html[data-theme="light-jp"] #priority-books .priority-title {
+    color: var(--text);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-desc {
+    color: var(--text-soft);
+}
+
+@media (max-width: 980px) {
+    #priority-books .priority-title {
+        font-size: clamp(24px, 5vw, 32px);
+    }
+}
+
+@media (max-width: 768px) {
+    #priority-books .priority-title {
+        font-size: 22px;
+        line-height: 1.12;
+        letter-spacing: -0.02em;
+    }
+
+    #priority-books .priority-desc {
+        font-size: 12px;
+        line-height: 1.65;
+    }
+
+    #priority-books .priority-inline-stats .mini-chip,
+    #priority-books .priority-side-line .status-chip {
+        font-size: 10px;
+    }
+}
+
+/* =========================
+   dashboard 今天先学卡片
+   右侧状态块对齐精修
+   ========================= */
+
+#priority-books .priority-content-right {
+    gap: 10px;
+}
+
+#priority-books .priority-side-line {
+    justify-content: stretch;
+}
+
+#priority-books .priority-side-line .status-chip {
+    width: 100%;
+    min-height: 38px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    border-radius: 14px;
+    text-align: left;
+    white-space: normal;
+    line-height: 1.35;
+    box-sizing: border-box;
+}
+
+html[data-theme="light-jp"] #priority-books .priority-side-line .status-chip {
+    box-shadow: none;
+}
+
+html[data-theme="light-jp"] #priority-books .priority-side-line .status-chip.success {
+    background: rgba(88, 201, 155, 0.10);
+    border-color: rgba(88, 201, 155, 0.22);
+    color: #2f8e6a;
+}
+
+html[data-theme="light-jp"] #priority-books .priority-side-line .status-chip.warning {
+    background: rgba(243, 184, 90, 0.10);
+    border-color: rgba(243, 184, 90, 0.22);
+    color: #a97317;
+}
+
+html[data-theme="light-jp"] #priority-books .priority-side-line .status-chip.primary {
+    background: rgba(122, 168, 255, 0.10);
+    border-color: rgba(122, 168, 255, 0.22);
+    color: #3560a8;
+}
+
+@media (max-width: 980px) {
+    #priority-books .priority-side-line .status-chip {
+        min-height: 34px;
+        padding: 0 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    #priority-books .priority-side-line .status-chip {
+        width: auto;
+        min-height: 32px;
+        padding: 0 10px;
+        border-radius: 999px;
+    }
+}
+
+/* =========================
+   dashboard 今天先学卡片
+   右侧状态块：标题 + 值
+   ========================= */
+
+#priority-books .priority-status-block {
+    width: 100%;
+    min-height: 56px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+#priority-books .priority-status-label {
+    font-size: 10px;
+    line-height: 1.2;
+    font-weight: 700;
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+}
+
+#priority-books .priority-status-value {
+    font-size: 12px;
+    line-height: 1.35;
+    font-weight: 800;
+    color: var(--text);
+    word-break: break-word;
+}
+
+#priority-books .priority-status-block.success {
+    border-color: rgba(51, 209, 122, 0.24);
+    background: rgba(51, 209, 122, 0.10);
+}
+
+#priority-books .priority-status-block.warning {
+    border-color: rgba(255, 190, 85, 0.24);
+    background: rgba(255, 190, 85, 0.10);
+}
+
+#priority-books .priority-status-block.primary {
+    border-color: rgba(110, 168, 255, 0.24);
+    background: rgba(110, 168, 255, 0.10);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-status-block {
+    background: rgba(255, 255, 255, 0.78);
+    border-color: rgba(117, 147, 196, 0.16);
+    box-shadow: none;
+}
+
+html[data-theme="light-jp"] #priority-books .priority-status-block.success {
+    background: rgba(88, 201, 155, 0.10);
+    border-color: rgba(88, 201, 155, 0.22);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-status-block.warning {
+    background: rgba(243, 184, 90, 0.10);
+    border-color: rgba(243, 184, 90, 0.22);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-status-block.primary {
+    background: rgba(122, 168, 255, 0.10);
+    border-color: rgba(122, 168, 255, 0.22);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-status-label {
+    color: var(--text-faint);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-status-value {
+    color: var(--text);
+}
+
+@media (max-width: 768px) {
+    #priority-books .priority-status-block {
+        width: auto;
+        min-height: 40px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        gap: 2px;
+    }
+
+    #priority-books .priority-status-label {
+        font-size: 9px;
+    }
+
+    #priority-books .priority-status-value {
+        font-size: 11px;
+    }
+}
+
+/* =========================
+   dashboard 今天先学卡片
+   右侧三块统一成同组信息组件
+   ========================= */
+
+#priority-books .priority-content-right {
+    gap: 12px;
+}
+
+#priority-books .priority-side-line {
+    width: 100%;
+}
+
+#priority-books .priority-status-block {
+    width: 100%;
+    min-height: 60px;
+    padding: 10px 14px 11px;
+    border-radius: 14px;
+    gap: 3px;
+    justify-content: center;
+}
+
+#priority-books .priority-status-label {
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.15;
+    opacity: 0.82;
+}
+
+#priority-books .priority-status-value {
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+#priority-books .priority-status-block.success,
+#priority-books .priority-status-block.warning,
+#priority-books .priority-status-block.primary {
+    box-shadow: none;
+}
+
+html[data-theme="light-jp"] #priority-books .priority-status-block {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.90), rgba(248, 251, 255, 0.96));
+    border-color: rgba(117, 147, 196, 0.14);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-status-block.success {
+    background: linear-gradient(180deg, rgba(88, 201, 155, 0.10), rgba(255, 255, 255, 0.94));
+    border-color: rgba(88, 201, 155, 0.18);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-status-block.warning {
+    background: linear-gradient(180deg, rgba(243, 184, 90, 0.10), rgba(255, 255, 255, 0.94));
+    border-color: rgba(243, 184, 90, 0.18);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-status-block.primary {
+    background: linear-gradient(180deg, rgba(122, 168, 255, 0.10), rgba(255, 255, 255, 0.94));
+    border-color: rgba(122, 168, 255, 0.18);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-status-label {
+    color: var(--text-faint);
+}
+
+html[data-theme="light-jp"] #priority-books .priority-status-value {
+    color: var(--text);
+}
+
+@media (max-width: 980px) {
+    #priority-books .priority-content-right {
+        gap: 10px;
+    }
+
+    #priority-books .priority-status-block {
+        min-height: 54px;
+        padding: 9px 12px 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    #priority-books .priority-content-right {
+        gap: 8px;
+    }
+
+    #priority-books .priority-status-block {
+        width: auto;
+        min-height: 40px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        gap: 2px;
+    }
+
+    #priority-books .priority-status-label {
+        font-size: 9px;
+    }
+
+    #priority-books .priority-status-value {
+        font-size: 11px;
+    }
+}
+
+/* =========================
+   dashboard 今天先学卡片
+   左右上下基线对齐
+   ========================= */
+
+#priority-books .priority-main-full {
+    gap: 0;
+}
+
+#priority-books .priority-headline {
+    margin-bottom: 12px;
+}
+
+#priority-books .priority-content-row {
+    align-items: start;
+    margin-top: 0;
+}
+
+#priority-books .priority-content-left,
+#priority-books .priority-content-right {
+    padding-top: 2px;
+}
+
+#priority-books .priority-content-right {
+    justify-content: flex-start;
+}
+
+#priority-books .priority-desc {
+    margin-top: 0;
+}
+
+#priority-books .priority-inline-stats {
+    margin-top: 12px;
+}
+
+@media (max-width: 980px) {
+    #priority-books .priority-content-left,
+    #priority-books .priority-content-right {
+        padding-top: 0;
+    }
+
+    #priority-books .priority-headline {
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    #priority-books .priority-headline {
+        margin-bottom: 8px;
+    }
+
+    #priority-books .priority-inline-stats {
+        margin-top: 10px;
+    }
+}
+
+/* =========================
+   手机端：限制描述撑高
+   ========================= */
+
+@media (max-width: 768px) {
+    #priority-books .priority-desc {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;   /* 最多两行 */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    #priority-books .priority-content-right {
+        align-self: stretch;
+    }
+
+    #priority-books .priority-status-block {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+/* =========================
+   手机端整体居中修正
+   ========================= */
+
+@media (max-width: 768px) {
+
+    .dashboard-page {
+        width: 100%;
+        margin: 0 auto;
+        padding-left: 12px;
+        padding-right: 12px;
+        box-sizing: border-box;
+    }
+
+    .section-card {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    #priority-books .priority-card,
+    #all-books .book-card {
+        width: 100%;
+    }
+
 }

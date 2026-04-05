@@ -1,13 +1,26 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
 <head>
+
+    <script>
+        (function () {
+            try {
+                var savedTheme = localStorage.getItem("study_theme") || "dark";
+                document.documentElement.setAttribute("data-theme", savedTheme);
+            } catch (e) {
+                document.documentElement.setAttribute("data-theme", "dark");
+            }
+        })();
+    </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>我的学习</title>
     <link rel="stylesheet" href="{% static 'train/css/theme.css' %}">
 </head>
-<body>
+<body class="train-body">
+
     {% firstof total_books books|length all_books|length priority_books|length "0" as dashboard_total_books %}
     {% firstof due_total today_due_total pending_total "0" as dashboard_due_total %}
     {% firstof overdue_total today_overdue_total "0" as dashboard_overdue_total %}
@@ -25,6 +38,11 @@
                 </div>
 
                 <div class="topbar-right">
+                    <div class="global-theme-switch">
+                        <button id="themeToggleBtn" aria-label="切换页面风格" title="切换页面风格">
+                            🌙
+                        </button>
+                    </div>
                     <a href="{% url 'stats-page' %}" class="secondary-btn">学习统计</a>
                     <div class="user-pill">{{ request.user.username }}</div>
                 </div>
@@ -82,24 +100,43 @@
                                                 </div>
                                             </div>
 
-                                            <div class="priority-desc">{{ book.description|default:"暂无描述" }}</div>
+                                            <div class="priority-content-row">
+                                                <div class="priority-content-left">
+                                                    <div class="priority-desc">{{ book.description|default:"暂无描述" }}</div>
 
-                                            <div class="priority-meta">
-                                                {% if book_overdue_count != "0" %}
-                                                    <span class="status-chip danger">已逾期：{{ book_overdue_count }}</span>
-                                                {% else %}
-                                                    <span class="status-chip success">可继续推进</span>
-                                                {% endif %}
-                                                <span class="status-chip warning">当前阶段：{{ book_stage }}</span>
-                                            </div>
+                                                    <div class="priority-inline-stats">
+                                                        <span class="mini-chip">待处理 {{ book_pending_count }}</span>
+                                                        <span class="mini-chip">巩固中 {{ book_in_progress_count }}</span>
+                                                    </div>
+                                                </div>
 
-                                            <div class="priority-review-line">
-                                                <span class="status-chip primary">下一次复习：{{ book_next_review }}</span>
-                                            </div>
+                                                <div class="priority-content-right">
+                                                    <div class="priority-side-line">
+                                                        {% if book_overdue_count != "0" %}
+                                                            <div class="priority-status-block danger">
+                                                                <div class="priority-status-value">已逾期：{{ book_overdue_count }}</div>
+                                                            </div>
+                                                        {% else %}
+                                                            <div class="priority-status-block success">
+                                                                <div class="priority-status-value">可继续推进</div>
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
 
-                                            <div class="priority-inline-stats">
-                                                <span class="mini-chip">待处理 {{ book_pending_count }}</span>
-                                                <span class="mini-chip">巩固中 {{ book_in_progress_count }}</span>
+                                                    <div class="priority-side-line">
+                                                        <div class="priority-status-block warning">
+                                                            <div class="priority-status-label">当前阶段</div>
+                                                            <div class="priority-status-value">{{ book_stage }}</div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="priority-side-line">
+                                                        <div class="priority-status-block primary">
+                                                            <div class="priority-status-label">下一次复习</div>
+                                                            <div class="priority-status-value">{{ book_next_review }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </article>
@@ -285,5 +322,41 @@
             <div class="footer-note">Dashboard Page</div>
         </div>
     </div>
+
+    <script>
+        (function () {
+            var root = document.documentElement;
+            var btn = document.getElementById("themeToggleBtn");
+
+            if (!btn) return;
+
+            function getTheme() {
+                return root.getAttribute("data-theme") || "dark";
+            }
+
+            function updateLabel(theme) {
+                btn.textContent = theme === "light-jp" ? "🌸" : "🌙";
+                btn.setAttribute("title", theme === "light-jp" ? "切换到暗色模式" : "切换到明快模式");
+                btn.setAttribute("aria-label", theme === "light-jp" ? "切换到暗色模式" : "切换到明快模式");
+            }
+
+            updateLabel(getTheme());
+
+            btn.addEventListener("click", function () {
+                var current = getTheme();
+                var next = current === "light-jp" ? "dark" : "light-jp";
+
+                root.setAttribute("data-theme", next);
+
+                try {
+                    localStorage.setItem("study_theme", next);
+                } catch (e) {}
+
+                updateLabel(next);
+            });
+        })();
+    </script>
+
+
 </body>
 </html>

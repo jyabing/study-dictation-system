@@ -1237,14 +1237,16 @@ def get_dashboard_cycle_summary(user):
         level_counter[level] += 1
 
         next_review_at = getattr(m, "next_review_at", None)
-        if next_review_at:
-            next_review_candidates.append(next_review_at)
 
+        if next_review_at:
             local_next = timezone.localtime(next_review_at)
             local_now = timezone.localtime(now)
 
             rule = _get_strict_step_rule(level)
             grace = rule.get("grace")
+
+            if level > 0:
+                next_review_candidates.append(next_review_at)
 
             is_overdue = (
                 level > 0
@@ -1397,8 +1399,9 @@ def get_book_lessons_cycle_summary(user, book):
             if is_overdue:
                 row["overdue_count"] += 1
 
-            if row["next_review_at"] is None or next_review_at < row["next_review_at"]:
-                row["next_review_at"] = next_review_at
+            if level > 0:
+                if row["next_review_at"] is None or next_review_at < row["next_review_at"]:
+                    row["next_review_at"] = next_review_at
 
     result = []
 
@@ -1687,8 +1690,9 @@ def get_dashboard_books_cycle_summary(user, books):
             if is_overdue:
                 row["overdue_count"] += 1
 
-            if row["next_review_at"] is None or next_review_at < row["next_review_at"]:
-                row["next_review_at"] = next_review_at
+            if level > 0:
+                if row["next_review_at"] is None or next_review_at < row["next_review_at"]:
+                    row["next_review_at"] = next_review_at
 
     result = []
 

@@ -1056,6 +1056,38 @@ def update_memory_after_answer(memory, is_correct):
     memory.last_review_at = now
     memory.save()
 
+def _touch_memory_after_wrong_word_replay(memory, is_correct):
+    """
+    方案 A：
+    错词复盘只回写题级强化信号，
+    不推进 / 不重置严格 cycle_step 主循环。
+
+    原因：
+    一个 cloze 题可能拆成多个错词复盘项，
+    如果这里直接调用 update_memory_after_answer()，
+    会对同一题重复推进或重复重置。
+    """
+    if not memory:
+        return
+
+    now = timezone.now()
+
+    memory.last_review_at = now
+
+    if is_correct:
+        _set_wrong_boost(memory, max(_get_wrong_boost(memory) - 1, 0))
+        memory.last_result = "replay_correct"
+        memory.last_reset_reason = ""
+    else:
+        _set_wrong_boost(memory, min(_get_wrong_boost(memory) + 1, 10))
+        _set_last_wrong_at(memory, now)
+        memory.last_result = "replay_wrong"
+        memory.last_reset_reason = "wrong_word_replay"
+
+    memory.save()
+
+
+
 def _memory_stage_label(level):
     """
     严格艾宾浩斯循环阶段显示：
@@ -2362,6 +2394,14 @@ def _train_api_by_scope(request, scope, obj):
 
             _session_set_wrong_word_queue(request, wrong_word_queue)
 
+            origin_training = _get_scope_training_qs(scope, obj).filter(
+                id=target.get("training_id")
+            ).first()
+
+            if origin_training:
+                replay_memory = get_item_memory(request.user, origin_training)
+                _touch_memory_after_wrong_word_replay(replay_memory, is_correct)
+
             xp = add_xp(request, is_correct)
 
             return JsonResponse({
@@ -2380,9 +2420,6 @@ def _train_api_by_scope(request, scope, obj):
                 "prompt": target.get("prompt", ""),
                 "cloze_text": target.get("cloze_text", ""),
                 "choices": [],
-                "audio": "",
-                "train_scope": scope,
-                "train_scope_label": scope_label,
             })
 
         # -------------------------
@@ -2413,13 +2450,6 @@ def _train_api_by_scope(request, scope, obj):
         cycle_before = _build_cycle_status(memory)
 
         update_memory_after_answer(memory, is_correct)
-        memory.save()
-        memory.refresh_from_db()
-
-        cycle_after = _build_cycle_status(memory)
-
-        update_memory_after_answer(memory, is_correct)
-        memory.save()
         memory.refresh_from_db()
 
         cycle_after = _build_cycle_status(memory)

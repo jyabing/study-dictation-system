@@ -1,362 +1,311 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark">
-<head>
+{% extends "train/base_train.html" %}
 
-    <script>
-        (function () {
-            try {
-                var savedTheme = localStorage.getItem("study_theme") || "dark";
-                document.documentElement.setAttribute("data-theme", savedTheme);
-            } catch (e) {
-                document.documentElement.setAttribute("data-theme", "dark");
-            }
-        })();
-    </script>
+{% block title %}我的学习{% endblock %}
 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的学习</title>
-    <link rel="stylesheet" href="{% static 'train/css/theme.css' %}">
-</head>
-<body class="train-body">
+{% block body_class %}dashboard-body{% endblock %}
 
-    {% firstof total_books books|length all_books|length priority_books|length "0" as dashboard_total_books %}
-    {% firstof due_total today_due_total pending_total "0" as dashboard_due_total %}
-    {% firstof overdue_total today_overdue_total "0" as dashboard_overdue_total %}
-    {% firstof done_total completed_total "0" as dashboard_done_total %}
+{% block global_theme_switch %}{% endblock %}
 
-    <div class="dashboard-page">
-        <div class="dashboard-shell">
+{% block content %}
+{% firstof total_books books|length all_books|length priority_books|length "0" as dashboard_total_books %}
+{% firstof due_total today_due_total pending_total "0" as dashboard_due_total %}
+{% firstof overdue_total today_overdue_total "0" as dashboard_overdue_total %}
+{% firstof done_total completed_total "0" as dashboard_done_total %}
 
-            <div class="topbar dashboard-topbar-compact">
-                <div class="topbar-left">
-                    <div class="page-title-group">
-                        <h1 class="dashboard-page-title">今日学习</h1>
-                        <div class="dashboard-page-subtitle">优先处理逾期与今日到期内容</div>
-                    </div>
-                </div>
+<div class="dashboard-page">
+    <div class="dashboard-shell">
 
-                <div class="topbar-right">
-                    <div class="global-theme-switch">
-                        <button id="themeToggleBtn" aria-label="切换页面风格" title="切换页面风格">
-                            🌙
-                        </button>
-                    </div>
-                    <a href="{% url 'stats-page' %}" class="secondary-btn">学习统计</a>
-                    <div class="user-pill">{{ request.user.username }}</div>
+        <div class="topbar dashboard-topbar-compact">
+            <div class="topbar-left">
+                <div class="page-title-group">
+                    <h1 class="dashboard-page-title">今日学习</h1>
+                    <div class="dashboard-page-subtitle">优先处理逾期与今日到期内容</div>
                 </div>
             </div>
 
-            <section class="section-card" id="priority-books">
-                <div class="section-header">
-                    <div>
-                        <h2 class="section-title">今天先学</h2>
-                        <div class="section-subtitle">先点书名开始今天最该处理的内容，再看统计与全部书册。</div>
-                    </div>
+            <div class="topbar-right">
+                <div class="global-theme-switch">
+                    <button id="themeToggleBtn" aria-label="切换页面风格" title="切换页面风格">
+                        🌙
+                    </button>
+                </div>
+                <a href="{% url 'stats-page' %}" class="secondary-btn">学习统计</a>
+                <div class="user-pill">{{ request.user.username }}</div>
+            </div>
+        </div>
 
-                    <div class="section-header-actions">
-                        <a href="#all-books" class="secondary-btn">查看全部书册</a>
-                    </div>
+        <section class="section-card" id="priority-books">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">今天先学</h2>
+                    <div class="section-subtitle">先点书名开始今天最该处理的内容，再看统计与全部书册。</div>
                 </div>
 
-                <div class="section-body">
-                    <div class="priority-list">
-                        {% with priority_books|default:books as dashboard_priority_books %}
-                            {% if dashboard_priority_books %}
-                                {% for book in dashboard_priority_books %}
+                <div class="section-header-actions">
+                    <a href="#all-books" class="secondary-btn">查看全部书册</a>
+                </div>
+            </div>
+
+            <div class="section-body">
+                <div class="priority-list">
+                    {% with priority_books|default:books as dashboard_priority_books %}
+                        {% if dashboard_priority_books %}
+                            {% for book in dashboard_priority_books %}
+                                {% firstof book.focus_lesson_id book.current_lesson_id book.first_lesson_id as start_lesson_id %}
+                                {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
+                                {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
+                                {% firstof book.pending_count "0" as book_pending_count %}
+                                {% firstof book.overdue_count "0" as book_overdue_count %}
+                                {% firstof book.in_progress_count "0" as book_in_progress_count %}
+
+                                <article class="priority-card">
+                                    <div class="priority-main priority-main-full">
+                                        <div class="priority-headline">
+                                            {% if book.id %}
+                                                <a href="{% url 'book-detail' book.id %}" class="priority-title-link">
+                                                    <h3 class="priority-title">{{ book.title }}</h3>
+                                                </a>
+                                            {% elif book.book_id %}
+                                                <a href="{% url 'book-detail' book.book_id %}" class="priority-title-link">
+                                                    <h3 class="priority-title">{{ book.title }}</h3>
+                                                </a>
+                                            {% elif start_lesson_id %}
+                                                <a href="{% url 'lesson-train' start_lesson_id %}" class="priority-title-link">
+                                                    <h3 class="priority-title">{{ book.title }}</h3>
+                                                </a>
+                                            {% else %}
+                                                <h3 class="priority-title">{{ book.title }}</h3>
+                                            {% endif %}
+
+                                            <div class="priority-head-actions">
+                                                {% if book.id %}
+                                                    <a href="{% url 'book-edit' book.id %}" class="icon-action-btn">编辑</a>
+                                                {% elif book.book_id %}
+                                                    <a href="{% url 'book-edit' book.book_id %}" class="icon-action-btn">编辑</a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="priority-content-row">
+                                            <div class="priority-content-left">
+                                                <div class="priority-desc">{{ book.description|default:"暂无描述" }}</div>
+
+                                                <div class="priority-inline-stats">
+                                                    <span class="mini-chip">待处理 {{ book_pending_count }}</span>
+                                                    <span class="mini-chip">巩固中 {{ book_in_progress_count }}</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="priority-content-right">
+                                                <div class="priority-side-line">
+                                                    {% if book_overdue_count != "0" %}
+                                                        <div class="priority-status-block danger">
+                                                            <div class="priority-status-value">已逾期：{{ book_overdue_count }}</div>
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="priority-status-block success">
+                                                            <div class="priority-status-value">可继续推进</div>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+
+                                                <div class="priority-side-line">
+                                                    <div class="priority-status-block warning">
+                                                        <div class="priority-status-label">当前阶段</div>
+                                                        <div class="priority-status-value">{{ book_stage }}</div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="priority-side-line">
+                                                    <div class="priority-status-block primary">
+                                                        <div class="priority-status-label">下一次复习</div>
+                                                        <div class="priority-status-value">{{ book_next_review }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-card">
+                                <div class="empty-title">还没有书册</div>
+                                <div>先创建书册，再从这里进入记忆循环。</div>
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </section>
+
+        <section class="section-card today-summary-card">
+            <div class="today-summary-chips">
+                <span class="hero-chip primary">书册总数：{{ dashboard_total_books }}</span>
+                <span class="hero-chip warning">今日待处理：{{ dashboard_due_total }}</span>
+                <span class="hero-chip danger">已逾期：{{ dashboard_overdue_total }}</span>
+                <span class="hero-chip success">已完成：{{ dashboard_done_total }}</span>
+            </div>
+        </section>
+
+        <section class="section-card" id="all-books">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">全部书册</h2>
+                    <div class="section-subtitle">桌面端为表格，手机端为紧凑卡片。</div>
+                </div>
+            </div>
+
+            <div class="section-body">
+                {% with all_books|default:books as dashboard_all_books %}
+                    {% if dashboard_all_books %}
+                        <div class="all-books-desktop">
+                            <div class="books-table-wrap books-table-wrap-compact">
+                                <table class="books-table books-table-compact">
+                                    <thead>
+                                        <tr>
+                                            <th>书册</th>
+                                            <th>学习状态</th>
+                                            <th>待处理</th>
+                                            <th>状态</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for book in dashboard_all_books %}
+                                            {% firstof book.focus_lesson_id book.current_lesson_id book.first_lesson_id as start_lesson_id %}
+                                            {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
+                                            {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
+                                            {% firstof book.pending_count "0" as book_pending_count %}
+                                            {% firstof book.overdue_count "0" as book_overdue_count %}
+                                            {% firstof book.new_count "0" as book_new_count %}
+                                            {% firstof book.in_progress_count "0" as book_in_progress_count %}
+                                            {% firstof book.mastered_count "0" as book_mastered_count %}
+
+                                            <tr>
+                                                <td class="books-table-title-cell books-table-main-cell">
+                                                    <div class="books-table-title">{{ book.title }}</div>
+                                                    <div class="books-table-desc">{{ book.description|default:"暂无描述" }}</div>
+                                                    <div class="books-table-mini-meta">
+                                                        <span class="mini-chip">新学 {{ book_new_count }}</span>
+                                                        <span class="mini-chip">巩固中 {{ book_in_progress_count }}</span>
+                                                        <span class="mini-chip">长期巩固 {{ book_mastered_count }}</span>
+                                                    </div>
+                                                </td>
+
+                                                <td class="books-table-status-cell">
+                                                    <div class="books-table-info-block">
+                                                        <div class="books-table-info-label">当前阶段</div>
+                                                        <div class="books-table-info-value">{{ book_stage }}</div>
+                                                    </div>
+                                                    <div class="books-table-info-block">
+                                                        <div class="books-table-info-label">下一次复习</div>
+                                                        <div class="books-table-info-value">{{ book_next_review }}</div>
+                                                    </div>
+                                                </td>
+
+                                                <td class="books-table-number-cell">
+                                                    <div class="books-table-number">{{ book_pending_count }}</div>
+                                                </td>
+
+                                                <td class="books-table-state-cell">
+                                                    {% if book_overdue_count != "0" %}
+                                                        <span class="book-chip danger">已逾期 {{ book_overdue_count }}</span>
+                                                    {% else %}
+                                                        <span class="book-chip success">状态正常</span>
+                                                    {% endif %}
+                                                </td>
+
+                                                <td class="books-table-action-cell">
+                                                    <div class="books-table-actions books-table-actions-compact">
+                                                        {% if book.id %}
+                                                            <a href="{% url 'book-detail' book.id %}" class="primary-btn">进入书册</a>
+                                                            <a href="{% url 'book-edit' book.id %}" class="ghost-btn">编辑</a>
+                                                        {% elif book.book_id %}
+                                                            <a href="{% url 'book-detail' book.book_id %}" class="primary-btn">进入书册</a>
+                                                            <a href="{% url 'book-edit' book.book_id %}" class="ghost-btn">编辑</a>
+                                                        {% elif start_lesson_id %}
+                                                            <a href="{% url 'lesson-train' start_lesson_id %}" class="primary-btn">进入书册</a>
+                                                        {% else %}
+                                                            <span class="ghost-btn">缺少书册ID</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="all-books-mobile">
+                            <div class="books-grid">
+                                {% for book in dashboard_all_books %}
                                     {% firstof book.focus_lesson_id book.current_lesson_id book.first_lesson_id as start_lesson_id %}
                                     {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
                                     {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
                                     {% firstof book.pending_count "0" as book_pending_count %}
                                     {% firstof book.overdue_count "0" as book_overdue_count %}
+                                    {% firstof book.new_count "0" as book_new_count %}
                                     {% firstof book.in_progress_count "0" as book_in_progress_count %}
+                                    {% firstof book.mastered_count "0" as book_mastered_count %}
 
-                                    <article class="priority-card">
-                                        <div class="priority-main priority-main-full">
-                                            <div class="priority-headline">
-                                                {% if book.id %}
-                                                    <a href="{% url 'book-detail' book.id %}" class="priority-title-link">
-                                                        <h3 class="priority-title">{{ book.title }}</h3>
-                                                    </a>
-                                                {% elif book.book_id %}
-                                                    <a href="{% url 'book-detail' book.book_id %}" class="priority-title-link">
-                                                        <h3 class="priority-title">{{ book.title }}</h3>
-                                                    </a>
-                                                {% elif start_lesson_id %}
-                                                    <a href="{% url 'lesson-train' start_lesson_id %}" class="priority-title-link">
-                                                        <h3 class="priority-title">{{ book.title }}</h3>
-                                                    </a>
-                                                {% else %}
-                                                    <h3 class="priority-title">{{ book.title }}</h3>
-                                                {% endif %}
-
-                                                <div class="priority-head-actions">
-                                                    {% if book.id %}
-                                                        <a href="{% url 'book-edit' book.id %}" class="icon-action-btn">编辑</a>
-                                                    {% elif book.book_id %}
-                                                        <a href="{% url 'book-edit' book.book_id %}" class="icon-action-btn">编辑</a>
-                                                    {% endif %}
-                                                </div>
+                                    <article class="book-card compact-book-card">
+                                        <div class="compact-book-head">
+                                            <div class="compact-book-main">
+                                                <h3 class="book-card-title">{{ book.title }}</h3>
+                                                <div class="book-card-desc">{{ book.description|default:"暂无描述" }}</div>
                                             </div>
+                                        </div>
 
-                                            <div class="priority-content-row">
-                                                <div class="priority-content-left">
-                                                    <div class="priority-desc">{{ book.description|default:"暂无描述" }}</div>
+                                        <div class="book-card-chips compact-book-chips">
+                                            <span class="book-chip warning">{{ book_stage }}</span>
+                                            {% if book_overdue_count != "0" %}
+                                                <span class="book-chip danger">已逾期 {{ book_overdue_count }}</span>
+                                            {% else %}
+                                                <span class="book-chip success">状态正常</span>
+                                            {% endif %}
+                                        </div>
 
-                                                    <div class="priority-inline-stats">
-                                                        <span class="mini-chip">待处理 {{ book_pending_count }}</span>
-                                                        <span class="mini-chip">巩固中 {{ book_in_progress_count }}</span>
-                                                    </div>
-                                                </div>
+                                        <div class="compact-book-line">
+                                            <span class="compact-label">下一次复习</span>
+                                            <span class="compact-value">{{ book_next_review }}</span>
+                                        </div>
 
-                                                <div class="priority-content-right">
-                                                    <div class="priority-side-line">
-                                                        {% if book_overdue_count != "0" %}
-                                                            <div class="priority-status-block danger">
-                                                                <div class="priority-status-value">已逾期：{{ book_overdue_count }}</div>
-                                                            </div>
-                                                        {% else %}
-                                                            <div class="priority-status-block success">
-                                                                <div class="priority-status-value">可继续推进</div>
-                                                            </div>
-                                                        {% endif %}
-                                                    </div>
+                                        <div class="compact-book-line compact-book-stats">
+                                            <span>待处理 {{ book_pending_count }}</span>
+                                            <span>新学 {{ book_new_count }}</span>
+                                            <span>巩固中 {{ book_in_progress_count }}</span>
+                                            <span>长期巩固 {{ book_mastered_count }}</span>
+                                        </div>
 
-                                                    <div class="priority-side-line">
-                                                        <div class="priority-status-block warning">
-                                                            <div class="priority-status-label">当前阶段</div>
-                                                            <div class="priority-status-value">{{ book_stage }}</div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="priority-side-line">
-                                                        <div class="priority-status-block primary">
-                                                            <div class="priority-status-label">下一次复习</div>
-                                                            <div class="priority-status-value">{{ book_next_review }}</div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                        <div class="book-card-actions compact-book-actions">
+                                            {% if book.id %}
+                                                <a href="{% url 'book-detail' book.id %}" class="primary-btn">进入书册</a>
+                                                <a href="{% url 'book-edit' book.id %}" class="ghost-btn">编辑</a>
+                                            {% elif book.book_id %}
+                                                <a href="{% url 'book-detail' book.book_id %}" class="primary-btn">进入书册</a>
+                                                <a href="{% url 'book-edit' book.book_id %}" class="ghost-btn">编辑</a>
+                                            {% elif start_lesson_id %}
+                                                <a href="{% url 'lesson-train' start_lesson_id %}" class="primary-btn">进入书册</a>
+                                            {% else %}
+                                                <span class="ghost-btn">缺少书册ID</span>
+                                            {% endif %}
                                         </div>
                                     </article>
                                 {% endfor %}
-                            {% else %}
-                                <div class="empty-card">
-                                    <div class="empty-title">还没有书册</div>
-                                    <div>先创建书册，再从这里进入记忆循环。</div>
-                                </div>
-                            {% endif %}
-                        {% endwith %}
-                    </div>
-                </div>
-            </section>
-
-            <section class="section-card today-summary-card">
-                <div class="today-summary-chips">
-                    <span class="hero-chip primary">书册总数：{{ dashboard_total_books }}</span>
-                    <span class="hero-chip warning">今日待处理：{{ dashboard_due_total }}</span>
-                    <span class="hero-chip danger">已逾期：{{ dashboard_overdue_total }}</span>
-                    <span class="hero-chip success">已完成：{{ dashboard_done_total }}</span>
-                </div>
-            </section>
-
-            <section class="section-card" id="all-books">
-                <div class="section-header">
-                    <div>
-                        <h2 class="section-title">全部书册</h2>
-                        <div class="section-subtitle">桌面端为表格，手机端为紧凑卡片。</div>
-                    </div>
-                </div>
-
-                <div class="section-body">
-                    {% with all_books|default:books as dashboard_all_books %}
-                        {% if dashboard_all_books %}
-                            <div class="all-books-desktop">
-                                <div class="books-table-wrap books-table-wrap-compact">
-                                    <table class="books-table books-table-compact">
-                                        <thead>
-                                            <tr>
-                                                <th>书册</th>
-                                                <th>学习状态</th>
-                                                <th>待处理</th>
-                                                <th>状态</th>
-                                                <th>操作</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for book in dashboard_all_books %}
-                                                {% firstof book.focus_lesson_id book.current_lesson_id book.first_lesson_id as start_lesson_id %}
-                                                {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
-                                                {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
-                                                {% firstof book.pending_count "0" as book_pending_count %}
-                                                {% firstof book.overdue_count "0" as book_overdue_count %}
-                                                {% firstof book.new_count "0" as book_new_count %}
-                                                {% firstof book.in_progress_count "0" as book_in_progress_count %}
-                                                {% firstof book.mastered_count "0" as book_mastered_count %}
-
-                                                <tr>
-                                                    <td class="books-table-title-cell books-table-main-cell">
-                                                        <div class="books-table-title">{{ book.title }}</div>
-                                                        <div class="books-table-desc">{{ book.description|default:"暂无描述" }}</div>
-                                                        <div class="books-table-mini-meta">
-                                                            <span class="mini-chip">新学 {{ book_new_count }}</span>
-                                                            <span class="mini-chip">巩固中 {{ book_in_progress_count }}</span>
-                                                            <span class="mini-chip">长期巩固 {{ book_mastered_count }}</span>
-                                                        </div>
-                                                    </td>
-
-                                                    <td class="books-table-status-cell">
-                                                        <div class="books-table-info-block">
-                                                            <div class="books-table-info-label">当前阶段</div>
-                                                            <div class="books-table-info-value">{{ book_stage }}</div>
-                                                        </div>
-                                                        <div class="books-table-info-block">
-                                                            <div class="books-table-info-label">下一次复习</div>
-                                                            <div class="books-table-info-value">{{ book_next_review }}</div>
-                                                        </div>
-                                                    </td>
-
-                                                    <td class="books-table-number-cell">
-                                                        <div class="books-table-number">{{ book_pending_count }}</div>
-                                                    </td>
-
-                                                    <td class="books-table-state-cell">
-                                                        {% if book_overdue_count != "0" %}
-                                                            <span class="book-chip danger">已逾期 {{ book_overdue_count }}</span>
-                                                        {% else %}
-                                                            <span class="book-chip success">状态正常</span>
-                                                        {% endif %}
-                                                    </td>
-
-                                                    <td class="books-table-action-cell">
-                                                        <div class="books-table-actions books-table-actions-compact">
-                                                            {% if book.id %}
-                                                                <a href="{% url 'book-detail' book.id %}" class="primary-btn">进入书册</a>
-                                                                <a href="{% url 'book-edit' book.id %}" class="ghost-btn">编辑</a>
-                                                            {% elif book.book_id %}
-                                                                <a href="{% url 'book-detail' book.book_id %}" class="primary-btn">进入书册</a>
-                                                                <a href="{% url 'book-edit' book.book_id %}" class="ghost-btn">编辑</a>
-                                                            {% elif start_lesson_id %}
-                                                                <a href="{% url 'lesson-train' start_lesson_id %}" class="primary-btn">进入书册</a>
-                                                            {% else %}
-                                                                <span class="ghost-btn">缺少书册ID</span>
-                                                            {% endif %}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
                             </div>
+                        </div>
+                    {% else %}
+                        <div class="empty-card">
+                            <div class="empty-title">还没有可显示的书册</div>
+                            <div>等你创建书册后，这里会统一显示成深色训练风格。</div>
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </section>
 
-                            <div class="all-books-mobile">
-                                <div class="books-grid">
-                                    {% for book in dashboard_all_books %}
-                                        {% firstof book.focus_lesson_id book.current_lesson_id book.first_lesson_id as start_lesson_id %}
-                                        {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
-                                        {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
-                                        {% firstof book.pending_count "0" as book_pending_count %}
-                                        {% firstof book.overdue_count "0" as book_overdue_count %}
-                                        {% firstof book.new_count "0" as book_new_count %}
-                                        {% firstof book.in_progress_count "0" as book_in_progress_count %}
-                                        {% firstof book.mastered_count "0" as book_mastered_count %}
-
-                                        <article class="book-card compact-book-card">
-                                            <div class="compact-book-head">
-                                                <div class="compact-book-main">
-                                                    <h3 class="book-card-title">{{ book.title }}</h3>
-                                                    <div class="book-card-desc">{{ book.description|default:"暂无描述" }}</div>
-                                                </div>
-                                            </div>
-
-                                            <div class="book-card-chips compact-book-chips">
-                                                <span class="book-chip warning">{{ book_stage }}</span>
-                                                {% if book_overdue_count != "0" %}
-                                                    <span class="book-chip danger">已逾期 {{ book_overdue_count }}</span>
-                                                {% else %}
-                                                    <span class="book-chip success">状态正常</span>
-                                                {% endif %}
-                                            </div>
-
-                                            <div class="compact-book-line">
-                                                <span class="compact-label">下一次复习</span>
-                                                <span class="compact-value">{{ book_next_review }}</span>
-                                            </div>
-
-                                            <div class="compact-book-line compact-book-stats">
-                                                <span>待处理 {{ book_pending_count }}</span>
-                                                <span>新学 {{ book_new_count }}</span>
-                                                <span>巩固中 {{ book_in_progress_count }}</span>
-                                                <span>长期巩固 {{ book_mastered_count }}</span>
-                                            </div>
-
-                                            <div class="book-card-actions compact-book-actions">
-                                                {% if book.id %}
-                                                    <a href="{% url 'book-detail' book.id %}" class="primary-btn">进入书册</a>
-                                                    <a href="{% url 'book-edit' book.id %}" class="ghost-btn">编辑</a>
-                                                {% elif book.book_id %}
-                                                    <a href="{% url 'book-detail' book.book_id %}" class="primary-btn">进入书册</a>
-                                                    <a href="{% url 'book-edit' book.book_id %}" class="ghost-btn">编辑</a>
-                                                {% elif start_lesson_id %}
-                                                    <a href="{% url 'lesson-train' start_lesson_id %}" class="primary-btn">进入书册</a>
-                                                {% else %}
-                                                    <span class="ghost-btn">缺少书册ID</span>
-                                                {% endif %}
-                                            </div>
-                                        </article>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        {% else %}
-                            <div class="empty-card">
-                                <div class="empty-title">还没有可显示的书册</div>
-                                <div>等你创建书册后，这里会统一显示成深色训练风格。</div>
-                            </div>
-                        {% endif %}
-                    {% endwith %}
-                </div>
-            </section>
-
-            <div class="footer-note">Dashboard Page</div>
-        </div>
+        <div class="footer-note">Dashboard Page</div>
     </div>
-
-    <script>
-        (function () {
-            var root = document.documentElement;
-            var btn = document.getElementById("themeToggleBtn");
-
-            if (!btn) return;
-
-            function getTheme() {
-                return root.getAttribute("data-theme") || "dark";
-            }
-
-            function updateLabel(theme) {
-                btn.textContent = theme === "light-jp" ? "🌸" : "🌙";
-                btn.setAttribute("title", theme === "light-jp" ? "切换到暗色模式" : "切换到明快模式");
-                btn.setAttribute("aria-label", theme === "light-jp" ? "切换到暗色模式" : "切换到明快模式");
-            }
-
-            updateLabel(getTheme());
-
-            btn.addEventListener("click", function () {
-                var current = getTheme();
-                var next = current === "light-jp" ? "dark" : "light-jp";
-
-                root.setAttribute("data-theme", next);
-
-                try {
-                    localStorage.setItem("study_theme", next);
-                } catch (e) {}
-
-                updateLabel(next);
-            });
-        })();
-    </script>
-
-
-</body>
-</html>
+</div>
+{% endblock %}

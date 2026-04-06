@@ -2270,3 +2270,64 @@ html[data-theme="light-jp"] #priority-books .priority-status-value {
     }
 
 }
+
+/* =========================
+   手机端：今天先学右侧状态改回小标识
+   只影响 mobile，不动 desktop
+   ========================= */
+
+@media (max-width: 768px) {
+
+    #priority-books .priority-content-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    #priority-books .priority-content-right {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        padding-left: 0;
+    }
+
+    #priority-books .priority-content-right::before {
+        display: none;
+    }
+
+    #priority-books .priority-side-line {
+        width: auto;
+        display: inline-flex;
+        justify-content: flex-start;
+    }
+
+    #priority-books .priority-status-block {
+        width: auto;
+        min-height: 30px;
+        padding: 0 10px;
+        border-radius: 999px;
+        display: inline-flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        box-shadow: none;
+    }
+
+    #priority-books .priority-status-label {
+        display: none;
+    }
+
+    #priority-books .priority-status-value {
+        font-size: 11px;
+        line-height: 1;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    #priority-books .priority-inline-stats {
+        margin-top: 10px;
+    }
+}

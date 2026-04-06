@@ -1,8 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
 <head>
-
     <script>
         (function () {
             try {
@@ -22,44 +21,50 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="train-body {% block body_class %}{% endblock %}">
-        <div class="global-theme-switch">
-            <button id="themeToggleBtn">
-                🌙 暗色
-            </button>
-        </div>
+
+    {% block global_theme_switch %}
+    <div class="global-theme-switch">
+        <button id="themeToggleBtn" aria-label="切换页面风格" title="切换页面风格">
+            🌙
+        </button>
+    </div>
+    {% endblock %}
+
     {% block content %}{% endblock %}
 
-        <script>
-            (function () {
-                var root = document.documentElement;
-                var btn = document.getElementById("themeToggleBtn");
+    <script>
+        (function () {
+            var root = document.documentElement;
+            var btn = document.getElementById("themeToggleBtn");
 
-                if (!btn) return;
+            if (!btn) return;
 
-                function getTheme() {
-                    return root.getAttribute("data-theme") || "dark";
-                }
+            function getTheme() {
+                return root.getAttribute("data-theme") || "dark";
+            }
 
-                function updateLabel(theme) {
-                    btn.textContent = theme === "light-jp" ? "🌸 明快" : "🌙 暗色";
-                }
+            function updateLabel(theme) {
+                btn.textContent = theme === "light-jp" ? "🌸" : "🌙";
+                btn.setAttribute("title", theme === "light-jp" ? "切换到暗色模式" : "切换到明快模式");
+                btn.setAttribute("aria-label", theme === "light-jp" ? "切换到暗色模式" : "切换到明快模式");
+            }
 
-                updateLabel(getTheme());
+            updateLabel(getTheme());
 
-                btn.addEventListener("click", function () {
-                    var current = getTheme();
-                    var next = current === "light-jp" ? "dark" : "light-jp";
+            btn.addEventListener("click", function () {
+                var current = getTheme();
+                var next = current === "light-jp" ? "dark" : "light-jp";
 
-                    root.setAttribute("data-theme", next);
+                root.setAttribute("data-theme", next);
 
-                    try {
-                        localStorage.setItem("study_theme", next);
-                    } catch (e) {}
+                try {
+                    localStorage.setItem("study_theme", next);
+                } catch (e) {}
 
-                    updateLabel(next);
-                });
-            })();
-        </script>
+                updateLabel(next);
+            });
+        })();
+    </script>
 
     {% block extra_js %}{% endblock %}
 </body>

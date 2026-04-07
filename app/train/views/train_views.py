@@ -623,9 +623,13 @@ def build_training_payload(training, memory=None, request=None):
     item_type = _extract_training_meta(training).get("item_type") or training.item_type
     meta = _get_training_meta_dict(training)
 
-    choices = copy.deepcopy(training.choices or [])
+    raw_choices = copy.deepcopy(training.choices or [])
+    choices = []
+    selection_mode = "single"
 
     if training.item_type == "read_choice":
+        choices = raw_choices
+
         for c in choices:
             c["resolved_audio"] = _resolve_choice_audio(c, lang="en")
             c["has_audio"] = bool(c["resolved_audio"])
@@ -635,9 +639,8 @@ def build_training_payload(training, memory=None, request=None):
         for idx, c in enumerate(choices):
             c["key"] = chr(65 + idx)
 
-    selection_mode = "single"
-    if choices:
-        selection_mode = choices[0].get("selection_mode") or "single"
+        if choices:
+            selection_mode = choices[0].get("selection_mode") or "single"
 
     prompt_text = training.prompt_text or training.question.prompt_text or ""
     question_audio_url = training.question.audio_url or ""
@@ -1191,6 +1194,10 @@ def _build_cycle_status(memory):
 
     if is_mastered:
         status_text = "本轮严格循环已完成（6个月）"
+    elif last_result == "replay_wrong":
+        status_text = "错词复盘未通过，当前题已提高强化优先级"
+    elif last_result == "replay_correct":
+        status_text = "错词复盘通过，当前题的强化压力已下降"
     elif last_result == "wrong_reset":
         status_text = "上一题答错，当前循环已重置，需从头开始"
     elif last_result == "overdue_reset":
@@ -2394,13 +2401,32 @@ def _train_api_by_scope(request, scope, obj):
 
             _session_set_wrong_word_queue(request, wrong_word_queue)
 
+            origin_training_id = target.get("training_id")
             origin_training = _get_scope_training_qs(scope, obj).filter(
-                id=target.get("training_id")
+                id=origin_training_id
             ).first()
+
+            if is_correct:
+                has_remaining_replay_for_same_training = any(
+                    x.get("training_id") == origin_training_id
+                    for x in wrong_word_queue
+                )
+
+                if not has_remaining_replay_for_same_training and origin_training:
+                    _session_clear_pinned_cloze_layout(
+                        request,
+                        origin_training.question_id
+                    )
 
             if origin_training:
                 replay_memory = get_item_memory(request.user, origin_training)
                 _touch_memory_after_wrong_word_replay(replay_memory, is_correct)
+
+            replay_cycle_after = (
+                _build_cycle_status(replay_memory)
+                if origin_training else
+                _build_cycle_status(None)
+            )
 
             xp = add_xp(request, is_correct)
 
@@ -2414,6 +2440,7 @@ def _train_api_by_scope(request, scope, obj):
                 ),
                 "speed": get_speed_level(duration),
                 "xp": xp,
+                "cycle_after": replay_cycle_after,
                 "correct_answers": judge["correct_answers"],
                 "training_id": training_id,
                 "type": "read_cloze",

@@ -274,7 +274,7 @@
 .stat-card,
 .side-card,
 .empty-card {
-    background: linear-gradient(180deg, rgba(17, 24, 45, 0.96), rgba(12, 18, 34, 0.96));
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
     border: 1px solid var(--border);
     border-radius: 24px;
     box-shadow: var(--shadow);
@@ -972,6 +972,242 @@
         font-size: 24px;
     }
 }
+
+/* =========================
+   light-jp 训练页文字对比度修复
+   只修字色，不动结构
+   ========================= */
+
+/* 标题 / 主文本 */
+html[data-theme="light-jp"] .hero-title,
+html[data-theme="light-jp"] .question-prompt,
+html[data-theme="light-jp"] .empty-title,
+html[data-theme="light-jp"] .side-title,
+html[data-theme="light-jp"] .stat-value,
+html[data-theme="light-jp"] .side-row-value,
+html[data-theme="light-jp"] .question-card,
+html[data-theme="light-jp"] .side-card,
+html[data-theme="light-jp"] .empty-card {
+    color: var(--text);
+}
+
+/* 副标题 / 说明 / 标签 */
+html[data-theme="light-jp"] .hero-desc,
+html[data-theme="light-jp"] .question-extra,
+html[data-theme="light-jp"] .empty-desc,
+html[data-theme="light-jp"] .side-desc,
+html[data-theme="light-jp"] .side-row-label,
+html[data-theme="light-jp"] .stat-label,
+html[data-theme="light-jp"] .speech-hint,
+html[data-theme="light-jp"] .speech-status {
+    color: var(--text-soft);
+}
+
+/* 徽章 / 类型标签 */
+html[data-theme="light-jp"] .question-type-badge,
+html[data-theme="light-jp"] .type-badge,
+html[data-theme="light-jp"] .hero-chip,
+html[data-theme="light-jp"] .status-chip,
+html[data-theme="light-jp"] .source-chip {
+    color: var(--text);
+}
+
+/* 选项按钮 */
+html[data-theme="light-jp"] .choice-btn,
+html[data-theme="light-jp"] .choice-item,
+html[data-theme="light-jp"] .choice-option {
+    color: var(--text);
+    background: rgba(122, 168, 255, 0.08);
+    border-color: var(--border);
+}
+
+html[data-theme="light-jp"] .choice-btn:hover,
+html[data-theme="light-jp"] .choice-item:hover,
+html[data-theme="light-jp"] .choice-option:hover {
+    background: rgba(122, 168, 255, 0.14);
+    border-color: var(--border-strong);
+}
+
+/* 选项里的序号和正文 */
+html[data-theme="light-jp"] .choice-index,
+html[data-theme="light-jp"] .choice-letter,
+html[data-theme="light-jp"] .choice-label,
+html[data-theme="light-jp"] .choice-text {
+    color: var(--text);
+}
+
+/* 正误反馈 */
+html[data-theme="light-jp"] .choice-btn.correct,
+html[data-theme="light-jp"] .choice-item.correct,
+html[data-theme="light-jp"] .choice-option.correct {
+    background: rgba(88, 201, 155, 0.16);
+    border-color: rgba(88, 201, 155, 0.28);
+    color: #2f8e6a;
+}
+
+html[data-theme="light-jp"] .choice-btn.wrong,
+html[data-theme="light-jp"] .choice-item.wrong,
+html[data-theme="light-jp"] .choice-option.wrong {
+    background: rgba(241, 132, 132, 0.16);
+    border-color: rgba(241, 132, 132, 0.28);
+    color: #a94444;
+}
+
+/* 输入框 / 提示区 */
+html[data-theme="light-jp"] .answer-input,
+html[data-theme="light-jp"] .text-answer-input,
+html[data-theme="light-jp"] input[type="text"],
+html[data-theme="light-jp"] textarea {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.90);
+    border-color: var(--border);
+}
+
+html[data-theme="light-jp"] .answer-input::placeholder,
+html[data-theme="light-jp"] .text-answer-input::placeholder,
+html[data-theme="light-jp"] textarea::placeholder {
+    color: var(--text-faint);
+}
+
+/* 摘要区里的点号/占位内容 */
+html[data-theme="light-jp"] .summary-card,
+html[data-theme="light-jp"] .info-card,
+html[data-theme="light-jp"] .empty-card,
+html[data-theme="light-jp"] .feedback-box {
+    color: var(--text);
+}
+
+/* 强制把训练摘要里的所有小字拉回可读范围 */
+html[data-theme="light-jp"] .side-card *,
+html[data-theme="light-jp"] .summary-card *,
+html[data-theme="light-jp"] .question-card *,
+html[data-theme="light-jp"] .empty-card * {
+    text-shadow: none;
+}
+
+/* =========================
+   light-jp 训练页深色残留卡片强制统一
+   直接覆盖主要训练区块
+   ========================= */
+
+/* 主训练区的所有一级卡片 */
+html[data-theme="light-jp"] .hero-card,
+html[data-theme="light-jp"] .question-card,
+html[data-theme="light-jp"] .side-card,
+html[data-theme="light-jp"] .summary-card,
+html[data-theme="light-jp"] .empty-card,
+html[data-theme="light-jp"] .question-wrap,
+html[data-theme="light-jp"] .question-panel,
+html[data-theme="light-jp"] .side-panel {
+    background: linear-gradient(180deg, var(--panel), var(--panel-2)) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: var(--shadow) !important;
+    color: var(--text) !important;
+}
+
+/* 卡片头部 */
+html[data-theme="light-jp"] .question-header,
+html[data-theme="light-jp"] .side-header,
+html[data-theme="light-jp"] .empty-header {
+    background: rgba(122, 168, 255, 0.06) !important;
+    border-bottom-color: var(--border) !important;
+    color: var(--text) !important;
+}
+
+/* 卡片正文 */
+html[data-theme="light-jp"] .question-body,
+html[data-theme="light-jp"] .side-body,
+html[data-theme="light-jp"] .empty-body {
+    background: transparent !important;
+    color: var(--text) !important;
+}
+
+/* 当前题目区域标题与正文 */
+html[data-theme="light-jp"] .question-prompt,
+html[data-theme="light-jp"] .question-title,
+html[data-theme="light-jp"] .question-text,
+html[data-theme="light-jp"] .question-card h1,
+html[data-theme="light-jp"] .question-card h2,
+html[data-theme="light-jp"] .question-card h3,
+html[data-theme="light-jp"] .question-card p {
+    color: var(--text) !important;
+}
+
+/* 次级说明文字 */
+html[data-theme="light-jp"] .question-extra,
+html[data-theme="light-jp"] .side-desc,
+html[data-theme="light-jp"] .empty-desc,
+html[data-theme="light-jp"] .question-body small,
+html[data-theme="light-jp"] .side-body small {
+    color: var(--text-soft) !important;
+}
+
+/* 训练摘要区所有文字 */
+html[data-theme="light-jp"] .side-card *,
+html[data-theme="light-jp"] .summary-card * {
+    color: inherit;
+}
+
+html[data-theme="light-jp"] .side-row-label,
+html[data-theme="light-jp"] .stat-label {
+    color: var(--text-soft) !important;
+}
+
+html[data-theme="light-jp"] .side-row-value,
+html[data-theme="light-jp"] .stat-value {
+    color: var(--text) !important;
+}
+
+/* 题型小标签 / 状态 chip */
+html[data-theme="light-jp"] .question-type-badge,
+html[data-theme="light-jp"] .type-badge,
+html[data-theme="light-jp"] .hero-chip,
+html[data-theme="light-jp"] .status-chip,
+html[data-theme="light-jp"] .source-chip {
+    background: rgba(122, 168, 255, 0.10) !important;
+    border-color: rgba(117, 147, 196, 0.18) !important;
+    color: var(--text) !important;
+}
+
+/* 选项区 */
+html[data-theme="light-jp"] .choices-grid > *,
+html[data-theme="light-jp"] .choice-btn,
+html[data-theme="light-jp"] .choice-item,
+html[data-theme="light-jp"] .choice-option {
+    background: rgba(122, 168, 255, 0.08) !important;
+    border-color: var(--border) !important;
+    color: var(--text) !important;
+}
+
+html[data-theme="light-jp"] .choice-btn:hover,
+html[data-theme="light-jp"] .choice-item:hover,
+html[data-theme="light-jp"] .choice-option:hover {
+    background: rgba(122, 168, 255, 0.14) !important;
+    border-color: var(--border-strong) !important;
+}
+
+/* 输入框 */
+html[data-theme="light-jp"] .answer-input,
+html[data-theme="light-jp"] .text-answer-input,
+html[data-theme="light-jp"] input[type="text"],
+html[data-theme="light-jp"] textarea {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: var(--border) !important;
+    color: var(--text) !important;
+}
+
+html[data-theme="light-jp"] .answer-input::placeholder,
+html[data-theme="light-jp"] .text-answer-input::placeholder,
+html[data-theme="light-jp"] textarea::placeholder {
+    color: var(--text-faint) !important;
+}
+
+/* 底部操作按钮区，避免深色残留 */
+html[data-theme="light-jp"] .answer-actions,
+html[data-theme="light-jp"] .quick-actions {
+    background: transparent !important;
+}
+
 </style>
 {% endblock %}
 
@@ -1086,6 +1322,8 @@ function formatLastResult(value) {
         "mastered": "本轮完成",
         "wrong_reset": "答错重置",
         "overdue_reset": "超窗重置",
+        "replay_wrong": "错词复盘未通过",
+        "replay_correct": "错词复盘通过",
     };
 
     return mapping[raw] || raw;
@@ -1138,10 +1376,14 @@ function getChoiceText(choice, index) {
 function getChoiceSubmitValue(choice, index) {
     return pickText(choice, [
         "submit_value",
-        "value",
-        "key",
-        "id",
-        "answer"
+        "submitText",
+        "text",
+        "label",
+        "content",
+        "display",
+        "title",
+        "answer",
+        "prompt"
     ], getChoiceText(choice, index));
 }
 
@@ -1761,6 +2003,12 @@ function renderChoices(choices) {
             button.classList.add("selected");
             state.selectedChoiceIndex = index;
             answerInput.value = button.dataset.submitValue;
+
+            console.log("choice clicked:", {
+                key: choice.key || String.fromCharCode(65 + index),
+                choiceText: button.dataset.choiceText,
+                submitValue: button.dataset.submitValue
+            });
         });
 
         choicesGrid.appendChild(button);
@@ -1944,7 +2192,10 @@ async function submitAnswer(event) {
         const correctAnswersText = correctAnswersRaw.join(" / ");
         sideCorrectAnswer.textContent = correctAnswersText || "未返回";
 
-        applyCyclePanel(data);
+        applyCyclePanel({
+            ...data,
+            ...(data.cycle_after || {})
+        });
 
         submitBtn.disabled = true;
         answerInput.disabled = true;

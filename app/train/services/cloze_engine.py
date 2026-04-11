@@ -342,7 +342,7 @@ def resolve_difficulty_rules(min_blank, max_blank):
 def apply_position_preference(scored, total_tokens):
     adjusted = []
 
-    for idx, token, score in scored:
+    for idx, token, score, token_class in scored:
         adjusted_score = score
 
         # 首尾位置：明显降权
@@ -353,7 +353,7 @@ def apply_position_preference(scored, total_tokens):
         elif total_tokens >= 5 and (idx == 1 or idx == total_tokens - 2):
             adjusted_score -= 10
 
-        adjusted.append((idx, token, adjusted_score))
+        adjusted.append((idx, token, adjusted_score, token_class))
 
     # 重新排序：先位置修正后的分数，再按原句顺序
     adjusted.sort(key=lambda x: (-x[2], x[0]))

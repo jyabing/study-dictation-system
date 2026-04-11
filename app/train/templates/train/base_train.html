@@ -23,10 +23,24 @@
 <body class="train-body {% block body_class %}{% endblock %}">
 
     {% block global_theme_switch %}
-    <div class="global-theme-switch">
-        <button id="themeToggleBtn" aria-label="切换页面风格" title="切换页面风格">
-            🌙
-        </button>
+    <div class="global-utility-bar">
+        <div class="global-theme-switch">
+            <button id="themeToggleBtn" aria-label="切换页面风格" title="切换页面风格">
+                🌙
+            </button>
+        </div>
+
+        {% block global_utility_extra %}{% endblock %}
+
+        {% if request.user.is_authenticated %}
+        <details class="user-menu global-user-menu">
+            <summary class="user-pill">{{ request.user.username }}</summary>
+            <div class="user-dropdown">
+                <a href="{% url 'password_change' %}" class="user-dropdown-link">修改密码</a>
+                <a href="{% url 'logout' %}" class="user-dropdown-link">退出登录</a>
+            </div>
+        </details>
+        {% endif %}
     </div>
     {% endblock %}
 

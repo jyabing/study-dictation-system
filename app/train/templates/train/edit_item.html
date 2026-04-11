@@ -32,7 +32,7 @@
                 {% elif mode == "lesson" %}
                     <span class="chip warning">当前对象：章节</span>
                 {% elif mode == "question" %}
-                    <span class="chip warning">当前对象：题目</span>
+                    <span class="chip warning">当前对象：训练题目</span>
                 {% else %}
                     <span class="chip warning">当前对象：项目</span>
                 {% endif %}
@@ -100,25 +100,50 @@
                             </div>
 
                             <div class="field-group full">
-                                <div class="field-label">题干</div>
-                                <textarea id="question-display" class="textarea" placeholder="请输入题干" required>{% firstof obj.prompt_text obj.question_text obj.question "" %}</textarea>
-                                <input type="hidden" name="question" id="question-hidden-1" value="{% firstof obj.prompt_text obj.question_text obj.question '' %}">
-                                <input type="hidden" name="question_text" id="question-hidden-2" value="{% firstof obj.prompt_text obj.question_text obj.question '' %}">
-                                <input type="hidden" name="prompt_text" id="question-hidden-3" value="{% firstof obj.prompt_text obj.question_text obj.question '' %}">
+                                <div class="field-label">提示短语</div>
+                                <textarea
+                                    name="instruction_text"
+                                    id="instruction-display"
+                                    class="textarea"
+                                    placeholder="例如：用敬语表达 / 用对应时态及人称提问 / 王勃怎么表达"
+                                    required
+                                >{% firstof training.instruction_text training.prompt_text obj.prompt_text obj.question_text obj.question "" %}</textarea>
+                                <div class="field-help">必填。用于说明这道题要用户如何作答。</div>
                             </div>
 
                             <div class="field-group full">
-                                <div class="field-label">标准答案</div>
-                                <textarea id="answer-display" class="textarea" placeholder="请输入标准答案" required>{% firstof obj.answer_text obj.answer "" %}</textarea>
-                                <input type="hidden" name="answer" id="answer-hidden-1" value="{% firstof obj.answer_text obj.answer '' %}">
-                                <input type="hidden" name="answer_text" id="answer-hidden-2" value="{% firstof obj.answer_text obj.answer '' %}">
+                                <div class="field-label">题干</div>
+                                <textarea
+                                    id="question-display"
+                                    class="textarea"
+                                    placeholder="请输入题干"
+                                    required
+                                >{% firstof training.source_text obj.prompt_text obj.question_text obj.question "" %}</textarea>
+                                <input type="hidden" name="question" id="question-hidden-1" value="{% firstof training.source_text obj.prompt_text obj.question_text obj.question '' %}">
+                                <input type="hidden" name="question_text" id="question-hidden-2" value="{% firstof training.source_text obj.prompt_text obj.question_text obj.question '' %}">
+                                <input type="hidden" name="prompt_text" id="question-hidden-3" value="{% firstof training.source_text obj.prompt_text obj.question_text obj.question '' %}">
+                                <input type="hidden" name="source_text" id="source-text-hidden" value="{% firstof training.source_text obj.prompt_text obj.question_text obj.question '' %}">
+                            </div>
+
+                            <div class="field-group full">
+                                <div class="field-label">回答</div>
+                                <textarea
+                                    id="answer-display"
+                                    class="textarea"
+                                    placeholder="请输入目标回答"
+                                    required
+                                >{% firstof training.target_answer obj.answer_text obj.answer "" %}</textarea>
+                                <input type="hidden" name="answer" id="answer-hidden-1" value="{% firstof training.target_answer obj.answer_text obj.answer '' %}">
+                                <input type="hidden" name="answer_text" id="answer-hidden-2" value="{% firstof training.target_answer obj.answer_text obj.answer '' %}">
+                                <input type="hidden" name="target_answer" id="target-answer-hidden" value="{% firstof training.target_answer obj.answer_text obj.answer '' %}">
+                                <div class="field-help">这里填写用户最终需要生成并记忆的目标回答。</div>
                             </div>
 
                             {% if item_type == "read_cloze" %}
                                 <div class="field-group full">
-                                    <div class="field-label">克漏字题干</div>
-                                    <textarea name="cloze_text" class="textarea" placeholder="请输入带 ____ 的题干">{% firstof training.cloze_text obj.prompt_text "" %}</textarea>
-                                    <div class="field-help">必须包含 ____ 占位符，例如：Ask me ____ I do</div>
+                                    <div class="field-label">回答克漏字文本</div>
+                                    <textarea name="cloze_text" class="textarea" placeholder="请输入基于回答的挖空文本，且必须包含 ____">{% firstof training.cloze_text obj.prompt_text "" %}</textarea>
+                                    <div class="field-help">这里是基于“回答”生成的挖空文本，不是题干。必须包含 ____ 占位符。</div>
                                 </div>
 
                                 <div class="field-group full">
@@ -174,7 +199,15 @@
                         {% elif mode == "lesson" %}
                             <a href="{% url 'lesson-delete-confirm' obj.id %}?next={{ next|default:'' }}" class="danger-btn">删除章节</a>
                         {% elif mode == "question" %}
-                            <a href="{% url 'question-delete' obj.id %}?next={{ next|default:'' }}" class="danger-btn">删除题目</a>
+                            <form
+                                method="post"
+                                action="{% url 'question-delete' obj.id %}?next={{ next|default:'' }}"
+                                class="inline-form"
+                                onsubmit="return confirm('确定删除这条题目吗？删除后将无法恢复。');"
+                            >
+                                {% csrf_token %}
+                                <button type="submit" class="danger-btn">删除训练题</button>
+                            </form>
                         {% endif %}
                     </div>
                 </div>
@@ -246,6 +279,10 @@
         grid-template-columns: 1fr;
     }
 }
+
+.inline-form {
+    margin: 0;
+}
 </style>
 {% endblock %}
 
@@ -254,11 +291,16 @@
 const form = document.getElementById("edit-form");
 const questionDisplay = document.getElementById("question-display");
 const answerDisplay = document.getElementById("answer-display");
+const instructionDisplay = document.getElementById("instruction-display");
+
 const questionHidden1 = document.getElementById("question-hidden-1");
 const questionHidden2 = document.getElementById("question-hidden-2");
 const questionHidden3 = document.getElementById("question-hidden-3");
+const sourceTextHidden = document.getElementById("source-text-hidden");
+
 const answerHidden1 = document.getElementById("answer-hidden-1");
 const answerHidden2 = document.getElementById("answer-hidden-2");
+const targetAnswerHidden = document.getElementById("target-answer-hidden");
 
 function syncQuestionAnswerFields() {
     if (questionDisplay && questionHidden1 && questionHidden2 && questionHidden3) {
@@ -267,9 +309,17 @@ function syncQuestionAnswerFields() {
         questionHidden3.value = questionDisplay.value;
     }
 
+    if (questionDisplay && sourceTextHidden) {
+        sourceTextHidden.value = questionDisplay.value;
+    }
+
     if (answerDisplay && answerHidden1 && answerHidden2) {
         answerHidden1.value = answerDisplay.value;
         answerHidden2.value = answerDisplay.value;
+    }
+
+    if (answerDisplay && targetAnswerHidden) {
+        targetAnswerHidden.value = answerDisplay.value;
     }
 }
 

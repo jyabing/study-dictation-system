@@ -4,7 +4,9 @@
 
 {% block body_class %}book-detail-body{% endblock %}
 
-{% block global_theme_switch %}{% endblock %}
+{% block global_theme_switch %}
+    {{ block.super }}
+{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -13,250 +15,41 @@
         margin: 28px auto 48px;
     }
 
+    @media (max-width: 768px) {
+        .book-page {
+            margin: 20px auto 40px;
+        }
+    }
+
     .book-shell {
         display: flex;
         flex-direction: column;
         gap: 18px;
     }
 
-    .book-topbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 16px;
-        flex-wrap: wrap;
-    }
-
-    .book-back-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--text-soft);
-        padding: 10px 14px;
-        border: 1px solid var(--border);
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.04);
-        transition: var(--transition);
-    }
-
-    .book-back-link:hover {
-        color: var(--text);
-        border-color: var(--border-strong);
-        background: rgba(255, 255, 255, 0.08);
-        transform: translateY(-1px);
-    }
-
-    .book-top-actions {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .book-top-actions .global-theme-switch {
-        display: inline-flex;
-        align-items: center;
-    }
-
-    .book-top-actions .global-theme-switch button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 30px;
-        min-width: 30px;
-        height: 30px;
-        padding: 0;
-        border: 1px solid var(--border);
-        background: linear-gradient(180deg, var(--panel), var(--panel-2));
-        color: var(--text);
-        border-radius: 999px;
-        font-size: 13px;
-        font-weight: 800;
-        cursor: pointer;
-        transition: var(--transition);
-        line-height: 1;
-    }
-
-    .book-top-actions .global-theme-switch button:hover {
-        border-color: var(--border-strong);
-        background: rgba(255, 255, 255, 0.08);
-    }
-
-    .primary-btn,
-    .secondary-btn,
-    .ghost-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        min-height: 44px;
-        padding: 0 18px;
-        border-radius: 14px;
-        font-size: 14px;
-        font-weight: 900;
-        transition: var(--transition);
-        border: 1px solid transparent;
-        white-space: nowrap;
-    }
-
-    .primary-btn {
-        background: linear-gradient(135deg, #7ab2ff, #4f8dff);
-        color: #08111f;
-        box-shadow: 0 12px 28px rgba(79, 141, 255, 0.34);
-    }
-
-    .primary-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 16px 34px rgba(79, 141, 255, 0.40);
-    }
-
-    .secondary-btn {
-        background: rgba(255, 255, 255, 0.06);
-        color: var(--text);
-        border-color: var(--border);
-    }
-
-    .secondary-btn:hover {
-        background: rgba(255, 255, 255, 0.10);
-        border-color: var(--border-strong);
-        transform: translateY(-1px);
-    }
-
-    .ghost-btn {
-        background: transparent;
-        color: var(--text-soft);
-        border-color: var(--border);
-    }
-
-    .ghost-btn:hover {
-        color: var(--text);
-        background: rgba(255, 255, 255, 0.05);
-        transform: translateY(-1px);
-    }
-
-    .book-hero,
     .focus-card,
     .section-card,
     .side-card {
+        padding: 22px;
+        border: 1px solid rgba(110, 168, 255, 0.20);
+        border-radius: 22px;
         background: linear-gradient(180deg, var(--panel), var(--panel-2));
-        border: 1px solid var(--border);
-        border-radius: var(--radius-xl);
         box-shadow: var(--shadow);
-        overflow: hidden;
-    }
-
-    .book-hero {
-        padding: 24px 24px 20px;
-        position: relative;
-    }
-
-    .book-hero::before {
-        content: "";
-        position: absolute;
-        inset: auto -80px -80px auto;
-        width: 240px;
-        height: 240px;
-        background: radial-gradient(circle, rgba(110, 168, 255, 0.22), transparent 70%);
-        pointer-events: none;
-    }
-
-    .book-hero-inner {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 20px;
-        flex-wrap: wrap;
-    }
-
-    .book-hero-main {
-        flex: 1 1 560px;
-        min-width: 280px;
-    }
-
-    .book-hero-side {
-        display: flex;
-        align-items: flex-start;
-        justify-content: flex-end;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .book-eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--success);
-        margin-bottom: 10px;
-    }
-
-    .book-title {
-        margin: 0;
-        font-size: clamp(30px, 4vw, 44px);
-        line-height: 1.12;
-        font-weight: 900;
-        letter-spacing: -0.03em;
-        word-break: break-word;
-    }
-
-    .book-subtitle {
-        margin: 12px 0 0;
-        color: var(--text-soft);
-        font-size: 15px;
-        max-width: 880px;
-        white-space: pre-wrap;
-        word-break: break-word;
-    }
-
-    .hero-core {
-        margin-top: 18px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-    }
-
-    .core-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        min-height: 40px;
-        padding: 0 14px;
-        border-radius: 999px;
-        font-size: 13px;
-        font-weight: 800;
-        border: 1px solid var(--border);
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--text);
-        white-space: nowrap;
-    }
-
-    .core-chip.primary {
-        background: rgba(110, 168, 255, 0.14);
-        border-color: rgba(110, 168, 255, 0.30);
-        color: #dbe9ff;
-    }
-
-    .core-chip.warning {
-        background: rgba(255, 190, 85, 0.14);
-        border-color: rgba(255, 190, 85, 0.30);
-        color: #fff2d6;
     }
 
     .focus-card {
-        padding: 22px;
         display: grid;
         grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
         gap: 18px;
         align-items: stretch;
-        border-color: rgba(110, 168, 255, 0.20);
         background:
             radial-gradient(circle at right top, rgba(110, 168, 255, 0.10), transparent 28%),
             linear-gradient(180deg, var(--panel), var(--panel-2));
+    }
+
+    .section-card,
+    .side-card {
+        display: block;
     }
 
     .focus-main {
@@ -265,14 +58,6 @@
         justify-content: center;
         gap: 10px;
         min-width: 0;
-    }
-
-    .focus-label {
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--success);
     }
 
     .focus-title {
@@ -301,14 +86,14 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        min-height: 38px;
-        padding: 0 14px;
+        min-height: 30px;
+        padding: 0 12px;
         border-radius: 999px;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 800;
         border: 1px solid var(--border);
         background: rgba(255, 255, 255, 0.05);
-        color: var(--text);
+        color: var(--text-soft);
     }
 
     .focus-actions {
@@ -316,6 +101,14 @@
         flex-wrap: wrap;
         gap: 10px;
         margin-top: 6px;
+    }
+
+    .focus-actions .primary-btn,
+    .focus-actions .secondary-btn,
+    .focus-actions .ghost-btn {
+        min-height: 36px;
+        padding: 0 14px;
+        font-size: 13px;
     }
 
     .focus-side {
@@ -355,7 +148,7 @@
 
     .book-main {
         display: grid;
-        grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.72fr);
+        grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.9fr);
         gap: 18px;
         align-items: start;
     }
@@ -513,22 +306,22 @@
     .status-chip {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        min-height: 34px;
-        padding: 0 12px;
+        gap: 6px;
+        min-height: 26px;
+        padding: 0 10px;
         border-radius: 999px;
         font-size: 12px;
         font-weight: 800;
         border: 1px solid var(--border);
         background: rgba(255, 255, 255, 0.05);
-        color: var(--text);
+        color: var(--text-soft);
         white-space: nowrap;
     }
 
     .status-chip.warning {
         background: rgba(255, 190, 85, 0.14);
-        border-color: rgba(255, 190, 85, 0.28);
-        color: #fff2d6;
+        border-color: rgba(255, 190, 85, 0.30);
+        color: #8a5a00;
     }
 
     .lesson-title {
@@ -705,48 +498,6 @@
         color: var(--text-faint);
     }
 
-    html[data-theme="light-jp"] .book-back-link {
-        background: rgba(122, 168, 255, 0.06);
-        color: var(--text-soft);
-        border-color: var(--border);
-    }
-
-    html[data-theme="light-jp"] .book-back-link:hover {
-        background: rgba(122, 168, 255, 0.12);
-        color: var(--text);
-        border-color: var(--border-strong);
-    }
-
-    html[data-theme="light-jp"] .primary-btn {
-        background: linear-gradient(135deg, #9dc2ff, #7aa8ff);
-        color: #ffffff;
-        box-shadow: 0 10px 22px rgba(122, 168, 255, 0.24);
-    }
-
-    html[data-theme="light-jp"] .secondary-btn {
-        background: rgba(122, 168, 255, 0.08);
-        color: var(--text);
-        border-color: var(--border);
-    }
-
-    html[data-theme="light-jp"] .secondary-btn:hover {
-        background: rgba(122, 168, 255, 0.14);
-        border-color: var(--border-strong);
-    }
-
-    html[data-theme="light-jp"] .ghost-btn {
-        background: rgba(122, 168, 255, 0.06);
-        color: var(--text-soft);
-        border-color: var(--border);
-    }
-
-    html[data-theme="light-jp"] .ghost-btn:hover {
-        background: rgba(122, 168, 255, 0.12);
-        color: var(--text);
-        border-color: var(--border-strong);
-    }
-
-    html[data-theme="light-jp"] .book-hero,
     html[data-theme="light-jp"] .focus-card,
     html[data-theme="light-jp"] .section-card,
     html[data-theme="light-jp"] .side-card {
@@ -761,12 +512,6 @@
         border-bottom-color: var(--border);
     }
 
-    html[data-theme="light-jp"] .book-eyebrow,
-    html[data-theme="light-jp"] .focus-label {
-        color: #2f8e6a;
-    }
-
-    html[data-theme="light-jp"] .core-chip,
     html[data-theme="light-jp"] .focus-chip,
     html[data-theme="light-jp"] .table-pill,
     html[data-theme="light-jp"] .status-chip {
@@ -775,16 +520,9 @@
         border-color: rgba(117, 147, 196, 0.16);
     }
 
-    html[data-theme="light-jp"] .core-chip.primary {
-        background: rgba(122, 168, 255, 0.14);
-        color: #3560a8;
-        border-color: rgba(122, 168, 255, 0.24);
-    }
-
-    html[data-theme="light-jp"] .core-chip.warning,
     html[data-theme="light-jp"] .status-chip.warning {
         background: rgba(243, 184, 90, 0.14);
-        color: #a97317;
+        color: #8a5a00;
         border-color: rgba(243, 184, 90, 0.24);
     }
 
@@ -842,7 +580,6 @@
             margin: 16px auto 28px;
         }
 
-        .book-hero,
         .focus-card {
             padding: 18px 16px;
         }
@@ -855,33 +592,16 @@
             padding-right: 16px;
         }
 
-        .book-topbar {
-            align-items: stretch;
-        }
-
-        .book-top-actions,
-        .book-hero-side,
         .focus-actions {
             flex-direction: column;
             align-items: stretch;
         }
 
-        .book-back-link,
-        .primary-btn,
-        .secondary-btn,
-        .ghost-btn {
+        .focus-actions .primary-btn,
+        .focus-actions .secondary-btn,
+        .focus-actions .ghost-btn {
             width: 100%;
             justify-content: center;
-        }
-
-        .book-top-actions .global-theme-switch {
-            width: auto;
-            justify-content: flex-end;
-        }
-
-        .book-top-actions .global-theme-switch button {
-            width: 30px;
-            min-width: 30px;
         }
 
         .lessons-table-wrap {
@@ -903,10 +623,6 @@
     }
 
     @media (max-width: 520px) {
-        .book-title {
-            font-size: 26px;
-        }
-
         .focus-title {
             font-size: 24px;
         }
@@ -933,46 +649,10 @@
 <div class="book-page">
     <div class="book-shell">
 
-        <div class="book-topbar">
-            <a href="{% url 'dashboard' %}" class="book-back-link">← 返回首页</a>
-
-            <div class="book-top-actions">
-                <div class="global-theme-switch">
-                    <button id="themeToggleBtn" aria-label="切换页面风格" title="切换页面风格">
-                        🌙
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <section class="book-hero">
-            <div class="book-hero-inner">
-                <div class="book-hero-main">
-                    <div class="book-eyebrow">Memory Loop Book</div>
-                    <h1 class="book-title">{{ book.title }}</h1>
-                    <p class="book-subtitle">{{ book.description|default:"暂无说明" }}</p>
-
-                    <div class="hero-core">
-                        <span class="core-chip warning">当前阶段：{{ book_stage }}</span>
-                        <span class="core-chip primary">下一次复习：{{ book_next_review }}</span>
-                    </div>
-                </div>
-
-                <div class="book-hero-side">
-                    <a href="{% url 'book-edit' book.id %}" class="secondary-btn">编辑书</a>
-                    {% if lessons %}
-                        <a href="{% url 'book-train' book.id %}" class="primary-btn">整本循环训练</a>
-                    {% else %}
-                        <a href="#create-lesson" class="primary-btn">创建后开始学习</a>
-                    {% endif %}
-                </div>
-            </div>
-        </section>
+        {% include "train/includes/page_head.html" with head_type="book" head_actions=head_actions head_actions_collapsed=False head_title=book.title head_desc=book.description|default:"暂无说明" head_meta=head_meta head_chips=head_chips %}
 
         <section class="focus-card">
             <div class="focus-main">
-                <div class="focus-label">当前记忆焦点</div>
-
                 {% if focus_lesson %}
                     {% firstof focus_lesson.current_stage_label focus_lesson.stage_label focus_lesson.current_stage "未开始" as focus_lesson_stage %}
                     {% firstof focus_lesson.next_review_text focus_lesson.next_review_display "未安排" as focus_lesson_next_review %}

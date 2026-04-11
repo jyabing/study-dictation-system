@@ -4,7 +4,13 @@
 
 {% block body_class %}dashboard-body{% endblock %}
 
-{% block global_theme_switch %}{% endblock %}
+{% block global_theme_switch %}
+    {{ block.super }}
+{% endblock %}
+
+{% block global_utility_extra %}
+    <a href="{% url 'stats-page' %}" class="secondary-btn global-utility-link">学习统计</a>
+{% endblock %}
 
 {% block content %}
 {% firstof total_books books|length all_books|length priority_books|length "0" as dashboard_total_books %}
@@ -23,15 +29,7 @@
                 </div>
             </div>
 
-            <div class="topbar-right">
-                <div class="global-theme-switch">
-                    <button id="themeToggleBtn" aria-label="切换页面风格" title="切换页面风格">
-                        🌙
-                    </button>
-                </div>
-                <a href="{% url 'stats-page' %}" class="secondary-btn">学习统计</a>
-                <div class="user-pill">{{ request.user.username }}</div>
-            </div>
+            <div class="topbar-right"></div>
         </div>
 
         <section class="section-card" id="priority-books">

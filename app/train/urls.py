@@ -34,6 +34,20 @@ urlpatterns = [
         auth_views.LogoutView.as_view(),
         name="logout"
     ),
+    path(
+        "password/change/",
+        auth_views.PasswordChangeView.as_view(
+            template_name="train/password_change.html"
+        ),
+        name="password_change"
+    ),
+    path(
+        "password/change/done/",
+        auth_views.PasswordChangeDoneView.as_view(
+            template_name="train/password_change_done.html"
+        ),
+        name="password_change_done"
+    ),
 
     path("", dashboard, name="dashboard"),
 

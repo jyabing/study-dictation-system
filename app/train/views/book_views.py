@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
 from ..models import Book, Lesson, Question
 from .train_views import (
     get_book_lessons_cycle_summary,
@@ -153,6 +154,19 @@ def book_detail(request, book_id):
         "lessons": lessons,
         "lesson_cycle_summary": lesson_cycle_summary,
         "book_cycle_summary": book_cycle_summary,
+        "head_actions": [
+            {"label": "返回首页", "url": reverse("dashboard")},
+            {"label": "编辑书册", "url": reverse("book-edit", args=[book.id])},
+        ],
+        "head_meta": [
+            {"label": "书册：", "text": book.title},
+            {"label": "章节数：", "text": str(lessons.count())},
+        ],
+        "head_chips": [
+            {"kind": "primary", "text": f"今日到期：{book_cycle_summary.get('today_due_count', 0)}"},
+            {"kind": "warning", "text": f"逾期：{book_cycle_summary.get('overdue_count', 0)}"},
+            {"kind": "primary", "text": f"主阶段：{book_cycle_summary.get('main_stage', '尚未开始')}"},
+        ],
     })
 
 @login_required

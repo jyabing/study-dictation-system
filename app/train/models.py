@@ -76,7 +76,7 @@ class MemoryItem(models.Model):
 
 
 # =========================
-# 🎯 TrainingItem（题型层）
+# 🎯 TrainingItem（训练主表 + 题型兼容层）
 # =========================
 class TrainingItem(models.Model):
 
@@ -88,32 +88,196 @@ class TrainingItem(models.Model):
         ("write", "写"),
     ]
 
-    # ✅ 新结构：绑定 MemoryItem
+    GRADING_MODE_CHOICES = [
+        ("strict", "严格匹配"),
+        ("normalize", "归一化匹配"),
+        ("multi_answer", "多答案匹配"),
+        ("keyword", "关键词匹配"),
+    ]
+
+    ANSWER_TYPE_CHOICES = [
+        ("translation", "翻译"),
+        ("polite_expression", "敬语表达"),
+        ("tense_person_conversion", "时态/人称转换"),
+        ("literary_expression", "文学表达"),
+        ("fixed_expression", "固定表达"),
+        ("general_response", "一般回答"),
+    ]
+
+    LANGUAGE_CHOICES = [
+        ("ja", "日语"),
+        ("en", "英语"),
+        ("zh", "中文"),
+        ("mixed", "混合"),
+    ]
+
+    CLOZE_MODE_CHOICES = [
+        ("manual_only", "仅人工克漏字"),
+        ("auto_only", "仅自动克漏字"),
+        ("manual_first", "人工优先，自动补充"),
+    ]
+
+    MODE_CHOICES = [
+        ("listen", "听力转换"),
+        ("speak", "口说作答"),
+        ("write", "输入作答"),
+        ("cloze", "克漏字"),
+        ("shadow", "跟读"),
+        ("choice", "选择题"),
+    ]
+
+    # =========================
+    # 旧结构（保留兼容）
+    # =========================
     question = models.ForeignKey(
         "Question",
         on_delete=models.CASCADE,
         related_name="training_items"
     )
 
-    item_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    item_type = models.CharField(
+        max_length=20,
+        choices=TYPE_CHOICES
+    )
 
-    # Cloze
     cloze_text = models.TextField(blank=True, null=True)
     cloze_answers = models.JSONField(blank=True, null=True)
 
-    # Choice
     choices = models.JSONField(blank=True, null=True)
     correct_answers = models.JSONField(blank=True, null=True)
 
-    # 通用
     prompt_text = models.TextField(blank=True, null=True)
     reveal_text_on_wrong = models.BooleanField(default=False)
 
-    audio_file = models.FileField(upload_to="audio/", blank=True, null=True)
+    audio_file = models.FileField(
+        upload_to="audio/",
+        blank=True,
+        null=True
+    )
+
+    # =========================
+    # 新结构：提示短语 + 题干 + 回答
+    # =========================
+    instruction_text = models.TextField(
+        blank=True,
+        default=""
+    )
+
+    source_text = models.TextField(
+        blank=True,
+        default=""
+    )
+
+    target_answer = models.TextField(
+        blank=True,
+        default=""
+    )
+
+    # =========================
+    # 判题与解释
+    # =========================
+    accepted_answers = models.JSONField(
+        blank=True,
+        default=list
+    )
+
+    explanation = models.TextField(
+        blank=True,
+        default=""
+    )
+
+    grading_mode = models.CharField(
+        max_length=30,
+        choices=GRADING_MODE_CHOICES,
+        default="normalize"
+    )
+
+    # =========================
+    # 训练控制
+    # =========================
+    answer_type = models.CharField(
+        max_length=50,
+        choices=ANSWER_TYPE_CHOICES,
+        default="general_response"
+    )
+
+    language = models.CharField(
+        max_length=20,
+        choices=LANGUAGE_CHOICES,
+        default="ja"
+    )
+
+    enabled_modes = models.JSONField(
+        blank=True,
+        default=list
+    )
+
+    difficulty = models.PositiveSmallIntegerField(
+        default=1
+    )
+
+    # =========================
+    # 音频与克漏字增强
+    # =========================
+    source_audio = models.FileField(
+        upload_to="audio/source/",
+        blank=True,
+        null=True
+    )
+
+    target_audio = models.FileField(
+        upload_to="audio/target/",
+        blank=True,
+        null=True
+    )
+
+    manual_cloze_text = models.TextField(
+        blank=True,
+        default=""
+    )
+
+    cloze_mode = models.CharField(
+        max_length=20,
+        choices=CLOZE_MODE_CHOICES,
+        default="manual_first"
+    )
+
+    auto_cloze_enabled = models.BooleanField(
+        default=True
+    )
+
+    # =========================
+    # 管理字段
+    # =========================
+    tags = models.JSONField(
+        blank=True,
+        default=list
+    )
+
+    source_reference = models.CharField(
+        max_length=255,
+        blank=True,
+        default=""
+    )
+
+    notes = models.TextField(
+        blank=True,
+        default=""
+    )
+
+    is_active = models.BooleanField(
+        default=True
+    )
+
+    sort_order = models.IntegerField(
+        default=0
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
+        if self.instruction_text and self.source_text:
+            return f"{self.instruction_text[:20]} | {self.source_text[:20]}"
         return f"M{self.question_id} - {self.item_type}"
 
 

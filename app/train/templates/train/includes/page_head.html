@@ -1,0 +1,63 @@
+<section class="page-head page-head--{{ head_type|default:'default' }}">
+    {% if head_actions %}
+        {% if head_actions_collapsed %}
+            <details class="page-head__actions-fold">
+                <summary class="page-head__actions-summary">
+                    <span class="page-head__actions-title">{{ head_actions_title|default:"页面操作" }}</span>
+                    <span class="page-head__actions-hint">点击展开</span>
+                </summary>
+
+                <div class="page-head__actions-body">
+                    <div class="page-head__actions-list">
+                        {% for action in head_actions %}
+                            <a href="{{ action.url }}" class="page-head__action-link">{{ action.label }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </details>
+        {% else %}
+            <div class="page-head__actions-inline">
+                {% for action in head_actions %}
+                    <a href="{{ action.url }}" class="page-head__action-link">{{ action.label }}</a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endif %}
+
+    <div class="page-head__main">
+        <h1 class="page-head__title">{{ head_title }}</h1>
+
+        {% if head_desc %}
+            <div class="page-head__desc">{{ head_desc }}</div>
+        {% endif %}
+
+        {% if head_meta %}
+            <div class="page-head__meta">
+                {% for item in head_meta %}
+                    <span class="page-head__meta-item">
+                        {% if item.label %}<strong>{{ item.label }}</strong>{% endif %}
+                        {{ item.text }}
+                    </span>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if head_chips %}
+            <div class="page-head__chips">
+                {% for chip in head_chips %}
+                    <span
+                        class="page-head__chip page-head__chip--{{ chip.kind|default:'neutral' }}"
+                        {% if head_type == "train" %}
+                            {% if forloop.counter == 1 %}id="chip-stage"{% endif %}
+                            {% if forloop.counter == 2 %}id="chip-next-review"{% endif %}
+                            {% if forloop.counter == 3 %}id="chip-status"{% endif %}
+                            {% if forloop.counter == 4 %}id="chip-source"{% endif %}
+                        {% endif %}
+                    >
+                        {{ chip.text }}
+                    </span>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</section>

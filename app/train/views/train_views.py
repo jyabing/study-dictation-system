@@ -19,6 +19,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from app.train.services.cloze_engine import generate_cloze
 
+from django.urls import reverse
+
 from ..models import (
     Book,
     Lesson,
@@ -305,6 +307,109 @@ def _session_pin_cloze_layout(request, question_id, cloze_text, cloze_answers, l
         "level_name": level_name,
     }
     _session_set_pinned_cloze_map(request, pinned)
+
+def _session_prune_deleted_training_refs(request):
+    """
+    清理 session 中指向已删除训练题 / 已删除题目的残留缓存。
+    目的：
+    - 错词复盘不会继续显示已删除素材
+    - 训练队列不会继续保留已删除 training_id
+    - pinned_cloze_map 不会继续保留已删除 question_id
+    """
+    wrong_word_queue = request.session.get("wrong_word_queue", [])
+    training_queue = request.session.get("training_queue", [])
+    pinned_cloze_map = request.session.get("pinned_cloze_map", {})
+
+    referenced_training_ids = set()
+
+    if isinstance(wrong_word_queue, list):
+        for item in wrong_word_queue:
+            if isinstance(item, dict):
+                training_id = item.get("training_id")
+                if isinstance(training_id, int):
+                    referenced_training_ids.add(training_id)
+
+    if isinstance(training_queue, list):
+        for item in training_queue:
+            if isinstance(item, int):
+                referenced_training_ids.add(item)
+            elif isinstance(item, dict):
+                training_id = item.get("training_id")
+                if isinstance(training_id, int):
+                    referenced_training_ids.add(training_id)
+
+    existing_training_ids = set()
+    if referenced_training_ids:
+        existing_training_ids = set(
+            TrainingItem.objects.filter(
+                id__in=referenced_training_ids,
+                question__lesson__book__owner=request.user
+            ).values_list("id", flat=True)
+        )
+
+    if isinstance(wrong_word_queue, list):
+        cleaned_wrong_word_queue = []
+        for item in wrong_word_queue:
+            if not isinstance(item, dict):
+                continue
+
+            training_id = item.get("training_id")
+            if training_id is not None and training_id not in existing_training_ids:
+                continue
+
+            cleaned_wrong_word_queue.append(item)
+
+        request.session["wrong_word_queue"] = cleaned_wrong_word_queue
+
+    if isinstance(training_queue, list):
+        cleaned_training_queue = []
+        for item in training_queue:
+            if isinstance(item, int):
+                if item not in existing_training_ids:
+                    continue
+                cleaned_training_queue.append(item)
+                continue
+
+            if isinstance(item, dict):
+                training_id = item.get("training_id")
+                if training_id is not None and training_id not in existing_training_ids:
+                    continue
+                cleaned_training_queue.append(item)
+                continue
+
+            cleaned_training_queue.append(item)
+
+        request.session["training_queue"] = cleaned_training_queue
+
+    if isinstance(pinned_cloze_map, dict):
+        referenced_question_ids = set()
+
+        for key in pinned_cloze_map.keys():
+            key_str = str(key).strip()
+            if key_str.isdigit():
+                referenced_question_ids.add(int(key_str))
+
+        existing_question_ids = set()
+        if referenced_question_ids:
+            existing_question_ids = set(
+                Question.objects.filter(
+                    id__in=referenced_question_ids,
+                    lesson__book__owner=request.user
+                ).values_list("id", flat=True)
+            )
+
+        cleaned_pinned_cloze_map = {}
+        for key, value in pinned_cloze_map.items():
+            key_str = str(key).strip()
+            if not key_str.isdigit():
+                continue
+
+            if int(key_str) not in existing_question_ids:
+                continue
+
+            cleaned_pinned_cloze_map[key_str] = value
+
+        request.session["pinned_cloze_map"] = cleaned_pinned_cloze_map
 
 
 def _session_get_pinned_cloze_layout(request, question_id):
@@ -642,7 +747,21 @@ def build_training_payload(training, memory=None, request=None):
         if choices:
             selection_mode = choices[0].get("selection_mode") or "single"
 
-    prompt_text = training.prompt_text or training.question.prompt_text or ""
+    instruction_text = (training.instruction_text or "").strip()
+
+    prompt_text = (
+        training.source_text
+        or training.prompt_text
+        or training.question.prompt_text
+        or ""
+    ).strip()
+
+    resolved_answer_text = (
+        training.target_answer
+        or training.question.answer_text
+        or ""
+    ).strip()
+
     question_audio_url = training.question.audio_url or ""
 
     use_tts = bool(meta.get("use_tts", False))
@@ -684,12 +803,22 @@ def build_training_payload(training, memory=None, request=None):
 
             cloze_seed_key = f"q{training.question_id}-lvl{level_name}-range{dynamic_min}-{dynamic_max}"
 
-            dynamic_cloze_text, dynamic_cloze_answers = generate_cloze(
-                prompt_text,
-                min_blank=dynamic_min,
-                max_blank=dynamic_max,
-                seed_key=cloze_seed_key
-            )
+            cloze_base_text = (
+                training.target_answer
+                or training.question.answer_text
+                or ""
+            ).strip()
+
+            dynamic_cloze_text = ""
+            dynamic_cloze_answers = []
+
+            if cloze_base_text:
+                dynamic_cloze_text, dynamic_cloze_answers = generate_cloze(
+                    cloze_base_text,
+                    min_blank=dynamic_min,
+                    max_blank=dynamic_max,
+                    seed_key=cloze_seed_key
+                )
 
             if dynamic_cloze_text and dynamic_cloze_answers:
                 resolved_cloze_text = dynamic_cloze_text
@@ -737,11 +866,14 @@ def build_training_payload(training, memory=None, request=None):
 
         "display_item_type": item_type,
 
+        "instruction_text": instruction_text,
+
         "prompt_text": prompt_text,
         "prompt": prompt_text,
 
-        "answer_text": training.question.answer_text,
-        "correct_answers": training.cloze_answers or [],
+        "answer_text": resolved_answer_text,
+        "target_answer": resolved_answer_text,
+        "correct_answers": resolved_cloze_answers or ([resolved_answer_text] if resolved_answer_text else []),
 
         "audio_url": resolved_prompt_audio or "",
         "audio": resolved_prompt_audio or "",
@@ -863,28 +995,48 @@ def judge_training_answer(training, raw_answer):
         choices = training.choices or []
         selection_mode = meta.get("selection_mode", "single")
 
-        correct_keys = [
-            c.get("key")
-            for c in choices
-            if c.get("correct")
-        ]
+        correct_keys = []
+        correct_texts = []
 
-        correct_texts = [
-            c.get("text") or c.get("content") or c.get("audio") or ""
-            for c in choices
-            if c.get("correct")
-        ]
+        for c in choices:
+            if not c.get("correct"):
+                continue
+
+            key = str(c.get("key") or "").strip()
+            text = str(c.get("text") or c.get("content") or c.get("audio") or "").strip()
+
+            if key:
+                correct_keys.append(key)
+
+            if text:
+                correct_texts.append(text)
 
         user_answers = _normalize_choice_answers(raw_answer)
 
+        def _norm(v):
+            return normalize(str(v or ""))
+
+        normalized_user_answers = [_norm(x) for x in user_answers if str(x or "").strip()]
+        normalized_correct_keys = [_norm(x) for x in correct_keys if str(x or "").strip()]
+        normalized_correct_texts = [_norm(x) for x in correct_texts if str(x or "").strip()]
+
         if selection_mode == "multi":
-            is_correct = sorted(user_answers) == sorted(correct_keys)
+            is_correct = (
+                sorted(normalized_user_answers) == sorted(normalized_correct_texts)
+                or sorted(normalized_user_answers) == sorted(normalized_correct_keys)
+            )
         else:
-            is_correct = len(user_answers) == 1 and user_answers[0] in correct_keys
+            is_correct = (
+                len(normalized_user_answers) == 1
+                and (
+                    normalized_user_answers[0] in normalized_correct_texts
+                    or normalized_user_answers[0] in normalized_correct_keys
+                )
+            )
 
         return {
             "is_correct": is_correct,
-            "correct_answers": correct_keys,
+            "correct_answers": correct_texts or correct_keys,
             "display_answer": " / ".join(correct_texts or correct_keys),
             "user_answers": user_answers,
         }
@@ -900,7 +1052,13 @@ def judge_training_answer(training, raw_answer):
         else:
             user_answer = normalize(str(parsed or ""))
 
-        correct_text = normalize(q.answer_text or "")
+        resolved_answer_text = (
+            training.target_answer
+            or q.answer_text
+            or ""
+        ).strip()
+
+        correct_text = normalize(resolved_answer_text)
 
         allow_partial_match = (meta.get("asr") or {}).get("allow_partial_match", True)
 
@@ -911,8 +1069,8 @@ def judge_training_answer(training, raw_answer):
 
         return {
             "is_correct": is_correct,
-            "correct_answers": [q.answer_text] if q.answer_text else [],
-            "display_answer": q.answer_text or "",
+            "correct_answers": [resolved_answer_text] if resolved_answer_text else [],
+            "display_answer": resolved_answer_text,
             "user_answers": raw_answer,
         }
 
@@ -926,13 +1084,19 @@ def judge_training_answer(training, raw_answer):
     else:
         user_answer = normalize(str(parsed or ""))
 
-    correct_text = normalize(q.answer_text or "")
+    resolved_answer_text = (
+        training.target_answer
+        or q.answer_text
+        or ""
+    ).strip()
+
+    correct_text = normalize(resolved_answer_text)
     is_correct = check_answer(user_answer, correct_text)
 
     return {
         "is_correct": is_correct,
-        "correct_answers": [q.answer_text] if q.answer_text else [],
-        "display_answer": q.answer_text or "",
+        "correct_answers": [resolved_answer_text] if resolved_answer_text else [],
+        "display_answer": resolved_answer_text,
         "user_answers": raw_answer,
     }
 
@@ -2149,6 +2313,36 @@ def _render_train_page(request, scope, obj):
         "plan_total": scope_plan_stats["total"] if scope_plan_items else all_count,
         "plan_done": scope_plan_stats["done"] if scope_plan_items else 0,
         "plan_progress": scope_plan_stats["progress"] if scope_plan_items else 0,
+        "head_actions": (
+            [
+                {"label": "← 返回训练", "url": "javascript:history.back()"},
+                {"label": "题目列表", "url": reverse("lesson-question-list", args=[obj.id])},
+                {"label": "编辑章节", "url": reverse("lesson-edit", args=[obj.id])},
+                {"label": "返回书册", "url": reverse("book-detail", args=[obj.book.id])},
+                {"label": "返回首页", "url": reverse("dashboard")},
+            ]
+            if scope == "lesson"
+            else [
+                {"label": "← 返回书册", "url": reverse("book-detail", args=[obj.id])},
+                {"label": "返回首页", "url": reverse("dashboard")},
+            ]
+        ),
+        "head_meta": (
+            [
+                {"label": "书册：", "text": obj.book.title},
+                {"label": "章节：", "text": obj.title},
+            ]
+            if scope == "lesson"
+            else [
+                {"label": "书册：", "text": obj.title},
+            ]
+        ),
+        "head_chips": [
+            {"kind": "warning", "text": "阶段：加载中..."},
+            {"kind": "primary", "text": "复习：加载中..."},
+            {"kind": "primary", "text": "状态：加载中..."},
+            {"kind": "danger", "text": "来源：加载中..."},
+        ],
     }
 
     if scope == "lesson":
@@ -2158,7 +2352,6 @@ def _render_train_page(request, scope, obj):
         })
 
     return render(request, "train/train.html", context)
-
 
 # =========================
 # 页面：训练页
@@ -2189,7 +2382,7 @@ def lesson_train(request, lesson_id):
 # API：无刷新训练（完整版）
 # =========================
 def _train_api_by_scope(request, scope, obj):
-    print("🔥🔥🔥 API HIT")
+    _session_prune_deleted_training_refs(request)
 
     scope_label = _get_train_scope_label(scope)
     target_text = _get_train_scope_target_text(scope)
@@ -2436,7 +2629,7 @@ def _train_api_by_scope(request, scope, obj):
                 "result": (
                     "✅ 错词复盘正确"
                     if is_correct else
-                    f"❌ 错词复盘错误，正确答案：{judge['display_answer']}"
+                    f"❌ 错词复盘错误，正确回答：{judge['display_answer']}"
                 ),
                 "speed": get_speed_level(duration),
                 "xp": xp,
@@ -2542,7 +2735,7 @@ def _train_api_by_scope(request, scope, obj):
             "result": (
                 f"✅ 正确（Lv {memory.memory_level if memory else 0}）"
                 if is_correct else
-                f"❌ 错误，正确答案：{judge['display_answer']}"
+                f"❌ 错误，正确回答：{judge['display_answer']}"
             ),
             "speed": get_speed_level(duration),
             "xp": xp,
@@ -2602,12 +2795,37 @@ def lesson_question_list(request, lesson_id):
 
     for question in questions:
         training = question.training_items.order_by("id").first()
+
         question.display_qtype = training.item_type if training else ""
+        question.display_instruction = (
+            (training.instruction_text or "").strip()
+            if training else ""
+        )
+        question.display_source_text = (
+            (training.source_text or question.prompt_text or "").strip()
+            if training else (question.prompt_text or "").strip()
+        )
+        question.display_target_answer = (
+            (training.target_answer or question.answer_text or "").strip()
+            if training else (question.answer_text or "").strip()
+        )
 
     return render(request, "train/question_list.html", {
         "lesson": lesson,
         "book": lesson.book,
         "questions": questions,
+        "head_actions": [
+            {"label": "← 返回训练", "url": reverse("lesson-train", args=[lesson.id])},
+            {"label": "返回章节页", "url": reverse("book-detail", args=[lesson.book.id])},
+            {"label": "新增素材", "url": f"{reverse('builder-page')}?lesson_id={lesson.id}"},
+        ],
+        "head_meta": [
+            {"label": "书册：", "text": lesson.book.title},
+            {"label": "章节：", "text": lesson.title},
+        ],
+        "head_chips": [
+            {"kind": "primary", "text": f"素材数：{len(questions)}"},
+        ],
     })
 
 # =========================
@@ -2748,8 +2966,8 @@ def _safe_json_loads(raw_body):
 def _split_answer_text(answer_text):
     """
     支持：
-    1) 单答案
-    2) 多答案：换行 / 逗号 / 分号 / 斜杠 / 顿号 分隔
+    1) 单回答
+    2) 多回答：换行 / 逗号 / 分号 / 斜杠 / 顿号 分隔
     """
     text = (answer_text or "").strip()
     if not text:
@@ -2811,9 +3029,25 @@ def builder_save(request):
     skill = (data.get("skill") or "read").strip()
     item_type = (data.get("item_type") or "").strip()
 
-    # 兼容旧字段
-    prompt_text = (data.get("prompt_text") or data.get("prompt") or "").strip()
-    answer_text = (data.get("answer_text") or data.get("answer") or "").strip()
+    # 兼容旧字段 + 新字段
+    instruction_text = (data.get("instruction_text") or "").strip()
+
+    source_text = (
+        data.get("source_text")
+        or data.get("prompt_text")
+        or data.get("prompt")
+        or ""
+    ).strip()
+
+    target_answer = (
+        data.get("target_answer")
+        or data.get("answer_text")
+        or data.get("answer")
+        or ""
+    ).strip()
+
+    prompt_text = source_text
+    answer_text = target_answer
     prompt_audio = (data.get("prompt_audio") or data.get("audio_url") or "").strip()
 
     use_tts = bool(data.get("use_tts", False))
@@ -2841,14 +3075,16 @@ def builder_save(request):
 
     # 听 / 说：如果没单独填 answer_text，默认用 prompt_text 当识别比对文本
     if item_type in {"listen_asr", "speak_read"} and not answer_text:
-        answer_text = prompt_text    
-        
-        question = Question.objects.create(
-            lesson=lesson,
-            prompt_text=prompt_text,
-            answer_text=answer_text,
-            audio_url=prompt_audio or ""
-        )
+        answer_text = prompt_text
+
+    # 先创建 question，供后续各题型分支统一使用
+    question = Question.objects.create(
+        lesson=lesson,
+        prompt_text=prompt_text,
+        answer_text=answer_text,
+        audio_url=prompt_audio or ""
+    )
+
     created_items = []
 
     # =========================
@@ -2874,15 +3110,18 @@ def builder_save(request):
 
         if not correct_texts:
             question.delete()
-            return JsonResponse({"ok": False, "error": "选择题至少需要一个正确答案"}, status=400)
+            return JsonResponse({"ok": False, "error": "选择题至少需要一个正确回答"}, status=400)
 
-        # 回写标准答案，便于后续训练统一判定
+        # 回写标准回答，便于后续训练统一判定
         question.answer_text = " / ".join(correct_texts)
         question.save(update_fields=["answer_text"])
 
         training = TrainingItem.objects.create(
             question=question,
             item_type="read_choice",
+            instruction_text=instruction_text or prompt_text,
+            source_text=source_text,
+            target_answer=question.answer_text or target_answer,
             choices=choices_payload
         )
         created_items.append(training.id)
@@ -2901,15 +3140,6 @@ def builder_save(request):
     # - 系统自动生成 cloze_text / cloze_answers
     # - 如果用户手工写了 {word}，则优先走手工 parse 逻辑
     # =========================
-    # =========================
-    # 先创建 question（必须在所有分支之前）
-    # =========================
-    question = Question.objects.create(
-        lesson=lesson,
-        prompt_text=prompt_text,
-        answer_text=answer_text,
-        audio_url=prompt_audio or ""
-    )
 
     # =========================
     # read_cloze 分支
@@ -2922,8 +3152,21 @@ def builder_save(request):
         if max_blank < min_blank:
             max_blank = min_blank
 
+        cloze_base_text = (
+            target_answer
+            or answer_text
+            or ""
+        ).strip()
+
+        if not cloze_base_text:
+            question.delete()
+            return JsonResponse({
+                "ok": False,
+                "error": "克漏字题必须先填写回答内容"
+            }, status=400)
+
         cloze_text, cloze_answers = generate_cloze(
-            prompt_text,
+            cloze_base_text,
             min_blank=min_blank,
             max_blank=max_blank
         )
@@ -2939,13 +3182,17 @@ def builder_save(request):
             question.delete()
             return JsonResponse({
                 "ok": False,
-                "error": "自动克漏未生成答案，请检查题干内容"
+                "error": "自动克漏未生成回答，请检查题干内容"
             }, status=400)
 
         training = TrainingItem.objects.create(
             question=question,
             item_type="read_cloze",
             prompt_text=prompt_text,
+            instruction_text=instruction_text or prompt_text,
+            source_text=source_text,
+            target_answer=target_answer or question.answer_text,
+            manual_cloze_text=cloze_text,
             cloze_text=cloze_text,
             cloze_answers=cloze_answers,
             choices=[{
@@ -2975,11 +3222,14 @@ def builder_save(request):
     if item_type == "write_text":
         if not answer_text:
             question.delete()
-            return JsonResponse({"ok": False, "error": "写作题必须填写标准答案"}, status=400)
+            return JsonResponse({"ok": False, "error": "写作题必须填写回答"}, status=400)
 
         training = TrainingItem.objects.create(
             question=question,
             item_type="write",
+            instruction_text=instruction_text or prompt_text,
+            source_text=source_text,
+            target_answer=target_answer,
             choices=[{
                 "_meta": {
                     "skill": skill,
@@ -3005,6 +3255,9 @@ def builder_save(request):
         training = TrainingItem.objects.create(
             question=question,
             item_type=item_type,
+            instruction_text=instruction_text or prompt_text,
+            source_text=source_text,
+            target_answer=target_answer or answer_text,
             choices=[{
                 "_meta": {
                     "skill": skill,
@@ -3047,14 +3300,26 @@ def question_edit(request, question_id):
     training = question.training_items.order_by("id").first()
     item_type = training.item_type if training else ""
 
-    display_qtype = item_type or question.qtype or ""
+    display_qtype = item_type or ""
 
     if request.method == "POST":
-        prompt_text = (request.POST.get("prompt_text") or "").strip()
-        answer_text = (request.POST.get("answer_text") or "").strip()
+        instruction_text = (request.POST.get("instruction_text") or "").strip()
+
+        source_text = (
+            request.POST.get("source_text")
+            or request.POST.get("prompt_text")
+            or ""
+        ).strip()
+
+        target_answer = (
+            request.POST.get("target_answer")
+            or request.POST.get("answer_text")
+            or ""
+        ).strip()
+
         audio_url = (request.POST.get("audio_url") or "").strip()
 
-        if not prompt_text:
+        if not source_text:
             return render(request, "train/edit_item.html", {
                 "mode": "question",
                 "obj": question,
@@ -3062,7 +3327,7 @@ def question_edit(request, question_id):
                 "item_type": item_type,
                 "display_qtype": display_qtype,
                 "next": next_url,
-                "page_title": "按原题型编辑",
+                "page_title": "编辑训练题",
                 "error": "题干不能为空",
                 "choices_json": json.dumps(training.choices or [], ensure_ascii=False) if training else "[]",
                 "cloze_answers_text": "\n".join(training.cloze_answers or []) if training and training.cloze_answers else "",
@@ -3073,11 +3338,22 @@ def question_edit(request, question_id):
                 ),
             })
 
-        # 通用字段先保存
-        question.prompt_text = prompt_text
-        question.answer_text = answer_text
+        # 通用字段先保存（旧字段继续兼容）
+        question.prompt_text = source_text
+        question.answer_text = target_answer
         question.audio_url = audio_url
         question.save(update_fields=["prompt_text", "answer_text", "audio_url"])
+
+        # 新字段同步写入 TrainingItem
+        if training:
+            training.instruction_text = instruction_text
+            training.source_text = source_text
+            training.target_answer = target_answer
+            training.save(update_fields=[
+                "instruction_text",
+                "source_text",
+                "target_answer",
+            ])
 
         # 没有 training 的旧题
         if not training:
@@ -3141,10 +3417,13 @@ def question_edit(request, question_id):
                     correct_texts.append(text)
 
             if normalized_choices and correct_texts:
-                training.choices = normalized_choices
-                training.save(update_fields=["choices"])
+                resolved_answer_text = " / ".join(correct_texts)
 
-                question.answer_text = " / ".join(correct_texts)
+                training.choices = normalized_choices
+                training.target_answer = resolved_answer_text
+                training.save(update_fields=["choices", "target_answer"])
+
+                question.answer_text = resolved_answer_text
                 question.save(update_fields=["answer_text"])
 
             return redirect(next_url)
@@ -3162,14 +3441,20 @@ def question_edit(request, question_id):
                 if x.strip()
             ]
 
+            update_fields = ["cloze_answers"]
+
             if cloze_text:
                 training.cloze_text = cloze_text
-            training.cloze_answers = cloze_answers
-            training.save(update_fields=["cloze_text", "cloze_answers"])
+                training.manual_cloze_text = cloze_text
+                update_fields.extend(["cloze_text", "manual_cloze_text"])
 
-            if cloze_answers:
-                question.answer_text = " / ".join(cloze_answers)
-                question.save(update_fields=["answer_text"])
+            training.cloze_answers = cloze_answers
+            training.save(update_fields=update_fields)
+
+            # 注意：
+            # read_cloze 的 cloze_answers 只是空格回答，
+            # 不能反向覆盖完整的 target_answer / question.answer_text。
+            # 完整回答应继续保持为编辑页中的“回答”字段。
 
             return redirect(next_url)
 
@@ -3219,7 +3504,7 @@ def question_edit(request, question_id):
         "item_type": item_type,
         "display_qtype": display_qtype,
         "next": next_url,
-        "page_title": "按原题型编辑",
+        "page_title": "编辑训练题",
         "choices_json": json.dumps(training.choices or [], ensure_ascii=False) if training else "[]",
         "cloze_answers_text": "\n".join(training.cloze_answers or []) if training and training.cloze_answers else "",
         "listen_meta": (
@@ -3239,6 +3524,69 @@ def question_delete(request, question_id):
     )
 
     lesson_id = question.lesson_id
+
+    next_url = (
+        request.POST.get("next")
+        or request.GET.get("next")
+        or ""
+    ).strip()
+
+    # 删除前先拿到关联 training_id，后面要清 session 缓存
+    training_ids = list(
+        question.training_items.values_list("id", flat=True)
+    )
+
+    # =========================
+    # 清理 wrong_word_queue
+    # =========================
+    wrong_word_queue = request.session.get("wrong_word_queue", [])
+    if isinstance(wrong_word_queue, list):
+        cleaned_wrong_word_queue = []
+        for item in wrong_word_queue:
+            if not isinstance(item, dict):
+                continue
+            if item.get("training_id") in training_ids:
+                continue
+            cleaned_wrong_word_queue.append(item)
+        request.session["wrong_word_queue"] = cleaned_wrong_word_queue
+
+    # =========================
+    # 清理 pinned_cloze_map
+    # =========================
+    pinned_cloze_map = request.session.get("pinned_cloze_map", {})
+    if isinstance(pinned_cloze_map, dict):
+        pinned_cloze_map.pop(str(question.id), None)
+        request.session["pinned_cloze_map"] = pinned_cloze_map
+
+    # =========================
+    # 清理 training_queue
+    # 兼容：
+    # - [1, 2, 3]
+    # - [{"training_id": 1}, ...]
+    # =========================
+    training_queue = request.session.get("training_queue", [])
+    if isinstance(training_queue, list):
+        cleaned_training_queue = []
+        for item in training_queue:
+            if isinstance(item, int):
+                if item in training_ids:
+                    continue
+                cleaned_training_queue.append(item)
+                continue
+
+            if isinstance(item, dict):
+                if item.get("training_id") in training_ids:
+                    continue
+                cleaned_training_queue.append(item)
+                continue
+
+            cleaned_training_queue.append(item)
+
+        request.session["training_queue"] = cleaned_training_queue
+
     question.delete()
+
+    if next_url:
+        return redirect(next_url)
 
     return redirect("lesson-question-list", lesson_id=lesson_id)

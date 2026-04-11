@@ -441,8 +441,21 @@
                     <div class="section-sub">题干是“问题 / 引导语 / 显示给用户的内容”。</div>
 
                     <div class="field">
-                        <label for="prompt_text">题干文字</label>
-                        <textarea id="prompt_text" placeholder="例如：Ask me if I am David / 请听音后复述 / ____ に入る言葉を選びなさい" oninput="updatePreview();"></textarea>
+                        <label for="instruction_text">提示短语</label>
+                        <textarea
+                            id="instruction_text"
+                            placeholder="例如：用敬语表达 / 用对应时态及人称提问 / 王勃怎么表达"
+                            oninput="updatePreview();"
+                        ></textarea>
+                    </div>
+
+                    <div class="field" style="margin-top:12px;">
+                        <label for="prompt_text">题干</label>
+                        <textarea
+                            id="prompt_text"
+                            placeholder="例如：佐藤です。 / ask me if i am David / 时光流逝"
+                            oninput="updatePreview();"
+                        ></textarea>
                     </div>
 
                     <div id="prompt_audio_wrap" class="field hidden" style="margin-top:12px;">
@@ -458,10 +471,10 @@
 
                 <div id="answer_section" class="card section">
                     <div class="section-title">回答内容</div>
-                    <div class="section-sub">这里是系统判题时的标准答案。听 / 说默认也会用这里做识别比对。</div>
+                    <div class="section-sub">这里填写用户最终需要生成并记忆的目标回答。听 / 说默认也会用这里做识别比对。</div>
 
                     <div class="field">
-                        <label for="answer_text">标准答案</label>
+                        <label for="answer_text">回答</label>
                         <textarea id="answer_text" placeholder="可输入单答案；多答案可用换行、逗号、分号分隔" oninput="updatePreview();"></textarea>
                     </div>
                 </div>
@@ -541,14 +554,14 @@
                     <div class="preview-title">预览</div>
 
                     <div class="preview-panel">
-                        <div class="preview-label">题干 / 问题</div>
-                        <div id="previewQuestion" class="preview-question">请先输入题干</div>
+                        <div class="preview-label">提示短语 / 题干</div>
+                        <div id="previewQuestion" class="preview-question">请先输入提示短语和题干</div>
 
                         <div class="preview-label">训练方式</div>
                         <div id="previewType" class="preview-answer">阅读克漏字</div>
 
                         <div id="previewAnswerWrap" style="margin-top:16px;">
-                            <div class="preview-label">标准答案</div>
+                            <div class="preview-label">回答</div>
                             <div id="previewAnswer" class="preview-answer">尚未填写</div>
                         </div>
 
@@ -786,6 +799,11 @@
 
         function updatePreview() {
             const itemType = document.getElementById("item_type").value;
+
+            const instructionText = document.getElementById("instruction_text")
+                ? document.getElementById("instruction_text").value.trim()
+                : "";
+
             const promptText = document.getElementById("prompt_text").value.trim();
             const answerText = document.getElementById("answer_text").value.trim();
 
@@ -797,9 +815,22 @@
             const previewChoices = document.getElementById("previewChoices");
             const previewNote = document.getElementById("previewNote");
 
-            previewQuestion.innerText = promptText || "请先输入题干";
+            let previewQuestionText = "";
+            if (instructionText && promptText) {
+                previewQuestionText = `${instructionText}\n${promptText}`;
+            } else if (instructionText) {
+                previewQuestionText = instructionText;
+            } else if (promptText) {
+                previewQuestionText = promptText;
+            }
+
+            previewQuestion.innerText = previewQuestionText || "请先输入提示短语和题干";
             previewType.innerText = document.getElementById("item_type").selectedOptions[0]?.textContent || "";
             previewAnswer.innerText = answerText || "尚未填写";
+
+            previewAnswerWrap.classList.remove("hidden");
+            previewChoicesWrap.classList.add("hidden");
+            previewChoices.innerHTML = "";
 
             if (itemType === "read_choice_single" || itemType === "read_choice_multi") {
                 previewAnswerWrap.classList.add("hidden");
@@ -842,11 +873,15 @@
                 if (itemType === "read_cloze") {
                     previewNote.innerText = "这是克漏字训练。随着熟练度提升，可自动增加空格数量。";
                 } else if (itemType === "listen_asr") {
-                    previewNote.innerText = "这是听音识别训练。训练时播放音频，用户朗读，系统将识别文本与标准答案比对。";
+                    previewNote.innerText = "这是听力转换训练。训练时显示提示短语，播放题干音频，用户根据听到的内容作答。";
                 } else if (itemType === "speak_read") {
-                    previewNote.innerText = "这是看字朗读训练。训练时显示文字，用户朗读，系统识别后与标准答案比对。";
+                    previewNote.innerText = "这是口说作答训练。训练时显示提示短语和题干，用户朗读回答，系统识别后与目标回答比对。";
                 } else if (itemType === "write_text") {
-                    previewNote.innerText = "这是文字作答训练。训练时显示文字题干，用户手动输入文字回答。";
+                    previewNote.innerText = "这是文字作答训练。训练时显示提示短语和题干，用户手动输入回答。";
+                } else if (itemType === "read_choice_single" || itemType === "read_choice_multi") {
+                    previewNote.innerText = itemType === "read_choice_multi"
+                        ? "这是阅读多选训练。用户根据提示短语和题干选择正确回答。"
+                        : "这是阅读单选训练。用户根据提示短语和题干选择正确回答。";
                 } else {
                     previewNote.innerText = "这条素材会作为循环记忆素材进入训练。";
                 }
@@ -857,16 +892,28 @@
             const skill = document.getElementById("skill").value;
             const itemType = document.getElementById("item_type").value;
 
+            const instructionText = document.getElementById("instruction_text")
+                ? document.getElementById("instruction_text").value
+                : "";
+
+            const promptText = document.getElementById("prompt_text").value;
+            const answerText = document.getElementById("answer_text").value;
+
             const payload = {
                 lesson_id: document.getElementById("lesson").value,
                 skill: skill,
                 item_type: itemType,
 
-                prompt_text: document.getElementById("prompt_text").value,
+                // 新字段：正式三要素
+                instruction_text: instructionText,
+                source_text: promptText,
+                target_answer: answerText,
+
+                // 旧字段：继续兼容后端旧逻辑
+                prompt_text: promptText,
                 prompt_audio: document.getElementById("prompt_audio").value,
                 use_tts: document.getElementById("use_tts").checked,
-
-                answer_text: document.getElementById("answer_text").value,
+                answer_text: answerText,
 
                 choices: buildChoices(),
                 reveal_text_on_wrong: document.getElementById("reveal_text_on_wrong").checked,

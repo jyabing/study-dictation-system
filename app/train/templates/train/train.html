@@ -6,84 +6,25 @@
 <div class="page train-page">
     <div class="shell train-shell">
 
-        <div class="topbar train-topbar">
-            <div class="topbar-left train-top-left">
-                <a href="{% url 'book-detail' book.id %}" class="back-link">← 返回书册</a>
-                <a href="{% url 'dashboard' %}" class="back-link">返回首页</a>
-            </div>
-        </div>
-
-        <section class="hero-card">
-            <div class="hero-inner">
-                <div class="hero-main">
-                    <div class="hero-eyebrow">{{ train_scope_label }}</div>
-                    <h1 class="hero-title">{{ train_title }}</h1>
-                    <p class="hero-subtitle">
-                        {% if train_scope == "book" %}
-                            现在这里是整本循环训练页，直接接 book-train-api。
-                        {% else %}
-                            现在这里不只是状态页，而是直接接 lesson-train-api 的训练页。
-                        {% endif %}
-                    </p>
-
-                    <div class="hero-chips">
-                        <span class="chip warning" id="chip-stage">当前阶段：加载中...</span>
-                        <span class="chip primary" id="chip-next-review">下一次复习：加载中...</span>
-                        <span class="chip primary" id="chip-status">当前状态：加载中...</span>
-                        <span class="chip danger" id="chip-source">训练来源：加载中...</span>
-                    </div>
-                </div>
-
-                <div class="hero-side">
-                    {% if lesson %}
-                        <a href="{% url 'lesson-question-list' lesson.id %}" class="secondary-btn">题目列表</a>
-                        <a href="{% url 'lesson-edit' lesson.id %}" class="ghost-btn">编辑章节</a>
-                    {% else %}
-                        <a href="{% url 'book-detail' book.id %}" class="secondary-btn">书册详情</a>
-                    {% endif %}
-                </div>
-            </div>
-        </section>
-
-        <section class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-title">计划总数</div>
-                <div class="stat-value" id="stat-plan-total">{{ plan_total|default:0 }}</div>
-                <div class="stat-sub">今天计划或当前训练范围总数</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-title">已完成</div>
-                <div class="stat-value" id="stat-plan-done">{{ plan_done|default:0 }}</div>
-                <div class="stat-sub">当前轮次已完成数量</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-title">进度</div>
-                <div class="stat-value" id="stat-plan-progress">{{ plan_progress|default:0 }}%</div>
-                <div class="stat-sub">按 API 返回动态更新</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-title">循环步</div>
-                <div class="stat-value" id="stat-memory-level">-</div>
-                <div class="stat-sub">当前题目的严格循环 step</div>
-            </div>
-        </section>
+        {% include "train/includes/page_head.html" with head_type="train" head_actions=head_actions head_actions_collapsed=True head_actions_title="页面操作" head_title=train_title head_meta=head_meta head_chips=head_chips %}
 
         <div class="layout-main">
             <div class="main-left">
-                <section class="question-card" id="question-card">
+
+                <section class="question-card question-card-priority" id="question-card">
                     <div class="question-header">
                         <div>
                             <h2 class="question-title">当前题目</h2>
-                            <div class="question-subtitle">真正做题区。这里直接接 API 的当前训练项。</div>
+                            <div class="question-subtitle">直接开始做题。训练内容优先显示。</div>
                         </div>
                     </div>
 
                     <div class="question-body">
                         <div class="question-prompt-wrap">
                             <div class="question-type-badge" id="question-type-badge">加载中</div>
+
+                            <div class="question-instruction" id="question-instruction" style="display:none;"></div>
+
                             <div class="question-prompt" id="question-prompt">正在加载当前题目...</div>
 
                             <div class="question-extra" id="question-extra" style="display:none;"></div>
@@ -127,13 +68,13 @@
                                         type="text"
                                         id="answer-input"
                                         class="answer-input"
-                                        placeholder="请输入答案，然后提交"
+                                        placeholder="请输入回答，然后提交"
                                         autocomplete="off"
                                     >
                                 </div>
 
                                 <div class="answer-actions">
-                                    <button type="submit" class="primary-btn" id="submit-btn">提交答案</button>
+                                    <button type="submit" class="primary-btn" id="submit-btn">提交回答</button>
                                     <button type="button" class="secondary-btn" id="next-btn" style="display:none;">下一题</button>
                                     <button type="button" class="ghost-btn" id="reload-btn">重新加载当前题</button>
                                 </div>
@@ -141,6 +82,34 @@
 
                             <div class="feedback-box info" id="feedback-box"></div>
                         </div>
+                    </div>
+                </section>
+
+                <section class="train-status-bar" aria-label="训练状态">
+                    <div class="train-status-item">
+                        <span class="train-status-label">计划</span>
+                        <span class="train-status-value" id="stat-plan-total">{{ plan_total|default:0 }}</span>
+                    </div>
+
+                    <div class="train-status-divider">｜</div>
+
+                    <div class="train-status-item">
+                        <span class="train-status-label">已完成</span>
+                        <span class="train-status-value" id="stat-plan-done">{{ plan_done|default:0 }}</span>
+                    </div>
+
+                    <div class="train-status-divider">｜</div>
+
+                    <div class="train-status-item">
+                        <span class="train-status-label">进度</span>
+                        <span class="train-status-value" id="stat-plan-progress">{{ plan_progress|default:0 }}%</span>
+                    </div>
+
+                    <div class="train-status-divider">｜</div>
+
+                    <div class="train-status-item">
+                        <span class="train-status-label">循环步</span>
+                        <span class="train-status-value" id="stat-memory-level">-</span>
                     </div>
                 </section>
 
@@ -159,15 +128,13 @@
             </div>
 
             <div class="main-right">
-                <section class="side-card">
-                    <div class="side-header">
-                        <div>
-                            <h2 class="side-title">当前训练摘要</h2>
-                            <div class="side-subtitle">桌面端表格展示，手机端卡片展示。</div>
-                        </div>
-                    </div>
+                <details class="train-fold train-summary-fold">
+                    <summary class="train-fold-summary">
+                        <span class="train-fold-title">当前训练摘要</span>
+                        <span class="train-fold-hint">点击展开</span>
+                    </summary>
 
-                    <div class="side-body">
+                    <div class="train-fold-body">
                         <div class="side-list cycle-side-list">
                             <div class="side-row cycle-side-row">
                                 <div class="side-row-label">训练类型</div>
@@ -210,35 +177,12 @@
                             </div>
 
                             <div class="side-row cycle-side-row">
-                                <div class="side-row-label">标准答案</div>
+                                <div class="side-row-label">目标回答</div>
                                 <div class="side-row-value" id="side-correct-answer">提交后显示</div>
                             </div>
                         </div>
                     </div>
-                </section>
-
-                <section class="side-card">
-                    <div class="side-header">
-                        <div>
-                            <h2 class="side-title">快捷操作</h2>
-                            <div class="side-subtitle">题目、编辑、返回。</div>
-                        </div>
-                    </div>
-
-                    <div class="side-body">
-                        <div class="actions quick-actions">
-                            {% if lesson %}
-                                <a href="{% url 'lesson-question-list' lesson.id %}" class="primary-btn">题目列表</a>
-                                <a href="{% url 'lesson-edit' lesson.id %}" class="secondary-btn">编辑章节</a>
-                                <a href="{% url 'book-detail' book.id %}" class="ghost-btn">返回书册</a>
-                                <a href="{% url 'dashboard' %}" class="ghost-btn">返回首页</a>
-                            {% else %}
-                                <a href="{% url 'book-detail' book.id %}" class="primary-btn">书册详情</a>
-                                <a href="{% url 'dashboard' %}" class="ghost-btn">返回首页</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </section>
+                </details>
             </div>
         </div>
 
@@ -248,154 +192,38 @@
 {% endblock %}
 
 {% block extra_css %}
+
+
 <style>
 .train-page {
     --max-width: 1440px;
 }
 
 .train-shell {
-    gap: 18px;
-}
-
-.train-topbar {
-    gap: 16px;
-}
-
-.train-top-left,
-.train-top-actions {
-    display: flex;
-    align-items: center;
     gap: 10px;
-    flex-wrap: wrap;
 }
 
-.hero-card,
+/* =========================
+   通用卡片
+   ========================= */
 .question-card,
-.stat-card,
 .side-card,
-.empty-card {
+.empty-card,
+.train-status-bar,
+.train-fold {
     background: linear-gradient(180deg, var(--panel), var(--panel-2));
     border: 1px solid var(--border);
-    border-radius: 24px;
     box-shadow: var(--shadow);
     overflow: hidden;
 }
 
-.hero-card {
-    padding: 24px 24px 20px;
-    position: relative;
-}
-
-.hero-card::before {
-    content: "";
-    position: absolute;
-    inset: auto -80px -80px auto;
-    width: 240px;
-    height: 240px;
-    background: radial-gradient(circle, rgba(110, 168, 255, 0.22), transparent 70%);
-    pointer-events: none;
-}
-
-.hero-inner {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
-.hero-main {
-    flex: 1 1 560px;
-    min-width: 280px;
-}
-
-.hero-side {
-    display: flex;
-    align-items: flex-start;
-    justify-content: flex-end;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.hero-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #84f3d1;
-    margin-bottom: 10px;
-}
-
-.hero-title {
-    margin: 0;
-    font-size: clamp(30px, 4vw, 44px);
-    line-height: 1.12;
-    font-weight: 900;
-    letter-spacing: -0.03em;
-    word-break: break-word;
-}
-
-.hero-subtitle {
-    margin: 12px 0 0;
-    color: var(--text-soft);
-    font-size: 15px;
-    max-width: 880px;
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-
-.hero-chips {
-    margin-top: 18px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
-}
-
-.stat-card {
-    padding: 18px 18px 16px;
-    min-height: 118px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 10px;
-}
-
-.stat-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-soft);
-    letter-spacing: 0.02em;
-}
-
-.stat-value {
-    font-size: clamp(26px, 3vw, 38px);
-    line-height: 1.05;
-    font-weight: 900;
-    color: var(--text);
-    letter-spacing: -0.02em;
-    word-break: break-word;
-}
-
-.stat-sub {
-    font-size: 12px;
-    color: var(--text-faint);
-}
-
+/* =========================
+   主布局
+   ========================= */
 .layout-main {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.72fr);
-    gap: 18px;
+    grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.72fr);
+    gap: 10px;
     align-items: start;
 }
 
@@ -403,25 +231,32 @@
 .main-right {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 10px;
     min-width: 0;
 }
 
+/* =========================
+   当前题目卡
+   ========================= */
+.question-card,
+.question-card-priority {
+    border-radius: 18px;
+    margin: 0;
+}
+
 .question-header,
-.side-header,
 .empty-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
-    padding: 18px 22px;
+    gap: 10px;
+    padding: 14px 16px;
     border-bottom: 1px solid var(--border);
     background: rgba(255, 255, 255, 0.02);
     flex-wrap: wrap;
 }
 
 .question-title,
-.side-title,
 .empty-title {
     margin: 0;
     font-size: 16px;
@@ -431,22 +266,19 @@
 }
 
 .question-subtitle,
-.side-subtitle,
 .empty-subtitle {
-    font-size: 12px;
-    color: var(--text-faint);
+    display: none !important;
 }
 
 .question-body,
-.side-body,
 .empty-body {
-    padding: 22px;
+    padding: 16px;
 }
 
 .question-prompt-wrap {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
 }
 
 .question-type-badge {
@@ -454,32 +286,48 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    min-height: 36px;
-    padding: 0 12px;
+    min-height: 30px;
+    padding: 0 10px;
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 900;
     border: 1px solid rgba(110, 168, 255, 0.22);
     background: rgba(110, 168, 255, 0.10);
     color: #dbe9ff;
 }
 
-.question-prompt {
-    font-size: clamp(26px, 3vw, 38px);
-    line-height: 1.28;
-    font-weight: 900;
-    letter-spacing: -0.02em;
-    color: var(--text);
+.question-instruction {
+    align-self: flex-start;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(87, 154, 255, 0.10);
+    border: 1px solid rgba(87, 154, 255, 0.18);
+    color: var(--text-soft);
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.5;
+    white-space: pre-wrap;
     word-break: break-word;
 }
 
+.question-prompt,
+.question-card-priority .question-prompt {
+    font-size: 34px !important;
+    line-height: 1.16 !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    word-break: break-word;
+    margin: 0;
+}
+
 .question-extra {
-    padding: 14px 16px;
-    border-radius: 16px;
+    padding: 12px 14px;
+    border-radius: 14px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.06);
     color: var(--text-soft);
-    font-size: 14px;
+    font-size: 13px;
     white-space: pre-wrap;
     word-break: break-word;
 }
@@ -494,22 +342,25 @@
     width: 100%;
 }
 
+/* =========================
+   选项区
+   ========================= */
 .choices-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    gap: 10px;
 }
 
 .choice-btn {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
-    min-height: 96px;
-    padding: 14px 16px;
+    min-height: 88px;
+    padding: 12px 14px;
     text-align: left;
-    border-radius: 18px;
+    border-radius: 16px;
     border: 1px solid var(--border);
     background: rgba(255, 255, 255, 0.04);
     color: var(--text);
@@ -545,14 +396,14 @@
 }
 
 .choice-key {
-    width: 38px;
-    min-width: 38px;
-    height: 38px;
-    border-radius: 12px;
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    border-radius: 10px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 900;
     color: var(--text);
     background: rgba(255, 255, 255, 0.08);
@@ -563,13 +414,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 42px;
-    padding: 0 14px;
-    border-radius: 12px;
+    min-height: 38px;
+    padding: 0 12px;
+    border-radius: 10px;
     border: 1px solid rgba(110, 168, 255, 0.24);
     background: rgba(110, 168, 255, 0.12);
     color: #dce8ff;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 900;
     transition: var(--transition);
 }
@@ -581,7 +432,7 @@
 
 .choice-text {
     display: none;
-    font-size: 15px;
+    font-size: 14px;
     line-height: 1.5;
     font-weight: 800;
     word-break: break-word;
@@ -594,28 +445,32 @@
 }
 
 .choice-text-label {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-faint);
     font-weight: 700;
     margin-bottom: 6px;
 }
 
+/* =========================
+   作答区
+   ========================= */
 .answer-form {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
 }
 
 .answer-input {
     width: 100%;
-    min-height: 58px;
-    padding: 16px 18px;
-    border-radius: 16px;
+    min-height: 52px;
+    padding: 14px 16px;
+    border-radius: 14px;
     border: 1px solid var(--border);
     background: rgba(255, 255, 255, 0.05);
     color: var(--text);
     outline: none;
     transition: var(--transition);
+    font-size: 16px;
 }
 
 .answer-input::placeholder {
@@ -637,9 +492,9 @@
 .speech-workspace {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding: 16px;
-    border-radius: 18px;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 16px;
     border: 1px solid rgba(110, 168, 255, 0.18);
     background: rgba(110, 168, 255, 0.06);
 }
@@ -655,10 +510,10 @@
 .speech-mode-badge {
     display: inline-flex;
     align-items: center;
-    min-height: 34px;
-    padding: 0 12px;
+    min-height: 30px;
+    padding: 0 10px;
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 900;
     color: #dce8ff;
     border: 1px solid rgba(110, 168, 255, 0.30);
@@ -666,18 +521,18 @@
 }
 
 .speech-status {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
     color: var(--text-soft);
 }
 
 .speech-hint {
-    padding: 12px 14px;
-    border-radius: 14px;
+    padding: 10px 12px;
+    border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.04);
     color: var(--text-soft);
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.6;
 }
 
@@ -694,32 +549,32 @@
 }
 
 .speech-result-label {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 800;
     color: var(--text-faint);
     letter-spacing: 0.02em;
 }
 
 .speech-result-box {
-    min-height: 72px;
-    padding: 14px 16px;
-    border-radius: 16px;
+    min-height: 64px;
+    padding: 12px 14px;
+    border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.05);
     color: var(--text);
-    font-size: 15px;
+    font-size: 14px;
     line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-word;
 }
 
 .speech-error {
-    padding: 12px 14px;
-    border-radius: 14px;
+    padding: 10px 12px;
+    border-radius: 12px;
     border: 1px solid rgba(255, 114, 114, 0.24);
     background: rgba(255, 114, 114, 0.12);
     color: #ffe3e3;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
 }
 
@@ -727,13 +582,29 @@
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
+    margin-top: 4px;
 }
 
+.answer-actions .primary-btn {
+    min-height: 48px !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+}
+
+.answer-actions .secondary-btn,
+.answer-actions .ghost-btn {
+    min-height: 40px !important;
+    font-size: 14px !important;
+}
+
+/* =========================
+   反馈区
+   ========================= */
 .feedback-box {
     display: none;
-    padding: 16px 18px;
-    border-radius: 18px;
-    font-size: 14px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    font-size: 13px;
     font-weight: 800;
     border: 1px solid var(--border);
 }
@@ -760,85 +631,140 @@
     color: #dce8ff;
 }
 
-.side-list {
-    display: grid;
-    gap: 10px;
-}
-
-.side-row {
+/* =========================
+   训练状态条（替代四张卡）
+   ========================= */
+.train-status-bar {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    box-shadow: none;
 }
 
-.side-row-label {
-    font-size: 13px;
-    font-weight: 700;
+.train-status-item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.train-status-label {
+    font-size: 10px;
+    line-height: 1.2;
     color: var(--text-soft);
+    font-weight: 700;
 }
 
-.side-row-value {
+.train-status-value {
     font-size: 14px;
-    font-weight: 900;
+    line-height: 1;
     color: var(--text);
-    text-align: right;
-    word-break: break-word;
+    font-weight: 900;
 }
 
-.cycle-side-list {
-    display: table;
+.train-status-divider {
+    font-size: 10px;
+    line-height: 1;
+    color: var(--text-faint);
+    opacity: 0.7;
+}
+
+/* 强制隐藏旧统计卡残留 */
+.stats-grid,
+.stats-grid-compact,
+.stat-card,
+.stat-title,
+.stat-value,
+.stat-sub {
+    display: none !important;
+}
+
+/* =========================
+   摘要折叠
+   ========================= */
+.train-fold {
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+.train-fold-summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+}
+
+.train-fold-summary::-webkit-details-marker {
+    display: none;
+}
+
+.train-fold-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.train-fold-hint {
+    font-size: 9px;
+    color: var(--text-faint);
+}
+
+.train-fold-body {
+    padding: 0 10px 10px;
+}
+
+.train-fold .cycle-side-list {
+    display: grid;
+    gap: 8px;
+}
+
+.train-fold .cycle-side-row {
+    display: block;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.train-fold .cycle-side-row .side-row-label,
+.train-fold .cycle-side-row .side-row-value {
+    display: block;
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    gap: 0;
-}
-
-.cycle-side-row {
-    display: table-row;
     padding: 0;
-    border-radius: 0;
-    background: transparent;
     border: none;
 }
 
-.cycle-side-row .side-row-label,
-.cycle-side-row .side-row-value {
-    display: table-cell;
-    padding: 12px 14px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    vertical-align: top;
-}
-
-.cycle-side-row .side-row-label {
-    width: 36%;
-    font-weight: 800;
+.train-fold .cycle-side-row .side-row-label {
+    margin-bottom: 4px;
+    font-size: 11px;
     color: var(--text-soft);
-    white-space: nowrap;
 }
 
-.cycle-side-row .side-row-value {
+.train-fold .cycle-side-row .side-row-value {
+    font-size: 13px;
+    font-weight: 800;
     color: var(--text);
-    word-break: break-word;
     text-align: left;
 }
 
-.cycle-side-row:last-child .side-row-label,
-.cycle-side-row:last-child .side-row-value {
-    border-bottom: none;
+/* 同时压掉旧摘要表格残留 */
+.side-card-actions,
+.quick-actions,
+.quick-actions-weak {
+    display: none !important;
 }
 
-.quick-actions {
-    flex-direction: column;
-    align-items: stretch;
-}
-
+/* =========================
+   空状态
+   ========================= */
 .empty-card {
     display: none;
+    border-radius: 16px;
 }
 
 .empty-card.show {
@@ -846,105 +772,77 @@
 }
 
 .empty-message {
-    padding: 18px;
-    border-radius: 18px;
+    padding: 16px;
+    border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.04);
     color: var(--text-soft);
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .empty-message.success {
-    border-color: rgba(51, 209, 122, 0.24);
+    border-color: rgba(51, 209, 122, 0.30);
     background: rgba(51, 209, 122, 0.12);
-    color: #dbffea;
+    color: #1f6b43;
+}
+
+.empty-message.success * {
+    color: #1f6b43 !important;
 }
 
 .empty-message.warning {
-    border-color: rgba(255, 190, 85, 0.24);
-    background: rgba(255, 190, 85, 0.12);
-    color: #fff2d6;
+    border-color: rgba(255, 190, 85, 0.34);
+    background: rgba(255, 190, 85, 0.14);
+    color: #8a5a00;
 }
 
-@media (max-width: 1180px) {
-    .stats-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+.empty-message.warning * {
+    color: #8a5a00 !important;
+}
 
+/* =========================
+   底部噪音
+   ========================= */
+.footer-note {
+    display: none !important;
+}
+
+/* =========================
+   响应式
+   ========================= */
+@media (max-width: 1180px) {
     .layout-main {
         grid-template-columns: 1fr;
     }
 }
 
-@media (max-width: 900px) {
-    .cycle-side-list {
-        display: grid;
-        gap: 12px;
+@media (max-width: 1024px) {
+    .layout-main {
+        display: flex;
+        flex-direction: column;
     }
 
-    .cycle-side-row {
-        display: block;
-        padding: 14px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        background: rgba(255, 255, 255, 0.03);
-    }
-
-    .cycle-side-row .side-row-label,
-    .cycle-side-row .side-row-value {
-        display: block;
+    .main-left,
+    .main-right {
         width: 100%;
-        padding: 0;
-        border: none;
-    }
-
-    .cycle-side-row .side-row-label {
-        margin-bottom: 6px;
-        font-size: 13px;
-    }
-
-    .cycle-side-row .side-row-value {
-        font-size: 15px;
-        font-weight: 700;
     }
 }
 
 @media (max-width: 780px) {
-    .hero-card {
-        padding: 18px 16px;
-    }
-
     .question-header,
-    .side-header,
     .empty-header,
     .question-body,
-    .side-body,
     .empty-body {
-        padding-left: 16px;
-        padding-right: 16px;
-    }
-
-    .train-topbar {
-        align-items: stretch;
-    }
-
-    .train-top-left,
-    .train-top-actions,
-    .hero-side,
-    .answer-actions {
-        flex-direction: column;
-        align-items: stretch;
+        padding-left: 14px;
+        padding-right: 14px;
     }
 
     .choices-grid {
         grid-template-columns: 1fr;
     }
 
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .speech-controls {
+    .speech-controls,
+    .answer-actions {
         flex-direction: column;
         align-items: stretch;
     }
@@ -952,260 +850,72 @@
     .speech-mode-bar {
         align-items: flex-start;
     }
+}
 
-    .side-row {
-        flex-direction: column;
-        align-items: flex-start;
+@media (max-width: 768px) {
+    .train-shell {
+        gap: 10px;
     }
 
-    .side-row-value {
-        text-align: left;
+    .question-prompt,
+    .question-card-priority .question-prompt {
+        font-size: 34px !important;
+        line-height: 1.16 !important;
+    }
+
+    .train-status-bar {
+        padding: 8px 9px;
+        gap: 5px;
+        border-radius: 10px;
+    }
+
+    .train-status-label {
+        font-size: 10px;
+    }
+
+    .train-status-value {
+        font-size: 13px;
+    }
+
+    .train-status-divider {
+        font-size: 9px;
+    }
+
+    .train-fold-summary {
+        padding: 8px 9px;
+    }
+
+    .train-fold-title {
+        font-size: 12px;
+    }
+
+    .train-fold-hint {
+        font-size: 9px;
+    }
+
+    .train-fold-body {
+        padding: 0 9px 9px;
+    }
+
+    .train-fold .cycle-side-row {
+        padding: 9px 10px;
+        border-radius: 10px;
+    }
+
+    .train-fold .cycle-side-row .side-row-label {
+        font-size: 10px;
+    }
+
+    .train-fold .cycle-side-row .side-row-value {
+        font-size: 12px;
     }
 }
 
 @media (max-width: 520px) {
-    .hero-title {
-        font-size: 26px;
+    .question-prompt,
+    .question-card-priority .question-prompt {
+        font-size: 32px !important;
     }
-
-    .question-prompt {
-        font-size: 24px;
-    }
-}
-
-/* =========================
-   light-jp 训练页文字对比度修复
-   只修字色，不动结构
-   ========================= */
-
-/* 标题 / 主文本 */
-html[data-theme="light-jp"] .hero-title,
-html[data-theme="light-jp"] .question-prompt,
-html[data-theme="light-jp"] .empty-title,
-html[data-theme="light-jp"] .side-title,
-html[data-theme="light-jp"] .stat-value,
-html[data-theme="light-jp"] .side-row-value,
-html[data-theme="light-jp"] .question-card,
-html[data-theme="light-jp"] .side-card,
-html[data-theme="light-jp"] .empty-card {
-    color: var(--text);
-}
-
-/* 副标题 / 说明 / 标签 */
-html[data-theme="light-jp"] .hero-desc,
-html[data-theme="light-jp"] .question-extra,
-html[data-theme="light-jp"] .empty-desc,
-html[data-theme="light-jp"] .side-desc,
-html[data-theme="light-jp"] .side-row-label,
-html[data-theme="light-jp"] .stat-label,
-html[data-theme="light-jp"] .speech-hint,
-html[data-theme="light-jp"] .speech-status {
-    color: var(--text-soft);
-}
-
-/* 徽章 / 类型标签 */
-html[data-theme="light-jp"] .question-type-badge,
-html[data-theme="light-jp"] .type-badge,
-html[data-theme="light-jp"] .hero-chip,
-html[data-theme="light-jp"] .status-chip,
-html[data-theme="light-jp"] .source-chip {
-    color: var(--text);
-}
-
-/* 选项按钮 */
-html[data-theme="light-jp"] .choice-btn,
-html[data-theme="light-jp"] .choice-item,
-html[data-theme="light-jp"] .choice-option {
-    color: var(--text);
-    background: rgba(122, 168, 255, 0.08);
-    border-color: var(--border);
-}
-
-html[data-theme="light-jp"] .choice-btn:hover,
-html[data-theme="light-jp"] .choice-item:hover,
-html[data-theme="light-jp"] .choice-option:hover {
-    background: rgba(122, 168, 255, 0.14);
-    border-color: var(--border-strong);
-}
-
-/* 选项里的序号和正文 */
-html[data-theme="light-jp"] .choice-index,
-html[data-theme="light-jp"] .choice-letter,
-html[data-theme="light-jp"] .choice-label,
-html[data-theme="light-jp"] .choice-text {
-    color: var(--text);
-}
-
-/* 正误反馈 */
-html[data-theme="light-jp"] .choice-btn.correct,
-html[data-theme="light-jp"] .choice-item.correct,
-html[data-theme="light-jp"] .choice-option.correct {
-    background: rgba(88, 201, 155, 0.16);
-    border-color: rgba(88, 201, 155, 0.28);
-    color: #2f8e6a;
-}
-
-html[data-theme="light-jp"] .choice-btn.wrong,
-html[data-theme="light-jp"] .choice-item.wrong,
-html[data-theme="light-jp"] .choice-option.wrong {
-    background: rgba(241, 132, 132, 0.16);
-    border-color: rgba(241, 132, 132, 0.28);
-    color: #a94444;
-}
-
-/* 输入框 / 提示区 */
-html[data-theme="light-jp"] .answer-input,
-html[data-theme="light-jp"] .text-answer-input,
-html[data-theme="light-jp"] input[type="text"],
-html[data-theme="light-jp"] textarea {
-    color: var(--text);
-    background: rgba(255, 255, 255, 0.90);
-    border-color: var(--border);
-}
-
-html[data-theme="light-jp"] .answer-input::placeholder,
-html[data-theme="light-jp"] .text-answer-input::placeholder,
-html[data-theme="light-jp"] textarea::placeholder {
-    color: var(--text-faint);
-}
-
-/* 摘要区里的点号/占位内容 */
-html[data-theme="light-jp"] .summary-card,
-html[data-theme="light-jp"] .info-card,
-html[data-theme="light-jp"] .empty-card,
-html[data-theme="light-jp"] .feedback-box {
-    color: var(--text);
-}
-
-/* 强制把训练摘要里的所有小字拉回可读范围 */
-html[data-theme="light-jp"] .side-card *,
-html[data-theme="light-jp"] .summary-card *,
-html[data-theme="light-jp"] .question-card *,
-html[data-theme="light-jp"] .empty-card * {
-    text-shadow: none;
-}
-
-/* =========================
-   light-jp 训练页深色残留卡片强制统一
-   直接覆盖主要训练区块
-   ========================= */
-
-/* 主训练区的所有一级卡片 */
-html[data-theme="light-jp"] .hero-card,
-html[data-theme="light-jp"] .question-card,
-html[data-theme="light-jp"] .side-card,
-html[data-theme="light-jp"] .summary-card,
-html[data-theme="light-jp"] .empty-card,
-html[data-theme="light-jp"] .question-wrap,
-html[data-theme="light-jp"] .question-panel,
-html[data-theme="light-jp"] .side-panel {
-    background: linear-gradient(180deg, var(--panel), var(--panel-2)) !important;
-    border: 1px solid var(--border) !important;
-    box-shadow: var(--shadow) !important;
-    color: var(--text) !important;
-}
-
-/* 卡片头部 */
-html[data-theme="light-jp"] .question-header,
-html[data-theme="light-jp"] .side-header,
-html[data-theme="light-jp"] .empty-header {
-    background: rgba(122, 168, 255, 0.06) !important;
-    border-bottom-color: var(--border) !important;
-    color: var(--text) !important;
-}
-
-/* 卡片正文 */
-html[data-theme="light-jp"] .question-body,
-html[data-theme="light-jp"] .side-body,
-html[data-theme="light-jp"] .empty-body {
-    background: transparent !important;
-    color: var(--text) !important;
-}
-
-/* 当前题目区域标题与正文 */
-html[data-theme="light-jp"] .question-prompt,
-html[data-theme="light-jp"] .question-title,
-html[data-theme="light-jp"] .question-text,
-html[data-theme="light-jp"] .question-card h1,
-html[data-theme="light-jp"] .question-card h2,
-html[data-theme="light-jp"] .question-card h3,
-html[data-theme="light-jp"] .question-card p {
-    color: var(--text) !important;
-}
-
-/* 次级说明文字 */
-html[data-theme="light-jp"] .question-extra,
-html[data-theme="light-jp"] .side-desc,
-html[data-theme="light-jp"] .empty-desc,
-html[data-theme="light-jp"] .question-body small,
-html[data-theme="light-jp"] .side-body small {
-    color: var(--text-soft) !important;
-}
-
-/* 训练摘要区所有文字 */
-html[data-theme="light-jp"] .side-card *,
-html[data-theme="light-jp"] .summary-card * {
-    color: inherit;
-}
-
-html[data-theme="light-jp"] .side-row-label,
-html[data-theme="light-jp"] .stat-label {
-    color: var(--text-soft) !important;
-}
-
-html[data-theme="light-jp"] .side-row-value,
-html[data-theme="light-jp"] .stat-value {
-    color: var(--text) !important;
-}
-
-/* 题型小标签 / 状态 chip */
-html[data-theme="light-jp"] .question-type-badge,
-html[data-theme="light-jp"] .type-badge,
-html[data-theme="light-jp"] .hero-chip,
-html[data-theme="light-jp"] .status-chip,
-html[data-theme="light-jp"] .source-chip {
-    background: rgba(122, 168, 255, 0.10) !important;
-    border-color: rgba(117, 147, 196, 0.18) !important;
-    color: var(--text) !important;
-}
-
-/* 选项区 */
-html[data-theme="light-jp"] .choices-grid > *,
-html[data-theme="light-jp"] .choice-btn,
-html[data-theme="light-jp"] .choice-item,
-html[data-theme="light-jp"] .choice-option {
-    background: rgba(122, 168, 255, 0.08) !important;
-    border-color: var(--border) !important;
-    color: var(--text) !important;
-}
-
-html[data-theme="light-jp"] .choice-btn:hover,
-html[data-theme="light-jp"] .choice-item:hover,
-html[data-theme="light-jp"] .choice-option:hover {
-    background: rgba(122, 168, 255, 0.14) !important;
-    border-color: var(--border-strong) !important;
-}
-
-/* 输入框 */
-html[data-theme="light-jp"] .answer-input,
-html[data-theme="light-jp"] .text-answer-input,
-html[data-theme="light-jp"] input[type="text"],
-html[data-theme="light-jp"] textarea {
-    background: rgba(255, 255, 255, 0.92) !important;
-    border-color: var(--border) !important;
-    color: var(--text) !important;
-}
-
-html[data-theme="light-jp"] .answer-input::placeholder,
-html[data-theme="light-jp"] .text-answer-input::placeholder,
-html[data-theme="light-jp"] textarea::placeholder {
-    color: var(--text-faint) !important;
-}
-
-/* 底部操作按钮区，避免深色残留 */
-html[data-theme="light-jp"] .answer-actions,
-html[data-theme="light-jp"] .quick-actions {
-    background: transparent !important;
 }
 
 </style>
@@ -1231,6 +941,7 @@ const statPlanProgress = document.getElementById("stat-plan-progress");
 const statMemoryLevel = document.getElementById("stat-memory-level");
 
 const questionTypeBadge = document.getElementById("question-type-badge");
+const questionInstruction = document.getElementById("question-instruction");
 const questionPrompt = document.getElementById("question-prompt");
 const questionExtra = document.getElementById("question-extra");
 const audioWrap = document.getElementById("audio-wrap");
@@ -1347,24 +1058,27 @@ function applyCyclePanel(payload) {
     const lastResultText = formatLastResult(pickText(payload, ["last_result"], ""));
     const qType = pickText(payload, ["type", "qtype"], sideType?.textContent || "unknown");
 
-    chipStage.textContent = `当前阶段：${stepLabel}`;
-    chipNextReview.textContent = `下一次复习：${nextReviewText}`;
-    chipStatus.textContent = `当前状态：${statusText}`;
-    chipSource.textContent = `训练来源：${payload.is_today_plan ? "今日计划" : pickText(payload, ["train_scope_label"], TRAIN_SCOPE_LABEL)}`;
+    setTextSafe(chipStage, `当前阶段：${stepLabel}`);
+    setTextSafe(chipNextReview, `下一次复习：${nextReviewText}`);
+    setTextSafe(chipStatus, `当前状态：${statusText}`);
+    setTextSafe(
+        chipSource,
+        `训练来源：${payload.is_today_plan ? "今日计划" : pickText(payload, ["train_scope_label"], TRAIN_SCOPE_LABEL)}`
+    );
 
-    statPlanTotal.textContent = pickText(payload, ["plan_total"], statPlanTotal.textContent || "0");
-    statPlanDone.textContent = pickText(payload, ["plan_done"], statPlanDone.textContent || "0");
-    statPlanProgress.textContent = `${pickText(payload, ["plan_progress"], "0")}%`;
-    statMemoryLevel.textContent = cycleStep;
+    setTextSafe(statPlanTotal, pickText(payload, ["plan_total"], statPlanTotal?.textContent || "0"));
+    setTextSafe(statPlanDone, pickText(payload, ["plan_done"], statPlanDone?.textContent || "0"));
+    setTextSafe(statPlanProgress, `${pickText(payload, ["plan_progress"], "0")}%`);
+    setTextSafe(statMemoryLevel, cycleStep);
 
-    sideType.textContent = qType;
-    sideTrainingId.textContent = pickText(payload, ["training_id"], trainingIdInput.value || "-");
-    sideIsTodayPlan.textContent = payload.is_today_plan ? "是" : "否";
-    sideCycleStep.textContent = cycleStep;
-    sideStepLabel.textContent = stepLabel;
-    sideStatusText.textContent = statusText;
-    sideLastResult.textContent = lastResultText;
-    sideNextReview.textContent = nextReviewText;
+    setTextSafe(sideType, qType);
+    setTextSafe(sideTrainingId, pickText(payload, ["training_id"], trainingIdInput?.value || "-"));
+    setTextSafe(sideIsTodayPlan, payload.is_today_plan ? "是" : "否");
+    setTextSafe(sideCycleStep, cycleStep);
+    setTextSafe(sideStepLabel, stepLabel);
+    setTextSafe(sideStatusText, statusText);
+    setTextSafe(sideLastResult, lastResultText);
+    setTextSafe(sideNextReview, nextReviewText);
 }
 
 function getChoiceText(choice, index) {
@@ -1374,23 +1088,19 @@ function getChoiceText(choice, index) {
 }
 
 function getChoiceSubmitValue(choice, index) {
-    return pickText(choice, [
-        "submit_value",
-        "submitText",
-        "text",
-        "label",
-        "content",
-        "display",
-        "title",
-        "answer",
-        "prompt"
-    ], getChoiceText(choice, index));
+    return getChoiceText(choice, index);
 }
 
 function getQuestionText(payload) {
     return pickText(payload, [
         "prompt", "question", "title", "text", "stem", "display_text"
     ], "当前题目加载成功，但没有找到可显示的题干。");
+}
+
+function getInstructionText(payload) {
+    return pickText(payload, [
+        "instruction_text", "instruction", "task", "guide", "hint"
+    ], "");
 }
 
 function getExtraText(payload) {
@@ -1764,6 +1474,7 @@ function startSpeechRecognition() {
 
 function applyQuestionInputMode(payload) {
     const qType = getQuestionType(payload);
+    const instructionText = getInstructionText(payload);
     const questionText = getQuestionText(payload);
     const extra = getExtraText(payload);
     const audioUrl = getAudioUrl(payload);
@@ -1773,9 +1484,16 @@ function applyQuestionInputMode(payload) {
     stopSpeechRecognition(true);
     renderChoices(payload.choices || []);
 
+    if (instructionText) {
+        questionInstruction.style.display = "block";
+        questionInstruction.textContent = `提示短语：${instructionText}`;
+    } else {
+        questionInstruction.style.display = "none";
+        questionInstruction.textContent = "";
+    }
+
     if (qType === "listen_asr") {
         questionTypeBadge.textContent = "类型：listen_asr";
-        questionPrompt.textContent = "请先播放题干音频，然后复述你听到的内容。";
 
         if (extra) {
             questionExtra.style.display = "block";
@@ -1786,24 +1504,36 @@ function applyQuestionInputMode(payload) {
         }
 
         if (audioUrl) {
+            questionPrompt.textContent = "请先播放题干音频，然后根据提示短语作答。";
+
             audioWrap.style.display = "flex";
             questionAudio.src = audioUrl;
         } else {
+            questionPrompt.textContent = questionText || "当前题目没有可播放音频，请根据提示短语直接作答。";
+
             audioWrap.style.display = "none";
             questionAudio.removeAttribute("src");
             questionAudio.load();
 
             questionExtra.style.display = "block";
-            questionExtra.textContent = "当前题目没有可播放音频，请先改用文本输入兜底。";
+            questionExtra.textContent = "当前题目没有可播放音频。请根据提示短语和上面的题干直接作答，建议点击“改用文本输入”。";
         }
 
-        showSpeechWorkspace(
-            "听：复述题干",
-            "先播放音频，再开始录音。识别失败可改用文本输入。"
-        );
+        if (audioUrl) {
+            showSpeechWorkspace(
+                "说：根据提示作答",
+                "请先播放题干音频，再根据提示短语口头作答。识别失败可改用文本输入。"
+            );
 
-        answerInput.value = "";
-        answerInput.placeholder = "点击“改用文本输入”后，可手动输入你听到的内容";
+            answerInput.value = "";
+            answerInput.placeholder = "点击“改用文本输入”后，可手动输入你的回答";
+        } else {
+            showTextWorkspace();
+
+            answerInput.value = "";
+            answerInput.placeholder = "当前没有音频，请根据提示短语和题干直接输入你的回答";
+        }
+
         return;
     }
 
@@ -1824,8 +1554,8 @@ function applyQuestionInputMode(payload) {
         questionAudio.load();
 
         showSpeechWorkspace(
-            "听：复述题干",
-            "先播放音频，再开始录音。识别失败可改用文本输入。"
+            "说：根据提示作答",
+            "请根据提示短语和题干口头作答。识别失败可改用文本输入。"
         );
 
         if (!hasSpeechRecognitionSupport()) {
@@ -1834,7 +1564,7 @@ function applyQuestionInputMode(payload) {
         }
 
         answerInput.value = "";
-        answerInput.placeholder = "点击“改用文本输入”后，可手动输入你听到的内容";
+        answerInput.placeholder = "点击“改用文本输入”后，可手动输入你要说出的回答";
         return;
     }
 
@@ -1862,8 +1592,8 @@ function applyQuestionInputMode(payload) {
 
     answerInput.value = "";
     answerInput.placeholder = Array.isArray(payload.choices) && payload.choices.length > 0
-        ? "可点击选项，也可手动输入答案"
-        : "请输入答案，然后提交";
+        ? "可点击选项，也可手动输入回答"
+        : "请输入回答，然后提交";
 }
 
 function setFeedback(message, type = "info") {
@@ -2041,22 +1771,52 @@ function markChoiceResult(isCorrect, submittedAnswer, correctAnswers) {
     });
 }
 
+function hideEmptyMode() {
+    if (emptyCard) {
+        emptyCard.style.display = "none";
+    }
+
+    if (questionCard) {
+        questionCard.style.display = "block";
+    }
+}
+
+function setTextSafe(el, value) {
+    if (el) {
+        el.textContent = value;
+    }
+}
+
 function renderPayload(payload) {
+    console.log("renderPayload:start", payload);
+
     state.current = payload;
-    state.startedAt = Date.now();
-    clearAutoNextTimer();
-    showQuestionMode();
+    console.log("renderPayload:state.current done");
+
+    hideEmptyMode();
+    console.log("renderPayload:hideEmptyMode done");
+
+    questionCard.style.display = "block";
+    console.log("renderPayload:questionCard show done");
+
     clearFeedback();
+    console.log("renderPayload:clearFeedback done");
+
     nextBtn.style.display = "none";
-    sideCorrectAnswer.textContent = "提交后显示";
+    setTextSafe(sideCorrectAnswer, "提交后显示");
     submitBtn.disabled = false;
     answerInput.disabled = false;
     reloadBtn.disabled = false;
+    console.log("renderPayload:basic reset done");
 
     applyCyclePanel(payload);
+    console.log("renderPayload:applyCyclePanel done");
+
     trainingIdInput.value = pickText(payload, ["training_id"], "");
+    console.log("renderPayload:trainingIdInput done", trainingIdInput.value);
 
     applyQuestionInputMode(payload);
+    console.log("renderPayload:applyQuestionInputMode done");
 }
 
 async function loadCurrentQuestion() {
@@ -2075,9 +1835,9 @@ async function loadCurrentQuestion() {
         if (data.empty) {
             const isSuccessEmpty = ["today_done", "all_mastered"].includes(data.reason);
             const kind = isSuccessEmpty ? "success" : "warning";
+            const safeMessage = (data.message || "").trim() || "当前没有可训练内容。";
 
-            showEmptyMode(data.message || "当前没有可训练内容。", kind);
-
+            showEmptyMode(safeMessage, kind);
             chipStage.textContent = "当前阶段：暂无可训练内容";
             chipNextReview.textContent = "下一次复习：未安排";
 
@@ -2107,6 +1867,8 @@ async function loadCurrentQuestion() {
 
         renderPayload(data);
     } catch (error) {
+        console.error("loadCurrentQuestion failed:", error);
+
         chipStage.textContent = "当前阶段：加载失败";
         chipNextReview.textContent = "下一次复习：未安排";
         chipStatus.textContent = "当前状态：加载失败";
@@ -2149,7 +1911,7 @@ async function submitAnswer(event) {
         if (isSpeechQuestionType(qType)) {
             setFeedback("请先完成语音识别，或点“改用文本输入”后手动填写。", "warning");
         } else {
-            setFeedback("请先输入答案，或者先点选一个选项。", "warning");
+            setFeedback("请先输入回答，或者先点选一个选项。", "warning");
         }
         return;
     }

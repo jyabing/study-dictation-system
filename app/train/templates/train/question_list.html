@@ -9,53 +9,35 @@
 <div class="page">
     <div class="shell">
 
-        <div class="topbar">
-            <div class="topbar-left">
-                <a href="{% url 'lesson-train' lesson.id %}" class="back-link">← 返回训练</a>
-                <a href="{% url 'book-detail' lesson.book.id %}" class="back-link">返回章节页</a>
-            </div>
-
-            <div class="topbar-right">
-                <a href="{% url 'builder-page' %}?lesson_id={{ lesson.id }}" class="primary-btn">新增素材</a>
-            </div>
-        </div>
-
-        <section class="header-card">
-            <h1 class="title">本课素材</h1>
-            <p class="subtitle">这里专门处理当前课节的素材，不做多余信息干扰。</p>
-
-            <div class="meta-list">
-                <div class="meta-row">
-                    <div class="meta-label">书册</div>
-                    <div class="meta-value">{{ book_title }}</div>
-                </div>
-                <div class="meta-row">
-                    <div class="meta-label">章节</div>
-                    <div class="meta-value">{{ lesson_title }}</div>
-                </div>
-                <div class="meta-row">
-                    <span class="chip primary">素材数：{{ questions|length }}</span>
-                </div>
-            </div>
-        </section>
+        {% include "train/includes/page_head.html" with head_type="materials" head_actions=head_actions head_actions_collapsed=True head_actions_title="页面操作" head_title="本课素材" head_desc="这里专门处理当前课节的素材，不做多余信息干扰。" head_meta=head_meta head_chips=head_chips %}
 
         <section class="list-card">
             <div class="card-header">
                 <h2 class="card-title">素材列表</h2>
-                <div class="card-subtitle">只保留题干、标准答案和编辑入口。</div>
+                <div class="card-subtitle">显示提示短语、题干、回答和编辑入口。</div>
             </div>
 
             <div class="card-body">
                 {% if questions %}
                     <div class="question-list">
                         {% for question in questions %}
-                            {% firstof question.prompt_text question.question_text question.question "未命名题目" as question_prompt %}
-                            {% firstof question.answer_text question.answer "暂无答案" as answer_text %}
+                            {% firstof question.display_instruction "" as instruction_text %}
+                            {% firstof question.display_source_text question.prompt_text question.question_text question.question "未命名题目" as question_prompt %}
+                            {% firstof question.display_target_answer question.answer_text question.answer "暂无答案" as answer_text %}
                             {% firstof question.display_qtype "未分类" as qtype %}
 
                             <article class="question-item">
                                 <div class="question-top">
-                                    <h3 class="question-title">{{ question_prompt }}</h3>
+                                    <div class="question-main">
+                                        {% if instruction_text %}
+                                            <div class="instruction-box">
+                                                <div class="instruction-label">提示短语</div>
+                                                <div class="instruction-value">{{ instruction_text }}</div>
+                                            </div>
+                                        {% endif %}
+
+                                        <h3 class="question-title">{{ question_prompt }}</h3>
+                                    </div>
 
                                     <div class="question-meta">
                                         <span class="chip warning">{{ qtype }}</span>
@@ -64,12 +46,22 @@
                                 </div>
 
                                 <div class="answer-box">
-                                    <div class="answer-label">标准答案</div>
+                                    <div class="answer-label">回答</div>
                                     <div class="answer-value">{{ answer_text }}</div>
                                 </div>
 
                                 <div class="actions">
-                                    <a href="{% url 'question-edit' question.id %}?next={{ request.path }}" class="primary-btn">编辑题干/答案</a>
+                                    <a href="{% url 'question-edit' question.id %}?next={{ request.path }}" class="primary-btn">编辑题干/题干/回答</a>
+
+                                    <form
+                                        method="post"
+                                        action="{% url 'question-delete' question.id %}?next={{ request.path }}"
+                                        class="inline-form"
+                                        onsubmit="return confirm('确定删除这条素材吗？删除后将无法恢复。');"
+                                    >
+                                        {% csrf_token %}
+                                        <button type="submit" class="danger-btn">删除素材</button>
+                                    </form>
                                 </div>
                             </article>
                         {% endfor %}
@@ -90,65 +82,291 @@
 
 {% block extra_css %}
 <style>
-.question-list {
-    display: grid;
-    gap: 14px;
-}
+    .page {
+        width: min(var(--max-width), calc(100% - 32px));
+        margin: 28px auto 48px;
+    }
 
-.question-item {
-    padding: 18px;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(255, 255, 255, 0.04);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
+    .shell {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
 
-.question-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-    flex-wrap: wrap;
-}
+    .list-card {
+        background: linear-gradient(180deg, var(--panel), var(--panel-2));
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
 
-.question-title {
-    margin: 0;
-    font-size: 22px;
-    line-height: 1.28;
-    font-weight: 900;
-    letter-spacing: -0.02em;
-    color: var(--text);
-    word-break: break-word;
-}
+    .card-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+    }
 
-.question-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
+    .card-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 900;
+        color: var(--text);
+    }
 
-.answer-box {
-    padding: 14px 16px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-}
+    .card-subtitle {
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--text-faint);
+    }
 
-.answer-label {
-    font-size: 12px;
-    color: var(--text-faint);
-    font-weight: 700;
-    margin-bottom: 6px;
-}
+    .card-body {
+        padding: 18px 20px 20px;
+    }
 
-.answer-value {
-    font-size: 14px;
-    color: var(--text);
-    font-weight: 800;
-    word-break: break-word;
-    white-space: pre-wrap;
-}
+    .question-list {
+        display: grid;
+        gap: 14px;
+    }
+
+    .question-item {
+        padding: 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.04);
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .question-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .question-main {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .instruction-box {
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(110, 168, 255, 0.18);
+        background: rgba(110, 168, 255, 0.08);
+    }
+
+    .instruction-label {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--text-faint);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+
+    .instruction-value {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text);
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .question-title {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.28;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        color: var(--text);
+        word-break: break-word;
+    }
+
+    .question-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        flex: 0 0 auto;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    .question-meta .chip.warning {
+        min-height: 24px;
+        padding: 0 9px;
+        font-size: 11px;
+        font-weight: 800;
+        background: rgba(255, 190, 85, 0.14) !important;
+        border-color: rgba(255, 190, 85, 0.30) !important;
+        color: #8a5a00 !important;
+    }
+
+    .question-meta .chip:not(.warning) {
+        min-height: 24px;
+        padding: 0 9px;
+        font-size: 11px;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.03);
+        border-color: var(--border);
+        color: var(--text-soft);
+    }
+
+    .answer-box {
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .answer-label {
+        font-size: 12px;
+        color: var(--text-faint);
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .answer-value {
+        font-size: 14px;
+        color: var(--text);
+        font-weight: 800;
+        word-break: break-word;
+        white-space: pre-wrap;
+    }
+
+    .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .actions .primary-btn,
+    .actions .secondary-btn,
+    .actions .ghost-btn,
+    .actions .danger-btn {
+        min-height: 36px;
+        padding: 0 14px;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .inline-form {
+        margin: 0;
+    }
+
+    .empty-card {
+        background: linear-gradient(180deg, var(--panel), var(--panel-2));
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .empty-body {
+        padding: 28px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        text-align: center;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 900;
+        color: var(--text);
+    }
+
+    .empty-text {
+        font-size: 13px;
+        color: var(--text-faint);
+        max-width: 520px;
+    }
+
+    html[data-theme="light-jp"] .list-card,
+    html[data-theme="light-jp"] .empty-card {
+        background: linear-gradient(180deg, var(--panel), var(--panel-2));
+        border-color: var(--border);
+        box-shadow: var(--shadow);
+    }
+
+    html[data-theme="light-jp"] .card-header {
+        background: rgba(122, 168, 255, 0.06);
+        border-bottom-color: var(--border);
+    }
+
+    html[data-theme="light-jp"] .question-item,
+    html[data-theme="light-jp"] .answer-box {
+        background: rgba(122, 168, 255, 0.05);
+        border-color: rgba(117, 147, 196, 0.12);
+    }
+
+    html[data-theme="light-jp"] .instruction-box {
+        background: rgba(122, 168, 255, 0.08);
+        border-color: rgba(117, 147, 196, 0.14);
+    }
+
+    html[data-theme="light-jp"] .question-meta .chip.warning {
+        background: rgba(243, 184, 90, 0.14) !important;
+        border-color: rgba(243, 184, 90, 0.24) !important;
+        color: #8a5a00 !important;
+    }
+
+    html[data-theme="light-jp"] .question-meta .chip:not(.warning) {
+        background: rgba(122, 168, 255, 0.05);
+        border-color: rgba(117, 147, 196, 0.14);
+        color: var(--text-soft);
+    }
+
+    @media (max-width: 780px) {
+        .page {
+            width: min(100% - 20px, var(--max-width));
+            margin: 16px auto 28px;
+        }
+
+        .card-header,
+        .card-body {
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+
+        .question-item {
+            padding: 14px;
+            gap: 12px;
+        }
+
+        .question-top {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+        }
+
+        .question-meta {
+            justify-content: flex-start;
+        }
+
+        .question-title {
+            font-size: 20px;
+        }
+
+        .actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .actions .primary-btn,
+        .actions .secondary-btn,
+        .actions .ghost-btn,
+        .actions .danger-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
 </style>
 {% endblock %}

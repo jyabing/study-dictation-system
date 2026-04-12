@@ -2585,7 +2585,7 @@ def _train_api_by_scope(request, scope, obj):
             if future_next_reviews:
                 chosen_next_review = future_next_reviews[0]
             elif all_next_reviews:
-                chosen_next_review = all_next_reviews[0]
+                chosen_next_review = all_next_reviews[-1]
 
             next_review_text = (
                 _next_review_text(chosen_next_review)
@@ -2690,7 +2690,7 @@ def _train_api_by_scope(request, scope, obj):
             if future_next_reviews:
                 chosen_next_review = future_next_reviews[0]
             elif all_next_reviews:
-                chosen_next_review = all_next_reviews[0]
+                chosen_next_review = all_next_reviews[-1]
 
             next_review_text = (
                 _next_review_text(chosen_next_review)

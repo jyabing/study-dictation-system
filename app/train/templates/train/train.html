@@ -1880,7 +1880,19 @@ async function loadCurrentQuestion() {
             showEmptyMode(safeMessage, kind, emptyTitleText, emptySubtitleText);
 
             chipStage.textContent = "当前阶段：暂无可训练内容";
-            chipNextReview.textContent = `下一次复习：${emptyNextReviewText}`;
+
+            let nextReviewLabel = `下一次复习：${emptyNextReviewText}`;
+
+            if (
+                emptyNextReviewText &&
+                emptyNextReviewText !== "未安排" &&
+                emptyNextReviewText !== "待安排" &&
+                ["today_done", "all_mastered"].includes(data.reason)
+            ) {
+                nextReviewLabel = `最近复习时间：${emptyNextReviewText}（已到期）`;
+            }
+
+            chipNextReview.textContent = nextReviewLabel;
 
             if (data.reason === "today_done") {
                 chipStatus.textContent = "当前状态：今日计划已完成";

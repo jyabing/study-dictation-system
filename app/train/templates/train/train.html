@@ -116,8 +116,8 @@
                 <section class="empty-card" id="empty-card">
                     <div class="empty-header">
                         <div>
-                            <h2 class="empty-title">当前没有可训练内容</h2>
-                            <div class="empty-subtitle">根据 API 返回原因显示。</div>
+                            <h2 class="empty-title" id="empty-title">当前没有可训练内容</h2>
+                            <div class="empty-subtitle" id="empty-subtitle">根据 API 返回原因显示。</div>
                         </div>
                     </div>
 
@@ -265,9 +265,16 @@
     color: var(--text);
 }
 
-.question-subtitle,
-.empty-subtitle {
+.question-subtitle {
     display: none !important;
+}
+
+.empty-subtitle {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-soft);
 }
 
 .question-body,
@@ -291,9 +298,9 @@
     border-radius: 999px;
     font-size: 11px;
     font-weight: 900;
-    border: 1px solid rgba(110, 168, 255, 0.22);
-    background: rgba(110, 168, 255, 0.10);
-    color: #dbe9ff;
+    border: 1px solid rgba(110, 168, 255, 0.30);
+    background: rgba(110, 168, 255, 0.16);
+    color: #244a86;
 }
 
 .question-instruction {
@@ -417,17 +424,17 @@
     min-height: 38px;
     padding: 0 12px;
     border-radius: 10px;
-    border: 1px solid rgba(110, 168, 255, 0.24);
-    background: rgba(110, 168, 255, 0.12);
-    color: #dce8ff;
+    border: 1px solid rgba(110, 168, 255, 0.30);
+    background: rgba(110, 168, 255, 0.16);
+    color: #244a86;
     font-size: 13px;
     font-weight: 900;
     transition: var(--transition);
 }
 
 .choice-play-btn:hover {
-    background: rgba(110, 168, 255, 0.18);
-    border-color: rgba(110, 168, 255, 0.34);
+    background: rgba(110, 168, 255, 0.22);
+    border-color: rgba(110, 168, 255, 0.38);
 }
 
 .choice-text {
@@ -515,9 +522,9 @@
     border-radius: 999px;
     font-size: 11px;
     font-weight: 900;
-    color: #dce8ff;
+    color: #244a86;
     border: 1px solid rgba(110, 168, 255, 0.30);
-    background: rgba(110, 168, 255, 0.14);
+    background: rgba(110, 168, 255, 0.16);
 }
 
 .speech-status {
@@ -606,6 +613,7 @@
     border-radius: 16px;
     font-size: 13px;
     font-weight: 800;
+    line-height: 1.5;
     border: 1px solid var(--border);
 }
 
@@ -614,21 +622,27 @@
 }
 
 .feedback-box.correct {
-    background: rgba(51, 209, 122, 0.12);
-    border-color: rgba(51, 209, 122, 0.24);
-    color: #dbffea;
+    background: rgba(51, 209, 122, 0.16);
+    border-color: rgba(51, 209, 122, 0.30);
+    color: #1f6b43;
 }
 
 .feedback-box.wrong {
-    background: rgba(255, 114, 114, 0.12);
-    border-color: rgba(255, 114, 114, 0.24);
-    color: #ffe3e3;
+    background: rgba(255, 114, 114, 0.16);
+    border-color: rgba(255, 114, 114, 0.30);
+    color: #8a2f2f;
 }
 
 .feedback-box.info {
-    background: rgba(110, 168, 255, 0.12);
-    border-color: rgba(110, 168, 255, 0.24);
-    color: #dce8ff;
+    background: rgba(110, 168, 255, 0.16);
+    border-color: rgba(110, 168, 255, 0.30);
+    color: #244a86;
+}
+
+.feedback-box.warning {
+    background: rgba(255, 190, 85, 0.16);
+    border-color: rgba(255, 190, 85, 0.30);
+    color: #8a5a00;
 }
 
 /* =========================
@@ -928,6 +942,8 @@ const TRAIN_SCOPE_LABEL = "{{ train_scope_label|default:'本课训练' }}";
 const API_URL = "{% if train_scope == 'book' %}{% url 'book-train-api' book.id %}{% else %}{% url 'lesson-train-api' lesson.id %}{% endif %}";
 const questionCard = document.getElementById("question-card");
 const emptyCard = document.getElementById("empty-card");
+const emptyTitle = document.getElementById("empty-title");
+const emptySubtitle = document.getElementById("empty-subtitle");
 const emptyMessage = document.getElementById("empty-message");
 
 const chipStage = document.getElementById("chip-stage");
@@ -1648,10 +1664,19 @@ function showQuestionMode() {
     emptyCard.classList.remove("show");
 }
 
-function showEmptyMode(message, kind = "warning") {
+function showEmptyMode(message, kind = "warning", title = "当前没有可训练内容", subtitle = "根据 API 返回原因显示。") {
     clearAutoNextTimer();
     questionCard.style.display = "none";
     emptyCard.classList.add("show");
+
+    if (emptyTitle) {
+        emptyTitle.textContent = title;
+    }
+
+    if (emptySubtitle) {
+        emptySubtitle.textContent = subtitle;
+    }
+
     emptyMessage.className = `empty-message ${kind}`;
     emptyMessage.textContent = message;
 }
@@ -1836,10 +1861,26 @@ async function loadCurrentQuestion() {
             const isSuccessEmpty = ["today_done", "all_mastered"].includes(data.reason);
             const kind = isSuccessEmpty ? "success" : "warning";
             const safeMessage = (data.message || "").trim() || "当前没有可训练内容。";
+            const emptyNextReviewText =
+                (data.next_review_text || data.next_review_display || "").trim() || "未安排";
 
-            showEmptyMode(safeMessage, kind);
+            let emptyTitleText = "当前没有可训练内容";
+            let emptySubtitleText = "根据 API 返回原因显示。";
+
+            if (data.reason === "today_done") {
+                emptyTitleText = "今日计划已完成";
+                emptySubtitleText = "你今天的训练任务已经全部完成。";
+            } else if (data.reason === "all_mastered") {
+                emptyTitleText = `${TRAIN_SCOPE_LABEL}已完成本轮严格循环`;
+                emptySubtitleText = "当前范围内已经没有需要继续训练的内容。";
+            } else {
+                emptySubtitleText = "当前没有可继续训练的题目。";
+            }
+
+            showEmptyMode(safeMessage, kind, emptyTitleText, emptySubtitleText);
+
             chipStage.textContent = "当前阶段：暂无可训练内容";
-            chipNextReview.textContent = "下一次复习：未安排";
+            chipNextReview.textContent = `下一次复习：${emptyNextReviewText}`;
 
             if (data.reason === "today_done") {
                 chipStatus.textContent = "当前状态：今日计划已完成";

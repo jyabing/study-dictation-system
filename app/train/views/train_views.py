@@ -5,6 +5,7 @@ import difflib
 import hashlib
 import os
 import copy
+import unicodedata
 
 from datetime import timedelta
 from urllib.parse import quote
@@ -90,8 +91,52 @@ def parse_cloze(text: str):
     return cloze, answers
 
 
+def _katakana_to_hiragana(text: str) -> str:
+    result = []
+
+    for ch in text:
+        code = ord(ch)
+
+        # Katakana -> Hiragana
+        if 0x30A1 <= code <= 0x30F6:
+            result.append(chr(code - 0x60))
+        else:
+            result.append(ch)
+
+    return "".join(result)
+
+
+def _normalize_japanese_variants(text: str) -> str:
+    """
+    日语轻量归一化（不依赖第三方库）：
+    1. NFKC 统一全角/半角
+    2. 去首尾空白并小写
+    3. 统一片假名 -> 平假名
+    4. 去掉常见空格和标点
+    5. 处理少量“汉字写法 <-> 假名写法”别名
+    """
+    text = unicodedata.normalize("NFKC", text or "")
+    text = text.strip().lower()
+    text = _katakana_to_hiragana(text)
+
+    remove_chars = " 　\t\r\n。、「」『』（）()［］[]【】{}〈〉《》・，,．.！!？?ー〜~：:；;/／…"
+    for ch in remove_chars:
+        text = text.replace(ch, "")
+
+    jp_alias_map = {
+        "相変わらず": "あいかわらず",
+        "相变わらず": "あいかわらず",
+    }
+
+    for src, dst in jp_alias_map.items():
+        text = text.replace(src, dst)
+
+    return text
+
+
 def normalize(text: str):
-    return (text or "").strip().lower()
+    text = unicodedata.normalize("NFKC", text or "")
+    return text.strip().lower()
 
 
 def is_close(a, b):
@@ -106,6 +151,7 @@ def check_answer(user_answer, correct_answer):
     1. 忽略大小写
     2. 支持简单单复数
     3. 支持轻微拼写错误
+    4. 支持日语轻量归一化（片假名/平假名/部分表记别名）
     """
     ua = normalize(user_answer)
     ca = normalize(correct_answer)
@@ -113,10 +159,19 @@ def check_answer(user_answer, correct_answer):
     if ua == ca:
         return True
 
+    ua_jp = _normalize_japanese_variants(user_answer)
+    ca_jp = _normalize_japanese_variants(correct_answer)
+
+    if ua_jp == ca_jp:
+        return True
+
     if ua == ca + "s" or ua + "s" == ca:
         return True
 
     if is_close(ua, ca):
+        return True
+
+    if is_close(ua_jp, ca_jp):
         return True
 
     return False
@@ -586,6 +641,47 @@ def _guess_tts_lang(meta):
     }
     return mapping.get(lang, "en")
 
+def _guess_choice_tts_lang(training, meta, choices):
+    """
+    选择题 TTS 语言推断：
+    1. 优先复用 meta 里的 asr.lang
+    2. 没有时，根据题干/答案/选项文本内容粗略判断
+    3. 默认 en
+    """
+    lang = _guess_tts_lang(meta)
+    if lang != "en":
+        return lang
+
+    samples = []
+
+    if getattr(training, "instruction_text", None):
+        samples.append(str(training.instruction_text or ""))
+
+    if getattr(training, "source_text", None):
+        samples.append(str(training.source_text or ""))
+
+    if getattr(training, "target_answer", None):
+        samples.append(str(training.target_answer or ""))
+
+    for c in choices or []:
+        samples.append(str(c.get("text") or c.get("content") or ""))
+
+    joined = " ".join(samples)
+
+    # 日语：优先看假名
+    if re.search(r"[\u3040-\u30ff\u31f0-\u31ff]", joined):
+        return "ja"
+
+    # 韩语
+    if re.search(r"[\uac00-\ud7af]", joined):
+        return "ko"
+
+    # 中文：只有汉字、没有假名时，再按中文
+    if re.search(r"[\u4e00-\u9fff]", joined):
+        return "zh-CN"
+
+    return "en"
+
 
 def _ensure_tts_audio(question, meta):
     prompt_text = (question.prompt_text or "").strip()
@@ -734,9 +830,10 @@ def build_training_payload(training, memory=None, request=None):
 
     if training.item_type == "read_choice":
         choices = raw_choices
+        choice_tts_lang = _guess_choice_tts_lang(training, meta, choices)
 
         for c in choices:
-            c["resolved_audio"] = _resolve_choice_audio(c, lang="en")
+            c["resolved_audio"] = _resolve_choice_audio(c, lang=choice_tts_lang)
             c["has_audio"] = bool(c["resolved_audio"])
 
         random.shuffle(choices)
@@ -748,6 +845,7 @@ def build_training_payload(training, memory=None, request=None):
             selection_mode = choices[0].get("selection_mode") or "single"
 
     instruction_text = (training.instruction_text or "").strip()
+
 
     prompt_text = (
         training.source_text
@@ -1063,7 +1161,11 @@ def judge_training_answer(training, raw_answer):
         allow_partial_match = (meta.get("asr") or {}).get("allow_partial_match", True)
 
         if allow_partial_match:
-            is_correct = correct_text in user_answer or user_answer in correct_text
+            is_correct = (
+                correct_text in user_answer
+                or user_answer in correct_text
+                or check_answer(user_answer, correct_text)
+            )
         else:
             is_correct = check_answer(user_answer, correct_text)
 
@@ -1997,6 +2099,8 @@ def get_today_plan(request):
         )
 
         is_new = (memory.total_correct or 0) == 0 and (memory.total_wrong or 0) == 0
+        next_review_text = _next_review_text(next_review_at)
+
 
         plan.append({
             "training": item,
@@ -2008,6 +2112,8 @@ def get_today_plan(request):
             "wrong_boost": _get_wrong_boost(memory),
             "last_wrong_at": getattr(memory, "last_wrong_at", None),
             "is_new": is_new,
+            "next_review_at": next_review_at,
+            "next_review_text": next_review_text,
         })
 
     def _sort_key(x):
@@ -2459,10 +2565,51 @@ def _train_api_by_scope(request, scope, obj):
         #    才显示今日完成
         # =========================
         if scope_plan_items and not remaining:
+            current_now = timezone.now()
+
+            all_next_reviews = sorted(
+                [
+                    item["next_review_at"]
+                    for item in scope_plan_items
+                    if item.get("next_review_at")
+                ]
+            )
+
+            future_next_reviews = [
+                dt for dt in all_next_reviews
+                if dt > current_now
+            ]
+
+            chosen_next_review = None
+
+            if future_next_reviews:
+                chosen_next_review = future_next_reviews[0]
+            elif all_next_reviews:
+                chosen_next_review = all_next_reviews[0]
+
+            next_review_text = (
+                _next_review_text(chosen_next_review)
+                if chosen_next_review
+                else "待安排"
+            )
+
+            print("🔥 today_done debug")
+            print("scope_label =", scope_label)
+            print("scope_plan_items count =", len(scope_plan_items))
+            print("all_next_reviews =", all_next_reviews)
+            print("future_next_reviews =", future_next_reviews)
+            print(
+                "scope_plan_item next_review_at list =",
+                [item.get("next_review_at") for item in scope_plan_items]
+            )
+            print("chosen_next_review =", chosen_next_review)
+            print("next_review_text =", next_review_text)
+
             return JsonResponse({
                 "empty": True,
                 "reason": "today_done",
-                "message": f"今天{scope_label}的学习计划已经完成了。"
+                "message": f"今天{scope_label}的学习计划已经完成了。",
+                "next_review_text": next_review_text,
             })
 
         # =========================
@@ -2523,10 +2670,39 @@ def _train_api_by_scope(request, scope, obj):
         )
 
         if not ranked_remaining:
+            current_now = timezone.now()
+
+            all_next_reviews = sorted(
+                [
+                    item["next_review_at"]
+                    for item in scope_plan_items
+                    if item.get("next_review_at")
+                ]
+            )
+
+            future_next_reviews = [
+                dt for dt in all_next_reviews
+                if dt > current_now
+            ]
+
+            chosen_next_review = None
+
+            if future_next_reviews:
+                chosen_next_review = future_next_reviews[0]
+            elif all_next_reviews:
+                chosen_next_review = all_next_reviews[0]
+
+            next_review_text = (
+                _next_review_text(chosen_next_review)
+                if chosen_next_review
+                else "待安排"
+            )
+
             return JsonResponse({
                 "empty": True,
                 "reason": "all_mastered",
-                "message": f"{target_text}当前已全部完成本轮严格循环。"
+                "message": f"{target_text}当前已全部完成本轮严格循环。",
+                "next_review_text": next_review_text,
             })
 
         training = ranked_remaining[0]["training"]
@@ -3318,6 +3494,8 @@ def question_edit(request, question_id):
         ).strip()
 
         audio_url = (request.POST.get("audio_url") or "").strip()
+        uploaded_audio_file = request.FILES.get("audio_file")
+        clear_audio_file = request.POST.get("clear_audio_file") == "1"
 
         if not source_text:
             return render(request, "train/edit_item.html", {
@@ -3349,11 +3527,25 @@ def question_edit(request, question_id):
             training.instruction_text = instruction_text
             training.source_text = source_text
             training.target_answer = target_answer
-            training.save(update_fields=[
+
+            update_fields = [
                 "instruction_text",
                 "source_text",
                 "target_answer",
-            ])
+            ]
+
+            if clear_audio_file:
+                if training.audio_file:
+                    training.audio_file.delete(save=False)
+                training.audio_file = None
+                update_fields.append("audio_file")
+            elif uploaded_audio_file:
+                if training.audio_file:
+                    training.audio_file.delete(save=False)
+                training.audio_file = uploaded_audio_file
+                update_fields.append("audio_file")
+
+            training.save(update_fields=update_fields)
 
         # 没有 training 的旧题
         if not training:

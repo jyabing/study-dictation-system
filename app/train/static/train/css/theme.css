@@ -2595,33 +2595,34 @@ html[data-theme="light-jp"] #priority-books .priority-status-value {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 18px;
-    padding: 0 5px;
+    min-height: 24px;
+    padding: 0 10px;
     border-radius: 999px;
-    font-size: 8px;
+    font-size: 12px;
     font-weight: 800;
-    line-height: 1;
+    line-height: 1.2;
     text-shadow: none;
     border: 1px solid transparent;
     white-space: nowrap;
+    opacity: 1;
 }
 
 .page-head__chip--warning {
-    background: rgba(255, 209, 102, 0.20);
-    border-color: rgba(220, 170, 60, 0.38);
-    color: #5a4100;
+    background: rgba(255, 209, 102, 0.28);
+    border-color: rgba(220, 170, 60, 0.48);
+    color: #4f3900;
 }
 
 .page-head__chip--primary {
-    background: rgba(122, 168, 255, 0.18);
-    border-color: rgba(88, 132, 215, 0.34);
-    color: #233f78;
+    background: rgba(122, 168, 255, 0.24);
+    border-color: rgba(88, 132, 215, 0.44);
+    color: #1f3668;
 }
 
 .page-head__chip--danger {
-    background: rgba(255, 154, 154, 0.18);
-    border-color: rgba(219, 110, 110, 0.34);
-    color: #7a2a2a;
+    background: rgba(255, 154, 154, 0.24);
+    border-color: rgba(219, 110, 110, 0.42);
+    color: #6a2020;
 }
 
 .page-head--train {
@@ -2640,8 +2641,9 @@ html[data-theme="light-jp"] #priority-books .priority-status-value {
 }
 
 .page-head--train .page-head__chip {
-    min-height: 18px;
-    font-size: 8px;
+    min-height: 24px;
+    font-size: 12px;
+    padding: 0 10px;
 }
 
 .page-head--materials .page-head__title {
@@ -2673,21 +2675,21 @@ html[data-theme="light-jp"] .page-head__actions-hint {
 }
 
 html[data-theme="light-jp"] .page-head__chip--warning {
-    background: rgba(255, 209, 102, 0.20);
-    border-color: rgba(220, 170, 60, 0.38);
-    color: #5a4100;
+    background: rgba(255, 209, 102, 0.28);
+    border-color: rgba(220, 170, 60, 0.48);
+    color: #4f3900;
 }
 
 html[data-theme="light-jp"] .page-head__chip--primary {
-    background: rgba(122, 168, 255, 0.18);
-    border-color: rgba(88, 132, 215, 0.34);
-    color: #233f78;
+    background: rgba(122, 168, 255, 0.24);
+    border-color: rgba(88, 132, 215, 0.44);
+    color: #1f3668;
 }
 
 html[data-theme="light-jp"] .page-head__chip--danger {
-    background: rgba(255, 154, 154, 0.18);
-    border-color: rgba(219, 110, 110, 0.34);
-    color: #7a2a2a;
+    background: rgba(255, 154, 154, 0.24);
+    border-color: rgba(219, 110, 110, 0.42);
+    color: #6a2020;
 }
 
 @media (max-width: 768px) {
@@ -2715,17 +2717,21 @@ html[data-theme="light-jp"] .page-head__chip--danger {
     }
 
     .page-head__chip {
-        min-height: 18px;
-        padding: 0 5px;
-        font-size: 8px;
+        min-height: 22px;
+        padding: 0 8px;
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
+    .page-head--train .page-head__chip {
+        min-height: 24px;
+        padding: 0 10px;
+        font-size: 12px;
+        line-height: 1.2;
     }
 
     .page-head--train .page-head__title {
         font-size: 13px;
-    }
-
-    .page-head--materials .page-head__title {
-        font-size: 16px;
     }
 
     .page-head--book .page-head__title {

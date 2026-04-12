@@ -50,7 +50,7 @@
             </div>
 
             <div class="card-body">
-                <form method="post" class="edit-form" id="edit-form">
+                <form method="post" enctype="multipart/form-data" class="edit-form" id="edit-form">
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{{ next|default:'' }}">
 
@@ -138,6 +138,89 @@
                                 <input type="hidden" name="target_answer" id="target-answer-hidden" value="{% firstof training.target_answer obj.answer_text obj.answer '' %}">
                                 <div class="field-help">这里填写用户最终需要生成并记忆的目标回答。</div>
                             </div>
+
+                            {% if display_qtype == "listen_asr" or display_qtype == "speak_read" %}
+                                <div class="field-group full">
+                                    <div class="field-label">声音设置</div>
+
+                                    {% if training and training.audio_file %}
+                                        <div class="field-help">当前已上传音频文件。</div>
+                                        <audio controls preload="none" class="input" style="padding: 12px;">
+                                            <source src="{{ training.audio_file.url }}">
+                                            浏览器暂不支持音频播放。
+                                        </audio>
+                                        <div class="field-help">
+                                            当前文件：
+                                            <a href="{{ training.audio_file.url }}" target="_blank" rel="noopener">{{ training.audio_file.name }}</a>
+                                        </div>
+                                    {% elif obj.audio_url %}
+                                        <div class="field-help">当前使用旧字段音频链接。</div>
+                                        <audio controls preload="none" class="input" style="padding: 12px;">
+                                            <source src="{{ obj.audio_url }}">
+                                            浏览器暂不支持音频播放。
+                                        </audio>
+                                        <div class="field-help">
+                                            当前链接：
+                                            <a href="{{ obj.audio_url }}" target="_blank" rel="noopener">{{ obj.audio_url }}</a>
+                                        </div>
+                                    {% else %}
+                                        <div class="field-help">当前还没有音频。可上传音频，或勾选下方 TTS 作为兜底。</div>
+                                    {% endif %}
+
+                                    <input type="file" name="audio_file" class="input" accept="audio/*">
+                                    <div class="field-help">支持 mp3 / wav / m4a 等常见格式。上传新文件后会替换当前上传音频。</div>
+
+                                    <label class="field-help" style="display:block; margin-top:8px;">
+                                        <input type="checkbox" name="clear_audio_file" value="1">
+                                        删除当前上传音频
+                                    </label>
+
+                                    <div style="height: 12px;"></div>
+
+                                    <div class="field-label">音频链接（旧字段兼容）</div>
+                                    <input
+                                        type="text"
+                                        name="audio_url"
+                                        class="input"
+                                        value="{{ obj.audio_url|default:'' }}"
+                                        placeholder="可选：填写远程音频链接"
+                                    >
+                                    <div class="field-help">这个字段用于兼容旧题。优先建议直接上传音频文件。</div>
+
+                                    <div style="height: 12px;"></div>
+
+                                    <label class="field-help" style="display:block;">
+                                        <input
+                                            type="checkbox"
+                                            name="use_tts"
+                                            value="1"
+                                            {% if listen_meta.use_tts %}checked{% endif %}
+                                        >
+                                        没有音频时使用 TTS
+                                    </label>
+
+                                    <label class="field-help" style="display:block; margin-top:8px;">
+                                        <input
+                                            type="checkbox"
+                                            name="allow_partial_match"
+                                            value="1"
+                                            {% if listen_meta.asr.allow_partial_match %}checked{% endif %}
+                                        >
+                                        允许部分匹配
+                                    </label>
+                                    <div style="height: 12px;"></div>
+                                    
+                                    <div class="field-label">ASR 语言</div>
+                                    <select name="asr_lang" class="select">
+                                        <option value="en-US" {% if listen_meta.asr.lang == "en-US" or not listen_meta.asr.lang %}selected{% endif %}>英语（en-US）</option>
+                                        <option value="ja-JP" {% if listen_meta.asr.lang == "ja-JP" %}selected{% endif %}>日语（ja-JP）</option>
+                                        <option value="zh-CN" {% if listen_meta.asr.lang == "zh-CN" %}selected{% endif %}>中文简体（zh-CN）</option>
+                                        <option value="zh-TW" {% if listen_meta.asr.lang == "zh-TW" %}selected{% endif %}>中文繁体（zh-TW）</option>
+                                        <option value="ko-KR" {% if listen_meta.asr.lang == "ko-KR" %}selected{% endif %}>韩语（ko-KR）</option>
+                                    </select>
+                                    <div class="field-help">听力识别默认语言。未选择时会使用 en-US。</div>
+                                </div>
+                            {% endif %}
 
                             {% if item_type == "read_cloze" %}
                                 <div class="field-group full">

@@ -309,7 +309,7 @@
     border-radius: 12px;
     background: rgba(87, 154, 255, 0.10);
     border: 1px solid rgba(87, 154, 255, 0.18);
-    color: var(--text-soft);
+    color: #4c5f7f;
     font-size: 13px;
     font-weight: 800;
     line-height: 1.5;
@@ -333,7 +333,7 @@
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.06);
-    color: var(--text-soft);
+    color: #4c5f7f;
     font-size: 13px;
     white-space: pre-wrap;
     word-break: break-word;
@@ -453,7 +453,7 @@
 
 .choice-text-label {
     font-size: 11px;
-    color: var(--text-faint);
+    color: #6a7a95;
     font-weight: 700;
     margin-bottom: 6px;
 }
@@ -530,15 +530,14 @@
 .speech-status {
     font-size: 12px;
     font-weight: 800;
-    color: var(--text-soft);
+    color: #4c5f7f;
 }
-
 .speech-hint {
     padding: 10px 12px;
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.04);
-    color: var(--text-soft);
+    color: #4c5f7f;
     font-size: 12px;
     line-height: 1.6;
 }
@@ -578,11 +577,12 @@
 .speech-error {
     padding: 10px 12px;
     border-radius: 12px;
-    border: 1px solid rgba(255, 114, 114, 0.24);
-    background: rgba(255, 114, 114, 0.12);
-    color: #ffe3e3;
+    border: 1px solid rgba(255, 114, 114, 0.30);
+    background: rgba(255, 114, 114, 0.16);
+    color: #8a2f2f;
     font-size: 12px;
     font-weight: 800;
+    line-height: 1.5;
 }
 
 .answer-actions {
@@ -970,6 +970,7 @@ const answerInput = document.getElementById("answer-input");
 const submitBtn = document.getElementById("submit-btn");
 const nextBtn = document.getElementById("next-btn");
 const reloadBtn = document.getElementById("reload-btn");
+const trainSummaryFold = document.querySelector(".train-fold");
 const textAnswerWorkspace = document.getElementById("text-answer-workspace");
 const speechWorkspace = document.getElementById("speech-workspace");
 const speechModeBadge = document.getElementById("speech-mode-badge");
@@ -1681,6 +1682,54 @@ function showEmptyMode(message, kind = "warning", title = "当前没有可训练
     emptyMessage.textContent = message;
 }
 
+function showCompletedQuestionMode(message, title, subtitle, nextReviewText) {
+    clearAutoNextTimer();
+    showQuestionMode();
+    clearFeedback();
+
+    questionTypeBadge.textContent = "类型：训练完成";
+    questionPrompt.textContent = title || "本轮训练已完成";
+
+    if (questionExtra) {
+        questionExtra.style.display = "block";
+        questionExtra.textContent = subtitle || "";
+    }
+
+    if (audioWrap) {
+        audioWrap.style.display = "none";
+    }
+
+    if (questionAudio) {
+        questionAudio.removeAttribute("src");
+        questionAudio.load();
+    }
+
+    if (choicesGrid) {
+        choicesGrid.innerHTML = "";
+        choicesGrid.style.display = "none";
+    }
+
+    answerInput.value = "";
+    answerInput.placeholder = nextReviewText
+        ? `下次复习：${nextReviewText}`
+        : "当前训练已完成";
+    answerInput.disabled = true;
+
+    submitBtn.disabled = true;
+    submitBtn.style.display = "none";
+
+    nextBtn.style.display = "none";
+
+    reloadBtn.disabled = true;
+    reloadBtn.style.display = "none";
+
+    if (trainSummaryFold) {
+        trainSummaryFold.style.display = "none";
+    }
+
+    setFeedback(message || "当前训练已完成。", "success");
+}
+
 function renderChoices(choices) {
     choicesGrid.innerHTML = "";
     state.selectedChoiceIndex = null;
@@ -1829,9 +1878,19 @@ function renderPayload(payload) {
 
     nextBtn.style.display = "none";
     setTextSafe(sideCorrectAnswer, "提交后显示");
+
     submitBtn.disabled = false;
+    submitBtn.style.display = "inline-flex";
+
     answerInput.disabled = false;
+
     reloadBtn.disabled = false;
+    reloadBtn.style.display = "inline-flex";
+
+    if (trainSummaryFold) {
+        trainSummaryFold.style.display = "";
+    }
+
     console.log("renderPayload:basic reset done");
 
     applyCyclePanel(payload);
@@ -1877,7 +1936,16 @@ async function loadCurrentQuestion() {
                 emptySubtitleText = "当前没有可继续训练的题目。";
             }
 
-            showEmptyMode(safeMessage, kind, emptyTitleText, emptySubtitleText);
+            if (isSuccessEmpty) {
+                showCompletedQuestionMode(
+                    safeMessage,
+                    emptyTitleText,
+                    emptySubtitleText,
+                    emptyNextReviewText
+                );
+            } else {
+                showEmptyMode(safeMessage, kind, emptyTitleText, emptySubtitleText);
+            }
 
             chipStage.textContent = "当前阶段：暂无可训练内容";
 

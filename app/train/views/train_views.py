@@ -145,14 +145,34 @@ def is_close(a, b):
     return difflib.SequenceMatcher(None, a, b).ratio() >= 0.85
 
 
-def check_answer(user_answer, correct_answer):
-    """
-    宽松判题：
-    1. 忽略大小写
-    2. 支持简单单复数
-    3. 支持轻微拼写错误
-    4. 支持日语轻量归一化（片假名/平假名/部分表记别名）
-    """
+def _looks_cjk_text(text: str) -> bool:
+    text = str(text or "")
+    return bool(re.search(r"[\u3040-\u30ff\u31f0-\u31ff\u4e00-\u9fff\uac00-\ud7af]", text))
+
+
+def _check_answer_english(user_answer, correct_answer):
+    ua = normalize(user_answer)
+    ca = normalize(correct_answer)
+
+    if not ua or not ca:
+        return False
+
+    if ua == ca:
+        return True
+
+    # 仅保留最保守的英文单复数容错
+    if ua == ca + "s" or ua + "s" == ca:
+        return True
+
+    # 英语短句不做模糊匹配，避免误判
+    if " " in ua or " " in ca:
+        return False
+
+    # 只有单词级别才给轻微拼写容错
+    return is_close(ua, ca)
+
+
+def _check_answer_cjk(user_answer, correct_answer):
     ua = normalize(user_answer)
     ca = normalize(correct_answer)
 
@@ -165,9 +185,6 @@ def check_answer(user_answer, correct_answer):
     if ua_jp == ca_jp:
         return True
 
-    if ua == ca + "s" or ua + "s" == ca:
-        return True
-
     if is_close(ua, ca):
         return True
 
@@ -175,6 +192,18 @@ def check_answer(user_answer, correct_answer):
         return True
 
     return False
+
+
+def check_answer(user_answer, correct_answer):
+    """
+    分语言宽松判题：
+    1. 英语：更保守，避免短句误判
+    2. 中日韩：保留归一化与近似匹配
+    """
+    if _looks_cjk_text(user_answer) or _looks_cjk_text(correct_answer):
+        return _check_answer_cjk(user_answer, correct_answer)
+
+    return _check_answer_english(user_answer, correct_answer)
 
 
 
@@ -1159,8 +1188,15 @@ def judge_training_answer(training, raw_answer):
         correct_text = normalize(resolved_answer_text)
 
         allow_partial_match = (meta.get("asr") or {}).get("allow_partial_match", True)
+        asr_lang = str((meta.get("asr") or {}).get("lang") or "en-US").strip().lower()
 
-        if allow_partial_match:
+        is_cjk_speech = (
+            asr_lang.startswith("ja")
+            or asr_lang.startswith("zh")
+            or asr_lang.startswith("ko")
+        )
+
+        if allow_partial_match and is_cjk_speech:
             is_correct = (
                 correct_text in user_answer
                 or user_answer in correct_text
@@ -2850,6 +2886,19 @@ def _train_api_by_scope(request, scope, obj):
 
         cycle_after = _build_cycle_status(memory)
 
+        memory_level_before = int(
+            cycle_before.get("level", 0) or 0
+        )
+
+        memory_level_after = int(
+            cycle_after.get("level", 0) or 0
+        )
+
+        memory_delta = memory_level_after - memory_level_before
+
+        review_result = getattr(memory, "last_result", "") or ""
+        reset_reason = getattr(memory, "last_reset_reason", "") or ""
+
         # 只有答对才计入今日完成
         if is_correct:
             done_ids = request.session.get("today_done_ids", [])
@@ -2916,6 +2965,11 @@ def _train_api_by_scope(request, scope, obj):
             "speed": get_speed_level(duration),
             "xp": xp,
             "memory_level": memory.memory_level if memory else 0,
+            "memory_level_before": memory_level_before,
+            "memory_level_after": memory_level_after,
+            "memory_delta": memory_delta,
+            "review_result": review_result,
+            "reset_reason": reset_reason,
             "correct_answers": judge["correct_answers"],
             "plan_total": scope_plan_stats["total"] if scope_plan_items else all_count,
             "plan_done": scope_plan_stats["done"] if scope_plan_items else 0,

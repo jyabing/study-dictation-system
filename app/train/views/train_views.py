@@ -3201,9 +3201,33 @@ def get_stats(request):
         next_review_at__lte=now
     ).count()
 
-    mastered_count = memories.filter(
-        mastered_at__isnull=False
-    ).count()
+    mastered_count = 0
+
+    for memory in memories:
+        level_value = int(
+            getattr(memory, "cycle_step", None)
+            if getattr(memory, "cycle_step", None) is not None
+            else (getattr(memory, "memory_level", 0) or 0)
+        )
+
+        if level_value < 0:
+            level_value = 0
+        if level_value > 11:
+            level_value = 11
+
+        memory_mastered_at = getattr(memory, "mastered_at", None)
+        memory_next_review_at = getattr(memory, "next_review_at", None)
+
+        is_mastered = bool(memory_mastered_at) or (
+            level_value >= 11 and memory_next_review_at is None
+        )
+
+        if is_mastered:
+            mastered_count += 1
+
+    new_items_count = 0
+    short_items_count = 0
+    long_items_count = 0
 
     # =========================
     # 阶段分布统计

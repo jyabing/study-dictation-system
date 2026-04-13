@@ -797,21 +797,101 @@
 .empty-message.success {
     border-color: rgba(51, 209, 122, 0.30);
     background: rgba(51, 209, 122, 0.12);
-    color: #1f6b43;
-}
-
-.empty-message.success * {
     color: #1f6b43 !important;
 }
 
 .empty-message.warning {
     border-color: rgba(255, 190, 85, 0.34);
     background: rgba(255, 190, 85, 0.14);
-    color: #8a5a00;
+    color: #8a5a00 !important;
 }
 
-.empty-message.warning * {
-    color: #8a5a00 !important;
+
+
+.question-card.completed-mode {
+    border-color: rgba(51, 209, 122, 0.24);
+    box-shadow: 0 12px 36px rgba(31, 107, 67, 0.10);
+}
+
+.question-card.completed-mode .question-body {
+    padding-top: 20px;
+    padding-bottom: 22px;
+}
+
+.completed-summary {
+    display: grid;
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.completed-summary-card {
+    border: 1px solid rgba(51, 209, 122, 0.24);
+    background: linear-gradient(180deg, rgba(51, 209, 122, 0.10), rgba(51, 209, 122, 0.04));
+    border-radius: 16px;
+    padding: 16px 18px;
+}
+
+.completed-summary-label {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-soft);
+    margin-bottom: 8px;
+}
+
+.completed-summary-value {
+    font-size: 24px;
+    line-height: 1.2;
+    font-weight: 900;
+    color: var(--text);
+    word-break: break-word;
+}
+
+.completed-summary-note {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-soft);
+}
+
+@media (max-width: 768px) {
+    .completed-summary {
+        gap: 12px;
+        margin-top: 16px;
+    }
+
+    .completed-summary-card {
+        padding: 14px 15px;
+        border-radius: 14px;
+    }
+
+    .completed-summary-value {
+        font-size: 20px;
+    }
+
+    .completed-summary-note {
+        font-size: 12px;
+        line-height: 1.65;
+    }
+}
+
+@media (max-width: 768px) {
+    .completed-summary {
+        gap: 12px;
+        margin-top: 16px;
+    }
+
+    .completed-summary-card {
+        padding: 14px 15px;
+        border-radius: 14px;
+    }
+
+    .completed-summary-value {
+        font-size: 20px;
+    }
+
+    .completed-summary-note {
+        font-size: 12px;
+        line-height: 1.65;
+    }
 }
 
 /* =========================
@@ -970,7 +1050,7 @@ const answerInput = document.getElementById("answer-input");
 const submitBtn = document.getElementById("submit-btn");
 const nextBtn = document.getElementById("next-btn");
 const reloadBtn = document.getElementById("reload-btn");
-const trainSummaryFold = document.querySelector(".train-fold");
+const trainSummaryFold = document.querySelector(".train-summary-fold");
 const textAnswerWorkspace = document.getElementById("text-answer-workspace");
 const speechWorkspace = document.getElementById("speech-workspace");
 const speechModeBadge = document.getElementById("speech-mode-badge");
@@ -1687,12 +1767,27 @@ function showCompletedQuestionMode(message, title, subtitle, nextReviewText) {
     showQuestionMode();
     clearFeedback();
 
+    if (questionCard) {
+        questionCard.classList.add("completed-mode");
+    }
+
     questionTypeBadge.textContent = "类型：训练完成";
     questionPrompt.textContent = title || "本轮训练已完成";
 
     if (questionExtra) {
+        const safeSubtitle = escapeHtml(subtitle || "");
+        const safeNextReview = escapeHtml(nextReviewText || "未安排");
+
         questionExtra.style.display = "block";
-        questionExtra.textContent = subtitle || "";
+        questionExtra.innerHTML = `
+            <div class="completed-summary">
+                <div class="completed-summary-note">${safeSubtitle}</div>
+                <div class="completed-summary-card">
+                    <div class="completed-summary-label">下次复习</div>
+                    <div class="completed-summary-value">${safeNextReview}</div>
+                </div>
+            </div>
+        `;
     }
 
     if (audioWrap) {
@@ -1707,6 +1802,10 @@ function showCompletedQuestionMode(message, title, subtitle, nextReviewText) {
     if (choicesGrid) {
         choicesGrid.innerHTML = "";
         choicesGrid.style.display = "none";
+    }
+
+    if (answerForm) {
+        answerForm.style.display = "none";
     }
 
     answerInput.value = "";
@@ -1947,7 +2046,13 @@ async function loadCurrentQuestion() {
                 showEmptyMode(safeMessage, kind, emptyTitleText, emptySubtitleText);
             }
 
-            chipStage.textContent = "当前阶段：暂无可训练内容";
+            if (data.reason === "today_done") {
+                chipStage.textContent = "当前阶段：今日计划完成";
+            } else if (data.reason === "all_mastered") {
+                chipStage.textContent = "当前阶段：本轮循环完成";
+            } else {
+                chipStage.textContent = "当前阶段：暂无可训练内容";
+            }
 
             let nextReviewLabel = `下一次复习：${emptyNextReviewText}`;
 
@@ -1957,7 +2062,7 @@ async function loadCurrentQuestion() {
                 emptyNextReviewText !== "待安排" &&
                 ["today_done", "all_mastered"].includes(data.reason)
             ) {
-                nextReviewLabel = `最近复习时间：${emptyNextReviewText}（已到期）`;
+                nextReviewLabel = `下一次复习：${emptyNextReviewText}（已到期）`;
             }
 
             chipNextReview.textContent = nextReviewLabel;

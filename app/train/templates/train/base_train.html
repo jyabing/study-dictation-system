@@ -36,6 +36,7 @@
         <details class="user-menu global-user-menu">
             <summary class="user-pill">{{ request.user.username }}</summary>
             <div class="user-dropdown">
+                <a href="{% url 'stats-page' %}" class="user-dropdown-link">学习统计</a>
                 <a href="{% url 'password_change' %}" class="user-dropdown-link">修改密码</a>
                 <a href="{% url 'logout' %}" class="user-dropdown-link">退出登录</a>
             </div>

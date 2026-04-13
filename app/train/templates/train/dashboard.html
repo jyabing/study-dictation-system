@@ -8,10 +8,6 @@
     {{ block.super }}
 {% endblock %}
 
-{% block global_utility_extra %}
-    <a href="{% url 'stats-page' %}" class="secondary-btn global-utility-link">学习统计</a>
-{% endblock %}
-
 {% block content %}
 {% firstof total_books books|length all_books|length priority_books|length "0" as dashboard_total_books %}
 {% firstof due_total today_due_total pending_total "0" as dashboard_due_total %}

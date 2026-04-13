@@ -27,9 +27,9 @@ from ..models import (
     Lesson,
     Question,
     QuestionMemory,
+    UserProfile,
     TrainingItem,
 )
-
 
 # =========================
 # 艾宾浩斯间隔表
@@ -2075,9 +2075,36 @@ def get_dashboard_books_cycle_summary(user, books):
 
 
 def add_xp(request, is_correct):
-    xp = request.session.get("xp", 0)
-    xp += 10 if is_correct else 2
+    gained_xp = 10 if is_correct else 2
+
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+
+    current_profile_xp = int(profile.xp or 0)
+    current_session_xp = int(request.session.get("xp", 0) or 0)
+
+    # 取两者较大值作为当前基线，避免 session / profile 其中一边落后时把值写小
+    current_xp = max(current_profile_xp, current_session_xp)
+
+    xp = current_xp + gained_xp
+    level = int(xp ** 0.5)
+
+    today = timezone.localdate()
+
+    if profile.last_study_date == today:
+        streak = int(profile.streak or 0)
+    elif profile.last_study_date == (today - timedelta(days=1)):
+        streak = int(profile.streak or 0) + 1
+    else:
+        streak = 1
+
+    profile.xp = xp
+    profile.level = level
+    profile.streak = streak
+    profile.last_study_date = today
+    profile.save(update_fields=["xp", "level", "streak", "last_study_date"])
+
     request.session["xp"] = xp
+
     return xp
 
 
@@ -3095,13 +3122,24 @@ def get_stats(request):
             "accuracy": 0,
             "xp": 0,
             "level": 0,
+            "due": 0,
+            "mastered": 0,
+            "new_items": 0,
+            "short_items": 0,
+            "long_items": 0,
+            "learning_summary": "当前学习状态稳定，建议继续按计划推进。",
         }
 
     now = timezone.now()
+    today = now.date()
+
     memories = QuestionMemory.objects.filter(user=user)
 
+    # =========================
+    # 学习条目统计（近似口径）
+    # =========================
     today_count = memories.filter(
-        last_review_at__date=now.date(),
+        last_review_at__date=today,
         total_correct__gt=0
     ).count()
 
@@ -3112,28 +3150,111 @@ def get_stats(request):
         total_correct__gt=0
     ).count()
 
+    # =========================
+    # 正确率
+    # =========================
     total_correct = sum(m.total_correct or 0 for m in memories)
     total_wrong = sum(m.total_wrong or 0 for m in memories)
 
-    total = total_correct + total_wrong
-    accuracy = int((total_correct / total) * 100) if total > 0 else 0
+    total_answered = total_correct + total_wrong
+    accuracy = int((total_correct / total_answered) * 100) if total_answered > 0 else 0
 
-    streak = 0
-    for i in range(30):
-        day = now.date() - timedelta(days=i)
+    # =========================
+    # 用户成长信息：优先 UserProfile，回退旧逻辑
+    # =========================
+    profile = UserProfile.objects.filter(user=user).first()
 
-        count = memories.filter(
-            last_review_at__date=day,
-            total_correct__gt=0
-        ).count()
+    if profile and int(profile.streak or 0) > 0:
+        streak = int(profile.streak or 0)
+    else:
+        streak = 0
+        for i in range(30):
+            day = today - timedelta(days=i)
 
-        if count > 0:
-            streak += 1
+            count = memories.filter(
+                last_review_at__date=day,
+                total_correct__gt=0
+            ).count()
+
+            if count > 0:
+                streak += 1
+            else:
+                break
+
+    session_xp = int(request.session.get("xp", 0) or 0)
+
+    if profile and int(profile.xp or 0) > 0:
+        xp = int(profile.xp or 0)
+    else:
+        xp = session_xp
+
+    if profile and int(profile.level or 0) > 0:
+        level = int(profile.level or 0)
+    else:
+        level = int(xp ** 0.5)
+
+    # =========================
+    # 状态类统计
+    # =========================
+    due_count = memories.filter(
+        next_review_at__isnull=False,
+        next_review_at__lte=now
+    ).count()
+
+    mastered_count = memories.filter(
+        mastered_at__isnull=False
+    ).count()
+
+    # =========================
+    # 阶段分布统计
+    # level == 0      -> 新学
+    # level 1 ~ 3     -> 短期巩固
+    # level 4 及以上  -> 长期巩固
+    # =========================
+    new_items_count = 0
+    short_items_count = 0
+    long_items_count = 0
+
+    for memory in memories:
+        level_value = int(
+            getattr(memory, "cycle_step", None)
+            if getattr(memory, "cycle_step", None) is not None
+            else (getattr(memory, "memory_level", 0) or 0)
+        )
+
+        if level_value < 0:
+            level_value = 0
+        if level_value > 11:
+            level_value = 11
+
+        if level_value == 0:
+            new_items_count += 1
+        elif 1 <= level_value <= 3:
+            short_items_count += 1
         else:
-            break
+            long_items_count += 1
 
-    xp = request.session.get("xp", 0)
-    level = int(xp ** 0.5)
+    # =========================
+    # 学习状态总结
+    # =========================
+    if (
+        new_items_count >= short_items_count
+        and new_items_count >= long_items_count
+    ):
+        stage_summary = "当前以新学推进为主"
+    elif short_items_count >= long_items_count:
+        stage_summary = "当前以短期巩固为主"
+    else:
+        stage_summary = "当前以长期巩固为主"
+
+    if due_count >= 10:
+        pressure_summary = "当前待复习压力较高"
+    elif due_count > 0:
+        pressure_summary = "当前有待复习内容，建议优先处理"
+    else:
+        pressure_summary = "当前待复习压力较低"
+
+    learning_summary = f"{stage_summary}；{pressure_summary}。"
 
     return {
         "today": int(today_count or 0),
@@ -3142,6 +3263,12 @@ def get_stats(request):
         "accuracy": int(accuracy or 0),
         "xp": int(xp or 0),
         "level": int(level or 0),
+        "due": int(due_count or 0),
+        "mastered": int(mastered_count or 0),
+        "new_items": int(new_items_count or 0),
+        "short_items": int(short_items_count or 0),
+        "long_items": int(long_items_count or 0),
+        "learning_summary": learning_summary,
     }
 
 

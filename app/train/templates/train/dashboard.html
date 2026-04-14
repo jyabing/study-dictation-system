@@ -17,117 +17,130 @@
 <div class="dashboard-page">
     <div class="dashboard-shell">
 
-        <div class="topbar dashboard-topbar-compact">
-            <div class="topbar-left">
-                <div class="page-title-group">
-                    <h1 class="dashboard-page-title">今日学习</h1>
-                    <div class="dashboard-page-subtitle">优先处理逾期与今日到期内容</div>
-                </div>
-            </div>
-
-            <div class="topbar-right"></div>
-        </div>
-
         <section class="section-card" id="priority-books">
             <div class="section-header">
                 <div>
-                    <h2 class="section-title">今天先学</h2>
-                    <div class="section-subtitle">先点书名开始今天最该处理的内容，再看统计与全部书册。</div>
+                    <h2 class="section-title">今日优先处理</h2>
+                    <div class="section-subtitle">先处理今天到期、逾期与可立即开始的内容，再看统计与全部书册。</div>
                 </div>
 
                 <div class="section-header-actions">
-                    <a href="#all-books" class="secondary-btn">查看全部书册</a>
+                    <a href="#all-books" class="icon-action-btn">书册总览</a>
                 </div>
             </div>
 
             <div class="section-body">
                 <div class="priority-list">
-                    {% with priority_books|default:books as dashboard_priority_books %}
-                        {% if dashboard_priority_books %}
-                            {% for book in dashboard_priority_books %}
-                                {% firstof book.focus_lesson_id book.current_lesson_id book.first_lesson_id as start_lesson_id %}
-                                {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
-                                {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
-                                {% firstof book.pending_count "0" as book_pending_count %}
-                                {% firstof book.overdue_count "0" as book_overdue_count %}
-                                {% firstof book.in_progress_count "0" as book_in_progress_count %}
+                    {% if dashboard_has_priority_books %}
+                        {% for book in priority_books %}
+                            {% firstof book.focus_lesson_id book.current_lesson_id book.first_lesson_id as start_lesson_id %}
+                            {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
+                            {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
+                            {% firstof book.pending_count "0" as book_pending_count %}
+                            {% firstof book.overdue_count "0" as book_overdue_count %}
+                            {% firstof book.today_due_count "0" as book_today_due_count %}
+                            {% firstof book.new_count "0" as book_new_count %}
+                            {% firstof book.in_progress_count "0" as book_in_progress_count %}
+                            {% firstof book.priority_status_label "今日任务" as book_priority_status_label %}
 
-                                <article class="priority-card">
-                                    <div class="priority-main priority-main-full">
-                                        <div class="priority-headline">
-                                            {% if book.id %}
-                                                <a href="{% url 'book-detail' book.id %}" class="priority-title-link">
-                                                    <h3 class="priority-title">{{ book.title }}</h3>
-                                                </a>
-                                            {% elif book.book_id %}
-                                                <a href="{% url 'book-detail' book.book_id %}" class="priority-title-link">
-                                                    <h3 class="priority-title">{{ book.title }}</h3>
-                                                </a>
-                                            {% elif start_lesson_id %}
-                                                <a href="{% url 'lesson-train' start_lesson_id %}" class="priority-title-link">
-                                                    <h3 class="priority-title">{{ book.title }}</h3>
-                                                </a>
-                                            {% else %}
+                            <article class="priority-card">
+                                <div class="priority-main priority-main-full">
+                                    <div class="priority-headline">
+                                        {% if start_lesson_id %}
+                                            <a href="{% url 'lesson-train' start_lesson_id %}" class="priority-title-link">
                                                 <h3 class="priority-title">{{ book.title }}</h3>
-                                            {% endif %}
+                                            </a>
+                                        {% elif book.id %}
+                                            <a href="{% url 'book-detail' book.id %}" class="priority-title-link">
+                                                <h3 class="priority-title">{{ book.title }}</h3>
+                                            </a>
+                                        {% elif book.book_id %}
+                                            <a href="{% url 'book-detail' book.book_id %}" class="priority-title-link">
+                                                <h3 class="priority-title">{{ book.title }}</h3>
+                                            </a>
+                                        {% else %}
+                                            <h3 class="priority-title">{{ book.title }}</h3>
+                                        {% endif %}
 
-                                            <div class="priority-head-actions">
-                                                {% if book.id %}
-                                                    <a href="{% url 'book-edit' book.id %}" class="icon-action-btn">编辑</a>
-                                                {% elif book.book_id %}
-                                                    <a href="{% url 'book-edit' book.book_id %}" class="icon-action-btn">编辑</a>
+                                        <div class="priority-head-actions">
+                                            {% if book.id %}
+                                                <a href="{% url 'book-edit' book.id %}" class="icon-action-btn">编辑</a>
+                                            {% elif book.book_id %}
+                                                <a href="{% url 'book-edit' book.book_id %}" class="icon-action-btn">编辑</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="priority-content-row">
+                                        <div class="priority-content-left">
+                                            <div class="priority-desc">{{ book.description|default:"暂无描述" }}</div>
+
+                                            <div class="priority-inline-stats">
+                                                {% if book_overdue_count != "0" %}
+                                                    <span class="mini-chip">已逾期 {{ book_overdue_count }}</span>
                                                 {% endif %}
+
+                                                {% if book_today_due_count != "0" %}
+                                                    <span class="mini-chip">今日到期 {{ book_today_due_count }}</span>
+                                                {% endif %}
+
+                                                {% if book_new_count != "0" %}
+                                                    <span class="mini-chip">可开始新学 {{ book_new_count }}</span>
+                                                {% endif %}
+
+                                                <span class="mini-chip">巩固中 {{ book_in_progress_count }}</span>
                                             </div>
                                         </div>
 
-                                        <div class="priority-content-row">
-                                            <div class="priority-content-left">
-                                                <div class="priority-desc">{{ book.description|default:"暂无描述" }}</div>
+                                        <div class="priority-content-right">
+                                            <div class="priority-side-line">
+                                                {% if book.priority_status == "overdue" %}
+                                                    <div class="priority-status-block danger">
+                                                        <div class="priority-status-label">今日任务</div>
+                                                        <div class="priority-status-value">先处理逾期内容</div>
+                                                    </div>
+                                                {% elif book.priority_status == "due_today" %}
+                                                    <div class="priority-status-block warning">
+                                                        <div class="priority-status-label">今日任务</div>
+                                                        <div class="priority-status-value">今天到期，建议优先复习</div>
+                                                    </div>
+                                                {% elif book_new_count != "0" %}
+                                                    <div class="priority-status-block success">
+                                                        <div class="priority-status-label">今日任务</div>
+                                                        <div class="priority-status-value">可开始新学</div>
+                                                    </div>
+                                                {% else %}
+                                                    <div class="priority-status-block primary">
+                                                        <div class="priority-status-label">今日任务</div>
+                                                        <div class="priority-status-value">{{ book_priority_status_label }}</div>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
 
-                                                <div class="priority-inline-stats">
-                                                    <span class="mini-chip">待处理 {{ book_pending_count }}</span>
-                                                    <span class="mini-chip">巩固中 {{ book_in_progress_count }}</span>
+                                            <div class="priority-side-line">
+                                                <div class="priority-status-block warning">
+                                                    <div class="priority-status-label">书册阶段</div>
+                                                    <div class="priority-status-value">{{ book_stage }}</div>
                                                 </div>
                                             </div>
 
-                                            <div class="priority-content-right">
-                                                <div class="priority-side-line">
-                                                    {% if book_overdue_count != "0" %}
-                                                        <div class="priority-status-block danger">
-                                                            <div class="priority-status-value">已逾期：{{ book_overdue_count }}</div>
-                                                        </div>
-                                                    {% else %}
-                                                        <div class="priority-status-block success">
-                                                            <div class="priority-status-value">可继续推进</div>
-                                                        </div>
-                                                    {% endif %}
-                                                </div>
-
-                                                <div class="priority-side-line">
-                                                    <div class="priority-status-block warning">
-                                                        <div class="priority-status-label">当前阶段</div>
-                                                        <div class="priority-status-value">{{ book_stage }}</div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="priority-side-line">
-                                                    <div class="priority-status-block primary">
-                                                        <div class="priority-status-label">下一次复习</div>
-                                                        <div class="priority-status-value">{{ book_next_review }}</div>
-                                                    </div>
+                                            <div class="priority-side-line">
+                                                <div class="priority-status-block primary">
+                                                    <div class="priority-status-label">下一次复习</div>
+                                                    <div class="priority-status-value">{{ book_next_review }}</div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </article>
-                            {% endfor %}
-                        {% else %}
-                            <div class="empty-card">
-                                <div class="empty-title">还没有书册</div>
-                                <div>先创建书册，再从这里进入记忆循环。</div>
-                            </div>
-                        {% endif %}
-                    {% endwith %}
+                                </div>
+                            </article>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-card">
+                            <div class="empty-title">今天没有待优先处理内容</div>
+                            <div>今日逾期与今日到期内容已处理完成，当前没有需要优先开始的书册。</div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </section>

@@ -357,3 +357,52 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} (Lv{self.level})"
+    
+# =========================
+# 📝 StudyLog（学习行为日志）
+# =========================
+class StudyLog(models.Model):
+
+    MODE_CHOICES = [
+        ("normal", "Normal"),
+        ("wrong_word_replay", "Wrong Word Replay"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="study_logs")
+
+    question = models.ForeignKey(
+        Question,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="study_logs"
+    )
+
+    training_item = models.ForeignKey(
+        TrainingItem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="study_logs"
+    )
+
+    is_correct = models.BooleanField(default=False)
+
+    user_answer = models.TextField(blank=True, default="")
+
+    mode = models.CharField(
+        max_length=30,
+        choices=MODE_CHOICES,
+        default="normal"
+    )
+
+    duration_ms = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        result = "correct" if self.is_correct else "wrong"
+        return f"{self.user.username} - {result} - {self.created_at:%Y-%m-%d %H:%M:%S}"

@@ -1076,6 +1076,27 @@ html[data-theme="light-jp"] .alert-box.danger {
     gap: 10px;
 }
 
+#priority-books .section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+#priority-books .section-header > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+#priority-books .section-header-actions {
+    margin-left: auto;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+
 /* =========================
    dashboard 全部书册
    桌面表格 / 手机紧凑卡片
@@ -1439,6 +1460,25 @@ html[data-theme="light-jp"] .alert-box.danger {
     .section-header-actions .secondary-btn {
         width: 100%;
         justify-content: center;
+    }
+
+        #priority-books .section-header {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    #priority-books .section-header > div:first-child {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    #priority-books .section-header-actions {
+        width: auto;
+        margin-left: auto;
+        justify-content: flex-end;
+        flex: 0 0 auto;
     }
 
     .priority-card {

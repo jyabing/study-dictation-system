@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
-from ..models import Book, Lesson, Question
+from ..models import Book, Lesson, Question, QuestionMemory
 from .train_views import (
     get_book_lessons_cycle_summary,
     get_dashboard_books_cycle_summary,
@@ -50,7 +50,10 @@ def dashboard(request):
             row["title"] = row.get("title") or ""
             row["description"] = row.get("description") or ""
 
-        row["pending_count"] = row.get("pending_count", row.get("today_due_count", 0))
+        row["pending_count"] = row.get(
+            "pending_count",
+            row.get("due_now_count", row.get("today_due_count", 0))
+        )
         row["in_progress_count"] = row.get("in_progress_count", row.get("short_count", 0))
         row["mastered_count"] = row.get("mastered_count", row.get("long_count", 0))
 
@@ -58,39 +61,89 @@ def dashboard(request):
         row["current_stage_label"] = row.get("current_stage_label") or row["current_stage"]
         row["next_review_display"] = row.get("next_review_display") or row.get("next_review_text") or "未安排"
 
+        focus_lesson_id = None
+
+        if row.get("book_id"):
+            focus_memory = (
+                QuestionMemory.objects
+                .filter(
+                    user=request.user,
+                    question__lesson__book_id=row["book_id"],
+                )
+                .select_related("question__lesson")
+                .order_by("next_review_at", "question__lesson__id", "question__id")
+                .first()
+            )
+
+            if focus_memory and getattr(focus_memory, "question", None):
+                focus_lesson_id = getattr(focus_memory.question, "lesson_id", None)
+
+        row["focus_lesson_id"] = focus_lesson_id
+
+        overdue_count = row.get("overdue_count") or 0
+        due_now_count = row.get("due_now_count", row.get("today_due_count", 0)) or 0
+        new_count = row.get("new_count") or 0
+
+        row["today_due_count"] = due_now_count
+        row["due_now_count"] = due_now_count
+        row["today_actionable_count"] = overdue_count + due_now_count + new_count
+        row["is_today_actionable"] = row["today_actionable_count"] > 0
+
+        if overdue_count > 0:
+            row["priority_status"] = "overdue"
+            row["priority_status_label"] = "逾期待复习"
+        elif due_now_count > 0:
+            row["priority_status"] = "due_today"
+            row["priority_status_label"] = "当前到期"
+        elif new_count > 0:
+            row["priority_status"] = "new_available"
+            row["priority_status_label"] = "可开始新学"
+        else:
+            row["priority_status"] = "idle"
+            row["priority_status_label"] = "今日无任务"
+
         book_cycle_summary.append(row)
 
     def _priority_sort_key(x):
-        risk_rank = (
-            0 if x.get("risk_level") == "高风险"
-            else 1 if x.get("risk_level") == "中风险"
-            else 2
-        )
-
         overdue_count = x.get("overdue_count") or 0
+        due_now_count = x.get("due_now_count", x.get("today_due_count", 0)) or 0
         pending_count = x.get("pending_count") or 0
-        today_due_count = x.get("today_due_count") or 0
+        new_count = x.get("new_count") or 0
 
         next_review_text = x.get("next_review_text") or ""
         next_review_missing = 1 if next_review_text in {"", "未安排", "待安排"} else 0
 
+        priority_rank = (
+            0 if overdue_count > 0
+            else 1 if due_now_count > 0
+            else 2 if new_count > 0
+            else 9
+        )
+
         return (
-            risk_rank,
+            priority_rank,
             -overdue_count,
+            -due_now_count,
             -pending_count,
-            -today_due_count,
             next_review_missing,
             next_review_text,
             x.get("id") or x.get("book_id") or 0,
         )
 
+    actionable_books = [
+        row for row in book_cycle_summary
+        if row.get("is_today_actionable")
+    ]
+
     priority_books = sorted(
-        book_cycle_summary,
+        actionable_books,
         key=_priority_sort_key
     )[:5]
 
-    today_due_total = sum((row.get("pending_count") or 0) for row in book_cycle_summary)
-    today_overdue_total = sum((row.get("overdue_count") or 0) for row in book_cycle_summary)
+    dashboard_has_priority_books = len(priority_books) > 0
+
+    today_due_total = sum((row.get("due_now_count", row.get("today_due_count", 0)) or 0) for row in actionable_books)
+    today_overdue_total = sum((row.get("overdue_count") or 0) for row in actionable_books)
     completed_total = sum((row.get("mastered_count") or 0) for row in book_cycle_summary)
 
     return render(request, "train/dashboard.html", {
@@ -100,6 +153,7 @@ def dashboard(request):
         "today_due_total": today_due_total,
         "today_overdue_total": today_overdue_total,
         "completed_total": completed_total,
+        "dashboard_has_priority_books": dashboard_has_priority_books,
     })
 
 # =========================

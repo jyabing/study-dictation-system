@@ -28,6 +28,7 @@ from ..models import (
     Question,
     QuestionMemory,
     UserProfile,
+    StudyLog,
     TrainingItem,
 )
 
@@ -1970,6 +1971,8 @@ def get_dashboard_books_cycle_summary(user, books):
             "new_count": 0,
             "short_count": 0,
             "long_count": 0,
+            "due_now_count": 0,
+            "later_today_count": 0,
             "today_due_count": 0,
             "overdue_count": 0,
             "next_review_at": None,
@@ -2019,14 +2022,24 @@ def get_dashboard_books_cycle_summary(user, books):
                 and now > (next_review_at + grace)
             )
 
-            is_due_today = (
+            is_due_now = (
                 local_next.date() == local_now.date()
                 and next_review_at <= now
                 and not is_overdue
             )
 
-            if is_due_today:
+            is_later_today = (
+                local_next.date() == local_now.date()
+                and next_review_at > now
+                and not is_overdue
+            )
+
+            if is_due_now:
+                row["due_now_count"] += 1
                 row["today_due_count"] += 1
+
+            if is_later_today:
+                row["later_today_count"] += 1
 
             if is_overdue:
                 row["overdue_count"] += 1
@@ -2063,6 +2076,8 @@ def get_dashboard_books_cycle_summary(user, books):
             "new_count": row["new_count"],
             "short_count": row["short_count"],
             "long_count": row["long_count"],
+            "due_now_count": row["due_now_count"],
+            "later_today_count": row["later_today_count"],
             "today_due_count": row["today_due_count"],
             "overdue_count": row["overdue_count"],
             "main_stage": main_stage,
@@ -2197,7 +2212,7 @@ def get_today_plan(request):
 
     plan = plan[:daily_limit]
 
-    done_ids = request.session.get("today_done_ids", [])
+    done_ids = _get_today_done_ids(request)
 
     total = len(plan)
     done = sum(
@@ -2448,9 +2463,30 @@ def _get_scope_plan_items(plan_items, scope, obj):
         if _training_in_scope(item["training"], scope, obj)
     ]
 
+def _get_today_done_ids(request):
+    today_str = str(timezone.localdate())
+    session_date = request.session.get("today_done_date")
+
+    if session_date != today_str:
+        request.session["today_done_date"] = today_str
+        request.session["today_done_ids"] = []
+        return []
+
+    return list(request.session.get("today_done_ids", []))
+
+
+def _add_today_done_id(request, training_id):
+    done_ids = _get_today_done_ids(request)
+
+    if training_id not in done_ids:
+        done_ids.append(training_id)
+        request.session["today_done_ids"] = done_ids
+
+    return done_ids
+
 
 def _build_scope_plan_stats(request, scope_items):
-    done_ids = set(request.session.get("today_done_ids", []))
+    done_ids = set(_get_today_done_ids(request))
     total = len(scope_items)
 
     done = sum(
@@ -2862,6 +2898,19 @@ def _train_api_by_scope(request, scope, obj):
 
             xp = add_xp(request, is_correct)
 
+            StudyLog.objects.create(
+                user=request.user,
+                question=origin_training.question if origin_training else None,
+                training_item=origin_training if origin_training else None,
+                is_correct=is_correct,
+                user_answer=json.dumps(
+                    _normalize_raw_answer(raw_answer),
+                    ensure_ascii=False
+                ),
+                mode="wrong_word_replay",
+                duration_ms=max(int(duration or 0), 0),
+            )
+
             return JsonResponse({
                 "ok": True,
                 "is_correct": is_correct,
@@ -2928,10 +2977,7 @@ def _train_api_by_scope(request, scope, obj):
 
         # 只有答对才计入今日完成
         if is_correct:
-            done_ids = request.session.get("today_done_ids", [])
-            if training.id not in done_ids:
-                done_ids.append(training.id)
-            request.session["today_done_ids"] = done_ids
+            _add_today_done_id(request, training.id)
 
         # Cloze：答错时冻结当前空位，并进入错词复盘队列；答对时清除冻结
         if training.item_type == "read_cloze":
@@ -2958,6 +3004,19 @@ def _train_api_by_scope(request, scope, obj):
                 _session_clear_pinned_cloze_layout(request, training.question_id)
 
         xp = add_xp(request, is_correct)
+
+        StudyLog.objects.create(
+            user=request.user,
+            question=training.question if training else None,
+            training_item=training,
+            is_correct=is_correct,
+            user_answer=json.dumps(
+                _normalize_raw_answer(raw_answer),
+                ensure_ascii=False
+            ),
+            mode="normal",
+            duration_ms=max(int(duration or 0), 0),
+        )
 
         # =========================
         # 队列更新（核心）

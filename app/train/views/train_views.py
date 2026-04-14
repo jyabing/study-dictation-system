@@ -1683,6 +1683,9 @@ def get_book_lessons_cycle_summary(user, book):
             "new_count": 0,
             "short_count": 0,
             "long_count": 0,
+            "due_now_count": 0,
+            "later_today_count": 0,
+            "future_count": 0,
             "today_due_count": 0,
             "overdue_count": 0,
             "next_review_at": None,
@@ -1729,14 +1732,32 @@ def get_book_lessons_cycle_summary(user, book):
                 and now > (next_review_at + grace)
             )
 
-            is_due_today = (
+            is_due_now = (
                 local_next.date() == local_now.date()
                 and next_review_at <= now
                 and not is_overdue
             )
 
-            if is_due_today:
+            is_later_today = (
+                local_next.date() == local_now.date()
+                and next_review_at > now
+                and not is_overdue
+            )
+
+            is_future = (
+                local_next.date() > local_now.date()
+                and not is_overdue
+            )
+
+            if is_due_now:
+                row["due_now_count"] += 1
                 row["today_due_count"] += 1
+
+            if is_later_today:
+                row["later_today_count"] += 1
+
+            if is_future:
+                row["future_count"] += 1
 
             if is_overdue:
                 row["overdue_count"] += 1
@@ -1750,9 +1771,14 @@ def get_book_lessons_cycle_summary(user, book):
     for lesson in lessons:
         row = lesson_map[lesson.id]
 
-        if row["overdue_count"] > 0:
+        due_now_count = row["due_now_count"]
+        later_today_count = row["later_today_count"]
+        future_count = row["future_count"]
+        overdue_count = row["overdue_count"]
+
+        if overdue_count > 0:
             risk_level = "高风险"
-        elif row["today_due_count"] > 0:
+        elif due_now_count > 0:
             risk_level = "中风险"
         else:
             risk_level = "稳定"
@@ -1768,16 +1794,40 @@ def get_book_lessons_cycle_summary(user, book):
         else:
             main_stage = "长期巩固"
 
+        if overdue_count > 0:
+            priority_status = "overdue"
+            priority_status_label = "现在可做（已逾期）"
+        elif due_now_count > 0:
+            priority_status = "due_now"
+            priority_status_label = "现在可做"
+        elif later_today_count > 0:
+            priority_status = "later_today"
+            priority_status_label = "今天稍后"
+        elif future_count > 0:
+            priority_status = "future"
+            priority_status_label = "未来安排"
+        elif row["new_count"] > 0:
+            priority_status = "new_available"
+            priority_status_label = "可开始新学"
+        else:
+            priority_status = "idle"
+            priority_status_label = "暂无安排"
+
         result.append({
             "lesson": lesson,
             "new_count": row["new_count"],
             "short_count": row["short_count"],
             "long_count": row["long_count"],
-            "today_due_count": row["today_due_count"],
-            "overdue_count": row["overdue_count"],
+            "due_now_count": due_now_count,
+            "later_today_count": later_today_count,
+            "future_count": future_count,
+            "today_due_count": due_now_count,
+            "overdue_count": overdue_count,
             "next_review_text": _next_review_text(row["next_review_at"]),
             "risk_level": risk_level,
             "main_stage": main_stage,
+            "priority_status": priority_status,
+            "priority_status_label": priority_status_label,
         })
 
     return result

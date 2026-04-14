@@ -717,22 +717,25 @@
                                         <tr>
                                             <th class="col-index">序号</th>
                                             <th class="col-title">课节名称</th>
-                                            <th class="col-stage">阶段</th>
+                                            <th class="col-stage">当前状态</th>
                                             <th class="col-next">下一次复习</th>
-                                            <th class="col-due">今日到期</th>
-                                            <th class="col-overdue">逾期</th>
+                                            <th class="col-due">现在可做</th>
+                                            <th class="col-overdue">今天稍后 / 未来</th>
                                             <th class="col-actions">操作</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for lesson in lessons %}
                                             {% firstof lesson.current_stage_label lesson.stage_label lesson.current_stage "未开始" as lesson_stage %}
+                                            {% firstof lesson.priority_status_label "暂无安排" as lesson_priority_status %}
                                             {% firstof lesson.next_review_text lesson.next_review_display "未安排" as lesson_next_review %}
                                             {% firstof lesson.order forloop.counter as lesson_order %}
                                             {% firstof lesson.new_count "0" as lesson_new_count %}
                                             {% firstof lesson.in_progress_count "0" as lesson_in_progress_count %}
                                             {% firstof lesson.mastered_count "0" as lesson_mastered_count %}
-                                            {% firstof lesson.due_count "0" as lesson_due_count %}
+                                            {% firstof lesson.due_now_count "0" as lesson_due_now_count %}
+                                            {% firstof lesson.later_today_count "0" as lesson_later_today_count %}
+                                            {% firstof lesson.future_count "0" as lesson_future_count %}
                                             {% firstof lesson.overdue_count "0" as lesson_overdue_count %}
 
                                             <tr>
@@ -750,12 +753,16 @@
                                                 </td>
 
                                                 <td>
-                                                    <span class="status-chip warning">{{ lesson_stage }}</span>
+                                                    <span class="status-chip warning">{{ lesson_priority_status }}</span>
                                                 </td>
 
                                                 <td>{{ lesson_next_review }}</td>
                                                 <td>{{ lesson_due_count }}</td>
-                                                <td>{{ lesson_overdue_count }}</td>
+                                                <td>
+                                                    今天稍后 {{ lesson_later_today_count }}
+                                                    ｜未来 {{ lesson_future_count }}
+                                                    ｜逾期 {{ lesson_overdue_count }}
+                                                </td>
 
                                                 <td>
                                                     <div class="table-actions">
@@ -773,12 +780,15 @@
                             <div class="lesson-cards">
                                 {% for lesson in lessons %}
                                     {% firstof lesson.current_stage_label lesson.stage_label lesson.current_stage "未开始" as lesson_stage %}
+                                    {% firstof lesson.priority_status_label "暂无安排" as lesson_priority_status %}
                                     {% firstof lesson.next_review_text lesson.next_review_display "未安排" as lesson_next_review %}
                                     {% firstof lesson.order forloop.counter as lesson_order %}
                                     {% firstof lesson.new_count "0" as lesson_new_count %}
                                     {% firstof lesson.in_progress_count "0" as lesson_in_progress_count %}
                                     {% firstof lesson.mastered_count "0" as lesson_mastered_count %}
-                                    {% firstof lesson.due_count "0" as lesson_due_count %}
+                                    {% firstof lesson.due_now_count "0" as lesson_due_now_count %}
+                                    {% firstof lesson.later_today_count "0" as lesson_later_today_count %}
+                                    {% firstof lesson.future_count "0" as lesson_future_count %}
                                     {% firstof lesson.overdue_count "0" as lesson_overdue_count %}
 
                                     <div class="lesson-card">
@@ -793,7 +803,7 @@
                                             </div>
 
                                             <div class="lesson-card-meta">
-                                                <span class="status-chip warning">{{ lesson_stage }}</span>
+                                                <span class="status-chip warning">{{ lesson_priority_status }}</span>
                                             </div>
                                         </div>
 
@@ -804,19 +814,24 @@
                                             </div>
 
                                             <div class="lesson-card-field">
-                                                <div class="lesson-card-label">今日到期</div>
-                                                <div class="lesson-card-value">{{ lesson_due_count }}</div>
+                                                <div class="lesson-card-label">现在可做</div>
+                                                <div class="lesson-card-value">{{ lesson_due_now_count }}</div>
                                             </div>
 
                                             <div class="lesson-card-field">
-                                                <div class="lesson-card-label">已逾期</div>
-                                                <div class="lesson-card-value">{{ lesson_overdue_count }}</div>
+                                                <div class="lesson-card-label">今天稍后</div>
+                                                <div class="lesson-card-value">{{ lesson_later_today_count }}</div>
                                             </div>
 
                                             <div class="lesson-card-field">
-                                                <div class="lesson-card-label">当前阶段</div>
-                                                <div class="lesson-card-value">{{ lesson_stage }}</div>
+                                                <div class="lesson-card-label">未来安排</div>
+                                                <div class="lesson-card-value">{{ lesson_future_count }}</div>
                                             </div>
+                                        </div>
+
+                                        <div class="lesson-subtitle">
+                                            逾期 {{ lesson_overdue_count }}
+                                            ｜阶段 {{ lesson_stage }}
                                         </div>
 
                                         <div class="lesson-card-actions">

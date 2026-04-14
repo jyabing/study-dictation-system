@@ -190,6 +190,43 @@ def book_detail(request, book_id):
     lessons = Lesson.objects.filter(book=book).order_by("order", "id")
     lesson_cycle_summary = get_book_lessons_cycle_summary(request.user, book)
 
+    lesson_summary_map = {}
+
+    for row in lesson_cycle_summary:
+        lesson_obj = row.get("lesson")
+        lesson_id = getattr(lesson_obj, "id", None)
+
+        if lesson_id is not None:
+            lesson_summary_map[lesson_id] = row
+
+    lessons = list(lessons)
+
+    for lesson in lessons:
+        row = lesson_summary_map.get(lesson.id, {})
+
+        lesson.new_count = row.get("new_count", 0)
+        lesson.short_count = row.get("short_count", 0)
+        lesson.long_count = row.get("long_count", 0)
+
+        lesson.in_progress_count = row.get("short_count", 0)
+        lesson.mastered_count = row.get("long_count", 0)
+
+        lesson.due_now_count = row.get("due_now_count", 0)
+        lesson.later_today_count = row.get("later_today_count", 0)
+        lesson.future_count = row.get("future_count", 0)
+
+        lesson.today_due_count = row.get("today_due_count", 0)
+        lesson.due_count = row.get("today_due_count", 0)
+        lesson.overdue_count = row.get("overdue_count", 0)
+
+        lesson.next_review_text = row.get("next_review_text", "未安排")
+        lesson.current_stage = row.get("main_stage", "尚未开始")
+        lesson.current_stage_label = row.get("main_stage", "尚未开始")
+
+        lesson.priority_status = row.get("priority_status", "idle")
+        lesson.priority_status_label = row.get("priority_status_label", "暂无安排")
+        lesson.risk_level = row.get("risk_level", "稳定")
+
     book_cycle_summary_list = get_dashboard_books_cycle_summary(request.user, [book])
     book_cycle_summary = book_cycle_summary_list[0] if book_cycle_summary_list else {
         "book": book,
@@ -214,7 +251,7 @@ def book_detail(request, book_id):
         ],
         "head_meta": [
             {"label": "书册：", "text": book.title},
-            {"label": "章节数：", "text": str(lessons.count())},
+            {"label": "章节数：", "text": str(len(lessons))},
         ],
         "head_chips": [
             {"kind": "primary", "text": f"今日到期：{book_cycle_summary.get('today_due_count', 0)}"},

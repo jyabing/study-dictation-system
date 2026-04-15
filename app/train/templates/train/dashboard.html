@@ -142,6 +142,23 @@
                         </div>
                     {% endif %}
                 </div>
+
+                {% if priority_books|length > 3 %}
+                    <div class="priority-more-row">
+                        <a href="{% url 'active-training-books' %}" class="priority-more-link mobile-only-inline">
+                            查看更多正在循环训练的书册
+                        </a>
+                    </div>
+                {% endif %}
+
+                {% if priority_books|length > 4 %}
+                    <div class="priority-more-row desktop-only-inline">
+                        <a href="{% url 'active-training-books' %}" class="priority-more-link">
+                            查看更多正在循环训练的书册
+                        </a>
+                    </div>
+                {% endif %}
+
             </div>
         </section>
 

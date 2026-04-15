@@ -463,6 +463,14 @@
                         <input id="prompt_audio" type="text" placeholder="没有音频时可留空" oninput="updatePreview();">
                     </div>
 
+                    <div id="prompt_audio_file_wrap" class="field hidden" style="margin-top:12px;">
+                        <label for="audio_file">题干音频文件（上传）</label>
+                        <input id="audio_file" type="file" accept="audio/*" onchange="updatePreview();">
+                        <div class="section-sub" style="margin-top:6px;">
+                            有上传文件时，训练页优先使用上传音频；没有文件时，才回退到上面的 URL / 路径。
+                        </div>
+                    </div>
+
                     <div class="checkbox-row">
                         <input type="checkbox" id="use_tts" onchange="updatePreview();">
                         <label for="use_tts" style="margin:0;">没有音频时使用 TTS</label>
@@ -898,6 +906,10 @@
 
             const promptText = document.getElementById("prompt_text").value;
             const answerText = document.getElementById("answer_text").value;
+            const audioFileInput = document.getElementById("audio_file");
+            const selectedAudioFile = audioFileInput && audioFileInput.files.length
+                ? audioFileInput.files[0]
+                : null;
 
             const payload = {
                 lesson_id: document.getElementById("lesson").value,
@@ -930,12 +942,16 @@
                 }
             };
 
+            const formData = new FormData();
+            formData.append("payload", JSON.stringify(payload));
+
+            if (selectedAudioFile) {
+                formData.append("audio_file", selectedAudioFile);
+            }
+
             fetch("/builder/save/", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
+                body: formData
             })
             .then(r => r.json())
             .then(data => {

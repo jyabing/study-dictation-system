@@ -2,7 +2,7 @@ from django.urls import path
 from django.contrib.auth import views as auth_views
 
 from .views.book_views import (
-    dashboard, book_detail, book_edit, lesson_edit,
+    dashboard, active_training_books, book_detail, book_edit, lesson_edit,
     book_delete_confirm, book_delete_submit,
     lesson_delete_confirm, lesson_delete_submit,
 )
@@ -54,6 +54,7 @@ urlpatterns = [
     # Book + Lesson
     path("book/<int:book_id>/", book_detail, name="book-detail"),
     path("book/<int:book_id>/edit/", book_edit, name="book-edit"),
+    path("books/active/", active_training_books, name="active-training-books"),
 
     path("book/<int:book_id>/train/", book_train, name="book-train"),
     path("api/book/<int:book_id>/train/", book_train_api, name="book-train-api"),

@@ -1,0 +1,447 @@
+{% extends "train/base.html" %}
+{% load static %}
+
+{% block title %}正在循环训练{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'train/css/theme.css' %}">
+<style>
+.active-training-page {
+    width: min(1440px, calc(100% - 32px));
+    margin: 28px auto 48px;
+}
+
+.active-training-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.active-hero {
+    padding: 22px 24px;
+}
+
+.active-hero-title {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1.12;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: var(--text);
+}
+
+.active-hero-subtitle {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--text-soft);
+}
+
+.active-hero-chips {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.active-books-desktop {
+    display: block;
+}
+
+.active-books-mobile {
+    display: none;
+}
+
+.active-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(7, 18, 44, 0.82);
+}
+
+.active-table {
+    width: 100%;
+    min-width: 1080px;
+    border-collapse: collapse;
+}
+
+.active-table thead th {
+    padding: 14px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
+.active-table tbody td {
+    padding: 14px;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    font-size: 14px;
+}
+
+.active-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.active-book-main {
+    min-width: 260px;
+}
+
+.active-book-title {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1.25;
+    color: var(--text);
+}
+
+.active-book-desc {
+    font-size: 13px;
+    color: var(--text-soft);
+    line-height: 1.5;
+}
+
+.active-book-meta {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.active-table-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.active-table-actions .primary-btn,
+.active-table-actions .secondary-btn,
+.active-table-actions .ghost-btn {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 12px;
+}
+
+.active-cards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.active-card {
+    padding: 16px;
+    border-radius: 18px;
+}
+
+.active-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.active-card-title {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.2;
+    font-weight: 900;
+    color: var(--text);
+}
+
+.active-card-desc {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-soft);
+}
+
+.active-card-grid {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.active-card-field {
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    min-width: 0;
+}
+
+.active-card-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.active-card-value {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.active-card-subline {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-soft);
+    line-height: 1.5;
+}
+
+.active-card-actions {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.active-card-actions .primary-btn,
+.active-card-actions .secondary-btn,
+.active-card-actions .ghost-btn {
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 12px;
+}
+
+@media (max-width: 768px) {
+    .active-training-page {
+        width: 100%;
+        margin: 0 auto;
+        padding: 12px;
+        box-sizing: border-box;
+    }
+
+    .active-hero {
+        padding: 18px 16px;
+    }
+
+    .active-books-desktop {
+        display: none;
+    }
+
+    .active-books-mobile {
+        display: block;
+    }
+
+    .active-card-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+html[data-theme="light-jp"] .active-table-wrap {
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+}
+
+html[data-theme="light-jp"] .active-table thead th {
+    background: rgba(122, 168, 255, 0.08);
+    color: var(--text-soft);
+    border-bottom-color: var(--border);
+}
+
+html[data-theme="light-jp"] .active-table tbody td {
+    color: var(--text);
+    border-bottom-color: rgba(117, 147, 196, 0.12);
+}
+
+html[data-theme="light-jp"] .active-card-field {
+    background: rgba(122, 168, 255, 0.05);
+    border-color: rgba(117, 147, 196, 0.12);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="active-training-page">
+    <div class="active-training-shell">
+
+        <section class="section-card active-hero">
+            <div class="page-head">
+                <div class="page-head__main">
+                    <h1 class="active-hero-title">正在循环训练</h1>
+                    <div class="active-hero-subtitle">这里展示所有已经进入记忆循环、当前仍在训练中的书册。</div>
+                </div>
+
+                <div class="page-head__meta">
+                    <span class="hero-chip primary">书册数 {{ active_books_total }}</span>
+                    <span class="hero-chip warning">当前到期 {{ today_due_total }}</span>
+                    <span class="hero-chip danger">已逾期 {{ today_overdue_total }}</span>
+                </div>
+
+                <details class="page-head__actions-fold">
+                    <summary class="page-head__actions-summary">
+                        <span class="page-head__actions-title">页面操作</span>
+                        <span class="page-head__actions-hint">展开</span>
+                    </summary>
+                    <div class="page-head__actions-body">
+                        <div class="page-head__actions-list">
+                            <a href="{% url 'dashboard' %}" class="page-head__action-link">返回首页</a>
+                            <a href="{% url 'dashboard' %}#all-books" class="page-head__action-link">书册总览</a>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <section class="section-card">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">循环训练中的书册</h2>
+                    <div class="section-subtitle">按当前优先级排序：逾期、当前到期、可开始新学。</div>
+                </div>
+            </div>
+
+            <div class="section-body">
+                {% if active_books %}
+                    <div class="active-books-desktop">
+                        <div class="active-table-wrap">
+                            <table class="active-table">
+                                <thead>
+                                    <tr>
+                                        <th>书册</th>
+                                        <th>当前状态</th>
+                                        <th>现在可做</th>
+                                        <th>下一次复习</th>
+                                        <th>辅助信息</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for book in active_books %}
+                                        {% firstof book.focus_lesson_id book.current_lesson_id book.first_lesson_id as start_lesson_id %}
+                                        {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
+                                        {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
+                                        {% firstof book.due_now_count book.today_due_count "0" as book_due_now_count %}
+                                        {% firstof book.overdue_count "0" as book_overdue_count %}
+                                        {% firstof book.new_count "0" as book_new_count %}
+                                        {% firstof book.in_progress_count "0" as book_in_progress_count %}
+                                        {% firstof book.priority_status_label "暂无安排" as book_priority_status_label %}
+
+                                        <tr>
+                                            <td class="active-book-main">
+                                                <div class="active-book-title">{{ book.title }}</div>
+                                                <div class="active-book-desc">{{ book.description|default:"暂无描述" }}</div>
+                                                <div class="active-book-meta">
+                                                    <span class="mini-chip">新学 {{ book_new_count }}</span>
+                                                    <span class="mini-chip">巩固中 {{ book_in_progress_count }}</span>
+                                                </div>
+                                            </td>
+
+                                            <td>
+                                                <span class="status-chip warning">{{ book_priority_status_label }}</span>
+                                            </td>
+
+                                            <td>{{ book_due_now_count }}</td>
+                                            <td>{{ book_next_review }}</td>
+                                            <td>
+                                                已逾期 {{ book_overdue_count }}
+                                                ｜阶段 {{ book_stage }}
+                                            </td>
+
+                                            <td>
+                                                <div class="active-table-actions">
+                                                    {% if start_lesson_id %}
+                                                        <a href="{% url 'lesson-train' start_lesson_id %}" class="primary-btn">进入学习</a>
+                                                    {% elif book.id %}
+                                                        <a href="{% url 'book-detail' book.id %}" class="primary-btn">进入学习</a>
+                                                    {% elif book.book_id %}
+                                                        <a href="{% url 'book-detail' book.book_id %}" class="primary-btn">进入学习</a>
+                                                    {% endif %}
+
+                                                    {% if book.id %}
+                                                        <a href="{% url 'book-detail' book.id %}" class="secondary-btn">查看书册</a>
+                                                    {% elif book.book_id %}
+                                                        <a href="{% url 'book-detail' book.book_id %}" class="secondary-btn">查看书册</a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="active-books-mobile">
+                        <div class="active-cards">
+                            {% for book in active_books %}
+                                {% firstof book.focus_lesson_id book.current_lesson_id book.first_lesson_id as start_lesson_id %}
+                                {% firstof book.current_stage_label book.stage_label book.current_stage "暂无阶段信息" as book_stage %}
+                                {% firstof book.next_review_text book.next_review_display "未安排" as book_next_review %}
+                                {% firstof book.due_now_count book.today_due_count "0" as book_due_now_count %}
+                                {% firstof book.overdue_count "0" as book_overdue_count %}
+                                {% firstof book.new_count "0" as book_new_count %}
+                                {% firstof book.in_progress_count "0" as book_in_progress_count %}
+                                {% firstof book.priority_status_label "暂无安排" as book_priority_status_label %}
+
+                                <article class="section-card active-card">
+                                    <div class="active-card-head">
+                                        <div>
+                                            <h3 class="active-card-title">{{ book.title }}</h3>
+                                            <div class="active-card-desc">{{ book.description|default:"暂无描述" }}</div>
+                                        </div>
+                                        <span class="status-chip warning">{{ book_priority_status_label }}</span>
+                                    </div>
+
+                                    <div class="active-card-grid">
+                                        <div class="active-card-field">
+                                            <div class="active-card-label">现在可做</div>
+                                            <div class="active-card-value">{{ book_due_now_count }}</div>
+                                        </div>
+
+                                        <div class="active-card-field">
+                                            <div class="active-card-label">下一次复习</div>
+                                            <div class="active-card-value">{{ book_next_review }}</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="active-card-subline">
+                                        已逾期 {{ book_overdue_count }}
+                                        ｜新学 {{ book_new_count }}
+                                        ｜巩固中 {{ book_in_progress_count }}
+                                        ｜阶段 {{ book_stage }}
+                                    </div>
+
+                                    <div class="active-card-actions">
+                                        {% if start_lesson_id %}
+                                            <a href="{% url 'lesson-train' start_lesson_id %}" class="primary-btn">进入学习</a>
+                                        {% elif book.id %}
+                                            <a href="{% url 'book-detail' book.id %}" class="primary-btn">进入学习</a>
+                                        {% elif book.book_id %}
+                                            <a href="{% url 'book-detail' book.book_id %}" class="primary-btn">进入学习</a>
+                                        {% endif %}
+
+                                        {% if book.id %}
+                                            <a href="{% url 'book-detail' book.id %}" class="secondary-btn">查看书册</a>
+                                        {% elif book.book_id %}
+                                            <a href="{% url 'book-detail' book.book_id %}" class="secondary-btn">查看书册</a>
+                                        {% endif %}
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="empty-card">
+                        <div class="empty-title">当前没有正在循环训练的书册</div>
+                        <div>当书册开始进入记忆循环后，这里会显示全部正在训练中的书册。</div>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

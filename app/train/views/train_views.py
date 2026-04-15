@@ -890,6 +890,13 @@ def build_training_payload(training, memory=None, request=None):
         or ""
     ).strip()
 
+    training_audio_url = ""
+    if training.audio_file:
+        try:
+            training_audio_url = training.audio_file.url or ""
+        except Exception:
+            training_audio_url = ""
+
     question_audio_url = training.question.audio_url or ""
 
     use_tts = bool(meta.get("use_tts", False))
@@ -954,8 +961,22 @@ def build_training_payload(training, memory=None, request=None):
 
     # =========================
     # 听 / 说题型：题干音频 fallback
+    # 优先级：
+    # 1. TrainingItem.audio_file（人工上传）
+    # 2. Question.audio_url（旧链接字段）
+    # 3. TTS 自动生成
     # =========================
-    resolved_prompt_audio = question_audio_url
+    resolved_prompt_audio = training_audio_url or question_audio_url
+
+    print("DEBUG AUDIO:", {
+        "training_id": training.id,
+        "question_id": training.question_id,
+        "training_audio_name": getattr(training.audio_file, "name", ""),
+        "training_audio_url": training_audio_url,
+        "question_audio_url": question_audio_url,
+        "resolved_prompt_audio": resolved_prompt_audio,
+        "item_type": training.item_type,
+    })
 
     if (
         not resolved_prompt_audio
@@ -3513,7 +3534,14 @@ def builder_save(request):
     if request.method != "POST":
         return JsonResponse({"ok": False, "error": "POST only"}, status=405)
 
-    data = _safe_json_loads(request.body)
+    uploaded_audio_file = None
+
+    if request.content_type and request.content_type.startswith("multipart/form-data"):
+        payload_raw = (request.POST.get("payload") or "").strip()
+        data = _safe_json_loads(payload_raw) if payload_raw else {}
+        uploaded_audio_file = request.FILES.get("audio_file")
+    else:
+        data = _safe_json_loads(request.body)
 
     lesson_id = data.get("lesson_id")
     skill = (data.get("skill") or "read").strip()
@@ -3612,7 +3640,8 @@ def builder_save(request):
             instruction_text=instruction_text or prompt_text,
             source_text=source_text,
             target_answer=question.answer_text or target_answer,
-            choices=choices_payload
+            choices=choices_payload,
+            audio_file=uploaded_audio_file
         )
         created_items.append(training.id)
 
@@ -3692,7 +3721,8 @@ def builder_save(request):
                     "cloze": cloze_cfg,
                     "auto_generated": True
                 }
-            }]
+            }],
+            audio_file=uploaded_audio_file
         )
 
         created_items.append(training.id)
@@ -3725,7 +3755,8 @@ def builder_save(request):
                     "skill": skill,
                     "item_type": item_type
                 }
-            }]
+            }],
+            audio_file=uploaded_audio_file
         )
         created_items.append(training.id)
 
@@ -3755,7 +3786,8 @@ def builder_save(request):
                     "use_tts": use_tts,
                     "asr": asr_cfg
                 }
-            }]
+            }],
+            audio_file=uploaded_audio_file
         )
         created_items.append(training.id)
 

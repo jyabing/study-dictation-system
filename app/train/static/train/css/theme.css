@@ -1096,6 +1096,62 @@ html[data-theme="light-jp"] .alert-box.danger {
     justify-content: flex-end;
 }
 
+.priority-more-row {
+    margin-top: 14px;
+    display: flex;
+    justify-content: center;
+}
+
+.priority-more-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-soft);
+    font-size: 12px;
+    font-weight: 800;
+    transition: var(--transition);
+    text-align: center;
+}
+
+.priority-more-link:hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--border-strong);
+}
+
+.mobile-only-inline {
+    display: none;
+}
+
+.desktop-only-inline {
+    display: inline-flex;
+}
+
+@media (max-width: 768px) {
+    .mobile-only-inline {
+        display: inline-flex;
+    }
+
+    .desktop-only-inline {
+        display: none;
+    }
+
+    .priority-more-row {
+        margin-top: 12px;
+    }
+
+    .priority-more-link {
+        width: 100%;
+        min-height: 38px;
+        padding: 0 12px;
+        font-size: 12px;
+    }
+}
 
 /* =========================
    dashboard 全部书册

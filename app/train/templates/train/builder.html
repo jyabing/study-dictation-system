@@ -520,6 +520,19 @@
                         <label for="answer_text">回答</label>
                         <textarea id="answer_text" placeholder="可输入单答案；多答案可用换行、逗号、分号分隔" oninput="updatePreview();"></textarea>
                     </div>
+
+                    <div id="accepted_answers_wrap" class="field hidden" style="margin-top:12px;">
+                        <label for="accepted_answers_text">可接受回答（读音别名）</label>
+                        <textarea
+                            id="accepted_answers_text"
+                            placeholder="每行一个可接受回答，例如：&#10;やせがえるまけるないっさこれにあり"
+                            oninput="updatePreview();"
+                        ></textarea>
+                        <div class="section-sub" style="margin-top:6px; margin-bottom:0;">
+                            仅用于听 / 说题。这里填写可接受的读音型答案或别名。每行一个。
+                            命中后会判为“读音正确，但标准书写需要加强”。
+                        </div>
+                    </div>
                 </div>
 
                 <div id="cloze_section" class="card section hidden">
@@ -673,12 +686,14 @@
 
             const promptAudioWrap = document.getElementById("prompt_audio_wrap");
             const answerSection = document.getElementById("answer_section");
+            const acceptedAnswersWrap = document.getElementById("accepted_answers_wrap");
             const clozeSection = document.getElementById("cloze_section");
             const choiceSection = document.getElementById("choice_section");
             const asrSection = document.getElementById("asr_section");
 
             promptAudioWrap.classList.toggle("hidden", skill !== "listen");
             clozeSection.classList.toggle("hidden", itemType !== "read_cloze");
+            
             choiceSection.classList.toggle(
                 "hidden",
                 !(itemType === "read_choice_single" || itemType === "read_choice_multi")
@@ -687,6 +702,8 @@
                 "hidden",
                 !(itemType === "listen_asr" || itemType === "speak_read")
             );
+
+            acceptedAnswersWrap.classList.toggle("hidden", itemType !== "listen_asr" && itemType !== "speak_read");
 
             answerSection.classList.toggle(
                 "hidden",
@@ -941,6 +958,9 @@
 
             const promptText = document.getElementById("prompt_text").value;
             const answerText = document.getElementById("answer_text").value;
+            const acceptedAnswersText = document.getElementById("accepted_answers_text")
+                ? document.getElementById("accepted_answers_text").value
+                : "";
             const audioFileInput = document.getElementById("audio_file");
             const selectedAudioFile = audioFileInput && audioFileInput.files.length
                 ? audioFileInput.files[0]
@@ -955,6 +975,7 @@
                 instruction_text: instructionText,
                 source_text: promptText,
                 target_answer: answerText,
+                accepted_answers_text: acceptedAnswersText,
 
                 // 旧字段：继续兼容后端旧逻辑
                 prompt_text: promptText,

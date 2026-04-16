@@ -3709,6 +3709,13 @@ def builder_save(request):
     answer_text = target_answer
     prompt_audio = (data.get("prompt_audio") or data.get("audio_url") or "").strip()
 
+    accepted_answers_text = (data.get("accepted_answers_text") or "").strip()
+    accepted_answers = [
+        line.strip()
+        for line in accepted_answers_text.splitlines()
+        if line.strip()
+    ]
+
     use_tts = bool(data.get("use_tts", False))
     raw_choices = data.get("choices") or []
     reveal_text_on_wrong = bool(
@@ -3920,6 +3927,7 @@ def builder_save(request):
             instruction_text=instruction_text or prompt_text,
             source_text=source_text,
             target_answer=target_answer or answer_text,
+            accepted_answers=accepted_answers,
             choices=[{
                 "_meta": {
                     "skill": skill,
@@ -3981,6 +3989,15 @@ def question_edit(request, question_id):
         ).strip()
 
         audio_url = (request.POST.get("audio_url") or "").strip()
+
+        accepted_answers_text = (request.POST.get("accepted_answers_text") or "").strip()
+
+        accepted_answers = [
+            line.strip()
+            for line in accepted_answers_text.splitlines()
+            if line.strip()
+        ]
+
         uploaded_audio_file = request.FILES.get("audio_file")
         clear_audio_file = request.POST.get("clear_audio_file") == "1"
 
@@ -3996,6 +4013,7 @@ def question_edit(request, question_id):
                 "error": "题干不能为空",
                 "choices_json": json.dumps(training.choices or [], ensure_ascii=False) if training else "[]",
                 "cloze_answers_text": "\n".join(training.cloze_answers or []) if training and training.cloze_answers else "",
+                "accepted_answers_text": "\n".join(training.accepted_answers or []) if training and training.accepted_answers else "",
                 "listen_meta": (
                     ((training.choices or [])[0].get("_meta", {}))
                     if training and training.choices and isinstance((training.choices or [])[0], dict)
@@ -4015,10 +4033,16 @@ def question_edit(request, question_id):
             training.source_text = source_text
             training.target_answer = target_answer
 
+            if training.item_type in {"listen_asr", "speak_read"}:
+                training.accepted_answers = accepted_answers
+            else:
+                training.accepted_answers = []
+
             update_fields = [
                 "instruction_text",
                 "source_text",
                 "target_answer",
+                "accepted_answers",
             ]
 
             if clear_audio_file:
@@ -4186,6 +4210,7 @@ def question_edit(request, question_id):
         "page_title": "编辑训练题",
         "choices_json": json.dumps(training.choices or [], ensure_ascii=False) if training else "[]",
         "cloze_answers_text": "\n".join(training.cloze_answers or []) if training and training.cloze_answers else "",
+        "accepted_answers_text": "\n".join(training.accepted_answers or []) if training and training.accepted_answers else "",
         "listen_meta": (
             ((training.choices or [])[0].get("_meta", {}))
             if training and training.choices and isinstance((training.choices or [])[0], dict)

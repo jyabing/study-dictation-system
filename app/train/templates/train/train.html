@@ -2173,7 +2173,7 @@ async function submitAnswer(event) {
         const resultLevel = data.result_level || (data.is_correct ? "correct" : "wrong");
 
         let resultType = "wrong";
-        if (resultLevel === "normalized") {
+        if (resultLevel === "normalized" || resultLevel === "reading") {
             resultType = "warning";
         } else if (resultLevel !== "wrong") {
             resultType = "correct";

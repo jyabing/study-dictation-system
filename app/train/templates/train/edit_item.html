@@ -141,6 +141,21 @@
 
                             {% if display_qtype == "listen_asr" or display_qtype == "speak_read" %}
                                 <div class="field-group full">
+                                    <div class="field-label">可接受回答（读音别名）</div>
+                                    <textarea
+                                        name="accepted_answers_text"
+                                        class="textarea"
+                                        placeholder="每行一个可接受回答，例如：&#10;やせがえるまけるないっさこれにあり"
+                                    >{{ accepted_answers_text|default:'' }}</textarea>
+                                    <div class="field-help">
+                                        仅用于听 / 说题。这里填写可接受的读音型答案或别名。每行一个。
+                                        命中后会判为“读音正确，但标准书写需要加强”。
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% if display_qtype == "listen_asr" or display_qtype == "speak_read" %}
+                                <div class="field-group full">
                                     <div class="field-label">声音设置</div>
 
                                     {% if training and training.audio_file %}

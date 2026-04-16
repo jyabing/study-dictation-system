@@ -1096,6 +1096,26 @@ html[data-theme="light-jp"] .alert-box.danger {
     justify-content: flex-end;
 }
 
+#all-books .section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+#all-books .section-header > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+#all-books .section-header-actions {
+    margin-left: auto;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
 .priority-more-row {
     margin-top: 14px;
     display: flex;
@@ -1531,6 +1551,25 @@ html[data-theme="light-jp"] .alert-box.danger {
     }
 
     #priority-books .section-header-actions {
+        width: auto;
+        margin-left: auto;
+        justify-content: flex-end;
+        flex: 0 0 auto;
+    }
+
+        #all-books .section-header {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    #all-books .section-header > div:first-child {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    #all-books .section-header-actions {
         width: auto;
         margin-left: auto;
         justify-content: flex-end;

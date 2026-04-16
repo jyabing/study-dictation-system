@@ -1,0 +1,180 @@
+{% extends "train/base_train.html" %}
+
+{% block title %}添加书册{% endblock %}
+
+{% block body_class %}dashboard-body{% endblock %}
+
+{% block content %}
+<div class="dashboard-page">
+    <div class="dashboard-shell">
+
+        <section class="section-card">
+            <div class="section-header book-create-page-header">
+                <div>
+                    <h2 class="section-title">添加书册</h2>
+                    <div class="section-subtitle">先创建书册，再进入书册内添加章节与训练内容。</div>
+                </div>
+
+                <div class="section-header-actions">
+                    <a href="{% url 'dashboard' %}" class="icon-action-btn">返回首页</a>
+                </div>
+            </div>
+
+            <div class="section-body">
+                <form method="post" class="book-create-form">
+                    {% csrf_token %}
+
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="id_title" class="form-label">书册标题</label>
+                            <input
+                                type="text"
+                                id="id_title"
+                                name="title"
+                                class="form-input"
+                                maxlength="200"
+                                placeholder="例如：日语 N3 核心句型"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-field">
+                            <label for="id_description" class="form-label">书册描述</label>
+                            <textarea
+                                id="id_description"
+                                name="description"
+                                class="form-textarea"
+                                rows="6"
+                                placeholder="可填写这本书册的用途、学习范围、阶段说明。"
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="primary-btn">保存书册</button>
+                        <a href="{% url 'dashboard' %}" class="ghost-btn">取消</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+    </div>
+</div>
+
+<style>
+.book-create-form {
+    width: 100%;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-label {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.form-input,
+.form-textarea {
+    width: 100%;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(7, 18, 44, 0.82);
+    color: var(--text);
+    padding: 12px 14px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+    color: var(--text-soft);
+}
+
+.form-textarea {
+    min-height: 140px;
+    resize: vertical;
+    line-height: 1.6;
+}
+
+.form-actions {
+    margin-top: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.book-create-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.book-create-page-header > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.book-create-page-header .section-header-actions {
+    width: auto;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions .primary-btn,
+    .form-actions .ghost-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+        .book-create-page-header {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .book-create-page-header > div:first-child {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .book-create-page-header .section-header-actions {
+        width: auto;
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .book-create-page-header .icon-action-btn {
+        width: auto;
+    }
+}
+
+html[data-theme="light-jp"] .form-input,
+html[data-theme="light-jp"] .form-textarea {
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border-color: var(--border);
+    color: var(--text);
+}
+</style>
+{% endblock %}

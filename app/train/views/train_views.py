@@ -206,7 +206,91 @@ def check_answer(user_answer, correct_answer):
 
     return _check_answer_english(user_answer, correct_answer)
 
+def judge_speech_answer_layers(user_answer, correct_answer):
+    """
+    听 / 说题最小分层判定：
+    1. strict：原文严格一致
+    2. normalized：归一化后一致（平假名 / 片假名 / 标点 / 空格容错）
+    3. wrong：未命中
 
+    说明：
+    - 第一版先不做真正“汉字 -> 假名读音链”转换
+    - 先把现有归一化能力显式结构化返回
+    """
+
+    raw_user = str(user_answer or "").strip()
+    raw_correct = str(correct_answer or "").strip()
+
+    strict_correct = bool(raw_user) and bool(raw_correct) and raw_user == raw_correct
+
+    normalized_user = normalize(raw_user)
+    normalized_correct = normalize(raw_correct)
+
+    jp_user = _normalize_japanese_variants(raw_user)
+    jp_correct = _normalize_japanese_variants(raw_correct)
+
+    normalized_correct_flag = False
+
+    if raw_user and raw_correct:
+        if normalized_user == normalized_correct:
+            normalized_correct_flag = True
+        elif jp_user == jp_correct:
+            normalized_correct_flag = True
+        elif check_answer(raw_user, raw_correct):
+            normalized_correct_flag = True
+
+    if strict_correct:
+        return {
+            "is_correct": True,
+            "result_level": "strict",
+            "strict_correct": True,
+            "normalized_correct": True,
+            "reading_correct": False,
+            "orthography_correct": True,
+            "feedback_message": "完全正确",
+        }
+
+    if normalized_correct_flag:
+        return {
+            "is_correct": True,
+            "result_level": "normalized",
+            "strict_correct": False,
+            "normalized_correct": True,
+            "reading_correct": False,
+            "orthography_correct": False,
+            "feedback_message": "表达正确，但书写形式与标准答案不完全一致",
+        }
+
+    return {
+        "is_correct": False,
+        "result_level": "wrong",
+        "strict_correct": False,
+        "normalized_correct": False,
+        "reading_correct": False,
+        "orthography_correct": False,
+        "feedback_message": "答案不正确",
+    }
+
+def _normalize_accepted_answers(values):
+    """
+    accepted_answers 统一清洗成字符串列表
+    """
+    if not values:
+        return []
+
+    cleaned = []
+
+    if isinstance(values, list):
+        raw_list = values
+    else:
+        raw_list = [values]
+
+    for item in raw_list:
+        text = str(item or "").strip()
+        if text:
+            cleaned.append(text)
+
+    return cleaned
 
 def _get_strict_step_rule(step: int):
     """
@@ -1197,17 +1281,15 @@ def judge_training_answer(training, raw_answer):
         parsed = _normalize_raw_answer(raw_answer)
 
         if isinstance(parsed, list):
-            user_answer = normalize(" ".join(str(x) for x in parsed))
+            user_answer_raw = " ".join(str(x) for x in parsed if str(x or "").strip())
         else:
-            user_answer = normalize(str(parsed or ""))
+            user_answer_raw = str(parsed or "").strip()
 
         resolved_answer_text = (
             training.target_answer
             or q.answer_text
             or ""
         ).strip()
-
-        correct_text = normalize(resolved_answer_text)
 
         allow_partial_match = (meta.get("asr") or {}).get("allow_partial_match", True)
         asr_lang = str((meta.get("asr") or {}).get("lang") or "en-US").strip().lower()
@@ -1218,20 +1300,79 @@ def judge_training_answer(training, raw_answer):
             or asr_lang.startswith("ko")
         )
 
-        if allow_partial_match and is_cjk_speech:
-            is_correct = (
-                correct_text in user_answer
-                or user_answer in correct_text
-                or check_answer(user_answer, correct_text)
-            )
-        else:
-            is_correct = check_answer(user_answer, correct_text)
+        layered = judge_speech_answer_layers(
+            user_answer=user_answer_raw,
+            correct_answer=resolved_answer_text
+        )
+
+        is_correct = layered["is_correct"]
+
+        accepted_answers = _normalize_accepted_answers(
+            getattr(training, "accepted_answers", [])
+        )
+
+        if not is_correct and accepted_answers:
+            for accepted in accepted_answers:
+                accepted_layered = judge_speech_answer_layers(
+                    user_answer=user_answer_raw,
+                    correct_answer=accepted
+                )
+
+                if accepted_layered["is_correct"]:
+                    layered = {
+                        "is_correct": True,
+                        "result_level": "reading",
+                        "strict_correct": False,
+                        "normalized_correct": False,
+                        "reading_correct": True,
+                        "orthography_correct": False,
+                        "feedback_message": "读音正确，但标准书写需要加强",
+                    }
+                    is_correct = True
+                    break
+
+        if (
+            not is_correct
+            and allow_partial_match
+            and is_cjk_speech
+        ):
+            normalized_user = normalize(user_answer_raw)
+            normalized_correct = normalize(resolved_answer_text)
+
+            if (
+                normalized_correct in normalized_user
+                or normalized_user in normalized_correct
+            ):
+                layered = {
+                    "is_correct": True,
+                    "result_level": "normalized",
+                    "strict_correct": False,
+                    "normalized_correct": True,
+                    "reading_correct": False,
+                    "orthography_correct": False,
+                    "feedback_message": "表达基本正确，但书写形式与标准答案不完全一致",
+                }
+                is_correct = True
+
+        all_correct_answers = []
+        if resolved_answer_text:
+            all_correct_answers.append(resolved_answer_text)
+
+        for accepted in accepted_answers:
+            if accepted and accepted not in all_correct_answers:
+                all_correct_answers.append(accepted)
 
         return {
             "is_correct": is_correct,
-            "correct_answers": [resolved_answer_text] if resolved_answer_text else [],
+            "correct_answers": all_correct_answers,
             "display_answer": resolved_answer_text,
             "user_answers": raw_answer,
+            "result_level": layered["result_level"],
+            "strict_correct": layered["strict_correct"],
+            "normalized_correct": layered["normalized_correct"],
+            "reading_correct": layered["reading_correct"],
+            "orthography_correct": layered["orthography_correct"],
+            "feedback_message": layered["feedback_message"],
         }
 
     # =========================

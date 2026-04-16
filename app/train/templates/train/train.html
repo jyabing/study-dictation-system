@@ -2170,8 +2170,21 @@ async function submitAnswer(event) {
             return;
         }
 
-        const resultType = data.is_correct ? "correct" : "wrong";
-        setFeedback(data.result || "提交成功。", resultType);
+        const resultLevel = data.result_level || (data.is_correct ? "correct" : "wrong");
+
+        let resultType = "wrong";
+        if (resultLevel === "normalized") {
+            resultType = "warning";
+        } else if (resultLevel !== "wrong") {
+            resultType = "correct";
+        }
+
+        const feedbackMessage =
+            data.feedback_message
+            || data.result
+            || (data.is_correct ? "回答正确" : "答案不正确");
+
+        setFeedback(feedbackMessage, resultType);
 
         const correctAnswersRaw = Array.isArray(data.correct_answers)
             ? data.correct_answers

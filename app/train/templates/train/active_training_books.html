@@ -1,4 +1,4 @@
-{% extends "train/base.html" %}
+{% extends "train/base_train.html" %}
 {% load static %}
 
 {% block title %}正在循环训练{% endblock %}
@@ -215,6 +215,49 @@
     font-size: 12px;
 }
 
+.section-header--with-action {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.section-header-action {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.add-book-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .section-header--with-action {
+        align-items: stretch;
+    }
+
+    .section-header-action {
+        width: 100%;
+    }
+
+    .section-header-action .add-book-btn {
+        width: 100%;
+    }
+}
+
 @media (max-width: 768px) {
     .active-training-page {
         width: 100%;
@@ -297,10 +340,14 @@ html[data-theme="light-jp"] .active-card-field {
         </section>
 
         <section class="section-card">
-            <div class="section-header">
+            <div class="section-header section-header--with-action">
                 <div>
                     <h2 class="section-title">循环训练中的书册</h2>
                     <div class="section-subtitle">按当前优先级排序：逾期、当前到期、可开始新学。</div>
+                </div>
+
+                <div class="section-header-action">
+                    <a href="{% url 'book-create' %}" class="primary-btn add-book-btn">添加书册</a>
                 </div>
             </div>
 

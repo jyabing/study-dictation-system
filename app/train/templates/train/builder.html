@@ -66,6 +66,23 @@
             font-size: 14px;
         }
 
+        .builder-page-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .builder-page-topbar .title-wrap {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .builder-page-topbar .back-btn {
+            flex: 0 0 auto;
+            margin-left: auto;
+        }
+
         .layout {
             display: grid;
             grid-template-columns: 1.6fr 0.9fr;
@@ -366,6 +383,24 @@
                 align-items: stretch;
             }
 
+            .builder-page-topbar {
+                flex-direction: row;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 12px;
+            }
+
+            .builder-page-topbar .title-wrap {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
+            .builder-page-topbar .back-btn {
+                margin-left: auto;
+                width: auto;
+                flex: 0 0 auto;
+            }
+
             .grid-2,
             .grid-3,
             .choice-grid {
@@ -390,7 +425,7 @@
 <body>
     <div class="page">
 
-        <div class="topbar">
+        <div class="topbar builder-page-topbar">
             <div class="title-wrap">
                 <h1>创建循环记忆素材</h1>
                 <div class="sub">按“听 / 说 / 读 / 写”建立可进入艾宾浩斯循环的训练素材，不再按传统考试题型组织。</div>

@@ -10,6 +10,25 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 
 @login_required
+def book_create(request):
+
+    if request.method == "POST":
+        title = (request.POST.get("title") or "").strip()
+        description = (request.POST.get("description") or "").strip()
+
+        if title:
+            book = Book.objects.create(
+                owner=request.user,
+                title=title,
+                description=description
+            )
+            return redirect("book-detail", book_id=book.id)
+
+    return render(request, "train/book_create.html", {
+        "page_title": "添加书册",
+    })
+
+@login_required
 def dashboard(request):
 
     # =========================

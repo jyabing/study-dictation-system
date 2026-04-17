@@ -155,6 +155,16 @@ class TrainingItem(models.Model):
         null=True
     )
 
+    answer_audio_file = models.FileField(
+        upload_to="audio/answers/",
+        blank=True,
+        null=True
+    )
+
+    answer_use_tts = models.BooleanField(
+        default=False
+    )
+
     # =========================
     # 新结构：提示短语 + 题干 + 回答
     # =========================

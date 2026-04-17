@@ -1717,6 +1717,65 @@ function scheduleAutoNext(delay = 900) {
     }, delay);
 }
 
+function getAnswerAudioUrl(payload) {
+    return pickText(payload, [
+        "answer_audio",
+        "answer_audio_url"
+    ], "");
+}
+
+function shouldAutoplayAnswerAudio(payload) {
+    const itemType = pickText(payload, ["item_type", "type"], "");
+    return (
+        (itemType === "listen_asr" || itemType === "speak_read")
+        && !!getAnswerAudioUrl(payload)
+        && !!payload.can_autoplay_answer_audio
+    );
+}
+
+function playAnswerAudioThenNext(payload, fallbackDelay = 1200) {
+    const answerAudioUrl = getAnswerAudioUrl(payload);
+
+    if (!shouldAutoplayAnswerAudio(payload) || !answerAudioUrl) {
+        scheduleAutoNext(fallbackDelay);
+        return;
+    }
+
+    clearAutoNextTimer();
+
+    try {
+        const audio = new Audio(answerAudioUrl);
+        let moved = false;
+
+        const moveNext = () => {
+            if (moved) {
+                return;
+            }
+            moved = true;
+            loadCurrentQuestion();
+        };
+
+        audio.addEventListener("ended", moveNext, { once: true });
+        audio.addEventListener("error", () => {
+            scheduleAutoNext(fallbackDelay);
+        }, { once: true });
+
+        const playPromise = audio.play();
+        if (playPromise && typeof playPromise.then === "function") {
+            playPromise.catch(() => {
+                scheduleAutoNext(fallbackDelay);
+            });
+        }
+
+        // 防止音频异常不结束，兜底最长等待 8 秒
+        state.autoNextTimer = setTimeout(() => {
+            moveNext();
+        }, 8000);
+    } catch (error) {
+        scheduleAutoNext(fallbackDelay);
+    }
+}
+
 function setLoading(isLoading) {
     state.loading = isLoading;
     submitBtn.disabled = isLoading;
@@ -2209,7 +2268,7 @@ async function submitAnswer(event) {
         } else {
             markChoiceResult(true, answer, correctAnswersRaw);
             nextBtn.style.display = "none";
-            scheduleAutoNext(1200);
+            playAnswerAudioThenNext(data, 1200);
         }
     } catch (error) {
         setFeedback("提交失败，请检查网络或刷新页面后重试。", "wrong");

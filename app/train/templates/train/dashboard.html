@@ -46,16 +46,12 @@
                             <article class="priority-card">
                                 <div class="priority-main priority-main-full">
                                     <div class="priority-headline">
-                                        {% if start_lesson_id %}
-                                            <a href="{% url 'lesson-train' start_lesson_id %}" class="priority-title-link">
-                                                <h3 class="priority-title">{{ book.title }}</h3>
-                                            </a>
-                                        {% elif book.id %}
-                                            <a href="{% url 'book-detail' book.id %}" class="priority-title-link">
+                                        {% if book.id %}
+                                            <a href="{% url 'book-train' book.id %}" class="priority-title-link">
                                                 <h3 class="priority-title">{{ book.title }}</h3>
                                             </a>
                                         {% elif book.book_id %}
-                                            <a href="{% url 'book-detail' book.book_id %}" class="priority-title-link">
+                                            <a href="{% url 'book-train' book.book_id %}" class="priority-title-link">
                                                 <h3 class="priority-title">{{ book.title }}</h3>
                                             </a>
                                         {% else %}
@@ -63,6 +59,10 @@
                                         {% endif %}
 
                                         <div class="priority-head-actions">
+                                            {% if start_lesson_id %}
+                                                <a href="{% url 'lesson-train' start_lesson_id %}" class="icon-action-btn">当前课节</a>
+                                            {% endif %}
+
                                             {% if book.id %}
                                                 <a href="{% url 'book-edit' book.id %}" class="icon-action-btn">编辑</a>
                                             {% elif book.book_id %}

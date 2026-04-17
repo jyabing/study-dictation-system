@@ -190,6 +190,30 @@
                                         删除当前上传音频
                                     </label>
 
+                                    <div class="field-label" style="margin-top:12px;">回答音频</div>
+
+                                    {% if training and training.answer_audio_file %}
+                                        <div class="field-help">当前已上传回答音频文件。</div>
+                                        <audio controls preload="none" class="input" style="padding: 12px;">
+                                            <source src="{{ training.answer_audio_file.url }}">
+                                            浏览器暂不支持音频播放。
+                                        </audio>
+                                        <div class="field-help">
+                                            当前文件：
+                                            <a href="{{ training.answer_audio_file.url }}" target="_blank" rel="noopener">{{ training.answer_audio_file.name }}</a>
+                                        </div>
+                                    {% else %}
+                                        <div class="field-help">当前还没有回答音频。可上传回答音频，或勾选下方“回答 TTS”作为兜底。</div>
+                                    {% endif %}
+
+                                    <input type="file" name="answer_audio_file" class="input" accept="audio/*">
+                                    <div class="field-help">支持 mp3 / wav / m4a 等常见格式。上传新文件后会替换当前回答音频。</div>
+
+                                    <label class="field-help" style="display:block; margin-top:8px;">
+                                        <input type="checkbox" name="clear_answer_audio_file" value="1">
+                                        删除当前回答音频
+                                    </label>
+
                                     <div style="height: 12px;"></div>
 
                                     <div class="field-label">音频链接（旧字段兼容）</div>
@@ -212,6 +236,16 @@
                                             {% if listen_meta.use_tts %}checked{% endif %}
                                         >
                                         没有音频时使用 TTS
+                                    </label>
+
+                                    <label class="field-help" style="display:block; margin-top:8px;">
+                                        <input
+                                            type="checkbox"
+                                            name="answer_use_tts"
+                                            value="1"
+                                            {% if training and training.answer_use_tts %}checked{% endif %}
+                                        >
+                                        没有回答音频时使用 TTS 朗读回答
                                     </label>
 
                                     <label class="field-help" style="display:block; margin-top:8px;">

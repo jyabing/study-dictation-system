@@ -521,6 +521,24 @@
                         <textarea id="answer_text" placeholder="可输入单答案；多答案可用换行、逗号、分号分隔" oninput="updatePreview();"></textarea>
                     </div>
 
+                    <div id="answer_audio_wrap" class="field hidden" style="margin-top:12px;">
+                        <label for="answer_audio">回答音频（URL / 路径）</label>
+                        <input id="answer_audio" type="text" placeholder="没有音频时可留空" oninput="updatePreview();">
+                    </div>
+
+                    <div id="answer_audio_file_wrap" class="field hidden" style="margin-top:12px;">
+                        <label for="answer_audio_file">回答音频文件（上传）</label>
+                        <input id="answer_audio_file" type="file" accept="audio/*" onchange="updatePreview();">
+                        <div class="section-sub" style="margin-top:6px;">
+                            听 / 说训练答对后，优先播放这里上传的回答音频；没有文件时，才回退到上面的 URL / 路径或回答 TTS。
+                        </div>
+                    </div>
+
+                    <div id="answer_use_tts_wrap" class="checkbox-row hidden">
+                        <input type="checkbox" id="answer_use_tts" onchange="updatePreview();">
+                        <label for="answer_use_tts" style="margin:0;">没有回答音频时使用 TTS 朗读回答</label>
+                    </div>
+
                     <div id="accepted_answers_wrap" class="field hidden" style="margin-top:12px;">
                         <label for="accepted_answers_text">可接受回答（读音别名）</label>
                         <textarea
@@ -685,30 +703,52 @@
             const itemType = document.getElementById("item_type").value;
 
             const promptAudioWrap = document.getElementById("prompt_audio_wrap");
+            const promptAudioFileWrap = document.getElementById("prompt_audio_file_wrap");
+            const useTtsWrap = document.getElementById("use_tts")
+                ? document.getElementById("use_tts").closest(".checkbox-row")
+                : null;
+
+            const answerAudioWrap = document.getElementById("answer_audio_wrap");
+            const answerAudioFileWrap = document.getElementById("answer_audio_file_wrap");
+            const answerUseTtsWrap = document.getElementById("answer_use_tts_wrap");
+
             const answerSection = document.getElementById("answer_section");
             const acceptedAnswersWrap = document.getElementById("accepted_answers_wrap");
             const clozeSection = document.getElementById("cloze_section");
             const choiceSection = document.getElementById("choice_section");
             const asrSection = document.getElementById("asr_section");
 
-            promptAudioWrap.classList.toggle("hidden", skill !== "listen");
+            const isListenOrSpeak = itemType === "listen_asr" || itemType === "speak_read";
+            const isReadChoice = itemType === "read_choice_single" || itemType === "read_choice_multi";
+
+            // 回答区：选择题隐藏，其它显示
+            answerSection.classList.toggle("hidden", isReadChoice);
+
+            // 克漏字区
             clozeSection.classList.toggle("hidden", itemType !== "read_cloze");
-            
-            choiceSection.classList.toggle(
-                "hidden",
-                !(itemType === "read_choice_single" || itemType === "read_choice_multi")
-            );
-            asrSection.classList.toggle(
-                "hidden",
-                !(itemType === "listen_asr" || itemType === "speak_read")
-            );
 
-            acceptedAnswersWrap.classList.toggle("hidden", itemType !== "listen_asr" && itemType !== "speak_read");
+            // 选择题区
+            choiceSection.classList.toggle("hidden", !isReadChoice);
 
-            answerSection.classList.toggle(
-                "hidden",
-                itemType === "read_choice_single" || itemType === "read_choice_multi"
-            );
+            // 听说识别配置区
+            asrSection.classList.toggle("hidden", !isListenOrSpeak);
+
+            // 可接受回答：只在听/说显示
+            acceptedAnswersWrap.classList.toggle("hidden", !isListenOrSpeak);
+
+            // 题干音频相关：只在听/说显示
+            promptAudioWrap.classList.toggle("hidden", !isListenOrSpeak);
+            if (promptAudioFileWrap) {
+                promptAudioFileWrap.classList.toggle("hidden", !isListenOrSpeak);
+            }
+            if (useTtsWrap) {
+                useTtsWrap.classList.toggle("hidden", !isListenOrSpeak);
+            }
+
+            // 回答音频相关：只在听/说显示
+            answerAudioWrap.classList.toggle("hidden", !isListenOrSpeak);
+            answerAudioFileWrap.classList.toggle("hidden", !isListenOrSpeak);
+            answerUseTtsWrap.classList.toggle("hidden", !isListenOrSpeak);
 
             updatePreview();
         }
@@ -966,6 +1006,11 @@
                 ? audioFileInput.files[0]
                 : null;
 
+            const answerAudioFileInput = document.getElementById("answer_audio_file");
+            const selectedAnswerAudioFile = answerAudioFileInput && answerAudioFileInput.files.length
+                ? answerAudioFileInput.files[0]
+                : null;
+
             const payload = {
                 lesson_id: document.getElementById("lesson").value,
                 skill: skill,
@@ -981,7 +1026,14 @@
                 prompt_text: promptText,
                 prompt_audio: document.getElementById("prompt_audio").value,
                 use_tts: document.getElementById("use_tts").checked,
+
                 answer_text: answerText,
+                answer_audio: document.getElementById("answer_audio")
+                    ? document.getElementById("answer_audio").value
+                    : "",
+                answer_use_tts: document.getElementById("answer_use_tts")
+                    ? document.getElementById("answer_use_tts").checked
+                    : false,
 
                 choices: buildChoices(),
                 reveal_text_on_wrong: document.getElementById("reveal_text_on_wrong").checked,
@@ -1003,6 +1055,10 @@
 
             if (selectedAudioFile) {
                 formData.append("audio_file", selectedAudioFile);
+            }
+
+            if (selectedAnswerAudioFile) {
+                formData.append("answer_audio_file", selectedAnswerAudioFile);
             }
 
             fetch("/builder/save/", {

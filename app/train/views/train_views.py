@@ -960,7 +960,6 @@ def build_training_payload(training, memory=None, request=None):
 
     instruction_text = (training.instruction_text or "").strip()
 
-
     prompt_text = (
         training.source_text
         or training.prompt_text
@@ -974,6 +973,9 @@ def build_training_payload(training, memory=None, request=None):
         or ""
     ).strip()
 
+    # =========================
+    # 题干上传音频
+    # =========================
     training_audio_url = ""
     if training.audio_file:
         try:
@@ -981,9 +983,25 @@ def build_training_payload(training, memory=None, request=None):
         except Exception:
             training_audio_url = ""
 
+    # =========================
+    # 回答上传音频
+    # =========================
+    answer_audio_file_url = ""
+    if getattr(training, "answer_audio_file", None):
+        try:
+            answer_audio_file_url = training.answer_audio_file.url or ""
+        except Exception:
+            answer_audio_file_url = ""
+
+    # 旧 Question 音频链接字段（仅题干）
     question_audio_url = training.question.audio_url or ""
 
     use_tts = bool(meta.get("use_tts", False))
+    answer_use_tts = bool(
+        getattr(training, "answer_use_tts", False)
+        or meta.get("answer_use_tts", False)
+    )
+
     asr_cfg = meta.get("asr", {}) if isinstance(meta.get("asr"), dict) else {}
     asr_lang = asr_cfg.get("lang") or "en-US"
 
@@ -999,9 +1017,6 @@ def build_training_payload(training, memory=None, request=None):
 
         level_name = _resolve_cloze_level_by_memory(memory)
 
-        # =========================
-        # 优先读取 session 冻结空位
-        # =========================
         pinned_layout = None
         if request is not None:
             pinned_layout = _session_get_pinned_cloze_layout(request, training.question_id)
@@ -1086,6 +1101,48 @@ def build_training_payload(training, memory=None, request=None):
             prefix=f"prompttts_q{training.question_id}"
         )
 
+    # =========================
+    # 听 / 说题型：回答音频 fallback
+    # 优先级：
+    # 1. TrainingItem.answer_audio_file（人工上传）
+    # 2. TTS 自动生成回答音频
+    # =========================
+    resolved_answer_audio = answer_audio_file_url
+
+    if (
+        not resolved_answer_audio
+        and training.item_type in {"listen_asr", "speak_read"}
+        and answer_use_tts
+        and resolved_answer_text
+    ):
+        answer_tts_lang = "en"
+        lang_upper = str(asr_lang).lower()
+
+        if lang_upper.startswith("ja"):
+            answer_tts_lang = "ja"
+        elif lang_upper.startswith("zh"):
+            answer_tts_lang = "zh-CN"
+        elif lang_upper.startswith("ko"):
+            answer_tts_lang = "ko"
+        else:
+            answer_tts_lang = "en"
+
+        resolved_answer_audio = _build_tts_audio(
+            text=resolved_answer_text,
+            lang=answer_tts_lang,
+            prefix=f"answertts_q{training.question_id}"
+        )
+
+    print("DEBUG ANSWER AUDIO:", {
+        "training_id": training.id,
+        "question_id": training.question_id,
+        "answer_audio_name": getattr(getattr(training, "answer_audio_file", None), "name", ""),
+        "answer_audio_file_url": answer_audio_file_url,
+        "resolved_answer_audio": resolved_answer_audio,
+        "answer_use_tts": answer_use_tts,
+        "item_type": training.item_type,
+    })
+
     cycle = _build_cycle_status(memory)
 
     payload = {
@@ -1108,8 +1165,17 @@ def build_training_payload(training, memory=None, request=None):
         "target_answer": resolved_answer_text,
         "correct_answers": resolved_cloze_answers or ([resolved_answer_text] if resolved_answer_text else []),
 
+        # 题干音频
         "audio_url": resolved_prompt_audio or "",
         "audio": resolved_prompt_audio or "",
+
+        # 回答音频
+        "answer_audio_url": resolved_answer_audio or "",
+        "answer_audio": resolved_answer_audio or "",
+        "can_autoplay_answer_audio": bool(
+            training.item_type in {"listen_asr", "speak_read"}
+            and resolved_answer_audio
+        ),
 
         "choices": choices,
         "selection_mode": selection_mode,
@@ -1134,8 +1200,9 @@ def build_training_payload(training, memory=None, request=None):
         "last_reset_reason": cycle["last_reset_reason"],
         "status_text": cycle["status_text"],
 
-        # 听 / 说题型配置也顺便回前端
+        # 听 / 说题型配置
         "use_tts": use_tts,
+        "answer_use_tts": answer_use_tts,
         "asr_lang": asr_lang,
         "allow_partial_match": bool(asr_cfg.get("allow_partial_match", True)),
     }
@@ -3676,11 +3743,13 @@ def builder_save(request):
         return JsonResponse({"ok": False, "error": "POST only"}, status=405)
 
     uploaded_audio_file = None
+    uploaded_answer_audio_file = None
 
     if request.content_type and request.content_type.startswith("multipart/form-data"):
         payload_raw = (request.POST.get("payload") or "").strip()
         data = _safe_json_loads(payload_raw) if payload_raw else {}
         uploaded_audio_file = request.FILES.get("audio_file")
+        uploaded_answer_audio_file = request.FILES.get("answer_audio_file")
     else:
         data = _safe_json_loads(request.body)
 
@@ -3708,6 +3777,7 @@ def builder_save(request):
     prompt_text = source_text
     answer_text = target_answer
     prompt_audio = (data.get("prompt_audio") or data.get("audio_url") or "").strip()
+    answer_audio = (data.get("answer_audio") or "").strip()
 
     accepted_answers_text = (data.get("accepted_answers_text") or "").strip()
     accepted_answers = [
@@ -3717,6 +3787,7 @@ def builder_save(request):
     ]
 
     use_tts = bool(data.get("use_tts", False))
+    answer_use_tts = bool(data.get("answer_use_tts", False))
     raw_choices = data.get("choices") or []
     reveal_text_on_wrong = bool(
         data.get("reveal_text_on_wrong") or data.get("reveal", False)
@@ -3789,7 +3860,9 @@ def builder_save(request):
             source_text=source_text,
             target_answer=question.answer_text or target_answer,
             choices=choices_payload,
-            audio_file=uploaded_audio_file
+            audio_file=uploaded_audio_file,
+            answer_audio_file=uploaded_answer_audio_file,
+            answer_use_tts=answer_use_tts
         )
         created_items.append(training.id)
 
@@ -3870,7 +3943,9 @@ def builder_save(request):
                     "auto_generated": True
                 }
             }],
-            audio_file=uploaded_audio_file
+            audio_file=uploaded_audio_file,
+            answer_audio_file=uploaded_answer_audio_file,
+            answer_use_tts=answer_use_tts
         )
 
         created_items.append(training.id)
@@ -3904,7 +3979,9 @@ def builder_save(request):
                     "item_type": item_type
                 }
             }],
-            audio_file=uploaded_audio_file
+            audio_file=uploaded_audio_file,
+            answer_audio_file=uploaded_answer_audio_file,
+            answer_use_tts=answer_use_tts
         )
         created_items.append(training.id)
 
@@ -3933,10 +4010,13 @@ def builder_save(request):
                     "skill": skill,
                     "item_type": item_type,
                     "use_tts": use_tts,
+                    "answer_use_tts": answer_use_tts,
                     "asr": asr_cfg
                 }
             }],
-            audio_file=uploaded_audio_file
+            audio_file=uploaded_audio_file,
+            answer_audio_file=uploaded_answer_audio_file,
+            answer_use_tts=answer_use_tts
         )
         created_items.append(training.id)
 
@@ -3989,6 +4069,7 @@ def question_edit(request, question_id):
         ).strip()
 
         audio_url = (request.POST.get("audio_url") or "").strip()
+        answer_audio_url = (request.POST.get("answer_audio_url") or "").strip()
 
         accepted_answers_text = (request.POST.get("accepted_answers_text") or "").strip()
 
@@ -4000,6 +4081,9 @@ def question_edit(request, question_id):
 
         uploaded_audio_file = request.FILES.get("audio_file")
         clear_audio_file = request.POST.get("clear_audio_file") == "1"
+
+        uploaded_answer_audio_file = request.FILES.get("answer_audio_file")
+        clear_answer_audio_file = request.POST.get("clear_answer_audio_file") == "1"
 
         if not source_text:
             return render(request, "train/edit_item.html", {
@@ -4055,6 +4139,17 @@ def question_edit(request, question_id):
                     training.audio_file.delete(save=False)
                 training.audio_file = uploaded_audio_file
                 update_fields.append("audio_file")
+
+            if clear_answer_audio_file:
+                if training.answer_audio_file:
+                    training.answer_audio_file.delete(save=False)
+                training.answer_audio_file = None
+                update_fields.append("answer_audio_file")
+            elif uploaded_answer_audio_file:
+                if training.answer_audio_file:
+                    training.answer_audio_file.delete(save=False)
+                training.answer_audio_file = uploaded_answer_audio_file
+                update_fields.append("answer_audio_file")
 
             training.save(update_fields=update_fields)
 
@@ -4177,21 +4272,24 @@ def question_edit(request, question_id):
             )
             old_item_type = meta.get("item_type", training.item_type)
             use_tts = request.POST.get("use_tts") == "1"
+            answer_use_tts = request.POST.get("answer_use_tts") == "1"
             asr_lang = (request.POST.get("asr_lang") or "en-US").strip()
             allow_partial_match = request.POST.get("allow_partial_match") == "1"
 
+            training.answer_use_tts = answer_use_tts
             training.choices = [{
                 "_meta": {
                     "skill": skill,
                     "item_type": old_item_type,
                     "use_tts": use_tts,
+                    "answer_use_tts": answer_use_tts,
                     "asr": {
                         "lang": asr_lang,
                         "allow_partial_match": allow_partial_match,
                     }
                 }
             }]
-            training.save(update_fields=["choices"])
+            training.save(update_fields=["choices", "answer_use_tts"])
 
             return redirect(next_url)
 

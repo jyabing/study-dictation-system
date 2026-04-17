@@ -78,6 +78,21 @@
                                     <button type="button" class="secondary-btn" id="next-btn" style="display:none;">下一题</button>
                                     <button type="button" class="ghost-btn" id="reload-btn">重新加载当前题</button>
                                 </div>
+
+                                <div class="memory-actions-card" id="memory-actions-card">
+                                    <div class="memory-actions-title">记忆调节</div>
+
+                                    <div class="memory-actions-grid">
+                                        <button type="button" class="memory-action-btn memory-action-btn-up" id="manual-upgrade-btn">
+                                            手动升一级
+                                        </button>
+                                    </div>
+
+                                    <div class="memory-actions-note">
+                                        这里只是手动调整当前循环步。之后如果答错或错过复习窗口，仍会按系统规则自动回退/重置。
+                                    </div>
+                                </div>
+
                             </form>
 
                             <div class="feedback-box info" id="feedback-box"></div>
@@ -495,6 +510,70 @@
     flex-direction: column;
     gap: 10px;
 }
+
+.memory-actions-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.memory-actions-title {
+    font-size: 12px;
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: 0.02em;
+}
+
+.memory-actions-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+}
+
+.memory-action-btn {
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.memory-action-btn:hover {
+    transform: translateY(-1px);
+}
+
+.memory-action-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    transform: none;
+}
+
+.memory-action-btn-up {
+    color: #1f5f37;
+    background: rgba(122, 214, 163, 0.18);
+    border-color: rgba(122, 214, 163, 0.30);
+}
+
+.memory-action-btn-down {
+    color: #8a5a18;
+    background: rgba(255, 196, 102, 0.18);
+    border-color: rgba(255, 196, 102, 0.30);
+}
+
+.memory-actions-note {
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--text-faint);
+}
+
 
 .speech-workspace {
     display: flex;
@@ -936,10 +1015,16 @@
     }
 
     .speech-controls,
-    .answer-actions {
+    .answer-actions,
+    .memory-actions-grid {
         flex-direction: column;
         align-items: stretch;
     }
+
+.memory-actions-grid {
+    display: flex;
+}
+
 
     .speech-mode-bar {
         align-items: flex-start;
@@ -1020,6 +1105,8 @@
 const TRAIN_SCOPE = "{{ train_scope|default:'lesson' }}";
 const TRAIN_SCOPE_LABEL = "{{ train_scope_label|default:'本课训练' }}";
 const API_URL = "{% if train_scope == 'book' %}{% url 'book-train-api' book.id %}{% else %}{% url 'lesson-train-api' lesson.id %}{% endif %}";
+const MANUAL_UPGRADE_URL = "{% if train_scope == 'book' %}{% url 'book-train-manual-upgrade' book.id %}{% else %}{% url 'lesson-train-manual-upgrade' lesson.id %}{% endif %}";
+const MANUAL_DOWNGRADE_URL = "{% if train_scope == 'book' %}{% url 'book-train-manual-downgrade' book.id %}{% else %}{% url 'lesson-train-manual-downgrade' lesson.id %}{% endif %}";
 const questionCard = document.getElementById("question-card");
 const emptyCard = document.getElementById("empty-card");
 const emptyTitle = document.getElementById("empty-title");
@@ -1050,7 +1137,8 @@ const answerInput = document.getElementById("answer-input");
 const submitBtn = document.getElementById("submit-btn");
 const nextBtn = document.getElementById("next-btn");
 const reloadBtn = document.getElementById("reload-btn");
-const trainSummaryFold = document.querySelector(".train-summary-fold");
+const manualUpgradeBtn = document.getElementById("manual-upgrade-btn");
+const trainSummaryFold = document.querySelector(".train-summary-fold")
 const textAnswerWorkspace = document.getElementById("text-answer-workspace");
 const speechWorkspace = document.getElementById("speech-workspace");
 const speechModeBadge = document.getElementById("speech-mode-badge");
@@ -1782,6 +1870,10 @@ function setLoading(isLoading) {
     reloadBtn.disabled = isLoading;
     answerInput.disabled = isLoading;
 
+    if (manualUpgradeBtn) {
+        manualUpgradeBtn.disabled = isLoading;
+    }
+
     if (speechStartBtn) {
         speechStartBtn.disabled = isLoading;
     }
@@ -2176,6 +2268,65 @@ async function loadCurrentQuestion() {
     }
 }
 
+async function manualAdjustMemory(action) {
+    if (state.loading) {
+        return;
+    }
+
+    const trainingId = trainingIdInput.value.trim();
+
+    if (!trainingId) {
+        setFeedback("当前题目还没有准备好，请先重新加载。", "warning");
+        return;
+    }
+
+    const targetUrl = action === "upgrade" ? MANUAL_UPGRADE_URL : MANUAL_DOWNGRADE_URL;
+
+    setLoading(true);
+    clearFeedback();
+
+    const formData = new URLSearchParams();
+    formData.append("training_id", trainingId);
+
+    try {
+        const response = await fetch(targetUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                "X-CSRFToken": getCookie("csrftoken"),
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            body: formData.toString(),
+            credentials: "same-origin",
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.ok === false) {
+            setFeedback(data.error || data.result || "手动调节失败，请重试。", "wrong");
+            return;
+        }
+
+        applyCyclePanel({
+            ...data,
+            ...(data.cycle_after || {})
+        });
+
+        if (typeof data.memory_level_after !== "undefined" && statMemoryLevel) {
+            statMemoryLevel.textContent = String(data.memory_level_after);
+        }
+
+        setFeedback(
+            data.result || (action === "upgrade" ? "✅ 已手动升一级" : "⚠️ 已手动降一级"),
+            action === "upgrade" ? "correct" : "warning"
+        );
+    } catch (error) {
+        setFeedback("手动调节失败，请检查网络或刷新页面后重试。", "wrong");
+    } finally {
+        setLoading(false);
+    }
+}
+
 async function submitAnswer(event) {
     event.preventDefault();
 
@@ -2278,6 +2429,12 @@ async function submitAnswer(event) {
 }
 
 answerForm.addEventListener("submit", submitAnswer);
+
+if (manualUpgradeBtn) {
+    manualUpgradeBtn.addEventListener("click", () => {
+        manualAdjustMemory("upgrade");
+    });
+}
 
 if (speechUseTextBtn) {
     speechUseTextBtn.addEventListener("click", () => {

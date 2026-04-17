@@ -18,6 +18,10 @@ from .views.train_views import (
     question_edit,
     lesson_question_list,
     question_delete,
+    book_train_manual_upgrade,
+    book_train_manual_downgrade,
+    lesson_train_manual_upgrade,
+    lesson_train_manual_downgrade,
 )
 
 urlpatterns = [
@@ -51,14 +55,15 @@ urlpatterns = [
 
     path("", dashboard, name="dashboard"),
 
-    # Book + Lesson
     path("book/<int:book_id>/", book_detail, name="book-detail"),
-    path("book/create/", book_create, name="book-create"), 
+    path("book/create/", book_create, name="book-create"),
     path("book/<int:book_id>/edit/", book_edit, name="book-edit"),
-    path("books/active/", active_training_books, name="active-training-books"),
 
+    # Book + Lesson
     path("book/<int:book_id>/train/", book_train, name="book-train"),
     path("api/book/<int:book_id>/train/", book_train_api, name="book-train-api"),
+    path("api/book/<int:book_id>/train/manual-upgrade/", book_train_manual_upgrade, name="book-train-manual-upgrade"),
+    path("api/book/<int:book_id>/train/manual-downgrade/", book_train_manual_downgrade, name="book-train-manual-downgrade"),
 
     path("lesson/<int:lesson_id>/edit/", lesson_edit, name="lesson-edit"),
     path("question/<int:question_id>/edit/", question_edit, name="question-edit"),
@@ -75,6 +80,8 @@ urlpatterns = [
     path("lesson/<int:lesson_id>/", lesson_train, name="lesson-train"),
     path("lesson/<int:lesson_id>/questions/", lesson_question_list, name="lesson-question-list"),
     path("api/lesson/<int:lesson_id>/", lesson_train_api, name="lesson-train-api"),
+    path("api/lesson/<int:lesson_id>/manual-upgrade/", lesson_train_manual_upgrade, name="lesson-train-manual-upgrade"),
+    path("api/lesson/<int:lesson_id>/manual-downgrade/", lesson_train_manual_downgrade, name="lesson-train-manual-downgrade"),
     path("set-daily-limit/", set_daily_limit),
     path("stats/", stats_page, name="stats-page"),
     path("builder/", builder_page, name="builder-page"),

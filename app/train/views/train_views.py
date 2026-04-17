@@ -1591,6 +1591,73 @@ def update_memory_after_answer(memory, is_correct):
     memory.last_review_at = now
     memory.save()
 
+def _manual_adjust_memory(memory, action):
+    """
+    手动调整记忆等级（v1）
+    - upgrade: 当前 step + 1
+    - downgrade: 当前 step - 1
+    保留现有严格艾宾浩斯自动规则不变：
+    后续答错 / 超窗，仍然会按原逻辑自动 reset。
+    """
+    if not memory:
+        return
+
+    now = timezone.now()
+
+    current_step = int(
+        getattr(memory, "cycle_step", None)
+        if getattr(memory, "cycle_step", None) is not None
+        else (getattr(memory, "memory_level", 0) or 0)
+    )
+
+    if current_step < 0:
+        current_step = 0
+
+    max_step = 11
+
+    if action == "upgrade":
+        next_step = min(current_step + 1, max_step)
+
+        memory.cycle_step = next_step
+        memory.memory_level = next_step
+        memory.last_result = "manual_upgrade"
+        memory.last_reset_reason = ""
+
+        if next_step <= 0:
+            memory.next_review_at = now
+            memory.mastered_at = None
+        elif next_step >= max_step:
+            memory.mastered_at = now
+            memory.next_review_at = None
+        else:
+            memory.mastered_at = None
+            memory.next_review_at = get_next_review(next_step, base_time=now)
+
+        if current_step == 0 and next_step > 0 and not getattr(memory, "cycle_started_at", None):
+            memory.cycle_started_at = now
+
+    elif action == "downgrade":
+        next_step = max(current_step - 1, 0)
+
+        memory.cycle_step = next_step
+        memory.memory_level = next_step
+        memory.last_result = "manual_downgrade"
+        memory.last_reset_reason = ""
+
+        if next_step <= 0:
+            memory.next_review_at = now
+            memory.mastered_at = None
+            memory.cycle_started_at = None
+        else:
+            memory.mastered_at = None
+            memory.next_review_at = get_next_review(next_step, base_time=now)
+
+    else:
+        raise ValueError(f"unsupported manual action: {action}")
+
+    memory.last_review_at = now
+    memory.save()
+
 def _touch_memory_after_wrong_word_replay(memory, is_correct):
     """
     方案 A：
@@ -3363,6 +3430,93 @@ def book_train_api(request, book_id):
     )
 
     return _train_api_by_scope(request, "book", book)
+
+
+def _manual_memory_action_api(request, scope, obj, action):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "method not allowed"}, status=405)
+
+    training_id = request.POST.get("training_id")
+
+    if not training_id:
+        return JsonResponse({"ok": False, "error": "missing training_id"}, status=400)
+
+    training = get_object_or_404(
+        _get_scope_training_qs(scope, obj),
+        id=training_id
+    )
+
+    memory = get_item_memory(request.user, training)
+    if not memory:
+        memory, _ = QuestionMemory.objects.get_or_create(
+            user=request.user,
+            question=training.question
+        )
+
+    cycle_before = _build_cycle_status(memory)
+
+    try:
+        _manual_adjust_memory(memory, action)
+    except ValueError as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=400)
+
+    memory.refresh_from_db()
+    cycle_after = _build_cycle_status(memory)
+
+    return JsonResponse({
+        "ok": True,
+        "action": action,
+        "training_id": training.id,
+        "memory_level": memory.memory_level if memory else 0,
+        "memory_level_before": int(cycle_before.get("level", 0) or 0),
+        "memory_level_after": int(cycle_after.get("level", 0) or 0),
+        "memory_delta": int(cycle_after.get("level", 0) or 0) - int(cycle_before.get("level", 0) or 0),
+        "review_result": getattr(memory, "last_result", "") or "",
+        "reset_reason": getattr(memory, "last_reset_reason", "") or "",
+        "cycle_before": cycle_before,
+        "cycle_after": cycle_after,
+        "result": (
+            "✅ 已手动升一级"
+            if action == "upgrade" else
+            "⚠️ 已手动降一级"
+        ),
+    })
+
+
+def book_train_manual_upgrade(request, book_id):
+    book = get_object_or_404(
+        Book,
+        id=book_id,
+        owner=request.user
+    )
+    return _manual_memory_action_api(request, "book", book, "upgrade")
+
+
+def book_train_manual_downgrade(request, book_id):
+    book = get_object_or_404(
+        Book,
+        id=book_id,
+        owner=request.user
+    )
+    return _manual_memory_action_api(request, "book", book, "downgrade")
+
+
+def lesson_train_manual_upgrade(request, lesson_id):
+    lesson = get_object_or_404(
+        Lesson,
+        id=lesson_id,
+        owner=request.user
+    )
+    return _manual_memory_action_api(request, "lesson", lesson, "upgrade")
+
+
+def lesson_train_manual_downgrade(request, lesson_id):
+    lesson = get_object_or_404(
+        Lesson,
+        id=lesson_id,
+        owner=request.user
+    )
+    return _manual_memory_action_api(request, "lesson", lesson, "downgrade")
 
 
 def lesson_train_api(request, lesson_id):

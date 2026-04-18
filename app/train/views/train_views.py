@@ -406,6 +406,37 @@ def get_next_review(level: int, base_time=None):
 
     return now + interval
 
+def _is_slow_correct(is_correct, duration_seconds, item_type):
+    """
+    方案 A：
+    慢答对只记录 slow_correct，不改变当前推进/重置主逻辑。
+
+    判定规则：
+    - 只有答对时才判断
+    - 听说题先排除，不参与慢答对判定
+    - read_cloze 阈值 12 秒
+    - 其他非语音题阈值 8 秒
+    """
+    if not is_correct:
+        return False
+
+    if duration_seconds is None:
+        return False
+
+    try:
+        duration_value = float(duration_seconds)
+    except Exception:
+        return False
+
+    if duration_value <= 0:
+        return False
+
+    if item_type in {"listen_asr", "speak_read"}:
+        return False
+
+    threshold = 12.0 if item_type == "read_cloze" else 8.0
+    return duration_value > threshold
+
 
 def _get_wrong_boost(memory):
     return getattr(memory, "wrong_boost", 0) or 0
@@ -1492,8 +1523,100 @@ def judge_wrong_word_replay(item, raw_answer):
         "user_answers": [user_word],
     }
 
+# 这里放“严格训练循环规则说明（当前版 v1）”长注释
+# =========================
+# 严格训练循环规则说明（当前版 v1）
+# =========================
+#
+# 一、总体原则
+# 1. 本系统采用严格艾宾浩斯循环，不走“随便加减分”的宽松模式。
+# 2. 每条素材都有当前循环步（cycle_step / memory_level）。
+# 3. 用户允许手动升一级，但不提供手动降级按钮。
+# 4. 降级/回退由系统自动判断。
+# 5. 当前版本里，一旦触发自动回退，不是“降一级”，而是直接重置到第 0 步。
+#
+# 二、当前已实现规则
+#
+# 【1】回答正确 -> 自动推进
+# - 如果当前是第 0 步：
+#   说明这条素材正式开始进入一轮严格循环
+# - 如果当前大于第 0 步：
+#   推进到下一循环步
+# - 同时根据新步数重新计算 next_review_at
+# - last_result = "correct"
+#
+# 【2】达到最终锚点 -> 本轮完成
+# - 如果推进后超过最后一锚点
+# - 则固定到最终步（当前实现为第 11 步）
+# - mastered_at = now
+# - next_review_at = None
+# - last_result = "mastered"
+#
+# 【3】回答错误 -> 自动重置
+# - 当前版本不是降一级
+# - 而是整轮严格循环直接作废
+# - cycle_step = 0
+# - memory_level = 0
+# - correct_streak = 0
+# - next_review_at = now
+# - cycle_version + 1
+# - last_result = "wrong_reset"
+# - last_reset_reason = "wrong_answer"
+#
+# 【4】超出允许复习窗口 -> 自动重置
+# - 如果当前时间已经超过 next_review_at + grace
+# - 则本轮严格循环直接作废
+# - cycle_step = 0
+# - memory_level = 0
+# - correct_streak = 0
+# - next_review_at = now
+# - cycle_started_at = None
+# - mastered_at = None
+# - cycle_version + 1
+# - last_result = "overdue_reset"
+# - last_reset_reason 记录为 short_overdue 或 long_overdue
+#
+# 【5】手动升一级 -> 人工上调当前循环步
+# - 用户可主动点击“手动升一级”
+# - 本质是把当前 cycle_step / memory_level 往前推进 1 步
+# - 并按新步数重新计算 next_review_at
+# - last_result = "manual_upgrade"
+#
+# 三、关于“手动升一级”的定义
+# 1. 手动升一级 ≠ 永久掌握
+# 2. 手动升一级 ≠ 以后不再降级
+# 3. 手动升一级只是人工告诉系统：
+#    “这条素材当前熟练度比系统估计的高一档，请先往前推进一步。”
+# 4. 后续如果再次答错，或错过允许复习窗口，
+#    仍然会按系统规则自动重置
+#
+# 四、当前版本明确不做的事
+# 1. 不提供手动降级按钮
+# 2. 不允许用户随手把素材手动打回去
+# 3. 降级/回退统一交给系统自动判断
+#
+# 五、后续版本计划（当前未正式接入主逻辑）
+# 后面可以逐步增加更细的“动态降级判断”，例如：
+# - 看提示后才答对 -> 不升级 / 弱回退候选
+# - 看答案后才答对 -> 不升级 / 回退候选
+# - 重试次数过多 -> 不升级 / 回退候选
+# - 反应时间过长 -> 不升级 / 连续过慢时回退
+#
+# 但这些规则要真正落地，前提是前端与接口先补充行为记录字段，例如：
+# - used_hint
+# - peeked_answer
+# - retry_count
+# - duration_ms
+#
+# 当前版本 v1 先保持规则简单明确：
+# - 正确 -> 推进
+# - 错误 -> 重置
+# - 超窗 -> 重置
+# - 手动只允许升一级
+# =========================
 
-def update_memory_after_answer(memory, is_correct):
+
+def update_memory_after_answer(memory, is_correct, duration_seconds=None, item_type="", used_hint=False):
     if not memory:
         return
 
@@ -1548,7 +1671,14 @@ def update_memory_after_answer(memory, is_correct):
         memory.correct_streak = (memory.correct_streak or 0) + 1
         memory.total_correct = (memory.total_correct or 0) + 1
         _set_wrong_boost(memory, 0)
-        memory.last_result = "correct"
+
+        if used_hint:
+            memory.last_result = "hint_correct"
+        elif _is_slow_correct(is_correct, duration_seconds, item_type):
+            memory.last_result = "slow_correct"
+        else:
+            memory.last_result = "correct"
+
         memory.last_reset_reason = ""
 
         # 第一次答对：正式开始一轮循环
@@ -1590,6 +1720,32 @@ def update_memory_after_answer(memory, is_correct):
 
     memory.last_review_at = now
     memory.save()
+
+# 这里放“手动升一级规则说明”短注释
+# =========================
+# 手动升一级规则说明
+# =========================
+#
+# 当前版本只允许“手动升一级”，不提供手动降级按钮。
+#
+# 这个操作的含义不是“永久掌握”，也不是“以后不再降级”。
+# 它只是人工告诉系统：
+# “这条素材当前熟练度比系统估计的更高，请把当前循环步往前推进 1 步。”
+#
+# 执行效果：
+# - cycle_step / memory_level + 1
+# - 按新步数重新计算 next_review_at
+# - last_result = "manual_upgrade"
+#
+# 仍然保留的系统自动判断：
+# - 后续如果回答错误 -> wrong_reset -> 直接重置到第 0 步
+# - 后续如果错过允许复习窗口 -> overdue_reset -> 直接重置到第 0 步
+#
+# 也就是说：
+# 手动升一级 = 人工上调当前状态
+# 不是永久保护，不会绕过后续自动回退规则
+# =========================
+
 
 def _manual_adjust_memory(memory, action):
     """
@@ -3174,6 +3330,7 @@ def _train_api_by_scope(request, scope, obj):
         training_id = request.POST.get("training_id")
         raw_answer = request.POST.get("answer", "")
         duration = int(request.POST.get("duration", 0) or 0) / 1000
+        used_hint = request.POST.get("used_hint") == "1"
 
         # -------------------------
         # 错词复盘题
@@ -3246,20 +3403,24 @@ def _train_api_by_scope(request, scope, obj):
 
             StudyLog.objects.create(
                 user=request.user,
-                question=origin_training.question if origin_training else None,
-                training_item=origin_training if origin_training else None,
+                question=training.question if training else None,
+                training_item=training,
                 is_correct=is_correct,
                 user_answer=json.dumps(
-                    _normalize_raw_answer(raw_answer),
+                    {
+                        "answer": _normalize_raw_answer(raw_answer),
+                        "used_hint": used_hint,
+                    },
                     ensure_ascii=False
                 ),
-                mode="wrong_word_replay",
+                mode="normal",
                 duration_ms=max(int(duration or 0), 0),
             )
 
             return JsonResponse({
                 "ok": True,
                 "is_correct": is_correct,
+                "used_hint": used_hint,
                 "result": (
                     "✅ 错词复盘正确"
                     if is_correct else
@@ -3303,7 +3464,13 @@ def _train_api_by_scope(request, scope, obj):
 
         cycle_before = _build_cycle_status(memory)
 
-        update_memory_after_answer(memory, is_correct)
+        update_memory_after_answer(
+            memory,
+            is_correct,
+            duration_seconds=duration,
+            item_type=training.item_type,
+            used_hint=used_hint,
+        )
         memory.refresh_from_db()
 
         cycle_after = _build_cycle_status(memory)

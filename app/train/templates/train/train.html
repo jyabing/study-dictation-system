@@ -23,6 +23,10 @@
                         <div class="question-prompt-wrap">
                             <div class="question-type-badge" id="question-type-badge">加载中</div>
 
+                            <div class="question-instruction-toggle" id="question-instruction-toggle" style="display:none;">
+                                <button type="button" class="ghost-btn" id="show-hint-btn">显示提示</button>
+                            </div>
+
                             <div class="question-instruction" id="question-instruction" style="display:none;"></div>
 
                             <div class="question-prompt" id="question-prompt">正在加载当前题目...</div>
@@ -503,6 +507,21 @@
     border-color: rgba(110, 168, 255, 0.40);
     background: rgba(255, 255, 255, 0.07);
     box-shadow: 0 0 0 4px rgba(110, 168, 255, 0.12);
+}
+
+.question-instruction-toggle {
+    display: flex;
+    justify-content: flex-start;
+    margin: 6px 0 8px;
+}
+
+.question-instruction-toggle .ghost-btn {
+    min-height: 34px;
+    padding: 0 12px;
+}
+
+.question-instruction {
+    margin-bottom: 10px;
 }
 
 .text-answer-workspace {
@@ -1106,7 +1125,6 @@ const TRAIN_SCOPE = "{{ train_scope|default:'lesson' }}";
 const TRAIN_SCOPE_LABEL = "{{ train_scope_label|default:'本课训练' }}";
 const API_URL = "{% if train_scope == 'book' %}{% url 'book-train-api' book.id %}{% else %}{% url 'lesson-train-api' lesson.id %}{% endif %}";
 const MANUAL_UPGRADE_URL = "{% if train_scope == 'book' %}{% url 'book-train-manual-upgrade' book.id %}{% else %}{% url 'lesson-train-manual-upgrade' lesson.id %}{% endif %}";
-const MANUAL_DOWNGRADE_URL = "{% if train_scope == 'book' %}{% url 'book-train-manual-downgrade' book.id %}{% else %}{% url 'lesson-train-manual-downgrade' lesson.id %}{% endif %}";
 const questionCard = document.getElementById("question-card");
 const emptyCard = document.getElementById("empty-card");
 const emptyTitle = document.getElementById("empty-title");
@@ -1125,6 +1143,8 @@ const statMemoryLevel = document.getElementById("stat-memory-level");
 
 const questionTypeBadge = document.getElementById("question-type-badge");
 const questionInstruction = document.getElementById("question-instruction");
+const questionInstructionToggle = document.getElementById("question-instruction-toggle");
+const showHintBtn = document.getElementById("show-hint-btn");
 const questionPrompt = document.getElementById("question-prompt");
 const questionExtra = document.getElementById("question-extra");
 const audioWrap = document.getElementById("audio-wrap");
@@ -1170,6 +1190,7 @@ const state = {
     loading: false,
     autoNextTimer: null,
     inputMode: "text",
+    usedHint: false,
     recognizedText: "",
 
     recognition: null,
@@ -1215,6 +1236,8 @@ function formatLastResult(value) {
 
     const mapping = {
         "correct": "本题正确",
+        "hint_correct": "提示后答对",
+        "slow_correct": "答对但偏慢",
         "mastered": "本轮完成",
         "wrong_reset": "答错重置",
         "overdue_reset": "超窗重置",
@@ -1669,10 +1692,24 @@ function applyQuestionInputMode(payload) {
     stopSpeechRecognition(true);
     renderChoices(payload.choices || []);
 
+    state.usedHint = false;
+
     if (instructionText) {
-        questionInstruction.style.display = "block";
+        if (questionInstructionToggle) {
+            questionInstructionToggle.style.display = "flex";
+        }
+
+        questionInstruction.style.display = "none";
         questionInstruction.textContent = `提示短语：${instructionText}`;
+
+        if (showHintBtn) {
+            showHintBtn.textContent = "显示提示";
+        }
     } else {
+        if (questionInstructionToggle) {
+            questionInstructionToggle.style.display = "none";
+        }
+
         questionInstruction.style.display = "none";
         questionInstruction.textContent = "";
     }
@@ -2268,6 +2305,38 @@ async function loadCurrentQuestion() {
     }
 }
 
+// 这里放“手动升一级（前端交互说明）”短注释
+//
+// 手动升一级（前端交互说明）
+// =========================
+//
+// 当前训练页只提供“手动升一级”按钮，不提供手动降级按钮。
+//
+// 这个按钮的作用不是“宣布永久掌握”，而是：
+// 用户主动告诉系统：
+// “这条素材当前熟练度高于系统估计，请把当前循环步往前推进 1 步。”
+//
+// 前端职责：
+// 1. 读取当前 training_id
+// 2. 调用手动升级接口
+// 3. 成功后刷新循环信息展示：
+//    - 顶部循环步
+//    - 当前阶段
+//    - 当前状态
+//    - 右侧循环步 / 阶段 / 状态 / 下一次复习
+// 4. 显示“已手动升一级”反馈
+//
+// 重要说明：
+// - 手动升一级不等于永久掌握
+// - 手动升一级不等于以后不会被打回去
+// - 后续如果答错，系统仍会 wrong_reset
+// - 后续如果错过允许复习窗口，系统仍会 overdue_reset
+//
+// 也就是说：
+// 手动升一级只是人工上调当前状态，
+// 不会绕过后端已有的自动回退规则。
+//
+
 async function manualAdjustMemory(action) {
     if (state.loading) {
         return;
@@ -2280,7 +2349,12 @@ async function manualAdjustMemory(action) {
         return;
     }
 
-    const targetUrl = action === "upgrade" ? MANUAL_UPGRADE_URL : MANUAL_DOWNGRADE_URL;
+    if (action !== "upgrade") {
+        setFeedback("当前仅支持手动升一级。", "warning");
+        return;
+    }
+
+    const targetUrl = MANUAL_UPGRADE_URL;
 
     setLoading(true);
     clearFeedback();
@@ -2360,6 +2434,7 @@ async function submitAnswer(event) {
     formData.append("training_id", trainingId);
     formData.append("answer", answer);
     formData.append("duration", String(duration));
+    formData.append("used_hint", state.usedHint ? "1" : "0");
 
     try {
         const response = await fetch(API_URL, {
@@ -2389,10 +2464,14 @@ async function submitAnswer(event) {
             resultType = "correct";
         }
 
-        const feedbackMessage =
+        let feedbackMessage =
             data.feedback_message
             || data.result
             || (data.is_correct ? "回答正确" : "答案不正确");
+
+        if (data.is_correct && data.used_hint) {
+            feedbackMessage = `${feedbackMessage}（已使用提示）`;
+        }
 
         setFeedback(feedbackMessage, resultType);
 
@@ -2429,6 +2508,19 @@ async function submitAnswer(event) {
 }
 
 answerForm.addEventListener("submit", submitAnswer);
+
+if (showHintBtn) {
+    showHintBtn.addEventListener("click", () => {
+        if (!questionInstruction || !questionInstruction.textContent.trim()) {
+            return;
+        }
+
+        questionInstruction.style.display = "block";
+        state.usedHint = true;
+        showHintBtn.textContent = "已显示提示";
+        setFeedback("已显示提示短语。", "info");
+    });
+}
 
 if (manualUpgradeBtn) {
     manualUpgradeBtn.addEventListener("click", () => {

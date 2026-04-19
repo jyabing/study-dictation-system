@@ -1518,11 +1518,8 @@ def _build_first_wrong_assist_payload(answer_text, user_text):
     )
 
     if (
-        last_user[:1] == last_target[:1]
-        and (
-            ratio >= 0.55
-            or prefix_like
-        )
+        ratio >= 0.50
+        or prefix_like
     ):
         return {
             "assistable": True,
@@ -1530,7 +1527,6 @@ def _build_first_wrong_assist_payload(answer_text, user_text):
             "assist_text": last_target,
             "display_answer": full_answer,
         }
-
     return empty_result
 
 
@@ -3710,6 +3706,14 @@ def _train_api_by_scope(request, scope, obj):
                         judge.get("display_answer", ""),
                         raw_answer,
                     )
+
+                    print("DEBUG ASSIST PAYLOAD:", {
+                        "training_id": training_id,
+                        "raw_answer": raw_answer,
+                        "display_answer": judge.get("display_answer", ""),
+                        "assist_payload": assist_payload,
+                        "wrong_assist_count": wrong_assist_count,
+                    })
 
                     if assist_payload["assistable"]:
                         _session_increment_wrong_assist_count(request, training_id)

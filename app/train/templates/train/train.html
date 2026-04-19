@@ -24,7 +24,7 @@
                             <div class="question-type-badge" id="question-type-badge">加载中</div>
 
                             <div class="question-instruction-toggle" id="question-instruction-toggle" style="display:none;">
-                                <button type="button" class="ghost-btn" id="show-hint-btn">显示提示</button>
+                                <button type="button" class="ghost-btn" id="show-hint-btn">查看提示</button>
                             </div>
 
                             <div class="question-instruction" id="question-instruction" style="display:none;"></div>
@@ -1191,6 +1191,7 @@ const state = {
     autoNextTimer: null,
     inputMode: "text",
     usedHint: false,
+    retryCount: 0,
     recognizedText: "",
 
     recognition: null,
@@ -1235,9 +1236,9 @@ function formatLastResult(value) {
     }
 
     const mapping = {
-        "correct": "本题正确",
+        "correct": "独立答对",
         "hint_correct": "提示后答对",
-        "slow_correct": "答对但偏慢",
+        "slow_correct": "答对但反应偏慢",
         "mastered": "本轮完成",
         "wrong_reset": "答错重置",
         "overdue_reset": "超窗重置",
@@ -1693,6 +1694,7 @@ function applyQuestionInputMode(payload) {
     renderChoices(payload.choices || []);
 
     state.usedHint = false;
+    state.retryCount = 0;
 
     if (instructionText) {
         if (questionInstructionToggle) {
@@ -1703,7 +1705,7 @@ function applyQuestionInputMode(payload) {
         questionInstruction.textContent = `提示短语：${instructionText}`;
 
         if (showHintBtn) {
-            showHintBtn.textContent = "显示提示";
+            showHintBtn.textContent = "查看提示";
         }
     } else {
         if (questionInstructionToggle) {
@@ -2305,7 +2307,7 @@ async function loadCurrentQuestion() {
     }
 }
 
-// 这里放“手动升一级（前端交互说明）”短注释
+
 //
 // 手动升一级（前端交互说明）
 // =========================
@@ -2417,13 +2419,10 @@ async function submitAnswer(event) {
         return;
     }
 
-    if (!answer) {
-        if (isSpeechQuestionType(qType)) {
-            setFeedback("请先完成语音识别，或点“改用文本输入”后手动填写。", "warning");
-        } else {
-            setFeedback("请先输入回答，或者先点选一个选项。", "warning");
-        }
-        return;
+    const isEmptyAnswer = !answer;
+
+    if (isEmptyAnswer) {
+        setFeedback("你还没有填写回答，正在为你请求分段提示...", "warning");
     }
 
     setLoading(true);
@@ -2435,6 +2434,8 @@ async function submitAnswer(event) {
     formData.append("answer", answer);
     formData.append("duration", String(duration));
     formData.append("used_hint", state.usedHint ? "1" : "0");
+    formData.append("is_empty_submission", isEmptyAnswer ? "1" : "0");
+    formData.append("retry_count", String(state.retryCount));
 
     try {
         const response = await fetch(API_URL, {
@@ -2451,7 +2452,16 @@ async function submitAnswer(event) {
         const data = await response.json();
 
         if (!response.ok || data.ok === false) {
-            setFeedback(data.result || "提交失败，请重试。", "wrong");
+            const feedbackType = (data.is_empty_submission || data.is_assist_hint) ? "warning" : "wrong";
+
+            if (data.is_empty_submission && answerInput) {
+                answerInput.value = "";
+                answerInput.focus();
+            } else if (data.is_assist_hint && answerInput) {
+                answerInput.focus();
+            }
+
+            setFeedback(data.result || "提交失败，请重试。", feedbackType);
             return;
         }
 
@@ -2470,7 +2480,14 @@ async function submitAnswer(event) {
             || (data.is_correct ? "回答正确" : "答案不正确");
 
         if (data.is_correct && data.used_hint) {
-            feedbackMessage = `${feedbackMessage}（已使用提示）`;
+            feedbackMessage = "回答正确，但本次使用了提示";
+        } else if (data.is_correct && (data.last_result === "slow_correct" || data.review_result === "slow_correct")) {
+            feedbackMessage = "回答正确，但反应偏慢";
+        } else if (data.is_correct && Number(data.retry_count || 0) >= 1) {
+            const retryCount = Number(data.retry_count || 0);
+            feedbackMessage = retryCount === 1
+                ? "回答正确，本题重试 1 次后通过"
+                : `回答正确，本题重试 ${retryCount} 次后通过`;
         }
 
         setFeedback(feedbackMessage, resultType);
@@ -2492,6 +2509,7 @@ async function submitAnswer(event) {
         reloadBtn.disabled = true;
 
         if (!data.is_correct) {
+            state.retryCount += 1;
             revealChoiceTexts();
             markChoiceResult(false, answer, correctAnswersRaw);
             nextBtn.style.display = "inline-flex";
@@ -2517,8 +2535,8 @@ if (showHintBtn) {
 
         questionInstruction.style.display = "block";
         state.usedHint = true;
-        showHintBtn.textContent = "已显示提示";
-        setFeedback("已显示提示短语。", "info");
+        showHintBtn.textContent = "提示已展开";
+        setFeedback("提示短语已展开。", "info");
     });
 }
 

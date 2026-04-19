@@ -1251,6 +1251,323 @@ def get_item_memory(user, training):
     )
     return memory
 
+def _session_next_empty_submit_stage(request, training_id):
+    """
+    只跟踪“当前题”的空提交阶段：
+    - 同一 training_id 连续空提交：1 -> 2 -> 3 ...
+    - training_id 一变，自动从 1 重新开始
+    """
+    key = "empty_submit_hint_state"
+    state = request.session.get(key, {})
+
+    current_id = str(state.get("training_id") or "")
+    target_id = str(training_id or "")
+
+    if current_id == target_id:
+        count = int(state.get("count", 0) or 0) + 1
+    else:
+        count = 1
+
+    request.session[key] = {
+        "training_id": target_id,
+        "count": count,
+    }
+    request.session.modified = True
+    return count
+
+
+def _session_clear_empty_submit_stage(request):
+    key = "empty_submit_hint_state"
+    if key in request.session:
+        request.session.pop(key, None)
+        request.session.modified = True
+
+
+def _session_get_wrong_assist_count(request, training_id):
+    key = "wrong_assist_hint_state"
+    state = request.session.get(key, {})
+
+    current_id = str(state.get("training_id") or "")
+    target_id = str(training_id or "")
+
+    if current_id != target_id:
+        return 0
+
+    return int(state.get("count", 0) or 0)
+
+
+def _session_increment_wrong_assist_count(request, training_id):
+    key = "wrong_assist_hint_state"
+    state = request.session.get(key, {})
+
+    current_id = str(state.get("training_id") or "")
+    target_id = str(training_id or "")
+
+    if current_id == target_id:
+        count = int(state.get("count", 0) or 0) + 1
+    else:
+        count = 1
+
+    request.session[key] = {
+        "training_id": target_id,
+        "count": count,
+    }
+    request.session.modified = True
+    return count
+
+
+def _session_clear_wrong_assist_count(request):
+    key = "wrong_assist_hint_state"
+    if key in request.session:
+        request.session.pop(key, None)
+        request.session.modified = True
+
+
+def _build_first_wrong_assist_payload(answer_text, user_text):
+    """
+    v3 规则：
+    1) 无空格答案：按整串处理
+       - 严格前缀 -> 返回下一个字符
+       - 轻微偏差 -> 返回更长的正确前缀
+       - 偏差过大 -> 不辅助
+
+    2) 有空格答案：按整句 token 前缀处理
+       - 单 token 阶段：
+         * 严格前缀 -> 返回下一个字符
+         * 轻微偏差 -> 返回首词补全
+         * 首词完整 -> 返回下一个 token
+       - 多 token 阶段：
+         * 前面 token 必须全部正确
+         * 最后一个 token 若是当前目标 token 的严格前缀 -> 返回下一个字符
+         * 若所有已输入 token 都完整正确且还没写完整句 -> 返回下一个 token
+         * 其他情况 -> 不辅助
+    """
+    full_answer = str(answer_text or "").strip()
+    raw_user = str(user_text or "").strip()
+
+    empty_result = {
+        "assistable": False,
+        "assist_type": "",
+        "assist_text": "",
+        "display_answer": full_answer,
+    }
+
+    if not full_answer or not raw_user:
+        return empty_result
+
+    norm_user = normalize(raw_user)
+    norm_full = normalize(full_answer)
+
+    if not norm_user or not norm_full:
+        return empty_result
+
+    # =========================
+    # A. 无空格答案：按整串处理
+    # =========================
+    if " " not in full_answer:
+        if norm_full.startswith(norm_user) and len(raw_user) < len(full_answer):
+            next_char = full_answer[len(raw_user):len(raw_user) + 1]
+            if next_char:
+                return {
+                    "assistable": True,
+                    "assist_type": "next_char",
+                    "assist_text": next_char,
+                    "display_answer": full_answer,
+                }
+
+        if raw_user[:1] == full_answer[:1]:
+            best_prefix = ""
+            for i in range(1, len(full_answer) + 1):
+                prefix = full_answer[:i]
+                ratio = difflib.SequenceMatcher(
+                    None,
+                    normalize(raw_user),
+                    normalize(prefix),
+                ).ratio()
+
+                if ratio >= 0.70:
+                    best_prefix = prefix
+
+            if best_prefix and len(best_prefix) > len(raw_user):
+                return {
+                    "assistable": True,
+                    "assist_type": "string_completion",
+                    "assist_text": best_prefix,
+                    "display_answer": full_answer,
+                }
+
+        return empty_result
+
+    # =========================
+    # B. 有空格答案：按整句 token 前缀处理
+    # =========================
+    full_tokens = [t for t in full_answer.split() if t.strip()]
+    user_tokens = [t for t in raw_user.split() if t.strip()]
+
+    if not full_tokens or not user_tokens:
+        return empty_result
+
+    # --------
+    # B1. 只有 1 个 token 输入时
+    # --------
+    if len(user_tokens) == 1:
+        user_token = user_tokens[0]
+        first_token = full_tokens[0]
+
+        norm_user_token = normalize(user_token)
+        norm_first_token = normalize(first_token)
+
+        # 1) 首词严格前缀 -> 返回下一个字符
+        if (
+            norm_first_token.startswith(norm_user_token)
+            and len(user_token) < len(first_token)
+        ):
+            next_char = first_token[len(user_token):len(user_token) + 1]
+            if next_char:
+                return {
+                    "assistable": True,
+                    "assist_type": "next_char",
+                    "assist_text": next_char,
+                    "display_answer": full_answer,
+                }
+
+        # 2) 首词轻微偏差 -> 返回首词补全
+        ratio = difflib.SequenceMatcher(None, norm_user_token, norm_first_token).ratio()
+        if (
+            ratio >= 0.70
+            and user_token[:1] == first_token[:1]
+            and len(user_token) < len(first_token)
+        ):
+            return {
+                "assistable": True,
+                "assist_type": "word_completion",
+                "assist_text": first_token,
+                "display_answer": full_answer,
+            }
+
+        # 3) 首词已经完整正确 -> 返回下一个 token
+        if (
+            norm_user_token == norm_first_token
+            and len(full_tokens) > 1
+        ):
+            return {
+                "assistable": True,
+                "assist_type": "next_token",
+                "assist_text": full_tokens[1],
+                "display_answer": full_answer,
+            }
+
+        return empty_result
+
+    # --------
+    # B2. 多 token 输入时
+    # 规则：
+    # - 前面 token 必须全部精确匹配
+    # - 最后一个 token：
+    #   a) 若也精确匹配，且后面还有 token -> 返回下一个 token
+    #   b) 若是当前目标 token 的严格前缀 -> 返回下一个字符
+    #   c) 其他 -> 不辅助
+    # --------
+    typed_count = len(user_tokens)
+
+    if typed_count > len(full_tokens):
+        return empty_result
+
+    # 前面 token 必须全部正确
+    for i in range(typed_count - 1):
+        if normalize(user_tokens[i]) != normalize(full_tokens[i]):
+            return empty_result
+
+    last_user = user_tokens[-1]
+    last_target = full_tokens[typed_count - 1]
+
+    norm_last_user = normalize(last_user)
+    norm_last_target = normalize(last_target)
+
+    # a) 当前最后 token 已完整正确，且后面还有 token -> 返回下一个 token
+    if norm_last_user == norm_last_target:
+        if typed_count < len(full_tokens):
+            return {
+                "assistable": True,
+                "assist_type": "next_token",
+                "assist_text": full_tokens[typed_count],
+                "display_answer": full_answer,
+            }
+        return empty_result
+
+    # b) 当前最后 token 是严格前缀 -> 返回下一个字符
+    if (
+        norm_last_target.startswith(norm_last_user)
+        and len(last_user) < len(last_target)
+    ):
+        next_char = last_target[len(last_user):len(last_user) + 1]
+        if next_char:
+            return {
+                "assistable": True,
+                "assist_type": "next_char",
+                "assist_text": next_char,
+                "display_answer": full_answer,
+            }
+
+    # c) 当前最后 token 轻微偏差 -> 返回当前正确 token
+    ratio = difflib.SequenceMatcher(None, norm_last_user, norm_last_target).ratio()
+
+    prefix_like = (
+        norm_last_user.startswith(norm_last_target)
+        or norm_last_target.startswith(norm_last_user)
+    )
+
+    if (
+        last_user[:1] == last_target[:1]
+        and (
+            ratio >= 0.55
+            or prefix_like
+        )
+    ):
+        return {
+            "assistable": True,
+            "assist_type": "word_completion",
+            "assist_text": last_target,
+            "display_answer": full_answer,
+        }
+
+    return empty_result
+
+
+def _build_segmented_hint_payload(answer_text, stage):
+    """
+    v1 规则：
+    - 第 1 次：前 1 个字符
+    - 第 2 次：前 2 个字符
+    - 第 3 次及以后：完整答案
+    """
+    full_answer = str(answer_text or "").strip()
+
+    if not full_answer:
+        return {
+            "hint_stage": stage,
+            "segmented_hint": "",
+            "full_answer_revealed": False,
+            "display_answer": "",
+        }
+
+    if stage <= 1:
+        segmented_hint = full_answer[:1]
+        full_revealed = False
+    elif stage == 2:
+        segmented_hint = full_answer[:2]
+        full_revealed = False
+    else:
+        segmented_hint = full_answer
+        full_revealed = True
+
+    return {
+        "hint_stage": stage,
+        "segmented_hint": segmented_hint,
+        "full_answer_revealed": full_revealed,
+        "display_answer": full_answer,
+    }
+
 
 def judge_training_answer(training, raw_answer):
     """
@@ -1523,7 +1840,6 @@ def judge_wrong_word_replay(item, raw_answer):
         "user_answers": [user_word],
     }
 
-# 这里放“严格训练循环规则说明（当前版 v1）”长注释
 # =========================
 # 严格训练循环规则说明（当前版 v1）
 # =========================
@@ -1721,7 +2037,6 @@ def update_memory_after_answer(memory, is_correct, duration_seconds=None, item_t
     memory.last_review_at = now
     memory.save()
 
-# 这里放“手动升一级规则说明”短注释
 # =========================
 # 手动升一级规则说明
 # =========================
@@ -3331,6 +3646,8 @@ def _train_api_by_scope(request, scope, obj):
         raw_answer = request.POST.get("answer", "")
         duration = int(request.POST.get("duration", 0) or 0) / 1000
         used_hint = request.POST.get("used_hint") == "1"
+        retry_count = int(request.POST.get("retry_count", 0) or 0)
+        is_empty_submission = request.POST.get("is_empty_submission") == "1"
 
         # -------------------------
         # 错词复盘题
@@ -3354,8 +3671,73 @@ def _train_api_by_scope(request, scope, obj):
                     "result": "❌ 错词复盘数据不存在"
                 }, status=404)
 
+            if is_empty_submission:
+                judge = judge_wrong_word_replay(target, "")
+                hint_stage = _session_next_empty_submit_stage(request, training_id)
+                hint_payload = _build_segmented_hint_payload(
+                    judge.get("display_answer", ""),
+                    hint_stage,
+                )
+
+                if hint_payload["full_answer_revealed"]:
+                    result_text = f"提示 3：完整答案是「{hint_payload['display_answer']}」"
+                elif hint_stage == 1:
+                    result_text = f"提示 1：首字符是「{hint_payload['segmented_hint']}」"
+                else:
+                    result_text = f"提示 2：前两个字符是「{hint_payload['segmented_hint']}」"
+
+                return JsonResponse({
+                    "ok": False,
+                    "is_empty_submission": True,
+                    "result_level": "warning",
+                    "hint_stage": hint_payload["hint_stage"],
+                    "segmented_hint": hint_payload["segmented_hint"],
+                    "full_answer_revealed": hint_payload["full_answer_revealed"],
+                    "display_answer": hint_payload["display_answer"],
+                    "result": result_text,
+                }, status=400)
+
+            _session_clear_empty_submit_stage(request)
+
             judge = judge_wrong_word_replay(target, raw_answer)
             is_correct = judge["is_correct"]
+
+            if not is_correct:
+                wrong_assist_count = _session_get_wrong_assist_count(request, training_id)
+
+                if wrong_assist_count == 0:
+                    assist_payload = _build_first_wrong_assist_payload(
+                        judge.get("display_answer", ""),
+                        raw_answer,
+                    )
+
+                    if assist_payload["assistable"]:
+                        _session_increment_wrong_assist_count(request, training_id)
+
+                        if assist_payload["assist_type"] == "next_char":
+                            result_text = f"提示：下一个字符是「{assist_payload['assist_text']}」"
+                        elif assist_payload["assist_type"] == "next_token":
+                            result_text = f"提示：下一段可以接「{assist_payload['assist_text']}」"
+                        elif assist_payload["assist_type"] in {"word_completion", "string_completion"}:
+                            result_text = f"提示：可以先修正为「{assist_payload['assist_text']}」"
+                        else:
+                            result_text = f"提示：可以先修正为「{assist_payload['assist_text']}」"
+
+                        return JsonResponse({
+                            "ok": False,
+                            "is_assist_hint": True,
+                            "result_level": "warning",
+                            "assist_type": assist_payload["assist_type"],
+                            "assist_text": assist_payload["assist_text"],
+                            "display_answer": assist_payload["display_answer"],
+                            "training_id": training_id,
+                            "type": "read_cloze",
+                            "result": result_text,
+                        }, status=400)
+
+                _session_clear_wrong_assist_count(request)
+            else:
+                _session_clear_wrong_assist_count(request)
 
             # 错词复盘成功 → 从错词队列删除
             if is_correct:
@@ -3403,17 +3785,18 @@ def _train_api_by_scope(request, scope, obj):
 
             StudyLog.objects.create(
                 user=request.user,
-                question=training.question if training else None,
-                training_item=training,
+                question=origin_training.question if origin_training else None,
+                training_item=origin_training,
                 is_correct=is_correct,
                 user_answer=json.dumps(
                     {
                         "answer": _normalize_raw_answer(raw_answer),
                         "used_hint": used_hint,
+                        "retry_count": retry_count,
                     },
                     ensure_ascii=False
                 ),
-                mode="normal",
+                mode="wrong_word_replay",
                 duration_ms=max(int(duration or 0), 0),
             )
 
@@ -3421,6 +3804,7 @@ def _train_api_by_scope(request, scope, obj):
                 "ok": True,
                 "is_correct": is_correct,
                 "used_hint": used_hint,
+                "retry_count": retry_count,
                 "result": (
                     "✅ 错词复盘正确"
                     if is_correct else
@@ -3445,9 +3829,74 @@ def _train_api_by_scope(request, scope, obj):
             id=training_id
         )
 
+        if is_empty_submission:
+            judge = judge_training_answer(training, "")
+            hint_stage = _session_next_empty_submit_stage(request, training_id)
+            hint_payload = _build_segmented_hint_payload(
+                judge.get("display_answer", ""),
+                hint_stage,
+            )
+
+            if hint_payload["full_answer_revealed"]:
+                result_text = f"提示 3：完整答案是「{hint_payload['display_answer']}」"
+            elif hint_stage == 1:
+                result_text = f"提示 1：首字符是「{hint_payload['segmented_hint']}」"
+            else:
+                result_text = f"提示 2：前两个字符是「{hint_payload['segmented_hint']}」"
+
+            return JsonResponse({
+                "ok": False,
+                "is_empty_submission": True,
+                "result_level": "warning",
+                "hint_stage": hint_payload["hint_stage"],
+                "segmented_hint": hint_payload["segmented_hint"],
+                "full_answer_revealed": hint_payload["full_answer_revealed"],
+                "display_answer": hint_payload["display_answer"],
+                "training_id": training_id,
+                "type": training.item_type,
+                "result": result_text,
+            }, status=400)
+
+        _session_clear_empty_submit_stage(request)
+
         judge = judge_training_answer(training, raw_answer)
 
         is_correct = judge["is_correct"]
+
+        if not is_correct:
+            wrong_assist_count = _session_get_wrong_assist_count(request, training_id)
+
+            if wrong_assist_count == 0:
+                assist_payload = _build_first_wrong_assist_payload(
+                    judge.get("display_answer", ""),
+                    raw_answer,
+                )
+
+                if assist_payload["assistable"]:
+                    _session_increment_wrong_assist_count(request, training_id)
+
+                    if assist_payload["assist_type"] == "next_char":
+                        result_text = f"提示：下一个字符是「{assist_payload['assist_text']}」"
+                    elif assist_payload["assist_type"] in {"word_completion", "string_completion"}:
+                        result_text = f"提示：可以先修正为「{assist_payload['assist_text']}」"
+                    else:
+                        result_text = f"提示：可以先修正为「{assist_payload['assist_text']}」"
+
+                    return JsonResponse({
+                        "ok": False,
+                        "is_assist_hint": True,
+                        "result_level": "warning",
+                        "assist_type": assist_payload["assist_type"],
+                        "assist_text": assist_payload["assist_text"],
+                        "display_answer": assist_payload["display_answer"],
+                        "training_id": training_id,
+                        "type": training.item_type,
+                        "result": result_text,
+                    }, status=400)
+
+            _session_clear_wrong_assist_count(request)
+        else:
+            _session_clear_wrong_assist_count(request)
 
         memory = get_item_memory(request.user, training)
         if not memory:

@@ -1667,7 +1667,7 @@ function startSpeechRecognition() {
         state.isRecognizing = true;
 
         if (speechStatus) {
-            speechStatus.textContent = "录音中，请开始说话...";
+            speechStatus.textContent = "录音中：请直接说完整句子，说完后点“停止录音”。";
         }
 
         if (speechStartBtn) {
@@ -1892,7 +1892,7 @@ function applyQuestionInputMode(payload) {
         if (audioUrl) {
             showSpeechWorkspace(
                 "说：根据提示作答",
-                "请先播放题干音频，再根据提示短语口头作答。识别失败可改用文本输入。"
+                "请点开始录音后直接连续说完整答案，说完后点“停止录音”。识别失败可改用文本输入。"
             );
 
             answerInput.value = "";
@@ -1925,7 +1925,7 @@ function applyQuestionInputMode(payload) {
 
         showSpeechWorkspace(
             "说：根据提示作答",
-            "请根据提示短语和题干口头作答。识别失败可改用文本输入。"
+            "请先播放题干音频，再口头作答；说完后点“停止录音”。识别失败可改用文本输入。"
         );
 
         if (!hasSpeechRecognitionSupport()) {

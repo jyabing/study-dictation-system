@@ -707,16 +707,12 @@
    ========================= */
 .feedback-box {
     display: none;
-    align-self: flex-start;
-    width: min(100%, 380px);
-    padding: 5px 7px;
-    border-radius: 10px;
+    padding: 14px 16px;
+    border-radius: 16px;
     font-size: 13px;
     font-weight: 800;
-    line-height: 1.35;
+    line-height: 1.5;
     border: 1px solid var(--border);
-    white-space: pre-wrap;
-    word-break: break-word;
 }
 
 .feedback-box.show {
@@ -746,76 +742,6 @@
     border-color: rgba(255, 190, 85, 0.30);
     color: #8a5a00;
 }
-
-.feedback-title {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-bottom: 3px;
-    font-size: 13px;
-    font-weight: 900;
-    line-height: 1.2;
-}
-
-.feedback-inline-compact {
-    display: grid;
-    grid-template-columns: 74px minmax(0, 1fr);
-    align-items: baseline;
-    column-gap: 6px;
-    margin-top: 1px;
-    padding: 0;
-    border-radius: 0;
-    background: transparent;
-    border: none;
-}
-
-.feedback-inline-label {
-    display: block;
-    min-width: 0;
-    margin: 0;
-    font-size: 11px;
-    font-weight: 900;
-    line-height: 1.2;
-    white-space: nowrap;
-    opacity: 0.82;
-}
-
-.feedback-inline-value {
-    display: block;
-    min-width: 0;
-    font-size: 13px;
-    line-height: 1.5;
-    font-weight: 800;
-    word-break: break-word;
-}
-
-@media (max-width: 768px) {
-    .feedback-box {
-        width: 100%;
-        align-self: stretch;
-        padding: 5px 6px;
-        border-radius: 10px;
-    }
-
-    .feedback-inline-compact {
-        grid-template-columns: 48px minmax(0, 1fr);
-        column-gap: 4px;
-        margin-top: 1px;
-        padding: 0;
-        border-radius: 0;
-    }
-
-    .feedback-inline-label {
-        font-size: 10px;
-        line-height: 1.3;
-    }
-
-    .feedback-inline-value {
-        font-size: 12px;
-        line-height: 1.3;
-    }
-}
-
 
 /* =========================
    训练状态条（替代四张卡）
@@ -1968,78 +1894,7 @@ function applyQuestionInputMode(payload) {
 
 function setFeedback(message, type = "info") {
     feedbackBox.className = `feedback-box show ${type}`;
-
-    if (message && typeof message === "object" && !Array.isArray(message)) {
-        const title = escapeHtml(message.title || "");
-        const userAnswer = escapeHtml(message.userAnswer || "");
-        const correctAnswer = escapeHtml(message.correctAnswer || "");
-        const errorTip = escapeHtml(message.errorTip || "");
-
-        const blocks = [];
-
-        const isAssistHint = title.includes("辅助提示");
-        const isFinalWrong = title.includes("判定结果：错误");
-
-        if (isAssistHint || isFinalWrong) {
-            const correctLabel = isAssistHint ? "建议修正：" : "正确答案：";
-            const tipLabel = isAssistHint ? "提示：" : "错因提示：";
-
-            feedbackBox.innerHTML = `
-                <div class="feedback-title">${title}</div>
-                <div class="feedback-inline-compact">
-                    <span class="feedback-inline-label">你的回答：</span>
-                    <span class="feedback-inline-value">${userAnswer || "-"}</span>
-                </div>
-                <div class="feedback-inline-compact">
-                    <span class="feedback-inline-label">${correctLabel}</span>
-                    <span class="feedback-inline-value">${correctAnswer || "-"}</span>
-                </div>
-                <div class="feedback-inline-compact">
-                    <span class="feedback-inline-label">${tipLabel}</span>
-                    <span class="feedback-inline-value">${errorTip || "-"}</span>
-                </div>
-            `;
-            return;
-        }
-
-        if (title) {
-            blocks.push(`
-                <div class="feedback-title">${title}</div>
-            `);
-        }
-
-        if (userAnswer) {
-            blocks.push(`
-                <div class="feedback-section">
-                    <div class="feedback-label">你的回答：</div>
-                    <div class="feedback-value">${userAnswer}</div>
-                </div>
-            `);
-        }
-
-        if (correctAnswer) {
-            blocks.push(`
-                <div class="feedback-section">
-                    <div class="feedback-label">正确答案：</div>
-                    <div class="feedback-value">${correctAnswer}</div>
-                </div>
-            `);
-        }
-
-        if (errorTip) {
-            blocks.push(`
-                <div class="feedback-section">
-                    <div class="feedback-label">错因提示：</div>
-                    <div class="feedback-value">${errorTip}</div>
-                </div>
-            `);
-        }
-
-        feedbackBox.innerHTML = blocks.join("");
-        return;
-    }
-
-    feedbackBox.innerHTML = escapeHtml(message || "");
+    feedbackBox.innerHTML = escapeHtml(message);
 }
 
 function clearFeedback() {
@@ -2678,16 +2533,6 @@ async function submitAnswer(event) {
                 answerInput.focus();
             }
 
-            if (data.is_assist_hint) {
-                setFeedback({
-                    title: "⚠️ 辅助提示",
-                    userAnswer: String(answer || "").trim(),
-                    correctAnswer: String(data.display_answer || "").trim(),
-                    errorTip: data.error_tip || data.result || "",
-                }, feedbackType);
-                return;
-            }
-
             setFeedback(data.result || "提交失败，请重试。", feedbackType);
             return;
         }
@@ -2706,6 +2551,10 @@ async function submitAnswer(event) {
             || data.result
             || (data.is_correct ? "回答正确" : "答案不正确");
 
+        if (!data.is_correct && data.error_tip) {
+            feedbackMessage = `${feedbackMessage}\n错因提示：${data.error_tip}`;
+        }
+
         if (data.is_correct && data.used_hint) {
             feedbackMessage = "回答正确，但本次使用了提示";
         } else if (data.is_correct && (data.last_result === "slow_correct" || data.review_result === "slow_correct")) {
@@ -2717,27 +2566,11 @@ async function submitAnswer(event) {
                 : `回答正确，本题重试 ${retryCount} 次后通过`;
         }
 
+        setFeedback(feedbackMessage, resultType);
+
         const correctAnswersRaw = Array.isArray(data.correct_answers)
             ? data.correct_answers
             : [pickText(data, ["correct_answer", "answer"], "")].filter(Boolean);
-
-        const correctAnswerText = correctAnswersRaw
-            .map((item) => String(item || "").trim())
-            .filter(Boolean)
-            .join(" / ");
-
-        const userAnswerText = String(answer || "").trim();
-
-        if (!data.is_correct) {
-            setFeedback({
-                title: "❌ 判定结果：错误",
-                userAnswer: userAnswerText,
-                correctAnswer: correctAnswerText,
-                errorTip: data.error_tip || "",
-            }, resultType);
-        } else {
-            setFeedback(feedbackMessage, resultType);
-        }
 
         const correctAnswersText = correctAnswersRaw.join(" / ");
         sideCorrectAnswer.textContent = correctAnswersText || "未返回";

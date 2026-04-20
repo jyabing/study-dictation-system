@@ -206,6 +206,104 @@ def check_answer(user_answer, correct_answer):
 
     return _check_answer_english(user_answer, correct_answer)
 
+def _build_answer_diff(user_answer, correct_answer):
+    """
+    生成“错在哪里”的最小可读提示。
+
+    第一版目标：
+    1. 不改变判题逻辑，只做错误说明
+    2. 返回给前端可直接显示的 error_tip
+    3. 同时保留 diff_segments，后面前端可做高亮
+    """
+    raw_user = str(user_answer or "").strip()
+    raw_correct = str(correct_answer or "").strip()
+
+    if not raw_user and not raw_correct:
+        return {
+            "error_tip": "",
+            "diff_segments": [],
+        }
+
+    if raw_user == raw_correct:
+        return {
+            "error_tip": "",
+            "diff_segments": [
+                {"type": "equal", "text": raw_correct}
+            ] if raw_correct else [],
+        }
+
+    matcher = difflib.SequenceMatcher(None, raw_user, raw_correct)
+    segments = []
+    tips = []
+
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        user_part = raw_user[i1:i2]
+        correct_part = raw_correct[j1:j2]
+
+        if tag == "equal":
+            if correct_part:
+                segments.append({
+                    "type": "equal",
+                    "text": correct_part,
+                })
+            continue
+
+        tip_text = ""
+
+        if tag == "replace":
+            segments.append({
+                "type": "replace",
+                "user": user_part,
+                "correct": correct_part,
+            })
+
+            if user_part and correct_part:
+                tip_text = f"“{user_part}”应为“{correct_part}”"
+            elif correct_part:
+                tip_text = f"此处应补“{correct_part}”"
+
+        elif tag == "delete":
+            segments.append({
+                "type": "delete",
+                "user": user_part,
+                "correct": "",
+            })
+
+            if user_part:
+                tip_text = f"多写了“{user_part}”"
+
+        elif tag == "insert":
+            segments.append({
+                "type": "insert",
+                "user": "",
+                "correct": correct_part,
+            })
+
+            if correct_part:
+                tip_text = f"漏写了“{correct_part}”"
+
+        if tip_text:
+            tips.append({
+                "index": len(tips) + 1,
+                "text": tip_text,
+                "tag": tag,
+                "user": user_part,
+                "correct": correct_part,
+                "start_user": i1,
+                "end_user": i2,
+                "start_correct": j1,
+                "end_correct": j2,
+            })
+
+    readable_tips = []
+    for item in tips[:5]:
+        readable_tips.append(f"第{item['index']}处：{item['text']}")
+
+    return {
+        "error_tip": "；".join(readable_tips),
+        "diff_segments": segments,
+    }
+
 def judge_speech_answer_layers(user_answer, correct_answer):
     """
     听 / 说题最小分层判定：
@@ -1773,6 +1871,8 @@ def judge_training_answer(training, raw_answer):
             if accepted and accepted not in all_correct_answers:
                 all_correct_answers.append(accepted)
 
+        diff_payload = _build_answer_diff(user_answer_raw, resolved_answer_text)
+
         return {
             "is_correct": is_correct,
             "correct_answers": all_correct_answers,
@@ -1784,6 +1884,8 @@ def judge_training_answer(training, raw_answer):
             "reading_correct": layered["reading_correct"],
             "orthography_correct": layered["orthography_correct"],
             "feedback_message": layered["feedback_message"],
+            "error_tip": "" if is_correct else diff_payload["error_tip"],
+            "diff_segments": [] if is_correct else diff_payload["diff_segments"],
         }
 
     # =========================
@@ -1804,12 +1906,15 @@ def judge_training_answer(training, raw_answer):
 
     correct_text = normalize(resolved_answer_text)
     is_correct = check_answer(user_answer, correct_text)
+    diff_payload = _build_answer_diff(user_answer, correct_text)
 
     return {
         "is_correct": is_correct,
         "correct_answers": [resolved_answer_text] if resolved_answer_text else [],
         "display_answer": resolved_answer_text,
         "user_answers": raw_answer,
+        "error_tip": "" if is_correct else diff_payload["error_tip"],
+        "diff_segments": [] if is_correct else diff_payload["diff_segments"],
     }
 
 
@@ -1828,12 +1933,15 @@ def judge_wrong_word_replay(item, raw_answer):
     correct_word = item.get("correct_word", "")
 
     is_correct = check_answer(user_word, correct_word)
+    diff_payload = _build_answer_diff(user_word, correct_word)
 
     return {
         "is_correct": is_correct,
         "correct_answers": [correct_word],
         "display_answer": correct_word,
         "user_answers": [user_word],
+        "error_tip": "" if is_correct else diff_payload["error_tip"],
+        "diff_segments": [] if is_correct else diff_payload["diff_segments"],
     }
 
 # =========================
@@ -3727,6 +3835,11 @@ def _train_api_by_scope(request, scope, obj):
                         else:
                             result_text = f"提示：可以先修正为「{assist_payload['assist_text']}」"
 
+                        diff_payload = _build_answer_diff(
+                            raw_answer,
+                            assist_payload["display_answer"],
+                        )
+
                         return JsonResponse({
                             "ok": False,
                             "is_assist_hint": True,
@@ -3737,6 +3850,8 @@ def _train_api_by_scope(request, scope, obj):
                             "training_id": training_id,
                             "type": "read_cloze",
                             "result": result_text,
+                            "error_tip": diff_payload["error_tip"],
+                            "diff_segments": diff_payload["diff_segments"],
                         }, status=400)
 
                 _session_clear_wrong_assist_count(request)
@@ -3818,6 +3933,8 @@ def _train_api_by_scope(request, scope, obj):
                 "xp": xp,
                 "cycle_after": replay_cycle_after,
                 "correct_answers": judge["correct_answers"],
+                "error_tip": judge.get("error_tip", ""),
+                "diff_segments": judge.get("diff_segments", []),
                 "training_id": training_id,
                 "type": "read_cloze",
                 "prompt": target.get("prompt", ""),
@@ -4023,6 +4140,8 @@ def _train_api_by_scope(request, scope, obj):
             "review_result": review_result,
             "reset_reason": reset_reason,
             "correct_answers": judge["correct_answers"],
+            "error_tip": judge.get("error_tip", ""),
+            "diff_segments": judge.get("diff_segments", []),
             "plan_total": scope_plan_stats["total"] if scope_plan_items else all_count,
             "plan_done": scope_plan_stats["done"] if scope_plan_items else 0,
             "plan_progress": scope_plan_stats["progress"] if scope_plan_items else 0,

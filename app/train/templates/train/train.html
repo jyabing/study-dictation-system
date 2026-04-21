@@ -21,6 +21,10 @@
 
                     <div class="question-body">
                         <div class="question-prompt-wrap">
+                            <div class="question-source-badge" id="question-source-badge" style="display:none;">
+                                训练来源：-
+                            </div>
+
                             <div class="question-type-badge" id="question-type-badge">加载中</div>
 
                             <div class="question-instruction-toggle" id="question-instruction-toggle" style="display:none;">
@@ -100,11 +104,50 @@
                             </form>
 
                             <div class="feedback-box info" id="feedback-box"></div>
+
+                            <div class="result-impact-box" id="result-impact-box" style="display:none;">
+                                <div class="result-impact-title">本题结果影响</div>
+                                <div class="result-impact-line" id="result-impact-line">等待提交后更新</div>
+                            </div>
+
+                            <div class="memory-step-track" id="memory-step-track" style="display:none;">
+                                <div class="memory-step-track-header">
+                                    <div class="memory-step-track-title">记忆进度</div>
+                                    <div class="memory-step-track-meta" id="memory-step-track-meta">当前循环：-</div>
+                                </div>
+
+                                <div class="memory-step-dots" id="memory-step-dots">
+                                    <span class="memory-step-dot" data-step="1" title="第 1 步" aria-label="第 1 步"></span>
+                                    <span class="memory-step-dot" data-step="2" title="第 2 步" aria-label="第 2 步"></span>
+                                    <span class="memory-step-dot" data-step="3" title="第 3 步" aria-label="第 3 步"></span>
+                                    <span class="memory-step-dot" data-step="4" title="第 4 步" aria-label="第 4 步"></span>
+                                    <span class="memory-step-dot" data-step="5" title="第 5 步" aria-label="第 5 步"></span>
+                                    <span class="memory-step-dot" data-step="6" title="第 6 步" aria-label="第 6 步"></span>
+                                    <span class="memory-step-dot" data-step="7" title="第 7 步" aria-label="第 7 步"></span>
+                                    <span class="memory-step-dot" data-step="8" title="第 8 步" aria-label="第 8 步"></span>
+                                    <span class="memory-step-dot" data-step="9" title="第 9 步" aria-label="第 9 步"></span>
+                                    <span class="memory-step-dot" data-step="10" title="第 10 步" aria-label="第 10 步"></span>
+                                    <span class="memory-step-dot" data-step="11" title="第 11 步" aria-label="第 11 步"></span>
+                                </div>
+
+                                <div class="memory-step-progress-wrap" id="memory-step-progress-wrap" style="display:none;">
+                                    <div class="memory-step-progress-label" id="memory-step-progress-label">当前级进度：--</div>
+                                    <div class="memory-step-progress-bar" aria-label="当前级进度">
+                                        <div class="memory-step-progress-fill" id="memory-step-progress-fill" style="width:0%;"></div>
+                                    </div>
+                                </div>
+
+                                <div class="memory-step-next-review" id="memory-step-next-review">下一次复习：-</div>
+                            </div>
                         </div>
                     </div>
                 </section>
 
                 <section class="train-status-bar" aria-label="训练状态">
+                    <div class="train-status-mode" id="stat-train-mode-wrap">
+                        <span class="train-status-mode-label">模式</span>
+                        <span class="train-status-mode-value" id="stat-train-mode">-</span>
+                    </div>
                     <div class="train-status-item">
                         <span class="train-status-label">计划</span>
                         <span class="train-status-value" id="stat-plan-total">{{ plan_total|default:0 }}</span>
@@ -130,6 +173,11 @@
                         <span class="train-status-label">循环步</span>
                         <span class="train-status-value" id="stat-memory-level">-</span>
                     </div>
+
+                    <div class="train-status-progress-track" id="session-progress-track" aria-label="本轮训练进度" style="display:none;">
+                        <div class="train-status-progress-fill" id="session-progress-fill" style="width:0%;"></div>
+                    </div>
+                    <div class="train-status-progress-text" id="session-progress-text" style="display:none;">本轮进度：0%</div>
                 </section>
 
                 <section class="empty-card" id="empty-card">
@@ -304,7 +352,7 @@
 .question-prompt-wrap {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 0px;
 }
 
 .question-type-badge {
@@ -348,14 +396,15 @@
 }
 
 .question-extra {
-    padding: 12px 14px;
-    border-radius: 14px;
+    padding: 8px 6px;
+    border-radius: 10px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.06);
     color: #4c5f7f;
-    font-size: 13px;
+    font-size: 1px;
     white-space: pre-wrap;
     word-break: break-word;
+    margin-top: 0;
 }
 
 .audio-wrap {
@@ -593,7 +642,6 @@
     color: var(--text-faint);
 }
 
-
 .speech-workspace {
     display: flex;
     flex-direction: column;
@@ -630,6 +678,7 @@
     font-weight: 800;
     color: #4c5f7f;
 }
+
 .speech-hint {
     padding: 10px 12px;
     border-radius: 12px;
@@ -789,34 +838,6 @@
     word-break: break-word;
 }
 
-@media (max-width: 768px) {
-    .feedback-box {
-        width: 100%;
-        align-self: stretch;
-        padding: 5px 6px;
-        border-radius: 10px;
-    }
-
-    .feedback-inline-compact {
-        grid-template-columns: 48px minmax(0, 1fr);
-        column-gap: 4px;
-        margin-top: 1px;
-        padding: 0;
-        border-radius: 0;
-    }
-
-    .feedback-inline-label {
-        font-size: 10px;
-        line-height: 1.3;
-    }
-
-    .feedback-inline-value {
-        font-size: 12px;
-        line-height: 1.3;
-    }
-}
-
-
 /* =========================
    训练状态条（替代四张卡）
    ========================= */
@@ -850,11 +871,203 @@
     font-weight: 900;
 }
 
-.train-status-divider {
-    font-size: 10px;
+/* =========================
+   新增：训练来源 / 结果影响 / 记忆进度 / 总进度条
+   ========================= */
+.question-source-badge {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 0 10px;
+    margin-bottom: 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(122, 214, 163, 0.28);
+    background: rgba(122, 214, 163, 0.12);
+    color: #1f5f37;
+    font-size: 11px;
+    font-weight: 900;
     line-height: 1;
-    color: var(--text-faint);
-    opacity: 0.7;
+}
+
+.result-impact-box {
+    display: none;
+    width: min(100%, 420px);
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(110, 168, 255, 0.18);
+    background: rgba(110, 168, 255, 0.06);
+}
+
+.result-impact-box.show {
+    display: block;
+}
+
+.result-impact-title {
+    font-size: 11px;
+    font-weight: 900;
+    line-height: 1.2;
+    color: var(--text-soft);
+    margin-bottom: 4px;
+}
+
+.result-impact-line {
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.45;
+    color: var(--text);
+    word-break: break-word;
+}
+
+.memory-step-track {
+    display: none;
+    width: min(100%, 520px);
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.memory-step-track.show {
+    display: block;
+}
+
+.memory-step-track-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.memory-step-track-title {
+    font-size: 12px;
+    font-weight: 900;
+    color: var(--text);
+}
+
+.memory-step-track-meta {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-soft);
+}
+
+.memory-step-dots {
+    display: grid;
+    grid-template-columns: repeat(11, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+
+.memory-step-dot {
+    display: block;
+    min-width: 0;
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(120, 145, 180, 0.28);
+    background: rgba(120, 145, 180, 0.16);
+    box-sizing: border-box;
+}
+
+.memory-step-dot.is-done {
+    background: rgba(122, 214, 163, 0.78);
+    border-color: rgba(122, 214, 163, 0.55);
+}
+
+.memory-step-dot.is-current {
+    background: rgba(72, 133, 255, 0.95);
+    border-color: rgba(72, 133, 255, 0.75);
+    box-shadow: 0 0 0 2px rgba(72, 133, 255, 0.16);
+}
+
+.memory-step-next-review {
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.4;
+    color: var(--text-soft);
+}
+
+.memory-step-progress-wrap {
+    display: none;
+    margin-bottom: 8px;
+}
+
+.memory-step-progress-label {
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.3;
+    color: var(--text-soft);
+    margin-bottom: 4px;
+}
+
+.memory-step-progress-bar {
+    width: 100%;
+    height: 10px;
+    overflow: hidden;
+    border-radius: 999px;
+    border: 1px solid rgba(120, 145, 180, 0.22);
+    background: rgba(120, 145, 180, 0.14);
+}
+
+.memory-step-progress-fill {
+    width: 0%;
+    height: 100%;
+    border-radius: inherit;
+    background: rgba(72, 133, 255, 0.28);
+    transition: width 0.25s ease, background 0.25s ease;
+}
+
+.train-status-mode {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.train-status-mode-label {
+    font-size: 10px;
+    line-height: 1.2;
+    color: var(--text-soft);
+    font-weight: 700;
+}
+
+.train-status-mode-value {
+    font-size: 13px;
+    line-height: 1;
+    color: var(--text);
+    font-weight: 900;
+}
+
+.train-status-progress-track {
+    display: none;
+    width: 100%;
+    height: 8px;
+    margin-top: 4px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.train-status-progress-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(110, 168, 255, 0.88), rgba(122, 214, 163, 0.82));
+    transition: width 0.2s ease;
+}
+
+.train-status-progress-text {
+    display: none;
+    width: 100%;
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.3;
+    color: var(--text-soft);
 }
 
 /* 强制隐藏旧统计卡残留 */
@@ -978,92 +1191,107 @@
     color: #8a5a00 !important;
 }
 
-
-
 .question-card.completed-mode {
     border-color: rgba(51, 209, 122, 0.24);
     box-shadow: 0 12px 36px rgba(31, 107, 67, 0.10);
 }
 
 .question-card.completed-mode .question-body {
-    padding-top: 20px;
-    padding-bottom: 22px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+.question-card.completed-mode .feedback-box.show {
+    margin-top: 4px;
 }
 
 .completed-summary {
     display: grid;
-    gap: 14px;
-    margin-top: 18px;
+    gap: 2px;
+    margin-top: 0px;
 }
 
 .completed-summary-card {
     border: 1px solid rgba(51, 209, 122, 0.24);
     background: linear-gradient(180deg, rgba(51, 209, 122, 0.10), rgba(51, 209, 122, 0.04));
-    border-radius: 16px;
-    padding: 16px 18px;
+    border-radius: 8px;
+    padding: 4px 6px;
 }
 
 .completed-summary-label {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 800;
     color: var(--text-soft);
-    margin-bottom: 8px;
+    margin-bottom: 2px;
 }
 
 .completed-summary-value {
-    font-size: 24px;
-    line-height: 1.2;
+    font-size: 16px;
+    line-height: 1.15;
     font-weight: 900;
     color: var(--text);
     word-break: break-word;
 }
 
 .completed-summary-note {
-    font-size: 13px;
-    line-height: 1.7;
+    font-size: 12px;
+    line-height: 1.35;
     color: var(--text-soft);
+    margin: 0;
 }
 
-@media (max-width: 768px) {
-    .completed-summary {
-        gap: 12px;
-        margin-top: 16px;
-    }
-
-    .completed-summary-card {
-        padding: 14px 15px;
-        border-radius: 14px;
-    }
-
-    .completed-summary-value {
-        font-size: 20px;
-    }
-
-    .completed-summary-note {
-        font-size: 12px;
-        line-height: 1.65;
-    }
+.completed-nav {
+    margin-top: 2px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(148, 163, 184, 0.18);
 }
 
-@media (max-width: 768px) {
-    .completed-summary {
-        gap: 12px;
-        margin-top: 16px;
-    }
+.completed-nav-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: #1e3a5f;
+    margin-bottom: 4px;
+}
 
-    .completed-summary-card {
-        padding: 14px 15px;
-        border-radius: 14px;
-    }
+.completed-nav-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+}
 
-    .completed-summary-value {
-        font-size: 20px;
-    }
+.completed-nav-link {
+    display: block;
+    padding: 5px 7px;
+    border-radius: 8px;
+    text-decoration: none;
+    text-align: left;
+    background: #f8fbff;
+    border: 1px solid #d8e7f8;
+}
 
-    .completed-summary-note {
-        font-size: 12px;
-        line-height: 1.65;
-    }
+.completed-nav-link-title {
+    display: block;
+    margin: 0 0 2px 0;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.05;
+    color: #1e3a5f;
+}
+
+.completed-nav-link-desc {
+    display: block;
+    margin: 0;
+    text-align: left;
+    font-size: 10px;
+    line-height: 1.1;
+    color: #5b6b7f;
+}
+
+.completed-nav-link:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(30, 58, 95, 0.05);
+    border-color: #b8d4f2;
 }
 
 /* =========================
@@ -1114,10 +1342,9 @@
         align-items: stretch;
     }
 
-.memory-actions-grid {
-    display: flex;
-}
-
+    .memory-actions-grid {
+        display: flex;
+    }
 
     .speech-mode-bar {
         align-items: flex-start;
@@ -1135,10 +1362,104 @@
         line-height: 1.16 !important;
     }
 
+    .feedback-box {
+        width: 100%;
+        align-self: stretch;
+        padding: 5px 6px;
+        border-radius: 10px;
+    }
+
+    .feedback-inline-compact {
+        grid-template-columns: 48px minmax(0, 1fr);
+        column-gap: 4px;
+        margin-top: 1px;
+        padding: 0;
+        border-radius: 0;
+    }
+
+    .feedback-inline-label {
+        font-size: 10px;
+        line-height: 1.3;
+    }
+
+    .feedback-inline-value {
+        font-size: 12px;
+        line-height: 1.3;
+    }
+
+    .question-source-badge {
+        margin-bottom: 6px;
+        min-height: 24px;
+        padding: 0 8px;
+        font-size: 10px;
+    }
+
+    .result-impact-box {
+        width: 100%;
+        padding: 8px 9px;
+        border-radius: 10px;
+    }
+
+    .result-impact-title {
+        font-size: 10px;
+    }
+
+    .result-impact-line {
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .memory-step-track {
+        width: 100%;
+        padding: 9px 10px;
+        border-radius: 10px;
+    }
+
+    .memory-step-track-header {
+        gap: 6px;
+        margin-bottom: 6px;
+    }
+
+    .memory-step-track-title {
+        font-size: 11px;
+    }
+
+    .memory-step-track-meta {
+        font-size: 10px;
+    }
+
+    .memory-step-dots {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 5px;
+    }
+
+    .memory-step-dot {
+        height: 12px;
+        border-radius: 999px;
+    }
+
+    .memory-step-next-review {
+        font-size: 11px;
+        line-height: 1.35;
+    }
+
+    .memory-step-progress-label {
+        font-size: 10px;
+        margin-bottom: 3px;
+    }
+
+    .memory-step-progress-bar {
+        height: 9px;
+    }
+
     .train-status-bar {
         padding: 8px 9px;
         gap: 5px;
         border-radius: 10px;
+    }
+
+    .train-status-mode {
+        width: 100%;
     }
 
     .train-status-label {
@@ -1151,6 +1472,16 @@
 
     .train-status-divider {
         font-size: 9px;
+    }
+
+    .train-status-progress-track {
+        margin-top: 2px;
+        height: 7px;
+    }
+
+    .train-status-progress-text {
+        margin-top: 3px;
+        font-size: 10px;
     }
 
     .train-fold-summary {
@@ -1181,6 +1512,31 @@
     .train-fold .cycle-side-row .side-row-value {
         font-size: 12px;
     }
+
+    .completed-nav-grid {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    .completed-summary {
+        gap: 4px;
+        margin-top: 2px;
+    }
+
+    .completed-summary-card {
+        padding: 8px 10px;
+        border-radius: 10px;
+    }
+
+    .completed-summary-value {
+        font-size: 16px;
+    }
+
+    .completed-summary-note {
+        font-size: 12px;
+        line-height: 1.35;
+        margin: 0;
+    }
 }
 
 @media (max-width: 520px) {
@@ -1190,6 +1546,35 @@
     }
 }
 
+
+/* ===== completed-nav 最终强制覆盖：统一左对齐，不再拧 ===== */
+.completed-nav-link {
+    display: block !important;
+    min-height: 0 !important;
+    padding: 8px 10px !important;
+    text-decoration: none !important;
+    text-align: left !important;
+}
+
+.completed-nav-link-title {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 0 2px 0 !important;
+    padding: 0 !important;
+    text-align: left !important;
+    font-size: 12px !important;
+    line-height: 1.15 !important;
+}
+
+.completed-nav-link-desc {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: left !important;
+    font-size: 10px !important;
+    line-height: 1.15 !important;
+}
 </style>
 {% endblock %}
 
@@ -1199,6 +1584,9 @@ const TRAIN_SCOPE = "{{ train_scope|default:'lesson' }}";
 const TRAIN_SCOPE_LABEL = "{{ train_scope_label|default:'本课训练' }}";
 const API_URL = "{% if train_scope == 'book' %}{% url 'book-train-api' book.id %}{% else %}{% url 'lesson-train-api' lesson.id %}{% endif %}";
 const MANUAL_UPGRADE_URL = "{% if train_scope == 'book' %}{% url 'book-train-manual-upgrade' book.id %}{% else %}{% url 'lesson-train-manual-upgrade' lesson.id %}{% endif %}";
+const CONTINUE_TRAIN_URL = "{% if train_scope == 'book' %}{% url 'book-train' book.id %}{% else %}{% url 'lesson-train' lesson.id %}{% endif %}";
+const LESSON_QUESTION_LIST_URL = "{% if train_scope == 'book' %}{% url 'book-detail' book.id %}{% else %}{% url 'lesson-question-list' lesson.id %}{% endif %}";
+const BOOK_DETAIL_URL = "{% if train_scope == 'book' %}{% url 'book-detail' book.id %}{% else %}{% url 'book-detail' book.id %}{% endif %}";
 const questionCard = document.getElementById("question-card");
 const emptyCard = document.getElementById("empty-card");
 const emptyTitle = document.getElementById("empty-title");
@@ -1232,7 +1620,7 @@ const submitBtn = document.getElementById("submit-btn");
 const nextBtn = document.getElementById("next-btn");
 const reloadBtn = document.getElementById("reload-btn");
 const manualUpgradeBtn = document.getElementById("manual-upgrade-btn");
-const trainSummaryFold = document.querySelector(".train-summary-fold")
+const trainSummaryFold = document.querySelector(".train-summary-fold");
 const textAnswerWorkspace = document.getElementById("text-answer-workspace");
 const speechWorkspace = document.getElementById("speech-workspace");
 const speechModeBadge = document.getElementById("speech-mode-badge");
@@ -1246,6 +1634,25 @@ const speechResultPanel = document.getElementById("speech-result-panel");
 const speechResultBox = document.getElementById("speech-result-box");
 const speechError = document.getElementById("speech-error");
 const feedbackBox = document.getElementById("feedback-box");
+
+const questionSourceBadge = document.getElementById("question-source-badge");
+
+const resultImpactBox = document.getElementById("result-impact-box");
+const resultImpactLine = document.getElementById("result-impact-line");
+
+const memoryStepTrack = document.getElementById("memory-step-track");
+const memoryStepTrackMeta = document.getElementById("memory-step-track-meta");
+const memoryStepDots = document.getElementById("memory-step-dots");
+const memoryStepNextReview = document.getElementById("memory-step-next-review");
+
+const memoryStepProgressWrap = document.getElementById("memory-step-progress-wrap");
+const memoryStepProgressLabel = document.getElementById("memory-step-progress-label");
+const memoryStepProgressFill = document.getElementById("memory-step-progress-fill");
+
+const statTrainMode = document.getElementById("stat-train-mode");
+const sessionProgressTrack = document.getElementById("session-progress-track");
+const sessionProgressFill = document.getElementById("session-progress-fill");
+const sessionProgressText = document.getElementById("session-progress-text");
 
 const sideType = document.getElementById("side-type");
 const sideTrainingId = document.getElementById("side-training-id");
@@ -1366,6 +1773,352 @@ function applyCyclePanel(payload) {
     setTextSafe(sideStatusText, statusText);
     setTextSafe(sideLastResult, lastResultText);
     setTextSafe(sideNextReview, nextReviewText);
+}
+
+function setElementText(element, value, fallback = "-") {
+    if (!element) {
+        return;
+    }
+
+    const text = String(value ?? "").trim();
+    element.textContent = text || fallback;
+}
+
+function showElement(element, displayValue = "block") {
+    if (!element) {
+        return;
+    }
+    element.style.display = displayValue;
+}
+
+function hideElement(element) {
+    if (!element) {
+        return;
+    }
+    element.style.display = "none";
+}
+
+function normalizeStepNumber(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) {
+        return 0;
+    }
+    return Math.max(0, Math.min(11, Math.floor(num)));
+}
+
+function resolveMemoryPhaseLabel(payload, step) {
+    const rawLabel = pickText(
+        payload,
+        ["step_label", "stage_label", "current_stage_label", "stage"],
+        ""
+    ).trim();
+
+    if (rawLabel && !/^第\s*\d+\s*步$/.test(rawLabel)) {
+        return rawLabel;
+    }
+
+    if (step <= 1) {
+        return "新学起步";
+    }
+
+    if (step <= 3) {
+        return "短期巩固";
+    }
+
+    if (step <= 5) {
+        return "持续加固";
+    }
+
+    if (step <= 8) {
+        return "长期稳定";
+    }
+
+    if (step <= 10) {
+        return "接近完成";
+    }
+
+    return "本轮完成前";
+}
+
+function resolveQuestionSourceText(payload) {
+    if (payload?.is_wrong_word_replay) {
+        return "错词回炉";
+    }
+
+    if (payload?.is_today_plan) {
+        return "今日计划";
+    }
+
+    const raw = pickText(
+        payload,
+        ["question_source", "source_label", "queue_label", "source_type", "queue_type"],
+        ""
+    ).trim();
+
+    const mapping = {
+        "due_review": "到期复习",
+        "review": "到期复习",
+        "wrong_retry": "错题回炉",
+        "wrong_word_replay": "错词回炉",
+        "new": "新题学习",
+        "new_item": "新题学习",
+        "weak": "弱项强化",
+        "weakness": "弱项强化",
+        "manual": "手动复盘",
+    };
+
+    if (mapping[raw]) {
+        return mapping[raw];
+    }
+
+    if (raw) {
+        return raw;
+    }
+
+    return TRAIN_SCOPE_LABEL || "当前训练";
+}
+
+function updateQuestionSource(payload) {
+    if (!questionSourceBadge) {
+        return;
+    }
+
+    const sourceText = resolveQuestionSourceText(payload);
+
+    if (!sourceText) {
+        hideElement(questionSourceBadge);
+        return;
+    }
+
+    questionSourceBadge.textContent = `训练来源：${sourceText}`;
+    showElement(questionSourceBadge, "inline-flex");
+}
+
+function clearQuestionSource() {
+    if (!questionSourceBadge) {
+        return;
+    }
+
+    questionSourceBadge.textContent = "训练来源：-";
+    hideElement(questionSourceBadge);
+}
+
+function updateTrainMode(payload) {
+    if (!statTrainMode) {
+        return;
+    }
+
+    const modeText = pickText(
+        payload,
+        ["train_mode_label", "mode_label", "train_scope_label"],
+        TRAIN_SCOPE_LABEL || "-"
+    );
+
+    setElementText(statTrainMode, modeText, "-");
+}
+
+function updateSessionProgress(payload) {
+    const planTotal = Number(pickText(payload, ["plan_total"], "0")) || 0;
+    const planDone = Number(pickText(payload, ["plan_done"], "0")) || 0;
+
+    let planProgress = Number(pickText(payload, ["plan_progress"], ""));
+    if (!Number.isFinite(planProgress)) {
+        planProgress = planTotal > 0 ? Math.round((planDone / planTotal) * 100) : 0;
+    }
+
+    planProgress = Math.max(0, Math.min(100, planProgress));
+
+    if (sessionProgressFill) {
+        sessionProgressFill.style.width = `${planProgress}%`;
+    }
+
+    if (sessionProgressText) {
+        sessionProgressText.textContent = planTotal > 0
+            ? `本轮进度：${planDone} / ${planTotal}（${planProgress}%）`
+            : `本轮进度：${planProgress}%`;
+    }
+
+    if (planTotal > 0 || planDone > 0) {
+        showElement(sessionProgressTrack, "block");
+        showElement(sessionProgressText, "block");
+    } else {
+        hideElement(sessionProgressTrack);
+        hideElement(sessionProgressText);
+    }
+}
+
+function clearSessionProgress() {
+    if (sessionProgressFill) {
+        sessionProgressFill.style.width = "0%";
+    }
+
+    if (sessionProgressText) {
+        sessionProgressText.textContent = "本轮进度：0%";
+    }
+
+    hideElement(sessionProgressTrack);
+    hideElement(sessionProgressText);
+}
+
+function updateResultImpact(payload) {
+    if (!resultImpactBox || !resultImpactLine) {
+        return;
+    }
+
+    const before = normalizeStepNumber(
+        pickText(payload, ["memory_level_before"], pickText(payload, ["memory_level"], "0"))
+    );
+    const after = normalizeStepNumber(
+        pickText(payload, ["memory_level_after"], pickText(payload, ["memory_level"], "0"))
+    );
+    const nextReviewText = pickText(
+        payload,
+        ["next_review_text", "next_review_display", "next_review"],
+        "未安排"
+    );
+    const lastResult = pickText(payload, ["last_result", "review_result"], "");
+    const isCorrect = Boolean(payload?.is_correct);
+
+    let text = "";
+
+    if (!payload || Object.keys(payload).length === 0) {
+        text = "等待提交后更新";
+    } else if (!isCorrect) {
+        text = `这题这次还没推进成功，系统会稍后再安排你复习。下一次复习：${nextReviewText}`;
+    } else if (lastResult === "mastered") {
+        text = "这题已经完成当前这一轮记忆巩固。";
+    } else if (after > before) {
+        text = `这题已推进到下一记忆节点。下一次复习：${nextReviewText}`;
+    } else if (after === before) {
+        text = `这题已记录到当前进度，记忆位置保持不变。下一次复习：${nextReviewText}`;
+    } else {
+        text = `这题的记忆进度已重新调整。下一次复习：${nextReviewText}`;
+    }
+
+    resultImpactLine.textContent = text;
+    showElement(resultImpactBox, "block");
+}
+
+function clearResultImpact() {
+    if (!resultImpactLine) {
+        return;
+    }
+
+    resultImpactLine.textContent = "等待提交后更新";
+    hideElement(resultImpactBox);
+}
+
+function paintMemoryStepDots(stepValue) {
+    if (!memoryStepDots) {
+        return;
+    }
+
+    const step = normalizeStepNumber(stepValue);
+    const dots = memoryStepDots.querySelectorAll(".memory-step-dot");
+
+    dots.forEach((dot, index) => {
+        const dotStep = index + 1;
+        dot.classList.remove("is-done", "is-current");
+
+        if (step <= 0) {
+            return;
+        }
+
+        if (dotStep < step) {
+            dot.classList.add("is-done");
+        } else if (dotStep === step) {
+            dot.classList.add("is-current");
+        }
+    });
+}
+
+function updateMemoryStepProgress(payload) {
+    if (!memoryStepProgressWrap || !memoryStepProgressLabel || !memoryStepProgressFill) {
+        return;
+    }
+
+    let percent = Number(
+        pickText(
+            payload,
+            ["memory_step_percent", "step_percent", "progress_percent", "current_step_percent"],
+            ""
+        )
+    );
+
+    if (!Number.isFinite(percent)) {
+        memoryStepProgressLabel.textContent = "当前级进度：--";
+        memoryStepProgressFill.style.width = "0%";
+        memoryStepProgressFill.style.background = "rgba(72, 133, 255, 0.18)";
+        showElement(memoryStepProgressWrap, "block");
+        return;
+    }
+
+    percent = Math.max(0, Math.min(100, percent));
+
+    memoryStepProgressLabel.textContent = `当前级进度：${percent}%`;
+    memoryStepProgressFill.style.width = `${percent}%`;
+
+    if (percent < 34) {
+        memoryStepProgressFill.style.background = "rgba(72, 133, 255, 0.28)";
+    } else if (percent < 67) {
+        memoryStepProgressFill.style.background = "rgba(72, 133, 255, 0.58)";
+    } else {
+        memoryStepProgressFill.style.background = "rgba(72, 133, 255, 0.92)";
+    }
+
+    showElement(memoryStepProgressWrap, "block");
+}
+
+function updateMemoryStepTrack(payload) {
+    if (!memoryStepTrack || !memoryStepTrackMeta || !memoryStepNextReview) {
+        return;
+    }
+
+    const step = normalizeStepNumber(
+        pickText(payload, ["memory_level_after"], pickText(payload, ["memory_level"], "0"))
+    );
+
+    const phaseLabel = resolveMemoryPhaseLabel(payload, step);
+    const stepLabel = step > 0 ? `${phaseLabel}（第 ${step} 步）` : phaseLabel;
+
+    const nextReviewText = pickText(
+        payload,
+        ["next_review_text", "next_review_display", "next_review"],
+        "未安排"
+    );
+
+    memoryStepTrackMeta.textContent = `当前阶段：${stepLabel}`;
+    memoryStepNextReview.textContent = `下一次复习：${nextReviewText}`;
+
+    paintMemoryStepDots(step);
+    updateMemoryStepProgress(payload);
+    showElement(memoryStepTrack, "block");
+}
+
+function clearMemoryStepTrack() {
+    if (memoryStepTrackMeta) {
+        memoryStepTrackMeta.textContent = "当前阶段：-";
+    }
+
+    if (memoryStepNextReview) {
+        memoryStepNextReview.textContent = "下一次复习：-";
+    }
+
+    if (memoryStepProgressLabel) {
+        memoryStepProgressLabel.textContent = "当前级进度：--";
+    }
+
+    if (memoryStepProgressFill) {
+        memoryStepProgressFill.style.width = "0%";
+        memoryStepProgressFill.style.background = "rgba(72, 133, 255, 0.18)";
+    }
+
+    if (memoryStepProgressWrap) {
+        hideElement(memoryStepProgressWrap);
+    }
+
+    paintMemoryStepDots(0);
+    hideElement(memoryStepTrack);
 }
 
 function getChoiceText(choice, index) {
@@ -1539,6 +2292,14 @@ function clearSpeechError() {
     }
 }
 
+function setSpeechDebugStatus(message) {
+    if (speechStatus) {
+        speechStatus.textContent = message;
+    }
+
+    console.log("[speech-debug]", message);
+}
+
 function updateSpeechResult(finalText = "", interimText = "") {
     if (!speechResultPanel || !speechResultBox) {
         return;
@@ -1666,9 +2427,7 @@ function startSpeechRecognition() {
         state.pendingRecognitionStart = false;
         state.isRecognizing = true;
 
-        if (speechStatus) {
-            speechStatus.textContent = "录音中：请直接说完整句子，说完后点“停止录音”。";
-        }
+        setSpeechDebugStatus("录音已开始：请直接说完整句子，说完后点“停止录音”。");
 
         if (speechStartBtn) {
             speechStartBtn.style.display = "none";
@@ -1715,10 +2474,12 @@ function startSpeechRecognition() {
             answerInput.value = merged;
         }
 
-        if (speechStatus) {
-            speechStatus.textContent = state.recognitionFinalText
-                ? "已识别到可用文本，停止后将自动提交。"
-                : "识别中...";
+        if (state.recognitionFinalText) {
+            setSpeechDebugStatus(`已识别到最终文本：${state.recognitionFinalText}`);
+        } else if (state.recognitionInterimText) {
+            setSpeechDebugStatus(`识别中：${state.recognitionInterimText}`);
+        } else {
+            setSpeechDebugStatus("识别中：暂未得到文本");
         }
     };
 
@@ -1755,10 +2516,7 @@ function startSpeechRecognition() {
             "aborted": "录音被中断，请重新录音。",
         };
 
-        if (speechStatus) {
-            speechStatus.textContent = "识别失败";
-        }
-
+        setSpeechDebugStatus(`识别失败：${code || "未知错误"}`);
         showSpeechError(mapping[code] || `语音识别失败：${code || "未知错误"}`);
     };
 
@@ -1791,11 +2549,11 @@ function startSpeechRecognition() {
         }
 
         if (bestText) {
-            if (speechStatus) {
-                speechStatus.textContent = shouldAutoSubmit
-                    ? "识别完成，正在提交..."
-                    : "识别完成";
-            }
+            setSpeechDebugStatus(
+                shouldAutoSubmit
+                    ? `识别结束，准备提交：${bestText}`
+                    : `识别结束：${bestText}`
+            );
 
             if (shouldAutoSubmit && state.inputMode === "speech" && !state.loading) {
                 submitRecognizedAnswer();
@@ -1804,11 +2562,11 @@ function startSpeechRecognition() {
             return;
         }
 
-        if (speechStatus) {
-            speechStatus.textContent = stoppedManually
-                ? "已停止录音"
-                : "未识别到可用文本";
-        }
+        setSpeechDebugStatus(
+            stoppedManually
+                ? "已停止录音，但没有识别到可用文本"
+                : "识别结束，但没有识别到可用文本"
+        );
 
         if (!stoppedManually) {
             showSpeechError("没有得到可用的识别结果，请重新录音或改用文本输入。");
@@ -1841,6 +2599,12 @@ function applyQuestionInputMode(payload) {
 
     state.usedHint = false;
     state.retryCount = 0;
+
+    updateQuestionSource(payload);
+    updateTrainMode(payload);
+    updateSessionProgress(payload);
+    updateMemoryStepTrack(payload);
+    clearResultImpact();
 
     if (instructionText) {
         if (questionInstructionToggle) {
@@ -2157,6 +2921,10 @@ function showEmptyMode(message, kind = "warning", title = "当前没有可训练
     questionCard.style.display = "none";
     emptyCard.classList.add("show");
 
+    clearQuestionSource();
+    clearResultImpact();
+    clearMemoryStepTrack();
+
     if (emptyTitle) {
         emptyTitle.textContent = title;
     }
@@ -2174,6 +2942,9 @@ function showCompletedQuestionMode(message, title, subtitle, nextReviewText) {
     showQuestionMode();
     clearFeedback();
 
+    clearQuestionSource();
+    clearResultImpact();
+
     if (questionCard) {
         questionCard.classList.add("completed-mode");
     }
@@ -2185,13 +2956,44 @@ function showCompletedQuestionMode(message, title, subtitle, nextReviewText) {
         const safeSubtitle = escapeHtml(subtitle || "");
         const safeNextReview = escapeHtml(nextReviewText || "未安排");
 
+        const navTitle1 = TRAIN_SCOPE === "book" ? "继续书册训练" : "本课继续训练";
+        const navDesc1 = TRAIN_SCOPE === "book" ? "继续当前书册范围训练" : "继续当前范围训练";
+
+        const navTitle2 = TRAIN_SCOPE === "book" ? "查看书册内容" : "查看本课题目";
+        const navDesc2 = TRAIN_SCOPE === "book" ? "返回书册总览与章节内容" : "查看当前章节题目列表";
+
+        const navTitle3 = "返回书册详情";
+        const navDesc3 = "回到书册总览页";
+
         questionExtra.style.display = "block";
         questionExtra.innerHTML = `
             <div class="completed-summary">
                 <div class="completed-summary-note">${safeSubtitle}</div>
+
                 <div class="completed-summary-card">
                     <div class="completed-summary-label">下次复习</div>
                     <div class="completed-summary-value">${safeNextReview}</div>
+                </div>
+
+                <div class="completed-nav">
+                    <div class="completed-nav-title">推荐继续练习</div>
+
+                    <div class="completed-nav-grid">
+                        <a class="completed-nav-link" href="${CONTINUE_TRAIN_URL}">
+                            <span class="completed-nav-link-title">${navTitle1}</span>
+                            <span class="completed-nav-link-desc">${navDesc1}</span>
+                        </a>
+
+                        <a class="completed-nav-link" href="${LESSON_QUESTION_LIST_URL}">
+                            <span class="completed-nav-link-title">${navTitle2}</span>
+                            <span class="completed-nav-link-desc">${navDesc2}</span>
+                        </a>
+
+                        <a class="completed-nav-link" href="${BOOK_DETAIL_URL}">
+                            <span class="completed-nav-link-title">${navTitle3}</span>
+                            <span class="completed-nav-link-desc">${navDesc3}</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         `;
@@ -2746,6 +3548,13 @@ async function submitAnswer(event) {
             ...data,
             ...(data.cycle_after || {})
         });
+
+        updateResultImpact(data);
+        updateMemoryStepTrack({
+            ...data,
+            ...(data.cycle_after || {})
+        });
+        updateSessionProgress(data);
 
         submitBtn.disabled = true;
         answerInput.disabled = true;

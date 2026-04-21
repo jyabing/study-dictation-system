@@ -1321,6 +1321,8 @@ def build_training_payload(training, memory=None, request=None):
         "stage_label": cycle["stage_label"],
         "stage_group": cycle["stage_group"],
         "next_review_text": cycle["next_review_text"],
+        "memory_step_percent": cycle["memory_step_percent"],
+        "current_step_percent": cycle["current_step_percent"],
         "is_due": cycle["is_due"],
         "is_overdue": cycle["is_overdue"],
         "is_mastered": cycle["is_mastered"],
@@ -1842,6 +1844,7 @@ def judge_training_answer(training, raw_answer):
 
         if (
             not is_correct
+            and item_type == "listen_asr"
             and allow_partial_match
             and is_cjk_speech
         ):
@@ -2322,6 +2325,48 @@ def _next_review_text(next_review_at):
         return f"昨天 {local_dt.strftime('%H:%M')}"
     return local_dt.strftime("%Y-%m-%d %H:%M")
 
+def _build_step_progress_percent(memory, now=None):
+    if not memory:
+        return 0
+
+    if now is None:
+        now = timezone.now()
+
+    level = int(
+        getattr(memory, "cycle_step", None)
+        if getattr(memory, "cycle_step", None) is not None
+        else (getattr(memory, "memory_level", 0) or 0)
+    )
+
+    next_review_at = getattr(memory, "next_review_at", None)
+    last_review_at = getattr(memory, "last_review_at", None)
+    mastered_at = getattr(memory, "mastered_at", None)
+
+    if mastered_at or (level >= 11 and next_review_at is None):
+        return 100
+
+    if level <= 0:
+        return 0
+
+    if not next_review_at:
+        return 0
+
+    if not last_review_at:
+        return 0
+
+    total_seconds = (next_review_at - last_review_at).total_seconds()
+    elapsed_seconds = (now - last_review_at).total_seconds()
+
+    if total_seconds <= 0:
+        return 100 if now >= next_review_at else 0
+
+    percent = round((elapsed_seconds / total_seconds) * 100)
+
+    if percent < 0:
+        return 0
+    if percent > 100:
+        return 100
+    return percent
 
 def _build_cycle_status(memory):
     if not memory:
@@ -2331,6 +2376,8 @@ def _build_cycle_status(memory):
             "step_label": _memory_stage_label(0),
             "stage_label": _memory_stage_label(0),
             "stage_group": _memory_stage_group(0),
+            "memory_step_percent": 0,
+            "current_step_percent": 0,
             "next_review_text": "待安排",
             "is_due": True,
             "is_overdue": False,
@@ -2368,27 +2415,19 @@ def _build_cycle_status(memory):
 
     if is_mastered:
         status_text = "本轮严格循环已完成（6个月）"
-    elif last_result == "replay_wrong":
-        status_text = "错词复盘未通过，当前题已提高强化优先级"
-    elif last_result == "replay_correct":
-        status_text = "错词复盘通过，当前题的强化压力已下降"
     elif last_result == "wrong_reset":
         status_text = "上一题答错，当前循环已重置，需从头开始"
     elif last_result == "overdue_reset":
         if last_reset_reason == "short_overdue":
-            status_text = "短期锚点超出允许时间窗，当前循环已重置"
-        elif last_reset_reason == "long_overdue":
-            status_text = "长期锚点超出允许时间窗，当前循环已重置"
+            status_text = "已超出短期复习允许窗口，本轮已重置"
         else:
-            status_text = "已超出允许时间窗，当前循环已重置"
-    elif next_review_at is None and level == 0:
-        status_text = "新内容，等待开始第一轮巩固"
-    elif is_overdue:
-        status_text = f"已超出允许窗口，原定复习时间：{_next_review_text(next_review_at)}"
+            status_text = "已超出长期复习允许窗口，本轮已重置"
     elif is_due:
-        status_text = f"当前锚点已到期：{_memory_stage_label(level)}"
+        status_text = f"已到复习时间：{_next_review_text(next_review_at)}"
     else:
         status_text = f"下一次复习：{_next_review_text(next_review_at)}"
+
+    step_percent = _build_step_progress_percent(memory, now=now)
 
     return {
         "level": level,
@@ -2396,6 +2435,10 @@ def _build_cycle_status(memory):
         "step_label": _memory_stage_label(level),
         "stage_label": _memory_stage_label(level),
         "stage_group": _memory_stage_group(level),
+
+        "memory_step_percent": step_percent,
+        "current_step_percent": step_percent,
+
         "next_review_text": _next_review_text(next_review_at),
         "is_due": is_due,
         "is_overdue": is_overdue,
@@ -3439,6 +3482,23 @@ def _render_train_page(request, scope, obj):
         "plan_total": scope_plan_stats["total"] if scope_plan_items else all_count,
         "plan_done": scope_plan_stats["done"] if scope_plan_items else 0,
         "plan_progress": scope_plan_stats["progress"] if scope_plan_items else 0,
+
+        "continue_train_url": (
+            reverse("lesson-train", args=[obj.id])
+            if scope == "lesson"
+            else reverse("book-train", args=[obj.id])
+        ),
+        "book_detail_url": (
+            reverse("book-detail", args=[obj.book.id])
+            if scope == "lesson"
+            else reverse("book-detail", args=[obj.id])
+        ),
+        "course_map_url": (
+            reverse("lesson-question-list", args=[obj.id])
+            if scope == "lesson"
+            else reverse("book-detail", args=[obj.id])
+        ),
+
         "head_actions": (
             [
                 {"label": "← 返回训练", "url": "javascript:history.back()"},

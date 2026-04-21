@@ -2608,14 +2608,15 @@ function applyQuestionInputMode(payload) {
 
     if (instructionText) {
         if (questionInstructionToggle) {
-            questionInstructionToggle.style.display = "flex";
+            questionInstructionToggle.style.display = "none";
         }
 
-        questionInstruction.style.display = "none";
+        questionInstruction.style.display = "block";
         questionInstruction.textContent = `提示短语：${instructionText}`;
+        state.usedHint = true;
 
         if (showHintBtn) {
-            showHintBtn.textContent = "查看提示";
+            showHintBtn.textContent = "提示已展开";
         }
     } else {
         if (questionInstructionToggle) {
@@ -2624,6 +2625,10 @@ function applyQuestionInputMode(payload) {
 
         questionInstruction.style.display = "none";
         questionInstruction.textContent = "";
+
+        if (showHintBtn) {
+            showHintBtn.textContent = "查看提示";
+        }
     }
 
     if (qType === "listen_asr") {
@@ -2638,7 +2643,7 @@ function applyQuestionInputMode(payload) {
         }
 
         if (audioUrl) {
-            questionPrompt.textContent = "请先播放题干音频，然后根据提示短语作答。";
+            questionPrompt.textContent = "";
 
             audioWrap.style.display = "flex";
             questionAudio.src = audioUrl;

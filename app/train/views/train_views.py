@@ -2172,8 +2172,8 @@ def update_memory_after_answer(memory, is_correct, duration_seconds=None, item_t
 def _manual_adjust_memory(memory, action):
     """
     手动调整记忆等级（v1）
-    - upgrade: 当前 step + 1
-    - downgrade: 当前 step - 1
+    - 只允许 upgrade: 当前 step + 1
+
     保留现有严格艾宾浩斯自动规则不变：
     后续答错 / 超窗，仍然会按原逻辑自动 reset。
     """
@@ -2213,22 +2213,6 @@ def _manual_adjust_memory(memory, action):
 
         if current_step == 0 and next_step > 0 and not getattr(memory, "cycle_started_at", None):
             memory.cycle_started_at = now
-
-    elif action == "downgrade":
-        next_step = max(current_step - 1, 0)
-
-        memory.cycle_step = next_step
-        memory.memory_level = next_step
-        memory.last_result = "manual_downgrade"
-        memory.last_reset_reason = ""
-
-        if next_step <= 0:
-            memory.next_review_at = now
-            memory.mastered_at = None
-            memory.cycle_started_at = None
-        else:
-            memory.mastered_at = None
-            memory.next_review_at = get_next_review(next_step, base_time=now)
 
     else:
         raise ValueError(f"unsupported manual action: {action}")
@@ -4290,16 +4274,6 @@ def book_train_manual_upgrade(request, book_id):
     )
     return _manual_memory_action_api(request, "book", book, "upgrade")
 
-
-def book_train_manual_downgrade(request, book_id):
-    book = get_object_or_404(
-        Book,
-        id=book_id,
-        owner=request.user
-    )
-    return _manual_memory_action_api(request, "book", book, "downgrade")
-
-
 def lesson_train_manual_upgrade(request, lesson_id):
     lesson = get_object_or_404(
         Lesson,
@@ -4307,16 +4281,6 @@ def lesson_train_manual_upgrade(request, lesson_id):
         owner=request.user
     )
     return _manual_memory_action_api(request, "lesson", lesson, "upgrade")
-
-
-def lesson_train_manual_downgrade(request, lesson_id):
-    lesson = get_object_or_404(
-        Lesson,
-        id=lesson_id,
-        owner=request.user
-    )
-    return _manual_memory_action_api(request, "lesson", lesson, "downgrade")
-
 
 def lesson_train_api(request, lesson_id):
     lesson = get_object_or_404(

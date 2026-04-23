@@ -3898,7 +3898,15 @@ def _render_train_page(request, scope, obj):
             else (
                 reverse("lesson-train-api", args=[obj.id])
                 if is_lesson_scope
-                else ""
+                else (
+                    reverse("global-due-train-api")
+                    if scope == "global_due"
+                    else (
+                        reverse("global-overdue-train-api")
+                        if scope == "global_overdue"
+                        else ""
+                    )
+                )
             )
         ),
         "manual_upgrade_url": (
@@ -3907,10 +3915,17 @@ def _render_train_page(request, scope, obj):
             else (
                 reverse("lesson-train-manual-upgrade", args=[obj.id])
                 if is_lesson_scope
-                else ""
+                else (
+                    reverse("global-due-train-manual-upgrade")
+                    if scope == "global_due"
+                    else (
+                        reverse("global-overdue-train-manual-upgrade")
+                        if scope == "global_overdue"
+                        else ""
+                    )
+                )
             )
         ),
-
         "continue_train_url": continue_train_url,
         "book_detail_url": book_detail_url,
         "course_map_url": course_map_url,
@@ -3958,6 +3973,16 @@ def lesson_train(request, lesson_id):
     return _render_train_page(request, "lesson", lesson)
 
 
+@login_required
+def global_due_train(request):
+    return _render_train_page(request, "global_due", request.user)
+
+
+@login_required
+def global_overdue_train(request):
+    return _render_train_page(request, "global_overdue", request.user)
+
+
 # =========================
 # API：无刷新训练（完整版）
 # =========================
@@ -3966,6 +3991,7 @@ def _train_api_by_scope(request, scope, obj):
 
     scope_label = _get_train_scope_label(scope)
     target_text = _get_train_scope_target_text(scope)
+    plan_only_scope = scope in {"global_due", "global_overdue"}
 
     # =========================
     # GET：出题（走SRS调度）
@@ -4023,6 +4049,8 @@ def _train_api_by_scope(request, scope, obj):
 
         if scope_plan_items:
             source_items = scope_plan_items
+        elif plan_only_scope:
+            source_items = []
         else:
             source_items = [
                 {"training": item}
@@ -4084,11 +4112,39 @@ def _train_api_by_scope(request, scope, obj):
                 "reason": "today_done",
                 "message": f"今天{scope_label}范围内的学习计划已经完成；其他到期或逾期任务可能还需要继续训练。",
                 "next_review_text": next_review_text,
+                "plan_total": scope_plan_stats["total"],
+                "plan_done": scope_plan_stats["done"],
+                "plan_progress": scope_plan_stats["progress"],
+                "train_scope": scope,
+                "train_scope_label": scope_label,
+            })
+
+        if not remaining and plan_only_scope:
+            if scope == "global_overdue":
+                return JsonResponse({
+                    "empty": True,
+                    "reason": "no_overdue_items",
+                    "message": "当前没有全局逾期任务，可以先处理今日到期复习。",
+                    "train_scope": scope,
+                    "train_scope_label": scope_label,
+                    "plan_total": scope_plan_stats["total"],
+                    "plan_done": scope_plan_stats["done"],
+                    "plan_progress": scope_plan_stats["progress"],
+                })
+
+            return JsonResponse({
+                "empty": True,
+                "reason": "no_due_items",
+                "message": "当前没有今日到期任务，今天暂时不需要做全局到期复习。",
+                "train_scope": scope,
+                "train_scope_label": scope_label,
+                "plan_total": scope_plan_stats["total"],
+                "plan_done": scope_plan_stats["done"],
+                "plan_progress": scope_plan_stats["progress"],
             })
 
         # =========================
-        # 4) 如果今天计划里没有当前范围，
-        #    就直接进入当前范围训练
+        # 4) 非 plan-only scope 才允许退回当前范围全量训练
         # =========================
         if not remaining:
             remaining = [
@@ -4097,7 +4153,7 @@ def _train_api_by_scope(request, scope, obj):
                 if item.id not in done_ids
             ]
 
-        if not remaining:
+        if not remaining and all_training_items:
             remaining = [
                 {"training": all_training_items[0]}
             ]
@@ -4702,6 +4758,23 @@ def lesson_train_api(request, lesson_id):
     )
 
     return _train_api_by_scope(request, "lesson", lesson)
+
+
+def global_due_train_api(request):
+    return _train_api_by_scope(request, "global_due", request.user)
+
+
+def global_due_train_manual_upgrade(request):
+    return _manual_memory_action_api(request, "global_due", request.user, "upgrade")
+
+
+def global_overdue_train_api(request):
+    return _train_api_by_scope(request, "global_overdue", request.user)
+
+
+def global_overdue_train_manual_upgrade(request):
+    return _manual_memory_action_api(request, "global_overdue", request.user, "upgrade")
+
 
 @login_required
 def lesson_question_list(request, lesson_id):

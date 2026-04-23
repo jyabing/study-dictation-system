@@ -171,6 +171,312 @@
             </div>
         </section>
 
+        <style>
+            .global-review-entry {
+                margin-top: 14px;
+                padding: 16px;
+                border-radius: 18px;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+                box-shadow: var(--shadow);
+            }
+
+            .global-review-entry__head {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 12px;
+                margin-bottom: 14px;
+                flex-wrap: wrap;
+            }
+
+            .global-review-entry__title {
+                margin: 0;
+                font-size: 18px;
+                font-weight: 900;
+                letter-spacing: -0.01em;
+                color: var(--text);
+            }
+
+            .global-review-entry__desc {
+                margin: 6px 0 0;
+                font-size: 13px;
+                line-height: 1.6;
+                color: var(--text-soft);
+            }
+
+            .global-review-entry__hint {
+                display: inline-flex;
+                align-items: center;
+                min-height: 28px;
+                padding: 0 10px;
+                border-radius: 999px;
+                font-size: 11px;
+                font-weight: 800;
+                color: var(--text-soft);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                background: rgba(255, 255, 255, 0.04);
+            }
+
+            .global-review-desktop {
+                display: block;
+            }
+
+            .global-review-mobile {
+                display: none;
+            }
+
+            .global-review-table {
+                width: 100%;
+                border-collapse: separate;
+                border-spacing: 0;
+                overflow: hidden;
+                border-radius: 16px;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                background: rgba(255, 255, 255, 0.03);
+            }
+
+            .global-review-table thead th {
+                padding: 12px 14px;
+                text-align: left;
+                font-size: 12px;
+                font-weight: 900;
+                color: var(--text-soft);
+                background: rgba(255, 255, 255, 0.04);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+
+            .global-review-table tbody td {
+                padding: 14px;
+                vertical-align: top;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            }
+
+            .global-review-table tbody tr:last-child td {
+                border-bottom: none;
+            }
+
+            .global-review-table__title {
+                margin: 0;
+                font-size: 15px;
+                font-weight: 900;
+                color: var(--text);
+            }
+
+            .global-review-table__desc {
+                margin: 6px 0 0;
+                font-size: 12px;
+                line-height: 1.6;
+                color: var(--text-soft);
+            }
+
+            .global-review-count {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 64px;
+                min-height: 36px;
+                padding: 0 12px;
+                border-radius: 12px;
+                font-size: 15px;
+                font-weight: 900;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                background: rgba(255, 255, 255, 0.05);
+                color: var(--text);
+            }
+
+            .global-review-count.warning {
+                color: #8a5a00;
+                background: rgba(255, 190, 85, 0.16);
+                border-color: rgba(255, 190, 85, 0.26);
+            }
+
+            .global-review-count.danger {
+                color: #8a2f2f;
+                background: rgba(255, 114, 114, 0.16);
+                border-color: rgba(255, 114, 114, 0.26);
+            }
+
+            .global-review-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .global-review-actions .primary-btn,
+            .global-review-actions .ghost-btn {
+                min-height: 40px;
+            }
+
+            .global-review-cards {
+                display: grid;
+                gap: 10px;
+            }
+
+            .global-review-card {
+                padding: 14px;
+                border-radius: 16px;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                background: rgba(255, 255, 255, 0.04);
+            }
+
+            .global-review-card__top {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .global-review-card__title {
+                margin: 0;
+                font-size: 15px;
+                font-weight: 900;
+                color: var(--text);
+            }
+
+            .global-review-card__desc {
+                margin: 8px 0 0;
+                font-size: 12px;
+                line-height: 1.6;
+                color: var(--text-soft);
+            }
+
+            .global-review-card__actions {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-top: 12px;
+            }
+
+            .global-review-card__actions .primary-btn,
+            .global-review-card__actions .ghost-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            @media (max-width: 768px) {
+                .global-review-desktop {
+                    display: none;
+                }
+
+                .global-review-mobile {
+                    display: block;
+                }
+
+                .global-review-entry {
+                    margin-top: 12px;
+                    padding: 14px;
+                    border-radius: 16px;
+                }
+
+                .global-review-entry__title {
+                    font-size: 16px;
+                }
+
+                .global-review-entry__desc {
+                    font-size: 12px;
+                }
+            }
+        </style>
+
+        <section class="global-review-entry" aria-label="全局复习入口">
+            <div class="global-review-entry__head">
+                <div>
+                    <h2 class="global-review-entry__title">全局复习入口</h2>
+                    <p class="global-review-entry__desc">
+                        这两个入口不限制当前书或当前课，直接按全局范围进入训练。
+                        “今日到期复习”优先处理今天该做的内容；“全局逾期补做”专门清理已经错过窗口的任务。
+                    </p>
+                </div>
+                <span class="global-review-entry__hint">统一入口</span>
+            </div>
+
+            <div class="global-review-desktop">
+                <table class="global-review-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 34%;">入口</th>
+                            <th style="width: 32%;">说明</th>
+                            <th style="width: 12%;">数量</th>
+                            <th style="width: 22%;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="global-review-table__title">今日到期复习</div>
+                            </td>
+                            <td>
+                                <div class="global-review-table__desc">
+                                    面向今天应处理的全局到期任务，不受当前书册或当前课节限制。
+                                </div>
+                            </td>
+                            <td>
+                                <span class="global-review-count warning">{{ dashboard_due_total }}</span>
+                            </td>
+                            <td>
+                                <div class="global-review-actions">
+                                    <a href="{% url 'global-due-train' %}" class="primary-btn">进入复习</a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="global-review-table__title">全局逾期补做</div>
+                            </td>
+                            <td>
+                                <div class="global-review-table__desc">
+                                    专门清理已经逾期的任务，优先把错过复习窗口的内容补回来。
+                                </div>
+                            </td>
+                            <td>
+                                <span class="global-review-count danger">{{ dashboard_overdue_total }}</span>
+                            </td>
+                            <td>
+                                <div class="global-review-actions">
+                                    <a href="{% url 'global-overdue-train' %}" class="ghost-btn">进入补做</a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="global-review-mobile">
+                <div class="global-review-cards">
+                    <article class="global-review-card">
+                        <div class="global-review-card__top">
+                            <div>
+                                <h3 class="global-review-card__title">今日到期复习</h3>
+                            </div>
+                            <span class="global-review-count warning">{{ dashboard_due_total }}</span>
+                        </div>
+                        <p class="global-review-card__desc">
+                            按全局范围进入今天该做的到期任务，不限制当前书或当前课。
+                        </p>
+                        <div class="global-review-card__actions">
+                            <a href="{% url 'global-due-train' %}" class="primary-btn">进入复习</a>
+                        </div>
+                    </article>
+
+                    <article class="global-review-card">
+                        <div class="global-review-card__top">
+                            <div>
+                                <h3 class="global-review-card__title">全局逾期补做</h3>
+                            </div>
+                            <span class="global-review-count danger">{{ dashboard_overdue_total }}</span>
+                        </div>
+                        <p class="global-review-card__desc">
+                            专门补做已经逾期的全局任务，先把超窗内容清掉。
+                        </p>
+                        <div class="global-review-card__actions">
+                            <a href="{% url 'global-overdue-train' %}" class="ghost-btn">进入补做</a>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
         <section class="section-card" id="all-books">
             <div class="section-header">
                 <div>

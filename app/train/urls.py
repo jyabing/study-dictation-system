@@ -20,6 +20,12 @@ from .views.train_views import (
     question_delete,
     book_train_manual_upgrade,
     lesson_train_manual_upgrade,
+    global_due_train,
+    global_due_train_api,
+    global_due_train_manual_upgrade,
+    global_overdue_train,
+    global_overdue_train_api,
+    global_overdue_train_manual_upgrade,
 )
 
 urlpatterns = [
@@ -61,6 +67,23 @@ urlpatterns = [
     path("book/<int:book_id>/train/", book_train, name="book-train"),
     path("api/book/<int:book_id>/train/", book_train_api, name="book-train-api"),
     path("api/book/<int:book_id>/train/manual-upgrade/", book_train_manual_upgrade, name="book-train-manual-upgrade"),
+
+    # Global Train
+    path("train/global/due/", global_due_train, name="global-due-train"),
+    path("api/train/global/due/", global_due_train_api, name="global-due-train-api"),
+    path(
+        "api/train/global/due/manual-upgrade/",
+        global_due_train_manual_upgrade,
+        name="global-due-train-manual-upgrade"
+    ),
+
+    path("train/global/overdue/", global_overdue_train, name="global-overdue-train"),
+    path("api/train/global/overdue/", global_overdue_train_api, name="global-overdue-train-api"),
+    path(
+        "api/train/global/overdue/manual-upgrade/",
+        global_overdue_train_manual_upgrade,
+        name="global-overdue-train-manual-upgrade"
+    ),
 
     path("lesson/<int:lesson_id>/edit/", lesson_edit, name="lesson-edit"),
     path("question/<int:question_id>/edit/", question_edit, name="question-edit"),

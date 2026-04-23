@@ -350,6 +350,93 @@ class QuestionMemory(models.Model):
 
     def __str__(self):
         return f"{self.user} - T{self.item_id or 'OLD'}"
+    
+
+# =========================
+# 🧩 WordMemory（词级 / blank级 记忆层）
+# =========================
+class WordMemory(models.Model):
+    """
+    词级 SRS：
+    - 当前第一版先服务于 read_cloze 的错词强化
+    - 一个用户在某道题的某个 blank 上，对应一条独立词级记忆
+    """
+
+    SOURCE_TYPE_CHOICES = [
+        ("cloze_blank", "Cloze Blank"),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="word_memories"
+    )
+
+    question = models.ForeignKey(
+        Question,
+        on_delete=models.CASCADE,
+        related_name="word_memories"
+    )
+
+    training_item = models.ForeignKey(
+        TrainingItem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="word_memories"
+    )
+
+    source_type = models.CharField(
+        max_length=30,
+        choices=SOURCE_TYPE_CHOICES,
+        default="cloze_blank"
+    )
+
+    source_index = models.PositiveSmallIntegerField(default=0)
+
+    token_text = models.CharField(max_length=255)
+    token_norm = models.CharField(max_length=255, db_index=True)
+
+    memory_level = models.IntegerField(default=0)
+    cycle_step = models.PositiveSmallIntegerField(default=0)
+    cycle_started_at = models.DateTimeField(null=True, blank=True)
+    cycle_version = models.PositiveIntegerField(default=1)
+
+    mastered_at = models.DateTimeField(null=True, blank=True)
+
+    last_result = models.CharField(
+        max_length=20,
+        blank=True,
+        default=""
+    )
+
+    last_reset_reason = models.CharField(
+        max_length=30,
+        blank=True,
+        default=""
+    )
+
+    next_review_at = models.DateTimeField(null=True, blank=True)
+
+    correct_streak = models.IntegerField(default=0)
+    total_correct = models.IntegerField(default=0)
+    total_wrong = models.IntegerField(default=0)
+
+    last_review_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = (
+            "user",
+            "question",
+            "source_type",
+            "source_index",
+            "token_norm",
+        )
+        ordering = ["next_review_at", "id"]
+
+    def __str__(self):
+        return f"{self.user} - {self.token_text} - Q{self.question_id}#{self.source_index}"
 
 
 # =========================

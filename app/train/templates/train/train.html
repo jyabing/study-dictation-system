@@ -395,13 +395,22 @@
     margin: 0;
 }
 
+.question-prompt.is-cloze,
+.question-card-priority .question-prompt.is-cloze {
+    font-size: 34px !important;
+    line-height: 1.35 !important;
+    letter-spacing: -0.01em;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 .question-extra {
     padding: 8px 6px;
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.06);
     color: #4c5f7f;
-    font-size: 1px;
+    font-size: 15px;
     white-space: pre-wrap;
     word-break: break-word;
     margin-top: 0;
@@ -1191,109 +1200,6 @@
     color: #8a5a00 !important;
 }
 
-.question-card.completed-mode {
-    border-color: rgba(51, 209, 122, 0.24);
-    box-shadow: 0 12px 36px rgba(31, 107, 67, 0.10);
-}
-
-.question-card.completed-mode .question-body {
-    padding-top: 6px;
-    padding-bottom: 6px;
-}
-
-.question-card.completed-mode .feedback-box.show {
-    margin-top: 4px;
-}
-
-.completed-summary {
-    display: grid;
-    gap: 2px;
-    margin-top: 0px;
-}
-
-.completed-summary-card {
-    border: 1px solid rgba(51, 209, 122, 0.24);
-    background: linear-gradient(180deg, rgba(51, 209, 122, 0.10), rgba(51, 209, 122, 0.04));
-    border-radius: 8px;
-    padding: 4px 6px;
-}
-
-.completed-summary-label {
-    font-size: 11px;
-    font-weight: 800;
-    color: var(--text-soft);
-    margin-bottom: 2px;
-}
-
-.completed-summary-value {
-    font-size: 16px;
-    line-height: 1.15;
-    font-weight: 900;
-    color: var(--text);
-    word-break: break-word;
-}
-
-.completed-summary-note {
-    font-size: 12px;
-    line-height: 1.35;
-    color: var(--text-soft);
-    margin: 0;
-}
-
-.completed-nav {
-    margin-top: 2px;
-    padding-top: 4px;
-    border-top: 1px solid rgba(148, 163, 184, 0.18);
-}
-
-.completed-nav-title {
-    font-size: 13px;
-    font-weight: 800;
-    color: #1e3a5f;
-    margin-bottom: 4px;
-}
-
-.completed-nav-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-}
-
-.completed-nav-link {
-    display: block;
-    padding: 5px 7px;
-    border-radius: 8px;
-    text-decoration: none;
-    text-align: left;
-    background: #f8fbff;
-    border: 1px solid #d8e7f8;
-}
-
-.completed-nav-link-title {
-    display: block;
-    margin: 0 0 2px 0;
-    text-align: left;
-    font-size: 12px;
-    font-weight: 800;
-    line-height: 1.05;
-    color: #1e3a5f;
-}
-
-.completed-nav-link-desc {
-    display: block;
-    margin: 0;
-    text-align: left;
-    font-size: 10px;
-    line-height: 1.1;
-    color: #5b6b7f;
-}
-
-.completed-nav-link:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(30, 58, 95, 0.05);
-    border-color: #b8d4f2;
-}
-
 /* =========================
    底部噪音
    ========================= */
@@ -1360,6 +1266,12 @@
     .question-card-priority .question-prompt {
         font-size: 34px !important;
         line-height: 1.16 !important;
+    }
+
+    .question-prompt.is-cloze,
+    .question-card-priority .question-prompt.is-cloze {
+        font-size: 34px !important;
+        line-height: 1.32 !important;
     }
 
     .feedback-box {
@@ -1514,7 +1426,7 @@
     }
 
     .completed-nav-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
         gap: 4px;
     }
 
@@ -1544,37 +1456,204 @@
     .question-card-priority .question-prompt {
         font-size: 32px !important;
     }
+
+    .question-prompt.is-cloze,
+    .question-card-priority .question-prompt.is-cloze {
+        font-size: 30px !important;
+        line-height: 1.3 !important;
+    }
 }
 
-
-/* ===== completed-nav 最终强制覆盖：统一左对齐，不再拧 ===== */
-.completed-nav-link {
-    display: block !important;
-    min-height: 0 !important;
-    padding: 8px 10px !important;
-    text-decoration: none !important;
-    text-align: left !important;
+/* ===== completed-mode 最终版：恢复正常阅读与间距 ===== */
+.question-card.completed-mode {
+    border-color: rgba(51, 209, 122, 0.24);
+    box-shadow: 0 12px 36px rgba(31, 107, 67, 0.10);
 }
 
-.completed-nav-link-title {
+.question-card.completed-mode .question-body {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+}
+
+.question-card.completed-mode .question-extra {
     display: block !important;
     width: 100% !important;
-    margin: 0 0 2px 0 !important;
     padding: 0 !important;
-    text-align: left !important;
-    font-size: 12px !important;
-    line-height: 1.15 !important;
+    margin-top: 12px !important;
+    border: none !important;
+    background: transparent !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    color: #4c5f7f !important;
+    white-space: normal !important;
 }
 
-.completed-nav-link-desc {
+.question-card.completed-mode .completed-summary {
+    display: grid !important;
+    gap: 12px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.question-card.completed-mode .completed-summary-note {
+    margin: 0 !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    color: var(--text-soft) !important;
+}
+
+.question-card.completed-mode .completed-summary-card {
+    width: min(100%, 420px) !important;
+    margin: 0 !important;
+    padding: 12px 14px !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(51, 209, 122, 0.24) !important;
+    background: linear-gradient(180deg, rgba(51, 209, 122, 0.10), rgba(51, 209, 122, 0.04)) !important;
+}
+
+.question-card.completed-mode .completed-summary-label {
+    margin: 0 0 6px 0 !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+    font-weight: 800 !important;
+    color: var(--text-soft) !important;
+}
+
+.question-card.completed-mode .completed-summary-value {
+    margin: 0 !important;
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+    font-weight: 900 !important;
+    color: var(--text) !important;
+}
+
+.question-card.completed-mode .completed-nav {
+    width: 100% !important;
+    margin-top: 4px !important;
+    padding-top: 12px !important;
+    border-top: 1px solid rgba(148, 163, 184, 0.18) !important;
+}
+
+.question-card.completed-mode .completed-nav-title {
+    margin: 0 0 10px 0 !important;
+    font-size: 15px !important;
+    line-height: 1.3 !important;
+    font-weight: 800 !important;
+    color: #1e3a5f !important;
+}
+
+.question-card.completed-mode .completed-nav-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+}
+
+.question-card.completed-mode .completed-nav-link {
+    display: block !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+    text-decoration: none !important;
+    text-align: left !important;
+    background: #f8fbff !important;
+    border: 1px solid #d8e7f8 !important;
+}
+
+.question-card.completed-mode .completed-nav-link-title {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 0 4px 0 !important;
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+    font-weight: 800 !important;
+    text-align: left !important;
+    color: #1e3a5f !important;
+}
+
+.question-card.completed-mode .completed-nav-link-desc {
     display: block !important;
     width: 100% !important;
     margin: 0 !important;
-    padding: 0 !important;
+    font-size: 11px !important;
+    line-height: 1.45 !important;
     text-align: left !important;
-    font-size: 10px !important;
-    line-height: 1.15 !important;
+    color: #5b6b7f !important;
 }
+
+.question-card.completed-mode .feedback-box {
+    margin-top: 10px !important;
+}
+
+.question-card.completed-mode .feedback-box.show {
+    margin-top: 10px !important;
+}
+
+@media (max-width: 768px) {
+    .question-card.completed-mode .question-body {
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+    }
+
+    .question-card.completed-mode .question-extra {
+        margin-top: 10px !important;
+        font-size: 13px !important;
+        line-height: 1.55 !important;
+    }
+
+    .question-card.completed-mode .completed-summary {
+        gap: 10px !important;
+    }
+
+    .question-card.completed-mode .completed-summary-note {
+        font-size: 13px !important;
+        line-height: 1.55 !important;
+    }
+
+    .question-card.completed-mode .completed-summary-card {
+        width: 100% !important;
+        padding: 10px 12px !important;
+        border-radius: 10px !important;
+    }
+
+    .question-card.completed-mode .completed-summary-label {
+        font-size: 11px !important;
+        margin-bottom: 4px !important;
+    }
+
+    .question-card.completed-mode .completed-summary-value {
+        font-size: 16px !important;
+    }
+
+    .question-card.completed-mode .completed-nav {
+        margin-top: 2px !important;
+        padding-top: 10px !important;
+    }
+
+    .question-card.completed-mode .completed-nav-title {
+        margin-bottom: 8px !important;
+        font-size: 14px !important;
+    }
+
+    .question-card.completed-mode .completed-nav-grid {
+        grid-template-columns: 1fr !important;
+        gap: 6px !important;
+    }
+
+    .question-card.completed-mode .completed-nav-link {
+        padding: 10px 11px !important;
+    }
+
+    .question-card.completed-mode .completed-nav-link-title {
+        font-size: 12px !important;
+    }
+
+    .question-card.completed-mode .completed-nav-link-desc {
+        font-size: 10px !important;
+        line-height: 1.4 !important;
+    }
+}
+
 </style>
 {% endblock %}
 
@@ -1582,11 +1661,13 @@
 <script>
 const TRAIN_SCOPE = "{{ train_scope|default:'lesson' }}";
 const TRAIN_SCOPE_LABEL = "{{ train_scope_label|default:'本课训练' }}";
-const API_URL = "{% if train_scope == 'book' %}{% url 'book-train-api' book.id %}{% else %}{% url 'lesson-train-api' lesson.id %}{% endif %}";
-const MANUAL_UPGRADE_URL = "{% if train_scope == 'book' %}{% url 'book-train-manual-upgrade' book.id %}{% else %}{% url 'lesson-train-manual-upgrade' lesson.id %}{% endif %}";
-const CONTINUE_TRAIN_URL = "{% if train_scope == 'book' %}{% url 'book-train' book.id %}{% else %}{% url 'lesson-train' lesson.id %}{% endif %}";
-const LESSON_QUESTION_LIST_URL = "{% if train_scope == 'book' %}{% url 'book-detail' book.id %}{% else %}{% url 'lesson-question-list' lesson.id %}{% endif %}";
-const BOOK_DETAIL_URL = "{% if train_scope == 'book' %}{% url 'book-detail' book.id %}{% else %}{% url 'book-detail' book.id %}{% endif %}";
+
+const API_URL = "{{ train_api_url|default:''|escapejs }}";
+const MANUAL_UPGRADE_URL = "{{ manual_upgrade_url|default:''|escapejs }}";
+const CONTINUE_TRAIN_URL = "{{ continue_train_url|default:''|escapejs }}";
+const LESSON_QUESTION_LIST_URL = "{{ course_map_url|default:''|escapejs }}";
+const BOOK_DETAIL_URL = "{{ book_detail_url|default:''|escapejs }}";
+
 const questionCard = document.getElementById("question-card");
 const emptyCard = document.getElementById("empty-card");
 const emptyTitle = document.getElementById("empty-title");
@@ -2709,15 +2790,26 @@ function applyQuestionInputMode(payload) {
 
     showTextWorkspace();
 
-    questionTypeBadge.textContent = `类型：${qType}`;
-    questionPrompt.textContent = questionText;
+    showTextWorkspace();
 
-    if (extra) {
-        questionExtra.style.display = "block";
-        questionExtra.textContent = extra;
-    } else {
+    questionTypeBadge.textContent = `类型：${qType}`;
+    questionPrompt.classList.remove("is-cloze");
+
+    if (qType === "read_cloze" && extra) {
+        questionPrompt.textContent = extra;
+        questionPrompt.classList.add("is-cloze");
         questionExtra.style.display = "none";
         questionExtra.textContent = "";
+    } else {
+        questionPrompt.textContent = questionText;
+
+        if (extra) {
+            questionExtra.style.display = "block";
+            questionExtra.textContent = extra;
+        } else {
+            questionExtra.style.display = "none";
+            questionExtra.textContent = "";
+        }
     }
 
     if (audioUrl) {
@@ -2969,6 +3061,7 @@ function showCompletedQuestionMode(message, title, subtitle, nextReviewText) {
 
         const navTitle3 = "返回书册详情";
         const navDesc3 = "回到书册总览页";
+        const completedNavTitle = TRAIN_SCOPE === "book" ? "本书内可继续操作" : "本课内可继续操作";
 
         questionExtra.style.display = "block";
         questionExtra.innerHTML = `
@@ -2981,7 +3074,7 @@ function showCompletedQuestionMode(message, title, subtitle, nextReviewText) {
                 </div>
 
                 <div class="completed-nav">
-                    <div class="completed-nav-title">推荐继续练习</div>
+                    <div class="completed-nav-title">${completedNavTitle}</div>
 
                     <div class="completed-nav-grid">
                         <a class="completed-nav-link" href="${CONTINUE_TRAIN_URL}">
@@ -3217,6 +3310,28 @@ function renderPayload(payload) {
 }
 
 async function loadCurrentQuestion() {
+    if (!API_URL) {
+        clearFeedback();
+        clearQuestionSource();
+        clearResultImpact();
+        clearMemoryStepTrack();
+        clearSessionProgress();
+
+        if (statMemoryLevel) statMemoryLevel.textContent = "-";
+        if (sideType) sideType.textContent = "-";
+        if (sideTrainingId) sideTrainingId.textContent = "-";
+        if (sideIsTodayPlan) sideIsTodayPlan.textContent = "-";
+        if (sideCycleStep) sideCycleStep.textContent = "-";
+        if (sideStepLabel) sideStepLabel.textContent = "-";
+        if (sideStatusText) sideStatusText.textContent = "-";
+        if (sideLastResult) sideLastResult.textContent = "-";
+        if (sideNextReview) sideNextReview.textContent = "-";
+        if (sideCorrectAnswer) sideCorrectAnswer.textContent = "提交后显示";
+
+        showEmptyMode("当前训练入口还没有接好 API，请先返回首页。", "warning");
+        return;
+    }
+
     setLoading(true);
     try {
         const response = await fetch(API_URL, {
@@ -3240,8 +3355,8 @@ async function loadCurrentQuestion() {
             let emptySubtitleText = "根据 API 返回原因显示。";
 
             if (data.reason === "today_done") {
-                emptyTitleText = "今日计划已完成";
-                emptySubtitleText = "你今天的训练任务已经全部完成。";
+                emptyTitleText = TRAIN_SCOPE === "book" ? "本书今日计划已完成" : "本课今日计划已完成";
+                emptySubtitleText = "当前只完成了这个训练范围内的今日计划，其他到期 / 逾期任务可能还没有训练。";
             } else if (data.reason === "all_mastered") {
                 emptyTitleText = `${TRAIN_SCOPE_LABEL}已完成本轮严格循环`;
                 emptySubtitleText = "当前范围内已经没有需要继续训练的内容。";
@@ -3256,6 +3371,7 @@ async function loadCurrentQuestion() {
                     emptySubtitleText,
                     emptyNextReviewText
                 );
+
             } else {
                 showEmptyMode(safeMessage, kind, emptyTitleText, emptySubtitleText);
             }
@@ -3282,8 +3398,9 @@ async function loadCurrentQuestion() {
             chipNextReview.textContent = nextReviewLabel;
 
             if (data.reason === "today_done") {
-                chipStatus.textContent = "当前状态：今日计划已完成";
-                chipSource.textContent = "训练来源：今日计划已完成";
+                const doneScopeLabel = TRAIN_SCOPE === "book" ? "本书" : "本课";
+                chipStatus.textContent = `当前状态：${doneScopeLabel}今日计划已完成`;
+                chipSource.textContent = `训练来源：${doneScopeLabel}今日计划已完成`;
             } else if (data.reason === "all_mastered") {
                 chipStatus.textContent = `当前状态：${TRAIN_SCOPE_LABEL}已完成本轮严格循环`;
                 chipSource.textContent = `训练来源：${TRAIN_SCOPE_LABEL}循环完成`;
@@ -3380,6 +3497,11 @@ async function manualAdjustMemory(action) {
         return;
     }
 
+    if (!MANUAL_UPGRADE_URL) {
+        setFeedback("当前训练入口还没有接好手动升级接口。", "warning");
+        return;
+    }
+
     const targetUrl = MANUAL_UPGRADE_URL;
 
     setLoading(true);
@@ -3417,7 +3539,7 @@ async function manualAdjustMemory(action) {
         }
 
         setFeedback(
-            data.result || (action === "upgrade" ? "✅ 已手动升一级" : "⚠️ 已手动降一级"),
+            data.result || "✅ 已手动升一级",
             action === "upgrade" ? "correct" : "warning"
         );
     } catch (error) {

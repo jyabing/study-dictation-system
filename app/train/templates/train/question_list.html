@@ -17,9 +17,103 @@
                 <div class="card-subtitle">显示提示短语、题干、回答和编辑入口。</div>
             </div>
 
+                <div class="filter-bar">
+                    <div class="filter-bar-top">
+                        <div class="filter-label">题型筛选</div>
+
+                        {% if selected_qtype and selected_skill_for_builder %}
+                            <a
+                                href="{% url 'builder-page' %}?lesson_id={{ lesson.id }}&skill={{ selected_skill_for_builder }}&item_type={{ selected_qtype }}"
+                                class="filter-add-btn"
+                            >
+                                新增 {{ selected_qtype }} 素材
+                            </a>
+                        {% else %}
+                            <a
+                                href="{% url 'builder-page' %}?lesson_id={{ lesson.id }}"
+                                class="filter-add-btn"
+                            >
+                                新增素材
+                            </a>
+                        {% endif %}
+                    </div>
+
+                    <div class="filter-chips">
+                        {% for opt in qtype_options %}
+                            <a
+                                href="?{% if opt.value %}qtype={{ opt.value }}{% endif %}"
+                                class="filter-chip {% if selected_qtype == opt.value %}is-active{% endif %}"
+                            >
+                                {% if selected_qtype == opt.value %}
+                                    ●
+                                {% endif %}
+                                {{ opt.label }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
             <div class="card-body">
                 {% if questions %}
-                    <div class="question-list">
+                    <div class="question-table-wrap">
+                        <table class="question-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-id">ID</th>
+                                    <th class="col-type">类型</th>
+                                    <th class="col-instruction">提示短语</th>
+                                    <th class="col-prompt">题干</th>
+                                    <th class="col-answer">回答</th>
+                                    <th class="col-actions">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for question in questions %}
+                                    {% firstof question.display_instruction "" as instruction_text %}
+                                    {% firstof question.display_source_text question.prompt_text question.question_text question.question "未命名题目" as question_prompt %}
+                                    {% firstof question.display_target_answer question.answer_text question.answer "暂无答案" as answer_text %}
+                                    {% firstof question.display_qtype "未分类" as qtype %}
+
+                                    <tr>
+                                        <td class="cell-id">{{ question.id }}</td>
+                                        <td class="cell-type">
+                                            <span class="chip warning">{{ qtype }}</span>
+                                        </td>
+                                        <td class="cell-text">
+                                            {% if instruction_text %}
+                                                <div class="table-text clamp-3" title="{{ instruction_text }}">{{ instruction_text }}</div>
+                                            {% else %}
+                                                <span class="table-empty">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="cell-text">
+                                            <div class="table-text clamp-4" title="{{ question_prompt }}">{{ question_prompt }}</div>
+                                        </td>
+                                        <td class="cell-text">
+                                            <div class="table-text clamp-4" title="{{ answer_text }}">{{ answer_text }}</div>
+                                        </td>
+                                        <td class="cell-actions">
+                                            <div class="table-actions">
+                                                <a href="{% url 'question-edit' question.id %}?next={{ request.get_full_path }}" class="primary-btn">编辑</a>
+
+                                                <form
+                                                    method="post"
+                                                    action="{% url 'question-delete' question.id %}?next={{ request.get_full_path }}"
+                                                    class="inline-form"
+                                                    onsubmit="return confirm('确定删除这条素材吗？删除后将无法恢复。');"
+                                                >
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="danger-btn">删除</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="question-list question-list-mobile">
                         {% for question in questions %}
                             {% firstof question.display_instruction "" as instruction_text %}
                             {% firstof question.display_source_text question.prompt_text question.question_text question.question "未命名题目" as question_prompt %}
@@ -51,11 +145,11 @@
                                 </div>
 
                                 <div class="actions">
-                                    <a href="{% url 'question-edit' question.id %}?next={{ request.path }}" class="primary-btn">编辑题干/题干/回答</a>
+                                    <a href="{% url 'question-edit' question.id %}?next={{ request.get_full_path }}" class="primary-btn">编辑题干/题干/回答</a>
 
                                     <form
                                         method="post"
-                                        action="{% url 'question-delete' question.id %}?next={{ request.path }}"
+                                        action="{% url 'question-delete' question.id %}?next={{ request.get_full_path }}"
                                         class="inline-form"
                                         onsubmit="return confirm('确定删除这条素材吗？删除后将无法恢复。');"
                                     >
@@ -66,10 +160,51 @@
                             </article>
                         {% endfor %}
                     </div>
+
+                    {% if page_obj and paginator and paginator.num_pages > 1 %}
+                        <nav class="pagination-bar" aria-label="素材分页">
+                            <div class="pagination-summary">
+                                第 {{ page_obj.number }} / {{ paginator.num_pages }} 页
+                                · 共 {{ paginator.count }} 条素材
+                            </div>
+
+                            <div class="pagination-actions">
+                                {% if page_obj.has_previous %}
+                                    <a href="?{% if selected_qtype %}qtype={{ selected_qtype }}&amp;{% endif %}page=1" class="page-btn">首页</a>
+                                    <a href="?{% if selected_qtype %}qtype={{ selected_qtype }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" class="page-btn">上一页</a>
+                                {% else %}
+                                    <span class="page-btn is-disabled">首页</span>
+                                    <span class="page-btn is-disabled">上一页</span>
+                                {% endif %}
+
+                                <span class="page-current">{{ page_obj.number }}</span>
+
+                                {% if page_obj.has_next %}
+                                    <a href="?{% if selected_qtype %}qtype={{ selected_qtype }}&amp;{% endif %}page={{ page_obj.next_page_number }}" class="page-btn">下一页</a>
+                                    <a href="?{% if selected_qtype %}qtype={{ selected_qtype }}&amp;{% endif %}page={{ paginator.num_pages }}" class="page-btn">末页</a>
+                                {% else %}
+                                    <span class="page-btn is-disabled">下一页</span>
+                                    <span class="page-btn is-disabled">末页</span>
+                                {% endif %}
+                            </div>
+                        </nav>
+                    {% endif %}
                 {% else %}
                     <div class="empty-card">
-                        <div class="empty-title">还没有素材</div>
-                        <div>先新增第一条素材，再回到训练页继续处理。</div>
+                        <div class="empty-body">
+                            <div class="empty-title">还没有素材</div>
+
+                            {% if selected_qtype %}
+                                <div class="empty-text">
+                                    当前筛选题型为 <strong>{{ selected_qtype }}</strong>，还没有对应素材。
+                                    你可以直接点击上方“新增 {{ selected_qtype }} 素材”继续添加。
+                                </div>
+                            {% else %}
+                                <div class="empty-text">
+                                    先新增第一条素材，再回到训练页继续处理。
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
                 {% endif %}
             </div>
@@ -124,9 +259,138 @@
         padding: 18px 20px 20px;
     }
 
+        .question-table-wrap {
+        display: block;
+        overflow-x: auto;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .question-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        min-width: 0;
+    }
+
+    .question-table thead th {
+        text-align: left;
+        font-size: 12px;
+        font-weight: 900;
+        color: var(--text-faint);
+        padding: 12px 10px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.03);
+        vertical-align: middle;
+    }
+
+    .question-table tbody td {
+        padding: 12px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        vertical-align: top;
+    }
+
+    .question-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .col-id {
+        width: 56px;
+    }
+
+    .col-type {
+        width: 92px;
+    }
+
+    .col-instruction {
+        width: 18%;
+    }
+
+    .col-prompt {
+        width: 34%;
+    }
+
+    .col-answer {
+        width: 24%;
+    }
+
+    .col-actions {
+        width: 136px;
+    }
+
+    .cell-id {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text-soft);
+        white-space: nowrap;
+    }
+
+    .cell-type .chip.warning {
+        min-height: 22px;
+        padding: 0 7px;
+        font-size: 10px;
+        font-weight: 800;
+        background: rgba(255, 190, 85, 0.14) !important;
+        border-color: rgba(255, 190, 85, 0.30) !important;
+        color: #8a5a00 !important;
+    }
+
+    .cell-text {
+        min-width: 0;
+    }
+
+    .table-text {
+        font-size: 12px;
+        line-height: 1.6;
+        font-weight: 700;
+        color: var(--text);
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .table-empty {
+        font-size: 13px;
+        color: var(--text-faint);
+    }
+
+    .clamp-3,
+    .clamp-4 {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .clamp-3 {
+        -webkit-line-clamp: 3;
+    }
+
+    .clamp-4 {
+        -webkit-line-clamp: 4;
+    }
+
+    .table-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .table-actions .primary-btn,
+    .table-actions .danger-btn {
+        min-height: 32px;
+        padding: 0 10px;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
     .question-list {
-        display: grid;
+        display: none;
         gap: 14px;
+    }
+
+    .question-list-mobile {
+        display: none;
     }
 
     .question-item {
@@ -260,6 +524,66 @@
         margin: 0;
     }
 
+    .pagination-bar {
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .pagination-summary {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-faint);
+    }
+
+    .pagination-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .page-btn,
+    .page-current {
+        min-height: 34px;
+        padding: 0 12px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .page-btn {
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+    }
+
+    .page-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .page-btn.is-disabled {
+        color: var(--text-faint);
+        opacity: 0.55;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .page-current {
+        color: var(--text);
+        background: rgba(110, 168, 255, 0.10);
+        border: 1px solid rgba(110, 168, 255, 0.24);
+    }
+
     .empty-card {
         background: linear-gradient(180deg, var(--panel), var(--panel-2));
         border: 1px solid var(--border);
@@ -307,9 +631,23 @@
         border-color: rgba(117, 147, 196, 0.12);
     }
 
-    html[data-theme="light-jp"] .instruction-box {
+        html[data-theme="light-jp"] .instruction-box {
         background: rgba(122, 168, 255, 0.08);
         border-color: rgba(117, 147, 196, 0.14);
+    }
+
+    html[data-theme="light-jp"] .question-table-wrap {
+        background: rgba(122, 168, 255, 0.04);
+        border-color: rgba(117, 147, 196, 0.12);
+    }
+
+    html[data-theme="light-jp"] .question-table thead th {
+        background: rgba(122, 168, 255, 0.06);
+        border-bottom-color: rgba(117, 147, 196, 0.14);
+    }
+
+    html[data-theme="light-jp"] .question-table tbody td {
+        border-bottom-color: rgba(117, 147, 196, 0.10);
     }
 
     html[data-theme="light-jp"] .question-meta .chip.warning {
@@ -324,6 +662,32 @@
         color: var(--text-soft);
     }
 
+    html[data-theme="light-jp"] .page-btn {
+        background: rgba(122, 168, 255, 0.05);
+        border-color: rgba(117, 147, 196, 0.14);
+        color: var(--text);
+    }
+
+    html[data-theme="light-jp"] .page-btn:hover {
+        background: rgba(122, 168, 255, 0.10);
+    }
+
+    html[data-theme="light-jp"] .page-current {
+        background: rgba(122, 168, 255, 0.10);
+        border-color: rgba(117, 147, 196, 0.20);
+        color: var(--text);
+    }
+
+    @media (min-width: 781px) {
+        .question-table-wrap {
+            display: block;
+        }
+
+        .question-list-mobile {
+            display: none;
+        }
+    }
+
     @media (max-width: 780px) {
         .page {
             width: min(100% - 20px, var(--max-width));
@@ -334,6 +698,14 @@
         .card-body {
             padding-left: 16px;
             padding-right: 16px;
+        }
+
+        .question-table-wrap {
+            display: none;
+        }
+
+        .question-list-mobile {
+            display: grid;
         }
 
         .question-item {
@@ -364,6 +736,148 @@
         .actions .secondary-btn,
         .actions .ghost-btn,
         .actions .danger-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .pagination-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .pagination-summary {
+            text-align: center;
+        }
+
+        .pagination-actions {
+            justify-content: center;
+        }
+    }
+
+    .filter-bar {
+        padding: 14px 20px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .filter-label {
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--text-faint);
+    }
+
+    .filter-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .filter-chip {
+        min-height: 30px;
+        padding: 0 12px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--text-soft);
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.03);
+        transition: all 0.18s ease;
+    }
+
+    .filter-chip:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(110, 168, 255, 0.18);
+    }
+
+    .filter-chip.is-active {
+        color: #0f3f8c;
+        background: linear-gradient(180deg, rgba(110, 168, 255, 0.22), rgba(110, 168, 255, 0.14));
+        border-color: rgba(110, 168, 255, 0.42);
+        box-shadow: 0 4px 12px rgba(110, 168, 255, 0.18);
+    }
+
+    html[data-theme="light-jp"] .filter-chip {
+        background: rgba(122, 168, 255, 0.05);
+        border-color: rgba(117, 147, 196, 0.14);
+        color: var(--text-soft);
+    }
+
+    html[data-theme="light-jp"] .filter-chip:hover {
+        background: rgba(122, 168, 255, 0.10);
+        border-color: rgba(117, 147, 196, 0.20);
+    }
+
+    html[data-theme="light-jp"] .filter-chip.is-active {
+        background: linear-gradient(180deg, rgba(122, 168, 255, 0.24), rgba(122, 168, 255, 0.14));
+        border-color: rgba(117, 147, 196, 0.30);
+        color: #1d4ed8;
+        box-shadow: 0 4px 12px rgba(122, 168, 255, 0.16);
+    }
+
+    @media (max-width: 780px) {
+        .filter-bar {
+            padding: 14px 16px 0;
+        }
+
+        .filter-chips {
+            gap: 6px;
+        }
+
+        .filter-chip {
+            font-size: 11px;
+            min-height: 28px;
+            padding: 0 10px;
+        }
+    }
+
+    .filter-bar-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .filter-add-btn {
+        min-height: 32px;
+        padding: 0 12px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 800;
+        color: #1d4ed8;
+        background: rgba(110, 168, 255, 0.10);
+        border: 1px solid rgba(110, 168, 255, 0.22);
+    }
+
+    .filter-add-btn:hover {
+        background: rgba(110, 168, 255, 0.16);
+    }
+
+    html[data-theme="light-jp"] .filter-add-btn {
+        color: #1d4ed8;
+        background: rgba(122, 168, 255, 0.10);
+        border-color: rgba(117, 147, 196, 0.20);
+    }
+
+    html[data-theme="light-jp"] .filter-add-btn:hover {
+        background: rgba(122, 168, 255, 0.16);
+    }
+
+    @media (max-width: 780px) {
+        .filter-bar-top {
+            align-items: stretch;
+        }
+
+        .filter-add-btn {
             width: 100%;
             justify-content: center;
         }

@@ -175,6 +175,73 @@
             margin-top: 6px;
         }
 
+        .field-help {
+            margin-top: 4px;
+            font-size: 12px;
+            line-height: 1.7;
+            color: #6b7280;
+        }
+
+        .field-help strong {
+            color: #374151;
+        }
+
+        .cloze-help-box {
+            margin-top: 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            background: #fafafa;
+            padding: 14px;
+        }
+
+        .cloze-help-title {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            font-weight: 800;
+            color: #111827;
+        }
+
+        .cloze-help-text {
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.8;
+            color: #4b5563;
+        }
+
+        .cloze-help-list {
+            margin: 8px 0 0 18px;
+            padding: 0;
+            color: #4b5563;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .cloze-help-list li + li {
+            margin-top: 4px;
+        }
+
+        .cloze-help-warning {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            color: #9a3412;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .cloze-auto-tip {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
         .choice-toolbar {
             display: flex;
             justify-content: space-between;
@@ -348,6 +415,46 @@
             font-size: 13px;
         }
 
+                .preview-mode-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+        }
+
+        .preview-mode-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 24px;
+            padding: 0 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+            line-height: 1;
+            border: 1px solid transparent;
+        }
+
+        .preview-mode-badge.auto {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        .preview-mode-badge.manual {
+            background: #fff7ed;
+            border-color: #fed7aa;
+            color: #9a3412;
+        }
+
+        .preview-mode-text {
+            font-size: 12px;
+            line-height: 1.7;
+            color: #4b5563;
+        }
+
         .preview-note {
             margin-top: 10px;
             font-size: 13px;
@@ -457,10 +564,10 @@
                         <div class="field">
                             <label for="skill">技能</label>
                             <select id="skill" onchange="syncTypeOptions(); toggleSections(); updatePreview();">
-                                <option value="listen">听</option>
-                                <option value="speak">说</option>
-                                <option value="read" selected>读</option>
-                                <option value="write">写</option>
+                                <option value="listen" {% if selected_skill == "listen" %}selected{% endif %}>听</option>
+                                <option value="speak" {% if selected_skill == "speak" %}selected{% endif %}>说</option>
+                                <option value="read" {% if selected_skill == "read" or not selected_skill %}selected{% endif %}>读</option>
+                                <option value="write" {% if selected_skill == "write" %}selected{% endif %}>写</option>
                             </select>
                         </div>
 
@@ -491,6 +598,10 @@
                             placeholder="例如：佐藤です。 / ask me if i am David / 时光流逝"
                             oninput="updatePreview();"
                         ></textarea>
+                        <div id="cloze_prompt_help" class="field-help hidden">
+                            <strong>克漏字提示：</strong>
+                            手动挖空时，在题干里用 <code>{词}</code> 标记空位；自动挖空时，题干不要写 <code>{}</code>，只写提示 / 上文 / 引导语即可，不要和“回答”写成一模一样的完整句。
+                        </div>
                     </div>
 
                     <div id="prompt_audio_wrap" class="field hidden" style="margin-top:12px;">
@@ -514,11 +625,15 @@
 
                 <div id="answer_section" class="card section">
                     <div class="section-title">回答内容</div>
-                    <div class="section-sub">这里填写用户最终需要生成并记忆的目标回答。听 / 说默认也会用这里做识别比对。</div>
+                    <div class="section-sub">这里填写用户最终需要生成并记忆的目标回答完整句子。听 / 说默认也会用这里做识别比对。</div>
 
                     <div class="field">
                         <label for="answer_text">回答</label>
                         <textarea id="answer_text" placeholder="可输入单答案；多答案可用换行、逗号、分号分隔" oninput="updatePreview();"></textarea>
+                        <div id="cloze_answer_help" class="field-help hidden">
+                            <strong>克漏字提示：</strong>
+                            手动挖空时，这里填写被挖掉的词，按顺序一行一个；自动挖空时，这里填写完整句子，由系统自动生成空格。
+                        </div>
                     </div>
 
                     <div id="answer_audio_wrap" class="field hidden" style="margin-top:12px;">
@@ -557,6 +672,48 @@
                     <div class="section-title">克漏字配置</div>
                     <div class="section-sub">读-克漏字用于随着熟练度自动增加空格。</div>
 
+                    <div class="cloze-help-box">
+                        <h3 class="cloze-help-title">填写方法</h3>
+                        <p class="cloze-help-text">克漏字建议二选一使用，不要在同一题里同时混用“手动挖空”和“自动挖空”。</p>
+
+                        <ul class="cloze-help-list">
+                            <li><strong>手动挖空：</strong>在“题干”里用 <code>{词}</code> 标记空位；在“回答”里按顺序填写被挖掉的词。</li>
+                            <li><strong>自动挖空：</strong>题干不写 <code>{}</code>；在“回答”里填写完整句子，由系统根据下方配置自动生成空格。</li>
+                        </ul>
+
+                        <div class="cloze-help-warning">
+                            注意：同一题不要同时“题干里写了 <code>{}</code>”又勾选自动挖空，否则后面容易分不清到底按手动空位还是按系统自动空位来出题。
+                        </div>
+
+                        <ul class="cloze-help-list">
+                            <li><strong>单空：</strong><br>
+                                题干：<code>{祇園精舎}の鐘の声、諸行無常の響きあり。</code><br>
+                                回答：<code>祇園精舎</code>
+                            </li>
+                            <li><strong>多空：</strong><br>
+                                题干：<code>{祇園精舎}の鐘の声、{諸行無常}の響きあり。</code><br>
+                                回答：<code>祇園精舎<br>諸行無常</code>
+                            </li>
+                            <li><strong>词组整体空：</strong><br>
+                                题干：<code>{諸行無常}の響きあり。</code><br>
+                                回答：<code>諸行無常</code>
+                            </li>
+                            <li><strong>连续多个小空：</strong><br>
+                                题干：<code>{諸行}{無常}の響きあり。</code><br>
+                                回答：<code>諸行<br>無常</code>
+                            </li>
+                        </ul>
+
+                        <div class="cloze-help-warning">
+                            规则：题干里有几个 <code>{}</code>，回答里就写几个答案，并且按出现顺序对应。<br>
+                            如果你想把“諸行無常”作为一个固定词组练，请写成 <code>{諸行無常}</code>；如果你想拆开练两个小词，才写成 <code>{諸行}{無常}</code>。
+                        </div>
+
+                        <div id="cloze_auto_tip" class="cloze-auto-tip hidden">
+                            已启用自动挖空：请在“回答”中填写完整句子，题干里不要再写 <code>{}</code>。
+                        </div>
+                    </div>
+
                     <div class="grid-3">
                         <div class="field">
                             <label for="blank_min">空格最少数量</label>
@@ -570,7 +727,7 @@
 
                         <div class="field" style="justify-content:end;">
                             <div class="checkbox-row" style="margin-top:28px;">
-                                <input type="checkbox" id="auto_increase_blanks" checked>
+                                <input type="checkbox" id="auto_increase_blanks" checked onchange="toggleSections(); updatePreview();">
                                 <label for="auto_increase_blanks" style="margin:0;">熟练后自动增加空格</label>
                             </div>
                         </div>
@@ -634,6 +791,11 @@
                         <div class="preview-label">训练方式</div>
                         <div id="previewType" class="preview-answer">阅读克漏字</div>
 
+                        <div id="previewClozeModeWrap" class="preview-mode-row hidden">
+                            <span id="previewClozeModeBadge" class="preview-mode-badge auto">自动克漏字</span>
+                            <span id="previewClozeModeText" class="preview-mode-text">当前空位由系统根据完整句自动生成，后续可能随熟练度变化。</span>
+                        </div>
+
                         <div id="previewAnswerWrap" style="margin-top:16px;">
                             <div class="preview-label">回答</div>
                             <div id="previewAnswer" class="preview-answer">尚未填写</div>
@@ -673,6 +835,7 @@
         };
 
         let choices = [];
+        const INITIAL_ITEM_TYPE = "{{ selected_item_type|default:''|escapejs }}";
 
         function normalizeChoiceItem(c) {
             return {
@@ -687,15 +850,27 @@
         function syncTypeOptions() {
             const skill = document.getElementById("skill").value;
             const typeSelect = document.getElementById("item_type");
+            const preferredValue = typeSelect.dataset.selectedItemType || typeSelect.value || "";
 
             typeSelect.innerHTML = "";
 
-            TYPE_MAP[skill].forEach(([value, label]) => {
+            (TYPE_MAP[skill] || []).forEach(([value, label], index) => {
                 const option = document.createElement("option");
                 option.value = value;
                 option.textContent = label;
+
+                const shouldSelect = preferredValue
+                    ? value === preferredValue
+                    : index === 0;
+
+                if (shouldSelect) {
+                    option.selected = true;
+                }
+
                 typeSelect.appendChild(option);
             });
+
+            typeSelect.dataset.selectedItemType = typeSelect.value;
         }
 
         function toggleSections() {
@@ -715,6 +890,9 @@
             const answerSection = document.getElementById("answer_section");
             const acceptedAnswersWrap = document.getElementById("accepted_answers_wrap");
             const clozeSection = document.getElementById("cloze_section");
+            const clozePromptHelp = document.getElementById("cloze_prompt_help");
+            const clozeAnswerHelp = document.getElementById("cloze_answer_help");
+            const clozeAutoTip = document.getElementById("cloze_auto_tip");
             const choiceSection = document.getElementById("choice_section");
             const asrSection = document.getElementById("asr_section");
 
@@ -726,6 +904,20 @@
 
             // 克漏字区
             clozeSection.classList.toggle("hidden", itemType !== "read_cloze");
+
+            if (clozePromptHelp) {
+                clozePromptHelp.classList.toggle("hidden", itemType !== "read_cloze");
+            }
+
+            if (clozeAnswerHelp) {
+                clozeAnswerHelp.classList.toggle("hidden", itemType !== "read_cloze");
+            }
+
+            if (clozeAutoTip) {
+                const autoIncrease = document.getElementById("auto_increase_blanks");
+                const showAutoTip = itemType === "read_cloze" && autoIncrease && autoIncrease.checked;
+                clozeAutoTip.classList.toggle("hidden", !showAutoTip);
+            }
 
             // 选择题区
             choiceSection.classList.toggle("hidden", !isReadChoice);
@@ -914,6 +1106,9 @@
             const previewChoicesWrap = document.getElementById("previewChoicesWrap");
             const previewChoices = document.getElementById("previewChoices");
             const previewNote = document.getElementById("previewNote");
+            const previewClozeModeWrap = document.getElementById("previewClozeModeWrap");
+            const previewClozeModeBadge = document.getElementById("previewClozeModeBadge");
+            const previewClozeModeText = document.getElementById("previewClozeModeText");
 
             let previewQuestionText = "";
             if (instructionText && promptText) {
@@ -931,6 +1126,10 @@
             previewAnswerWrap.classList.remove("hidden");
             previewChoicesWrap.classList.add("hidden");
             previewChoices.innerHTML = "";
+
+            if (previewClozeModeWrap) {
+                previewClozeModeWrap.classList.add("hidden");
+            }
 
             if (itemType === "read_choice_single" || itemType === "read_choice_multi") {
                 previewAnswerWrap.classList.add("hidden");
@@ -971,7 +1170,33 @@
                 previewChoicesWrap.classList.add("hidden");
 
                 if (itemType === "read_cloze") {
-                    previewNote.innerText = "这是克漏字训练。随着熟练度提升，可自动增加空格数量。";
+                    const promptTextRaw = document.getElementById("prompt_text")
+                        ? document.getElementById("prompt_text").value
+                        : "";
+                    const autoIncrease = document.getElementById("auto_increase_blanks")
+                        ? document.getElementById("auto_increase_blanks").checked
+                        : false;
+
+                    const hasManualMarker = /\{[^{}]+\}/.test(promptTextRaw || "");
+                    const clozeMode = hasManualMarker ? "manual" : (autoIncrease ? "auto" : "manual");
+
+                    if (previewClozeModeWrap && previewClozeModeBadge && previewClozeModeText) {
+                        previewClozeModeWrap.classList.remove("hidden");
+
+                        if (clozeMode === "auto") {
+                            previewClozeModeBadge.className = "preview-mode-badge auto";
+                            previewClozeModeBadge.innerText = "自动克漏字";
+                            previewClozeModeText.innerText = "当前空位由系统根据完整句自动生成，后续可能随熟练度变化。";
+                        } else {
+                            previewClozeModeBadge.className = "preview-mode-badge manual";
+                            previewClozeModeBadge.innerText = "手动克漏字";
+                            previewClozeModeText.innerText = "当前空位为固定重点空位，按你填写的特定位置练习。";
+                        }
+                    }
+
+                    previewNote.innerText = clozeMode === "auto"
+                        ? "这是自动克漏字训练。系统会根据完整句生成空位，并可随熟练度逐步增加空格数量。"
+                        : "这是手动克漏字训练。当前空位为你指定的重点练习内容。";
                 } else if (itemType === "listen_asr") {
                     previewNote.innerText = "这是听力转换训练。训练时显示提示短语，播放题干音频，用户根据听到的内容作答。";
                 } else if (itemType === "speak_read") {
@@ -1068,8 +1293,8 @@
             .then(r => r.json())
             .then(data => {
                 if (data.ok) {
-                    alert("保存成功");
-                    location.reload();
+                    const lessonId = document.getElementById("lesson").value;
+                    window.location.href = `/lesson/${lessonId}/questions/`;
                 } else {
                     alert(data.error || "保存失败");
                 }
@@ -1087,6 +1312,11 @@
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
+        }
+
+        const typeSelect = document.getElementById("item_type");
+        if (typeSelect && INITIAL_ITEM_TYPE) {
+            typeSelect.dataset.selectedItemType = INITIAL_ITEM_TYPE;
         }
 
         syncTypeOptions();

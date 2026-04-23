@@ -21,12 +21,14 @@ from django.contrib.auth.decorators import login_required
 from app.train.services.cloze_engine import generate_cloze
 
 from django.urls import reverse
+from django.core.paginator import Paginator
 
 from ..models import (
     Book,
     Lesson,
     Question,
     QuestionMemory,
+    WordMemory,
     UserProfile,
     StudyLog,
     TrainingItem,
@@ -390,6 +392,10 @@ def _normalize_accepted_answers(values):
 
     return cleaned
 
+
+STRICT_CYCLE_MAX_STEP = 11
+
+
 def _get_strict_step_rule(step: int):
     """
     严格艾宾浩斯锚点：
@@ -727,18 +733,83 @@ def _session_push_wrong_word_items(request, lesson_id, training, user_answers, c
     """
     错词复盘：
     把错误 blank 拆成单个“错词训练项”插入队列
+
+    第一版词级接入：
+    - 错词一旦入队，同时创建 / 获取 WordMemory
+    - 先只累计 total_wrong，并记录最近一次错误检测
+    - 暂不在这里推进词级 SRS
     """
     queue = _session_get_wrong_word_queue(request)
 
     existing_ids = {item.get("replay_id") for item in queue}
+    now = timezone.now()
+
+    print("DEBUG WORDMEM ENTRY:", {
+        "training_id": getattr(training, "id", None),
+        "lesson_id": lesson_id,
+        "item_type": getattr(training, "item_type", ""),
+        "user_answers": user_answers,
+        "correct_answers": correct_answers,
+    })
 
     for i, correct in enumerate(correct_answers):
+        correct_word = str(correct or "").strip()
+        if not correct_word:
+            continue
+
         user_word = ""
         if i < len(user_answers):
             user_word = str(user_answers[i] or "").strip()
 
-        if not check_answer(user_word, correct):
+        if not check_answer(user_word, correct_word):
             replay_id = _make_wrong_word_training_id(training.id, i)
+
+            print("DEBUG WORDMEM WRONG BLANK:", {
+                "training_id": training.id,
+                "wrong_index": i,
+                "correct_word": correct_word,
+                "user_word": user_word,
+                "replay_id": replay_id,
+            })
+
+            token_norm = normalize(correct_word)
+
+            word_memory, created = WordMemory.objects.get_or_create(
+                user=request.user,
+                question=training.question,
+                source_type="cloze_blank",
+                source_index=i,
+                token_norm=token_norm,
+                defaults={
+                    "training_item": training,
+                    "token_text": correct_word,
+                    "memory_level": 0,
+                    "cycle_step": 0,
+                    "cycle_version": 1,
+                    "last_result": "wrong_detected",
+                    "last_reset_reason": "cloze_blank_wrong",
+                    "last_review_at": now,
+                }
+            )
+
+            changed = False
+
+            if word_memory.training_item_id != training.id:
+                word_memory.training_item = training
+                changed = True
+
+            if word_memory.token_text != correct_word:
+                word_memory.token_text = correct_word
+                changed = True
+
+            word_memory.total_wrong = (word_memory.total_wrong or 0) + 1
+            word_memory.last_result = "wrong_detected"
+            word_memory.last_reset_reason = "cloze_blank_wrong"
+            word_memory.last_review_at = now
+            changed = True
+
+            if changed:
+                word_memory.save()
 
             if replay_id in existing_ids:
                 continue
@@ -750,10 +821,10 @@ def _session_push_wrong_word_items(request, lesson_id, training, user_answers, c
                 "wrong_index": i,
                 "prompt": training.question.prompt_text or "",
                 "cloze_text": training.cloze_text or "",
-                "correct_word": correct,
+                "correct_word": correct_word,
                 "user_word": user_word,
                 "attempts": 0,
-                "created_at": timezone.now().isoformat(),
+                "created_at": now.isoformat(),
             })
 
     # 控制长度，避免 session 无限增长
@@ -1707,7 +1778,7 @@ def judge_training_answer(training, raw_answer):
             ua = user_answers[0]
             ca = correct_answers[0]
 
-            if check_answer(ua, ca) or normalize(ca) in normalize(ua):
+            if check_answer(ua, ca):
                 return {
                     "is_correct": True,
                     "correct_answers": correct_answers,
@@ -1811,10 +1882,66 @@ def judge_training_answer(training, raw_answer):
             or asr_lang.startswith("ko")
         )
 
-        layered = judge_speech_answer_layers(
-            user_answer=user_answer_raw,
-            correct_answer=resolved_answer_text
-        )
+        # speak_read：收紧判题
+        # 只允许：
+        # 1) 原文严格一致
+        # 2) 归一化后完全一致
+        # 不再走模糊相似度
+        if item_type == "speak_read":
+            raw_user = str(user_answer_raw or "").strip()
+            raw_correct = str(resolved_answer_text or "").strip()
+
+            strict_correct = bool(raw_user) and bool(raw_correct) and raw_user == raw_correct
+
+            normalized_user = normalize(raw_user)
+            normalized_correct = normalize(raw_correct)
+
+            jp_user = _normalize_japanese_variants(raw_user)
+            jp_correct = _normalize_japanese_variants(raw_correct)
+
+            normalized_exact = False
+            if raw_user and raw_correct:
+                if normalized_user == normalized_correct:
+                    normalized_exact = True
+                elif jp_user == jp_correct:
+                    normalized_exact = True
+
+            if strict_correct:
+                layered = {
+                    "is_correct": True,
+                    "result_level": "strict",
+                    "strict_correct": True,
+                    "normalized_correct": True,
+                    "reading_correct": False,
+                    "orthography_correct": True,
+                    "feedback_message": "完全正确",
+                }
+            elif normalized_exact:
+                layered = {
+                    "is_correct": True,
+                    "result_level": "normalized",
+                    "strict_correct": False,
+                    "normalized_correct": True,
+                    "reading_correct": False,
+                    "orthography_correct": False,
+                    "feedback_message": "表达正确，但书写形式与标准答案不完全一致",
+                }
+            else:
+                layered = {
+                    "is_correct": False,
+                    "result_level": "wrong",
+                    "strict_correct": False,
+                    "normalized_correct": False,
+                    "reading_correct": False,
+                    "orthography_correct": False,
+                    "feedback_message": "答案不正确",
+                }
+        else:
+            # listen_asr：保留原有宽松逻辑
+            layered = judge_speech_answer_layers(
+                user_answer=user_answer_raw,
+                correct_answer=resolved_answer_text
+            )
 
         is_correct = layered["is_correct"]
 
@@ -1824,23 +1951,49 @@ def judge_training_answer(training, raw_answer):
 
         if not is_correct and accepted_answers:
             for accepted in accepted_answers:
-                accepted_layered = judge_speech_answer_layers(
-                    user_answer=user_answer_raw,
-                    correct_answer=accepted
-                )
+                if item_type == "speak_read":
+                    raw_user = str(user_answer_raw or "").strip()
+                    raw_accepted = str(accepted or "").strip()
 
-                if accepted_layered["is_correct"]:
-                    layered = {
-                        "is_correct": True,
-                        "result_level": "reading",
-                        "strict_correct": False,
-                        "normalized_correct": False,
-                        "reading_correct": True,
-                        "orthography_correct": False,
-                        "feedback_message": "读音正确，但标准书写需要加强",
-                    }
-                    is_correct = True
-                    break
+                    accepted_ok = False
+                    if raw_user and raw_accepted:
+                        if raw_user == raw_accepted:
+                            accepted_ok = True
+                        elif normalize(raw_user) == normalize(raw_accepted):
+                            accepted_ok = True
+                        elif _normalize_japanese_variants(raw_user) == _normalize_japanese_variants(raw_accepted):
+                            accepted_ok = True
+
+                    if accepted_ok:
+                        layered = {
+                            "is_correct": True,
+                            "result_level": "reading",
+                            "strict_correct": False,
+                            "normalized_correct": True,
+                            "reading_correct": True,
+                            "orthography_correct": False,
+                            "feedback_message": "读音正确，但标准书写需要加强",
+                        }
+                        is_correct = True
+                        break
+                else:
+                    accepted_layered = judge_speech_answer_layers(
+                        user_answer=user_answer_raw,
+                        correct_answer=accepted
+                    )
+
+                    if accepted_layered["is_correct"]:
+                        layered = {
+                            "is_correct": True,
+                            "result_level": "reading",
+                            "strict_correct": False,
+                            "normalized_correct": False,
+                            "reading_correct": True,
+                            "orthography_correct": False,
+                            "feedback_message": "读音正确，但标准书写需要加强",
+                        }
+                        is_correct = True
+                        break
 
         if (
             not is_correct
@@ -2112,10 +2265,10 @@ def update_memory_after_answer(memory, is_correct, duration_seconds=None, item_t
             next_step = current_step + 1
 
         # 已完成最后一锚点（6个月）
-        if next_step > 11:
-            next_step = 11
-            memory.cycle_step = 11
-            memory.memory_level = 11
+        if next_step > STRICT_CYCLE_MAX_STEP:
+            next_step = STRICT_CYCLE_MAX_STEP
+            memory.cycle_step = STRICT_CYCLE_MAX_STEP
+            memory.memory_level = STRICT_CYCLE_MAX_STEP
             memory.mastered_at = now
             memory.next_review_at = None
             memory.last_result = "mastered"
@@ -2191,7 +2344,7 @@ def _manual_adjust_memory(memory, action):
     if current_step < 0:
         current_step = 0
 
-    max_step = 11
+    max_step = STRICT_CYCLE_MAX_STEP
 
     if action == "upgrade":
         next_step = min(current_step + 1, max_step)
@@ -2204,7 +2357,7 @@ def _manual_adjust_memory(memory, action):
         if next_step <= 0:
             memory.next_review_at = now
             memory.mastered_at = None
-        elif next_step >= max_step:
+        elif next_step >= STRICT_CYCLE_MAX_STEP:
             memory.mastered_at = now
             memory.next_review_at = None
         else:
@@ -2250,12 +2403,111 @@ def _touch_memory_after_wrong_word_replay(memory, is_correct):
 
     memory.save()
 
+def _touch_word_memory_after_wrong_word_replay(user, target, origin_training, is_correct):
+    """
+    词级回写（第二版）：
+    - replay 成功/失败后，回写对应 WordMemory
+    - 直接复用严格循环 v1 口径
+    - 让词级对象开始拥有独立的 cycle_step / next_review_at / mastered_at
+    """
+    if not user or not origin_training or not target:
+        return
 
+    wrong_index = int(target.get("wrong_index", 0) or 0)
+    correct_word = str(target.get("correct_word") or "").strip()
+    token_norm = normalize(correct_word)
+
+    if not correct_word or not token_norm:
+        return
+
+    now = timezone.now()
+
+    word_memory, created = WordMemory.objects.get_or_create(
+        user=user,
+        question=origin_training.question,
+        source_type="cloze_blank",
+        source_index=wrong_index,
+        token_norm=token_norm,
+        defaults={
+            "training_item": origin_training,
+            "token_text": correct_word,
+            "memory_level": 0,
+            "cycle_step": 0,
+            "cycle_version": 1,
+            "last_result": "replay_correct" if is_correct else "replay_wrong",
+            "last_reset_reason": "" if is_correct else "wrong_word_replay",
+            "last_review_at": now,
+        }
+    )
+
+    print("DEBUG WORDMEM GET_OR_CREATE:", {
+                "created": created,
+                "word_memory_id": getattr(word_memory, "id", None),
+                "token_text": getattr(word_memory, "token_text", ""),
+                "source_index": getattr(word_memory, "source_index", None),
+                "total_wrong_before_save": getattr(word_memory, "total_wrong", None),
+            })
+
+    if word_memory.training_item_id != origin_training.id:
+        word_memory.training_item = origin_training
+
+    if word_memory.token_text != correct_word:
+        word_memory.token_text = correct_word
+
+    current_step = int(
+        getattr(word_memory, "cycle_step", None)
+        if getattr(word_memory, "cycle_step", None) is not None
+        else (getattr(word_memory, "memory_level", 0) or 0)
+    )
+
+    if current_step < 0:
+        current_step = 0
+
+    word_memory.last_review_at = now
+
+    if is_correct:
+        word_memory.total_correct = (word_memory.total_correct or 0) + 1
+        word_memory.correct_streak = (word_memory.correct_streak or 0) + 1
+        word_memory.last_result = "replay_correct"
+        word_memory.last_reset_reason = ""
+
+        if current_step == 0:
+            word_memory.cycle_started_at = now
+            next_step = 1
+        else:
+            next_step = current_step + 1
+
+        if next_step > STRICT_CYCLE_MAX_STEP:
+            next_step = STRICT_CYCLE_MAX_STEP
+            word_memory.cycle_step = STRICT_CYCLE_MAX_STEP
+            word_memory.memory_level = STRICT_CYCLE_MAX_STEP
+            word_memory.mastered_at = now
+            word_memory.next_review_at = None
+            word_memory.last_result = "mastered"
+        else:
+            word_memory.cycle_step = next_step
+            word_memory.memory_level = next_step
+            word_memory.mastered_at = None
+            word_memory.next_review_at = get_next_review(next_step, base_time=now)
+
+    else:
+        word_memory.total_wrong = (word_memory.total_wrong or 0) + 1
+        word_memory.correct_streak = 0
+        word_memory.cycle_step = 0
+        word_memory.memory_level = 0
+        word_memory.cycle_started_at = None
+        word_memory.mastered_at = None
+        word_memory.next_review_at = now
+        word_memory.cycle_version = (getattr(word_memory, "cycle_version", 1) or 1) + 1
+        word_memory.last_result = "replay_wrong"
+        word_memory.last_reset_reason = "wrong_word_replay"
+
+    word_memory.save()
 
 def _memory_stage_label(level):
     """
     严格艾宾浩斯循环阶段显示：
-    0 ~ 11
+    0 ~ STRICT_CYCLE_MAX_STEP
     """
     mapping = {
         0: "新学",
@@ -2269,7 +2521,7 @@ def _memory_stage_label(level):
         8: "第8轮巩固（15天）",
         9: "第9轮巩固（1个月）",
         10: "第10轮巩固（3个月）",
-        11: "第11轮巩固（6个月）",
+        STRICT_CYCLE_MAX_STEP: "第11轮巩固（6个月）",
     }
     try:
         level = int(level or 0)
@@ -2326,7 +2578,7 @@ def _build_step_progress_percent(memory, now=None):
     last_review_at = getattr(memory, "last_review_at", None)
     mastered_at = getattr(memory, "mastered_at", None)
 
-    if mastered_at or (level >= 11 and next_review_at is None):
+    if mastered_at or (level >= STRICT_CYCLE_MAX_STEP and next_review_at is None):
         return 100
 
     if level <= 0:
@@ -2394,7 +2646,9 @@ def _build_cycle_status(memory):
         and grace is not None
         and now > (next_review_at + grace)
     )
-    is_mastered = bool(mastered_at) or (level >= 11 and next_review_at is None)
+    is_mastered = bool(mastered_at) or (
+        level >= STRICT_CYCLE_MAX_STEP and next_review_at is None
+    )
     is_reset = last_result in {"wrong_reset", "overdue_reset"}
 
     if is_mastered:
@@ -2458,7 +2712,7 @@ def get_dashboard_cycle_summary(user):
         else set()
     )
 
-    level_counter = {i: 0 for i in range(12)}
+    level_counter = {i: 0 for i in range(STRICT_CYCLE_MAX_STEP + 1)}
     today_due_count = 0
     overdue_count = 0
     next_review_candidates = []
@@ -2469,10 +2723,11 @@ def get_dashboard_cycle_summary(user):
             if getattr(m, "cycle_step", None) is not None
             else (getattr(m, "memory_level", 0) or 0)
         )
+
         if level < 0:
             level = 0
-        if level > 11:
-            level = 11
+        if level > STRICT_CYCLE_MAX_STEP:
+            level = STRICT_CYCLE_MAX_STEP
 
         level_counter[level] += 1
 
@@ -2549,7 +2804,7 @@ def get_dashboard_cycle_summary(user):
         {"label": "15天", "count": level_counter.get(8, 0)},
         {"label": "1个月", "count": level_counter.get(9, 0)},
         {"label": "3个月", "count": level_counter.get(10, 0)},
-        {"label": "6个月", "count": level_counter.get(11, 0)},
+        {"label": "6个月", "count": level_counter.get(STRICT_CYCLE_MAX_STEP, 0)},
     ]
 
     return {
@@ -2605,8 +2860,8 @@ def get_book_lessons_cycle_summary(user, book):
         )
         if level < 0:
             level = 0
-        if level > 11:
-            level = 11
+        if level > STRICT_CYCLE_MAX_STEP:
+            level = STRICT_CYCLE_MAX_STEP
 
         next_review_at = getattr(m, "next_review_at", None)
 
@@ -2766,8 +3021,8 @@ def get_lesson_cycle_summary(user, lesson):
         )
         if level < 0:
             level = 0
-        if level > 11:
-            level = 11
+        if level > STRICT_CYCLE_MAX_STEP:
+            level = STRICT_CYCLE_MAX_STEP
 
         nr = getattr(m, "next_review_at", None)
 
@@ -2868,8 +3123,8 @@ def get_lesson_round_progress(request, lesson):
         )
         if level < 0:
             level = 0
-        if level > 11:
-            level = 11
+        if level > STRICT_CYCLE_MAX_STEP:
+            level = STRICT_CYCLE_MAX_STEP
 
         next_review_at = getattr(memory, "next_review_at", None)
         rule = _get_strict_step_rule(level)
@@ -2945,8 +3200,8 @@ def get_dashboard_books_cycle_summary(user, books):
         )
         if level < 0:
             level = 0
-        if level > 11:
-            level = 11
+        if level > STRICT_CYCLE_MAX_STEP:
+            level = STRICT_CYCLE_MAX_STEP
 
         next_review_at = getattr(m, "next_review_at", None)
 
@@ -3104,8 +3359,8 @@ def get_today_plan(request):
         )
         if level < 0:
             level = 0
-        if level > 11:
-            level = 11
+        if level > STRICT_CYCLE_MAX_STEP:
+            level = STRICT_CYCLE_MAX_STEP
 
         next_review_at = getattr(memory, "next_review_at", None)
         rule = _get_strict_step_rule(level)
@@ -3213,8 +3468,8 @@ def build_smart_queue(request, lesson, limit=QUEUE_BATCH_SIZE):
         )
         if level < 0:
             level = 0
-        if level > 11:
-            level = 11
+        if level > STRICT_CYCLE_MAX_STEP:
+            level = STRICT_CYCLE_MAX_STEP
 
         wrong_boost = _get_wrong_boost(memory)
         next_review_at = getattr(memory, "next_review_at", None)
@@ -3369,32 +3624,89 @@ def build_smart_queue(request, lesson, limit=QUEUE_BATCH_SIZE):
 # =========================
 # 训练范围工具
 # =========================
+def _is_global_train_scope(scope):
+    return scope in {"global_all", "global_due", "global_overdue"}
+
+
 def _get_train_scope_label(scope):
-    return "整本训练" if scope == "book" else "本课训练"
+    if scope == "book":
+        return "整本训练"
+
+    if scope == "lesson":
+        return "本课训练"
+
+    if scope == "global_due":
+        return "今日到期复习"
+
+    if scope == "global_overdue":
+        return "全局逾期补做"
+
+    if scope == "global_all":
+        return "全局统一训练"
+
+    return "训练"
 
 
 def _get_train_scope_target_text(scope):
-    return "这本书" if scope == "book" else "这课"
+    if scope == "book":
+        return "这本书"
+
+    if scope == "lesson":
+        return "这课"
+
+    if scope == "global_due":
+        return "今日到期复习范围"
+
+    if scope == "global_overdue":
+        return "全局逾期补做范围"
+
+    if scope == "global_all":
+        return "你的全部书册"
+
+    return "当前范围"
 
 
 def _get_scope_training_qs(scope, obj):
-    qs = TrainingItem.objects.select_related("question__lesson")
+    qs = TrainingItem.objects.select_related("question__lesson__book")
 
     if scope == "book":
         return qs.filter(question__lesson__book=obj)
 
-    return qs.filter(question__lesson=obj)
+    if scope == "lesson":
+        return qs.filter(question__lesson=obj)
+
+    if _is_global_train_scope(scope):
+        return qs.filter(question__lesson__book__owner=obj)
+
+    return qs.none()
 
 
 def _training_in_scope(training, scope, obj):
-    if scope == "book":
-        return training.question.lesson.book_id == obj.id
+    question = getattr(training, "question", None)
+    lesson = getattr(question, "lesson", None)
 
-    return training.question.lesson_id == obj.id
+    if lesson is None:
+        return False
+
+    if scope == "book":
+        return lesson.book_id == obj.id
+
+    if scope == "lesson":
+        return lesson.id == obj.id
+
+    if _is_global_train_scope(scope):
+        book = getattr(lesson, "book", None)
+        owner_id = getattr(book, "owner_id", None)
+        return owner_id == getattr(obj, "id", None)
+
+    return False
 
 
 def _wrong_word_item_in_scope(item, scope, obj):
     lesson_id = item.get("lesson_id")
+
+    if not lesson_id:
+        return False
 
     if scope == "book":
         return Lesson.objects.filter(
@@ -3402,14 +3714,44 @@ def _wrong_word_item_in_scope(item, scope, obj):
             book_id=obj.id
         ).exists()
 
-    return lesson_id == obj.id
+    if scope == "lesson":
+        return lesson_id == obj.id
+
+    if _is_global_train_scope(scope):
+        return Lesson.objects.filter(
+            id=lesson_id,
+            book__owner=obj
+        ).exists()
+
+    return False
 
 
 def _get_scope_plan_items(plan_items, scope, obj):
-    return [
-        item for item in plan_items
-        if _training_in_scope(item["training"], scope, obj)
-    ]
+    scoped_items = []
+
+    for item in plan_items:
+        training = item.get("training")
+
+        if not training:
+            continue
+
+        if not _training_in_scope(training, scope, obj):
+            continue
+
+        if scope == "global_due":
+            if bool(item.get("is_due")) and not bool(item.get("is_overdue")):
+                scoped_items.append(item)
+            continue
+
+        if scope == "global_overdue":
+            if bool(item.get("is_overdue")):
+                scoped_items.append(item)
+            continue
+
+        scoped_items.append(item)
+
+    return scoped_items
+
 
 def _get_today_done_ids(request):
     today_str = str(timezone.localdate())
@@ -3457,56 +3799,124 @@ def _render_train_page(request, scope, obj):
     scope_plan_stats = _build_scope_plan_stats(request, scope_plan_items)
     all_count = _get_scope_training_qs(scope, obj).count()
 
+    is_global_scope = _is_global_train_scope(scope)
+    is_book_scope = scope == "book"
+    is_lesson_scope = scope == "lesson"
+
+    if is_book_scope:
+        train_title = obj.title
+        current_book = obj
+        current_lesson = None
+
+        continue_train_url = reverse("book-train", args=[obj.id])
+        book_detail_url = reverse("book-detail", args=[obj.id])
+        course_map_url = reverse("book-detail", args=[obj.id])
+
+        head_actions = [
+            {"label": "← 返回书册", "url": reverse("book-detail", args=[obj.id])},
+            {"label": "返回首页", "url": reverse("dashboard")},
+        ]
+
+        head_meta = [
+            {"label": "书册：", "text": obj.title},
+        ]
+
+    elif is_lesson_scope:
+        train_title = obj.title
+        current_book = obj.book
+        current_lesson = obj
+
+        continue_train_url = reverse("lesson-train", args=[obj.id])
+        book_detail_url = reverse("book-detail", args=[obj.book.id])
+        course_map_url = reverse("lesson-question-list", args=[obj.id])
+
+        head_actions = [
+            {"label": "← 返回训练", "url": "javascript:history.back()"},
+            {"label": "题目列表", "url": reverse("lesson-question-list", args=[obj.id])},
+            {"label": "编辑章节", "url": reverse("lesson-edit", args=[obj.id])},
+            {"label": "返回书册", "url": reverse("book-detail", args=[obj.book.id])},
+            {"label": "返回首页", "url": reverse("dashboard")},
+        ]
+
+        head_meta = [
+            {"label": "书册：", "text": obj.book.title},
+            {"label": "章节：", "text": obj.title},
+        ]
+
+    elif is_global_scope:
+        train_title = _get_train_scope_label(scope)
+        current_book = None
+        current_lesson = None
+
+        # 这里先统一回 dashboard。
+        # 下一步补路由与 train.html 后，再换成真正的全局 continue/api/manual URL。
+        continue_train_url = reverse("dashboard")
+        book_detail_url = reverse("dashboard")
+        course_map_url = reverse("dashboard")
+
+        head_actions = [
+            {"label": "← 返回首页", "url": reverse("dashboard")},
+        ]
+
+        head_meta = [
+            {"label": "范围：", "text": _get_train_scope_label(scope)},
+            {"label": "对象：", "text": "全部书册"},
+        ]
+
+    else:
+        train_title = "训练"
+        current_book = None
+        current_lesson = None
+
+        continue_train_url = reverse("dashboard")
+        book_detail_url = reverse("dashboard")
+        course_map_url = reverse("dashboard")
+
+        head_actions = [
+            {"label": "返回首页", "url": reverse("dashboard")},
+        ]
+
+        head_meta = [
+            {"label": "范围：", "text": "当前训练"},
+        ]
+
     context = {
         "train_scope": scope,
         "train_scope_label": _get_train_scope_label(scope),
-        "train_title": obj.title,
-        "book": obj if scope == "book" else obj.book,
-        "lesson": obj if scope == "lesson" else None,
+        "train_title": train_title,
+        "book": current_book,
+        "lesson": current_lesson,
+        "is_global_train_scope": is_global_scope,
+
         "plan_total": scope_plan_stats["total"] if scope_plan_items else all_count,
         "plan_done": scope_plan_stats["done"] if scope_plan_items else 0,
         "plan_progress": scope_plan_stats["progress"] if scope_plan_items else 0,
 
-        "continue_train_url": (
-            reverse("lesson-train", args=[obj.id])
-            if scope == "lesson"
-            else reverse("book-train", args=[obj.id])
+        "train_api_url": (
+            reverse("book-train-api", args=[obj.id])
+            if is_book_scope
+            else (
+                reverse("lesson-train-api", args=[obj.id])
+                if is_lesson_scope
+                else ""
+            )
         ),
-        "book_detail_url": (
-            reverse("book-detail", args=[obj.book.id])
-            if scope == "lesson"
-            else reverse("book-detail", args=[obj.id])
-        ),
-        "course_map_url": (
-            reverse("lesson-question-list", args=[obj.id])
-            if scope == "lesson"
-            else reverse("book-detail", args=[obj.id])
+        "manual_upgrade_url": (
+            reverse("book-train-manual-upgrade", args=[obj.id])
+            if is_book_scope
+            else (
+                reverse("lesson-train-manual-upgrade", args=[obj.id])
+                if is_lesson_scope
+                else ""
+            )
         ),
 
-        "head_actions": (
-            [
-                {"label": "← 返回训练", "url": "javascript:history.back()"},
-                {"label": "题目列表", "url": reverse("lesson-question-list", args=[obj.id])},
-                {"label": "编辑章节", "url": reverse("lesson-edit", args=[obj.id])},
-                {"label": "返回书册", "url": reverse("book-detail", args=[obj.book.id])},
-                {"label": "返回首页", "url": reverse("dashboard")},
-            ]
-            if scope == "lesson"
-            else [
-                {"label": "← 返回书册", "url": reverse("book-detail", args=[obj.id])},
-                {"label": "返回首页", "url": reverse("dashboard")},
-            ]
-        ),
-        "head_meta": (
-            [
-                {"label": "书册：", "text": obj.book.title},
-                {"label": "章节：", "text": obj.title},
-            ]
-            if scope == "lesson"
-            else [
-                {"label": "书册：", "text": obj.title},
-            ]
-        ),
+        "continue_train_url": continue_train_url,
+        "book_detail_url": book_detail_url,
+        "course_map_url": course_map_url,
+
+        "head_actions": head_actions,
+        "head_meta": head_meta,
         "head_chips": [
             {"kind": "warning", "text": "阶段：加载中..."},
             {"kind": "primary", "text": "复习：加载中..."},
@@ -3515,7 +3925,7 @@ def _render_train_page(request, scope, obj):
         ],
     }
 
-    if scope == "lesson":
+    if is_lesson_scope:
         context.update({
             "lesson_cycle_summary": get_lesson_cycle_summary(request.user, obj),
             "lesson_round_progress": get_lesson_round_progress(request, obj),
@@ -3672,7 +4082,7 @@ def _train_api_by_scope(request, scope, obj):
             return JsonResponse({
                 "empty": True,
                 "reason": "today_done",
-                "message": f"今天{scope_label}的学习计划已经完成了。",
+                "message": f"今天{scope_label}范围内的学习计划已经完成；其他到期或逾期任务可能还需要继续训练。",
                 "next_review_text": next_review_text,
             })
 
@@ -3937,6 +4347,12 @@ def _train_api_by_scope(request, scope, obj):
             if origin_training:
                 replay_memory = get_item_memory(request.user, origin_training)
                 _touch_memory_after_wrong_word_replay(replay_memory, is_correct)
+                _touch_word_memory_after_wrong_word_replay(
+                    request.user,
+                    target,
+                    origin_training,
+                    is_correct
+                )
 
             replay_cycle_after = (
                 _build_cycle_status(replay_memory)
@@ -4258,11 +4674,7 @@ def _manual_memory_action_api(request, scope, obj, action):
         "reset_reason": getattr(memory, "last_reset_reason", "") or "",
         "cycle_before": cycle_before,
         "cycle_after": cycle_after,
-        "result": (
-            "✅ 已手动升一级"
-            if action == "upgrade" else
-            "⚠️ 已手动降一级"
-        ),
+        "result": "✅ 已手动升一级",
     })
 
 
@@ -4299,14 +4711,36 @@ def lesson_question_list(request, lesson_id):
         book__owner=request.user
     )
 
-    questions = list(
-        Question.objects.filter(
-            lesson=lesson
-        ).order_by("id")
-    )
+    selected_qtype = (request.GET.get("qtype") or "").strip()
+
+    qtype_to_skill = {
+        "listen_asr": "listen",
+        "speak_read": "speak",
+        "read_cloze": "read",
+        "read_choice": "read",
+        "read_choice_single": "read",
+        "read_choice_multi": "read",
+        "write_text": "write",
+    }
+
+    selected_skill_for_builder = qtype_to_skill.get(selected_qtype, "")
+
+    question_qs = Question.objects.filter(
+        lesson=lesson
+    ).order_by("-id")
+
+    if selected_qtype:
+        question_qs = question_qs.filter(
+            training_items__item_type=selected_qtype
+        ).distinct()
+
+    paginator = Paginator(question_qs, 5)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    questions = list(page_obj.object_list)
 
     for question in questions:
-        training = question.training_items.order_by("id").first()
+        training = question.training_items.order_by("-id").first()
 
         question.display_qtype = training.item_type if training else ""
         question.display_instruction = (
@@ -4326,6 +4760,8 @@ def lesson_question_list(request, lesson_id):
         "lesson": lesson,
         "book": lesson.book,
         "questions": questions,
+        "page_obj": page_obj,
+        "paginator": paginator,
         "head_actions": [
             {"label": "← 返回训练", "url": reverse("lesson-train", args=[lesson.id])},
             {"label": "返回章节页", "url": reverse("book-detail", args=[lesson.book.id])},
@@ -4336,7 +4772,18 @@ def lesson_question_list(request, lesson_id):
             {"label": "章节：", "text": lesson.title},
         ],
         "head_chips": [
-            {"kind": "primary", "text": f"素材数：{len(questions)}"},
+            {"kind": "primary", "text": f"素材数：{paginator.count}"},
+            {"kind": "default", "text": f"第 {page_obj.number} / {paginator.num_pages} 页"},
+        ],
+        "selected_qtype": selected_qtype,
+        "selected_skill_for_builder": selected_skill_for_builder,
+        "qtype_options": [
+            {"value": "", "label": "全部"},
+            {"value": "read_cloze", "label": "read_cloze"},
+            {"value": "speak_read", "label": "speak_read"},
+            {"value": "listen_asr", "label": "listen_asr"},
+            {"value": "read_choice", "label": "read_choice"},
+            {"value": "write_text", "label": "write_text"},
         ],
     })
 
@@ -4382,6 +4829,10 @@ def get_stats(request):
             "new_items": 0,
             "short_items": 0,
             "long_items": 0,
+            "word_total": 0,
+            "word_due": 0,
+            "word_mastered": 0,
+            "word_new": 0,
             "learning_summary": "当前学习状态稳定，建议继续按计划推进。",
         }
 
@@ -4389,6 +4840,42 @@ def get_stats(request):
     today = now.date()
 
     memories = QuestionMemory.objects.filter(user=user)
+    word_memories = WordMemory.objects.filter(user=user)
+
+    word_total_count = word_memories.count()
+
+    word_due_count = word_memories.filter(
+        next_review_at__isnull=False,
+        next_review_at__lte=now
+    ).count()
+
+    word_mastered_count = 0
+    word_new_count = 0
+
+    for word_memory in word_memories:
+        level_value = int(
+            getattr(word_memory, "cycle_step", None)
+            if getattr(word_memory, "cycle_step", None) is not None
+            else (getattr(word_memory, "memory_level", 0) or 0)
+        )
+
+        if level_value < 0:
+            level_value = 0
+        if level_value > STRICT_CYCLE_MAX_STEP:
+            level_value = STRICT_CYCLE_MAX_STEP
+
+        memory_mastered_at = getattr(word_memory, "mastered_at", None)
+        memory_next_review_at = getattr(word_memory, "next_review_at", None)
+
+        is_mastered = bool(memory_mastered_at) or (
+            level_value >= STRICT_CYCLE_MAX_STEP and memory_next_review_at is None
+        )
+
+        if is_mastered:
+            word_mastered_count += 1
+
+        if level_value == 0:
+            word_new_count += 1
 
     # =========================
     # 学习条目统计（近似口径）
@@ -4467,14 +4954,14 @@ def get_stats(request):
 
         if level_value < 0:
             level_value = 0
-        if level_value > 11:
-            level_value = 11
+        if level_value > STRICT_CYCLE_MAX_STEP:
+            level_value = STRICT_CYCLE_MAX_STEP
 
         memory_mastered_at = getattr(memory, "mastered_at", None)
         memory_next_review_at = getattr(memory, "next_review_at", None)
 
         is_mastered = bool(memory_mastered_at) or (
-            level_value >= 11 and memory_next_review_at is None
+            level_value >= STRICT_CYCLE_MAX_STEP and memory_next_review_at is None
         )
 
         if is_mastered:
@@ -4503,8 +4990,8 @@ def get_stats(request):
 
         if level_value < 0:
             level_value = 0
-        if level_value > 11:
-            level_value = 11
+        if level_value > STRICT_CYCLE_MAX_STEP:
+            level_value = STRICT_CYCLE_MAX_STEP
 
         if level_value == 0:
             new_items_count += 1
@@ -4547,6 +5034,10 @@ def get_stats(request):
         "new_items": int(new_items_count or 0),
         "short_items": int(short_items_count or 0),
         "long_items": int(long_items_count or 0),
+        "word_total": int(word_total_count or 0),
+        "word_due": int(word_due_count or 0),
+        "word_mastered": int(word_mastered_count or 0),
+        "word_new": int(word_new_count or 0),
         "learning_summary": learning_summary,
     }
 
@@ -4561,6 +5052,8 @@ def builder_page(request):
     # ① 读取 lesson_id（来自 ?lesson_id=4）
     # =========================
     lesson_id = request.GET.get("lesson_id")
+    selected_skill = (request.GET.get("skill") or "").strip()
+    selected_item_type = (request.GET.get("item_type") or "").strip()
 
     current_lesson = None
     current_book = None
@@ -4587,6 +5080,8 @@ def builder_page(request):
         "lessons": lessons,
         "current_lesson": current_lesson,
         "current_book": current_book,
+        "selected_skill": selected_skill,
+        "selected_item_type": selected_item_type,
     })
 
 # =========================
@@ -4965,7 +5460,7 @@ def question_edit(request, question_id):
         or f"/lesson/{question.lesson_id}/"
     )
 
-    training = question.training_items.order_by("id").first()
+    training = question.training_items.order_by("-id").first()
     item_type = training.item_type if training else ""
 
     display_qtype = item_type or ""

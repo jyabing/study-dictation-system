@@ -93,6 +93,34 @@
                 </div>
             </div>
         </div>
+
+        <div class="stats-subgroup">
+            <div class="stats-subgroup-head">
+                <h3 class="stats-subgroup-title">词级错词记忆</h3>
+                <p class="stats-subgroup-desc">查看 WordMemory 的最小统计，确认词级记忆是否开始积累</p>
+            </div>
+            <div class="stats-grid stats-grid-compact">
+                <div class="stats-card">
+                    <div class="stats-label">词级总数</div>
+                    <div class="stats-value">{{ stats.word_total|default:0 }}</div>
+                </div>
+
+                <div class="stats-card stats-card-due">
+                    <div class="stats-label">词级到期</div>
+                    <div class="stats-value">{{ stats.word_due|default:0 }}</div>
+                </div>
+
+                <div class="stats-card stats-card-mastered">
+                    <div class="stats-label">词级掌握</div>
+                    <div class="stats-value">{{ stats.word_mastered|default:0 }}</div>
+                </div>
+
+                <div class="stats-card stats-card-new">
+                    <div class="stats-label">词级新词</div>
+                    <div class="stats-value">{{ stats.word_new|default:0 }}</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="stats-section">

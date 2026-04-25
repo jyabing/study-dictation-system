@@ -72,6 +72,17 @@
                                 </div>
 
                                 <div class="text-answer-workspace" id="text-answer-workspace">
+                                    <div class="cloze-tag-box" id="cloze-tag-box" style="display:none;">
+                                        <div class="cloze-tags" id="cloze-tags"></div>
+                                        <input
+                                            type="text"
+                                            id="cloze-tag-input"
+                                            class="cloze-tag-input"
+                                            placeholder="输入一个答案后按空格 / 回车"
+                                            autocomplete="off"
+                                        >
+                                    </div>
+
                                     <input
                                         type="text"
                                         id="answer-input"
@@ -1654,6 +1665,56 @@
     }
 }
 
+
+.cloze-tag-box {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    min-height: 48px;
+    padding: 8px 10px;
+    border-radius: 14px;
+    border: 1px solid #bfdbfe;
+    background: #ffffff;
+}
+
+.cloze-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.cloze-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1d4ed8;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.cloze-tag-remove {
+    border: 0;
+    background: transparent;
+    color: #1d4ed8;
+    cursor: pointer;
+    font-weight: 900;
+}
+
+.cloze-tag-input {
+    flex: 1;
+    min-width: 160px;
+    border: 0;
+    outline: none;
+    padding: 8px;
+    font-size: 16px;
+    background: transparent;
+}
+
 </style>
 {% endblock %}
 
@@ -1697,6 +1758,163 @@ const choicesGrid = document.getElementById("choices-grid");
 const answerForm = document.getElementById("answer-form");
 const trainingIdInput = document.getElementById("training-id");
 const answerInput = document.getElementById("answer-input");
+
+const clozeTagBox = document.getElementById("cloze-tag-box");
+const clozeTags = document.getElementById("cloze-tags");
+const clozeTagInput = document.getElementById("cloze-tag-input");
+let clozeAnswerTags = [];
+
+function renderClozeTags() {
+    if (!clozeTags) return;
+
+    clozeTags.innerHTML = "";
+
+    clozeAnswerTags.forEach((value, index) => {
+        const tag = document.createElement("span");
+        tag.className = "cloze-tag";
+        tag.textContent = value;
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "cloze-tag-remove";
+        removeBtn.textContent = "×";
+        removeBtn.addEventListener("click", () => {
+            clozeAnswerTags.splice(index, 1);
+            renderClozeTags();
+
+            if (clozeTagInput) {
+                clozeTagInput.disabled = false;
+                clozeTagInput.focus();
+            }
+        });
+
+        tag.appendChild(removeBtn);
+        clozeTags.appendChild(tag);
+    });
+
+    if (answerInput) {
+        answerInput.value = JSON.stringify(clozeAnswerTags);
+    }
+}
+
+function addClozeTagFromInput() {
+    if (!clozeTagInput) return;
+
+    const value = clozeTagInput.value.trim();
+    if (!value) return;
+
+    clozeAnswerTags.push(value);
+    clozeTagInput.value = "";
+    renderClozeTags();
+}
+
+let isComposingCloze = false;
+
+function flushClozeTagInput(force = false) {
+    if (!clozeTagInput) return;
+
+    const raw = clozeTagInput.value || "";
+
+    if (!raw.trim()) {
+        clozeTagInput.value = "";
+        return;
+    }
+
+    const hasDelimiter = /[\s　,，/、;；]+$/.test(raw);
+
+    if (!force && !hasDelimiter) {
+        return;
+    }
+
+    const parts = raw
+        .split(/[\s　,，/、;；]+/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    parts.forEach((item) => {
+        if (!clozeAnswerTags.includes(item)) {
+            clozeAnswerTags.push(item);
+        }
+    });
+
+    clozeTagInput.value = "";
+    renderClozeTags();
+
+    setTimeout(() => {
+        clozeTagInput.focus();
+    }, 0);
+}
+
+if (clozeTagInput) {
+    clozeTagInput.addEventListener("compositionstart", () => {
+        isComposingCloze = true;
+    });
+
+    clozeTagInput.addEventListener("compositionend", () => {
+        isComposingCloze = false;
+
+        setTimeout(() => {
+            flushClozeTagInput(false);
+        }, 0);
+    });
+
+    clozeTagInput.addEventListener("keydown", (event) => {
+        if (isComposingCloze) {
+            return;
+        }
+
+        if (
+            event.key === " "
+            || event.code === "Space"
+            || event.key === "Spacebar"
+            || event.key === ","
+            || event.key === "，"
+            || event.key === "/"
+            || event.key === "、"
+            || event.key === ";"
+            || event.key === "；"
+        ) {
+            event.preventDefault();
+            flushClozeTagInput(true);
+            return;
+        }
+
+        if (event.key === "Enter") {
+            event.preventDefault();
+            flushClozeTagInput(true);
+
+            if (answerForm) {
+                answerForm.requestSubmit();
+            }
+
+            return;
+        }
+
+        if (
+            event.key === "Backspace"
+            && !clozeTagInput.value
+            && clozeAnswerTags.length > 0
+        ) {
+            clozeAnswerTags.pop();
+            renderClozeTags();
+
+            setTimeout(() => {
+                clozeTagInput.focus();
+            }, 0);
+        }
+    });
+
+    clozeTagInput.addEventListener("input", () => {
+        if (!isComposingCloze) {
+            flushClozeTagInput(false);
+        }
+    });
+
+    clozeTagBox.addEventListener("click", () => {
+        clozeTagInput.focus();
+    });
+}
+
 const submitBtn = document.getElementById("submit-btn");
 const nextBtn = document.getElementById("next-btn");
 const reloadBtn = document.getElementById("reload-btn");
@@ -2775,7 +2993,7 @@ function applyQuestionInputMode(payload) {
 
         showSpeechWorkspace(
             "说：根据提示作答",
-            "请先播放题干音频，再口头作答；说完后点“停止录音”。识别失败可改用文本输入。"
+            "请根据提示口头作答；点击“开始录音”后说出答案。识别失败可改用文本输入。"
         );
 
         if (!hasSpeechRecognitionSupport()) {
@@ -2794,6 +3012,45 @@ function applyQuestionInputMode(payload) {
 
     questionTypeBadge.textContent = `类型：${qType}`;
     questionPrompt.classList.remove("is-cloze");
+
+    if (qType === "read_cloze") {
+        if (clozeTagBox) clozeTagBox.style.display = "flex";
+        if (answerInput) answerInput.style.display = "none";
+        clozeAnswerTags = [];
+        renderClozeTags();
+    } else {
+        if (clozeTagBox) clozeTagBox.style.display = "none";
+        if (answerInput) answerInput.style.display = "";
+    }
+
+    if (qType === "read_cloze") {
+        if (clozeTagBox) {
+            clozeTagBox.style.display = "flex";
+        }
+
+        if (answerInput) {
+            answerInput.style.display = "none";
+        }
+
+        clozeAnswerTags = [];
+        renderClozeTags();
+
+        if (clozeTagInput) {
+            clozeTagInput.value = "";
+            clozeTagInput.focus();
+        }
+    } else {
+        if (clozeTagBox) {
+            clozeTagBox.style.display = "none";
+        }
+
+        if (answerInput) {
+            answerInput.style.display = "";
+        }
+
+        clozeAnswerTags = [];
+        renderClozeTags();
+    }
 
     if (qType === "read_cloze" && extra) {
         questionPrompt.textContent = extra;
@@ -2821,10 +3078,15 @@ function applyQuestionInputMode(payload) {
         questionAudio.load();
     }
 
-    answerInput.value = "";
-    answerInput.placeholder = Array.isArray(payload.choices) && payload.choices.length > 0
-        ? "可点击选项，也可手动输入回答"
-        : "请输入回答，然后提交";
+    if (qType === "read_cloze") {
+        answerInput.value = JSON.stringify(clozeAnswerTags);
+        answerInput.placeholder = "请输入每个空的答案";
+    } else {
+        answerInput.value = "";
+        answerInput.placeholder = Array.isArray(payload.choices) && payload.choices.length > 0
+            ? "可点击选项，也可手动输入回答"
+            : "请输入回答，然后提交";
+    }
 }
 
 function setFeedback(message, type = "info") {
@@ -3282,13 +3544,48 @@ function renderPayload(payload) {
     clearFeedback();
     console.log("renderPayload:clearFeedback done");
 
+    const qType = getQuestionType(payload);
+
+    clozeAnswerTags = [];
+    renderClozeTags();
+
+    if (qType === "read_cloze") {
+        if (clozeTagBox) {
+            clozeTagBox.style.display = "flex";
+        }
+
+        if (answerInput) {
+            answerInput.style.display = "none";
+            answerInput.value = "[]";
+            answerInput.disabled = false;
+        }
+
+        if (clozeTagInput) {
+            clozeTagInput.value = "";
+            clozeTagInput.disabled = false;
+        }
+    } else {
+        if (clozeTagBox) {
+            clozeTagBox.style.display = "none";
+        }
+
+        if (clozeTagInput) {
+            clozeTagInput.value = "";
+            clozeTagInput.disabled = false;
+        }
+
+        if (answerInput) {
+            answerInput.style.display = "";
+            answerInput.value = "";
+            answerInput.disabled = false;
+        }
+    }
+
     nextBtn.style.display = "none";
     setTextSafe(sideCorrectAnswer, "提交后显示");
 
     submitBtn.disabled = false;
     submitBtn.style.display = "inline-flex";
-
-    answerInput.disabled = false;
 
     reloadBtn.disabled = false;
     reloadBtn.style.display = "inline-flex";
@@ -3307,6 +3604,26 @@ function renderPayload(payload) {
 
     applyQuestionInputMode(payload);
     console.log("renderPayload:applyQuestionInputMode done");
+
+    if (qType === "read_cloze") {
+        if (clozeTagBox) {
+            clozeTagBox.style.display = "flex";
+        }
+
+        if (answerInput) {
+            answerInput.style.display = "none";
+            answerInput.value = "[]";
+        }
+
+        if (clozeTagInput) {
+            clozeTagInput.value = "";
+            clozeTagInput.disabled = false;
+            clozeTagInput.focus();
+        }
+
+        clozeAnswerTags = [];
+        renderClozeTags();
+    }
 }
 
 async function loadCurrentQuestion() {
@@ -3557,15 +3874,21 @@ async function submitAnswer(event) {
     }
 
     const trainingId = trainingIdInput.value.trim();
-    const answer = answerInput.value.trim();
     const qType = getQuestionType(state.current || {});
+
+    if (qType === "read_cloze") {
+        flushClozeTagInput(true);
+        answerInput.value = JSON.stringify(clozeAnswerTags);
+    }
+
+    const answer = answerInput.value.trim();
 
     if (!trainingId) {
         setFeedback("当前题目还没有准备好，请先重新加载。", "warning");
         return;
     }
 
-    const isEmptyAnswer = !answer;
+    const isEmptyAnswer = !answer || answer === "[]";
 
     if (isEmptyAnswer) {
         setFeedback("你还没有填写回答，正在为你请求分段提示...", "warning");
@@ -3600,11 +3923,25 @@ async function submitAnswer(event) {
         if (!response.ok || data.ok === false) {
             const feedbackType = (data.is_empty_submission || data.is_assist_hint) ? "warning" : "wrong";
 
-            if (data.is_empty_submission && answerInput) {
-                answerInput.value = "";
-                answerInput.focus();
-            } else if (data.is_assist_hint && answerInput) {
-                answerInput.focus();
+            if (data.is_empty_submission) {
+                if (qType === "read_cloze") {
+                    clozeAnswerTags = [];
+                    renderClozeTags();
+
+                    if (clozeTagInput) {
+                        clozeTagInput.value = "";
+                        clozeTagInput.focus();
+                    }
+                } else if (answerInput) {
+                    answerInput.value = "";
+                    answerInput.focus();
+                }
+            } else if (data.is_assist_hint) {
+                if (qType === "read_cloze" && clozeTagInput) {
+                    clozeTagInput.focus();
+                } else if (answerInput) {
+                    answerInput.focus();
+                }
             }
 
             if (data.is_assist_hint) {
@@ -3655,7 +3992,9 @@ async function submitAnswer(event) {
             .filter(Boolean)
             .join(" / ");
 
-        const userAnswerText = String(answer || "").trim();
+        const userAnswerText = qType === "read_cloze"
+            ? clozeAnswerTags.join(" / ")
+            : String(answer || "").trim();
 
         if (!data.is_correct) {
             setFeedback({
@@ -3683,12 +4022,22 @@ async function submitAnswer(event) {
         });
         updateSessionProgress(data);
 
-        submitBtn.disabled = true;
-        answerInput.disabled = true;
-        reloadBtn.disabled = true;
-
         if (!data.is_correct) {
             state.retryCount += 1;
+
+            submitBtn.disabled = false;
+            reloadBtn.disabled = false;
+
+            if (qType === "read_cloze") {
+                if (clozeTagInput) {
+                    clozeTagInput.disabled = false;
+                    clozeTagInput.focus();
+                }
+            } else if (answerInput) {
+                answerInput.disabled = false;
+                answerInput.focus();
+            }
+
             revealChoiceTexts();
             markChoiceResult(false, answer, correctAnswersRaw);
             nextBtn.style.display = "inline-flex";

@@ -19,6 +19,11 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from app.train.services.cloze_engine import generate_cloze
+from ..services.srs_engine import (
+    get_next_review as srs_get_next_review,
+    manual_adjust_memory as srs_manual_adjust_memory,
+    update_memory_after_answer as srs_update_memory_after_answer,
+)
 
 from django.urls import reverse
 from django.core.paginator import Paginator
@@ -92,6 +97,61 @@ def parse_cloze(text: str):
         cloze = cloze.replace("{" + m + "}", "____", 1)
 
     return cloze, answers
+
+def parse_marked_cloze_candidates(text: str, max_blank=2, seed_key=None):
+    """
+    手动标注克漏字：
+    - {...} 表示可挖空候选范围
+    - 系统只在候选范围内挖空
+    - 优先按词块挖，不做随机拆字
+    - 未被选中的 {...} 去掉括号，保留原文
+    """
+    text = re.sub(r"[\r\n]+", "", text or "")
+    max_blank = int(max_blank or 1)
+
+    pattern = re.compile(r"\{([^{}]+)\}")
+    matches = list(pattern.finditer(text))
+
+    if not matches:
+        return text, []
+
+    selected_indexes = set(range(min(max_blank, len(matches))))
+
+    output = []
+    answers = []
+    last_end = 0
+
+    for idx, match in enumerate(matches):
+        output.append(text[last_end:match.start()])
+
+        target = (match.group(1) or "").strip()
+
+        if target and idx in selected_indexes:
+            if len(target) <= 2:
+                # 2字以内：整块挖空
+                output.append("____")
+                answers.append(target)
+            elif len(target) == 3:
+                # 3字：挖后2字，保留首字
+                output.append(target[0] + "____")
+                answers.append(target[1:])
+            elif len(target) == 4:
+                # 4字：挖后2字，保留前2字
+                output.append(target[:2] + "____")
+                answers.append(target[2:])
+            else:
+                # 更长：挖后半段
+                cut = max(1, len(target) // 2)
+                output.append(target[:cut] + "____")
+                answers.append(target[cut:])
+        else:
+            output.append(target)
+
+        last_end = match.end()
+
+    output.append(text[last_end:])
+
+    return "".join(output), answers
 
 
 def _katakana_to_hiragana(text: str) -> str:
@@ -392,9 +452,25 @@ def _normalize_accepted_answers(values):
 
     return cleaned
 
+# =========================
+# SRS 兼容辅助函数（暂留）
+# =========================
+# 注意：
+# 这些函数目前仍被训练状态构建、队列排序、错词复盘等逻辑调用。
+# 现在不能删除。
+#
+# 当前已完成：
+# - 主答题更新 update_memory_after_answer 已转到 services/srs_engine.py
+# - 手动升级 _manual_adjust_memory 已转到 services/srs_engine.py
+# - get_next_review 已转到 services/srs_engine.py
+#
+# 后续计划：
+# 等 _build_cycle_status、build_smart_queue、错词复盘相关逻辑也迁移后，
+# 再统一删除这里的兼容辅助函数。
+# =========================
+
 
 STRICT_CYCLE_MAX_STEP = 11
-
 
 def _get_strict_step_rule(step: int):
     """
@@ -496,19 +572,7 @@ def _get_strict_step_rule(step: int):
 
 
 def get_next_review(level: int, base_time=None):
-    """
-    兼容旧调用：
-    现在仍然允许传 level，
-    但这里的含义已经切换为“严格循环 step”。
-    """
-    now = base_time or timezone.now()
-    rule = _get_strict_step_rule(level)
-    interval = rule.get("interval")
-
-    if interval is None:
-        return now
-
-    return now + interval
+    return srs_get_next_review(level, base_time=base_time)
 
 def _is_slow_correct(is_correct, duration_seconds, item_type):
     """
@@ -1247,12 +1311,20 @@ def build_training_payload(training, memory=None, request=None):
             dynamic_cloze_answers = []
 
             if cloze_base_text:
-                dynamic_cloze_text, dynamic_cloze_answers = generate_cloze(
-                    cloze_base_text,
-                    min_blank=dynamic_min,
-                    max_blank=dynamic_max,
-                    seed_key=cloze_seed_key
-                )
+
+                if "{" in cloze_base_text and "}" in cloze_base_text:
+                    dynamic_cloze_text, dynamic_cloze_answers = parse_marked_cloze_candidates(
+                        cloze_base_text,
+                        max_blank=dynamic_max,
+                        seed_key=cloze_seed_key
+                    )
+                else:
+                    dynamic_cloze_text, dynamic_cloze_answers = generate_cloze(
+                        cloze_base_text,
+                        min_blank=dynamic_min,
+                        max_blank=dynamic_max,
+                        seed_key=cloze_seed_key
+                    )
 
             if dynamic_cloze_text and dynamic_cloze_answers:
                 resolved_cloze_text = dynamic_cloze_text
@@ -2193,109 +2265,13 @@ def judge_wrong_word_replay(item, raw_answer):
 
 
 def update_memory_after_answer(memory, is_correct, duration_seconds=None, item_type="", used_hint=False):
-    if not memory:
-        return
-
-    now = timezone.now()
-
-    current_step = int(
-        getattr(memory, "cycle_step", None)
-        if getattr(memory, "cycle_step", None) is not None
-        else (getattr(memory, "memory_level", 0) or 0)
+    return srs_update_memory_after_answer(
+        memory,
+        is_correct,
+        duration_seconds=duration_seconds,
+        item_type=item_type,
+        used_hint=used_hint,
     )
-
-    if current_step < 0:
-        current_step = 0
-
-    current_rule = _get_strict_step_rule(current_step)
-    next_review_at = getattr(memory, "next_review_at", None)
-    grace = current_rule.get("grace")
-
-    # =========================
-    # 1) 先判定是否已经超出当前锚点容忍窗口
-    #    一旦超窗，本轮直接作废，不允许“补做后继续往下”
-    # =========================
-    is_overdue_reset = (
-        current_step > 0
-        and next_review_at is not None
-        and grace is not None
-        and now > (next_review_at + grace)
-    )
-
-    if is_overdue_reset:
-        memory.cycle_step = 0
-        memory.memory_level = 0
-        memory.correct_streak = 0
-        memory.next_review_at = now
-        memory.last_review_at = now
-        memory.cycle_started_at = None
-        memory.mastered_at = None
-        memory.cycle_version = (getattr(memory, "cycle_version", 1) or 1) + 1
-        memory.last_result = "overdue_reset"
-        memory.last_reset_reason = (
-            "short_overdue"
-            if current_rule.get("kind") == "short"
-            else "long_overdue"
-        )
-        memory.save()
-        return
-
-    # =========================
-    # 2) 正确：严格按 step 推进
-    # =========================
-    if is_correct:
-        memory.correct_streak = (memory.correct_streak or 0) + 1
-        memory.total_correct = (memory.total_correct or 0) + 1
-        _set_wrong_boost(memory, 0)
-
-        if used_hint:
-            memory.last_result = "hint_correct"
-        elif _is_slow_correct(is_correct, duration_seconds, item_type):
-            memory.last_result = "slow_correct"
-        else:
-            memory.last_result = "correct"
-
-        memory.last_reset_reason = ""
-
-        # 第一次答对：正式开始一轮循环
-        if current_step == 0:
-            memory.cycle_started_at = now
-            next_step = 1
-        else:
-            next_step = current_step + 1
-
-        # 已完成最后一锚点（6个月）
-        if next_step > STRICT_CYCLE_MAX_STEP:
-            next_step = STRICT_CYCLE_MAX_STEP
-            memory.cycle_step = STRICT_CYCLE_MAX_STEP
-            memory.memory_level = STRICT_CYCLE_MAX_STEP
-            memory.mastered_at = now
-            memory.next_review_at = None
-            memory.last_result = "mastered"
-        else:
-            memory.cycle_step = next_step
-            memory.memory_level = next_step
-            memory.next_review_at = get_next_review(next_step, base_time=now)
-
-    # =========================
-    # 3) 错误：当前循环直接重置
-    # =========================
-    else:
-        memory.cycle_step = 0
-        memory.memory_level = 0
-        memory.correct_streak = 0
-        memory.total_wrong = (memory.total_wrong or 0) + 1
-        _set_wrong_boost(memory, min(_get_wrong_boost(memory) + 3, 10))
-        _set_last_wrong_at(memory, now)
-        memory.next_review_at = now
-        memory.cycle_started_at = None
-        memory.mastered_at = None
-        memory.cycle_version = (getattr(memory, "cycle_version", 1) or 1) + 1
-        memory.last_result = "wrong_reset"
-        memory.last_reset_reason = "wrong_answer"
-
-    memory.last_review_at = now
-    memory.save()
 
 # =========================
 # 手动升一级规则说明
@@ -2323,55 +2299,7 @@ def update_memory_after_answer(memory, is_correct, duration_seconds=None, item_t
 
 
 def _manual_adjust_memory(memory, action):
-    """
-    手动调整记忆等级（v1）
-    - 只允许 upgrade: 当前 step + 1
-
-    保留现有严格艾宾浩斯自动规则不变：
-    后续答错 / 超窗，仍然会按原逻辑自动 reset。
-    """
-    if not memory:
-        return
-
-    now = timezone.now()
-
-    current_step = int(
-        getattr(memory, "cycle_step", None)
-        if getattr(memory, "cycle_step", None) is not None
-        else (getattr(memory, "memory_level", 0) or 0)
-    )
-
-    if current_step < 0:
-        current_step = 0
-
-    max_step = STRICT_CYCLE_MAX_STEP
-
-    if action == "upgrade":
-        next_step = min(current_step + 1, max_step)
-
-        memory.cycle_step = next_step
-        memory.memory_level = next_step
-        memory.last_result = "manual_upgrade"
-        memory.last_reset_reason = ""
-
-        if next_step <= 0:
-            memory.next_review_at = now
-            memory.mastered_at = None
-        elif next_step >= STRICT_CYCLE_MAX_STEP:
-            memory.mastered_at = now
-            memory.next_review_at = None
-        else:
-            memory.mastered_at = None
-            memory.next_review_at = get_next_review(next_step, base_time=now)
-
-        if current_step == 0 and next_step > 0 and not getattr(memory, "cycle_started_at", None):
-            memory.cycle_started_at = now
-
-    else:
-        raise ValueError(f"unsupported manual action: {action}")
-
-    memory.last_review_at = now
-    memory.save()
+    return srs_manual_adjust_memory(memory, action)
 
 def _touch_memory_after_wrong_word_replay(memory, is_correct):
     """
@@ -3991,7 +3919,9 @@ def _train_api_by_scope(request, scope, obj):
 
     scope_label = _get_train_scope_label(scope)
     target_text = _get_train_scope_target_text(scope)
-    plan_only_scope = scope in {"global_due", "global_overdue"}
+
+    # 只有课内 / 书内训练走今日计划过滤
+    plan_only_scope = scope in {"lesson", "book"}
 
     # =========================
     # GET：出题（走SRS调度）
@@ -4067,6 +3997,31 @@ def _train_api_by_scope(request, scope, obj):
         #    才显示今日完成
         # =========================
         if scope_plan_items and not remaining:
+
+            if scope == "global_overdue":
+                return JsonResponse({
+                    "empty": True,
+                    "reason": "overdue_done",
+                    "message": "当前全局逾期补做任务已完成，可继续处理今日到期复习。",
+                    "train_scope": scope,
+                    "train_scope_label": scope_label,
+                    "plan_total": scope_plan_stats["total"],
+                    "plan_done": scope_plan_stats["done"],
+                    "plan_progress": 100,
+                })
+
+            if scope == "global_due":
+                return JsonResponse({
+                    "empty": True,
+                    "reason": "due_done",
+                    "message": "今日到期复习任务已完成。",
+                    "train_scope": scope,
+                    "train_scope_label": scope_label,
+                    "plan_total": scope_plan_stats["total"],
+                    "plan_done": scope_plan_stats["done"],
+                    "plan_progress": 100,
+                })
+
             current_now = timezone.now()
 
             all_next_reviews = sorted(
@@ -5390,12 +5345,18 @@ def builder_save(request):
                 "error": "克漏字题必须先填写回答内容"
             }, status=400)
 
-        cloze_text, cloze_answers = generate_cloze(
-            cloze_base_text,
-            min_blank=min_blank,
-            max_blank=max_blank
-        )
-
+        if "{" in cloze_base_text and "}" in cloze_base_text:
+            cloze_text, cloze_answers = parse_marked_cloze_candidates(
+                cloze_base_text,
+                max_blank=max_blank,
+                seed_key=f"manual-cloze-{question.id}-{max_blank}"
+            )
+        else:
+            cloze_text, cloze_answers = generate_cloze(
+                cloze_base_text,
+                min_blank=min_blank,
+                max_blank=max_blank
+            )
         if not cloze_text or "____" not in cloze_text:
             question.delete()
             return JsonResponse({
@@ -5715,29 +5676,60 @@ def question_edit(request, question_id):
         # 克漏字
         # =========================
         if training.item_type == "read_cloze":
-            cloze_text = (request.POST.get("cloze_text") or "").strip()
-            cloze_answers_text = (request.POST.get("cloze_answers_text") or "").strip()
+            print("DEBUG EDIT READ_CLOZE ENTER:", {
+                "training_id": training.id,
+                "item_type": training.item_type,
+                "question_id": question.id,
+                "question_prompt_text": question.prompt_text,
+                "training_source_text": training.source_text,
+                "question_answer_text": question.answer_text,
+                "training_target_answer": training.target_answer,
+            })
 
-            cloze_answers = [
-                x.strip()
-                for x in re.split(r"[\n,，;/；、|]+", cloze_answers_text)
-                if x.strip()
-            ]
+            cloze_source_text = (
+                question.prompt_text
+                or training.source_text
+                or ""
+            ).strip()
 
-            update_fields = ["cloze_answers"]
+            cloze_base_text = (
+                question.answer_text
+                or training.target_answer
+                or ""
+            ).strip()
 
-            if cloze_text:
-                training.cloze_text = cloze_text
-                training.manual_cloze_text = cloze_text
-                update_fields.extend(["cloze_text", "manual_cloze_text"])
+            if "{" in cloze_source_text and "}" in cloze_source_text:
+                cloze_text, cloze_answers = parse_marked_cloze_candidates(
+                    cloze_source_text,
+                    max_blank=2,
+                    seed_key=f"edit-{training.id}"
+                )
+                print("DEBUG CLOZE RESULT:", {
+                    "cloze_text": cloze_text,
+                    "cloze_answers": cloze_answers,
+                })
+            else:
+                cloze_text = (request.POST.get("cloze_text") or "").strip()
 
+                cloze_answers_text = (
+                    request.POST.get("cloze_answers_text") or ""
+                ).strip()
+
+                cloze_answers = [
+                    x.strip()
+                    for x in re.split(r"[\n,，;/；、|]+", cloze_answers_text)
+                    if x.strip()
+                ]
+
+            training.cloze_text = cloze_text
+            training.manual_cloze_text = cloze_text
             training.cloze_answers = cloze_answers
-            training.save(update_fields=update_fields)
 
-            # 注意：
-            # read_cloze 的 cloze_answers 只是空格回答，
-            # 不能反向覆盖完整的 target_answer / question.answer_text。
-            # 完整回答应继续保持为编辑页中的“回答”字段。
+            training.save(update_fields=[
+                "cloze_text",
+                "manual_cloze_text",
+                "cloze_answers",
+            ])
 
             return redirect(next_url)
 

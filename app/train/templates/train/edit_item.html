@@ -272,16 +272,58 @@
                             {% endif %}
 
                             {% if item_type == "read_cloze" %}
+                                {% firstof training.source_text training.prompt_text obj.prompt_text obj.question_text obj.question "" as current_cloze_source %}
+
                                 <div class="field-group full">
-                                    <div class="field-label">回答克漏字文本</div>
-                                    <textarea name="cloze_text" class="textarea" placeholder="请输入基于回答的挖空文本，且必须包含 ____">{% firstof training.cloze_text obj.prompt_text "" %}</textarea>
-                                    <div class="field-help">这里是基于“回答”生成的挖空文本，不是题干。必须包含 ____ 占位符。</div>
+                                    <div class="field-label">当前挖空模式</div>
+
+                                    {% if "{" in current_cloze_source and "}" in current_cloze_source %}
+                                        <div class="field-help" style="color:#e67e22;">
+                                            手动挖空（检测到 {} 标记）
+                                        </div>
+                                    {% else %}
+                                        <div class="field-help" style="color:#27ae60;">
+                                            自动挖空（未检测到 {} 标记）
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="field-help">
+                                        手动挖空：在题干中用 { } 标记可挖范围。自动挖空：不写 { }，系统自动选择挖空位置。
+                                    </div>
                                 </div>
 
                                 <div class="field-group full">
-                                    <div class="field-label">克漏字答案</div>
-                                    <textarea name="cloze_answers_text" class="textarea" placeholder="每行一个答案，或用逗号分隔">{{ cloze_answers_text|default:'' }}</textarea>
-                                    <div class="field-help">多个空可用换行、逗号、分号分隔。</div>
+                                    <div class="field-label">系统生成的克漏字文本</div>
+
+                                    <div class="readonly-box is-cloze">
+                                        <div class="preview-main">
+                                            {% firstof training.cloze_text "（保存后自动生成）" %}
+                                        </div>
+                                    </div>
+
+                                    <div class="field-help">
+                                        此内容由系统根据题干 / 回答自动生成，不能手动填写。
+                                    </div>
+                                </div>
+
+                                <div class="field-group full">
+                                    <div class="field-label">系统生成答案</div>
+
+                                    <div class="readonly-box is-answer">
+                                        {% if cloze_answers_text %}
+                                            {% for answer in cloze_answers_text.splitlines %}
+                                                {% if answer %}
+                                                    <span class="answer-pill">{{ answer }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="preview-empty">（保存后自动生成）</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="field-help">
+                                        多个空的答案会自动显示，不能手动填写。
+                                    </div>
                                 </div>
                             {% endif %}
 
@@ -289,16 +331,16 @@
                                 <div class="field-label">备注</div>
                                 <textarea name="note" class="textarea" placeholder="补充备注，可留空">{{ obj.note|default:'' }}</textarea>
                             </div>
-                        </div>
-
-                    {% else %}
-                        <div class="form-grid">
-                            <div class="field-group full">
-                                <div class="field-label">标题</div>
-                                <input type="text" name="title" class="input" value="{{ obj.title|default:'' }}" placeholder="请输入标题" required>
                             </div>
-                        </div>
-                    {% endif %}
+
+                            {% else %}
+                                <div class="form-grid">
+                                    <div class="field-group full">
+                                        <div class="field-label">标题</div>
+                                        <input type="text" name="title" class="input" value="{{ obj.title|default:'' }}" placeholder="请输入标题" required>
+                                    </div>
+                                </div>
+                            {% endif %}
 
                     <div class="actions">
                         <button type="submit" class="primary-btn">保存修改</button>
@@ -415,6 +457,53 @@
 .inline-form {
     margin: 0;
 }
+
+.readonly-box {
+    min-height: 44px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: #f8fafc;
+    border: 1px solid #dbeafe;
+    color: #0f172a;
+    line-height: 1.7;
+}
+
+.readonly-box.is-cloze {
+    display: flex;
+    align-items: center;
+}
+
+.preview-main {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    word-break: keep-all;
+}
+
+.readonly-box.is-answer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.answer-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1d4ed8;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.preview-empty {
+    color: #64748b;
+    font-weight: 700;
+}
+
 </style>
 {% endblock %}
 

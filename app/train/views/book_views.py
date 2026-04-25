@@ -161,9 +161,26 @@ def dashboard(request):
 
     dashboard_has_priority_books = len(priority_books) > 0
 
-    today_due_total = sum((row.get("due_now_count", row.get("today_due_count", 0)) or 0) for row in actionable_books)
-    today_overdue_total = sum((row.get("overdue_count") or 0) for row in actionable_books)
-    completed_total = sum((row.get("mastered_count") or 0) for row in book_cycle_summary)
+    today_due_total = sum(
+        (row.get("due_now_count", row.get("today_due_count", 0)) or 0)
+        for row in actionable_books
+    )
+
+    today_overdue_total = sum(
+        (row.get("overdue_count") or 0)
+        for row in actionable_books
+    )
+
+    done_ids = set(request.session.get("today_done_ids", []))
+
+    if done_ids:
+        done_overdue_count = min(len(done_ids), today_overdue_total)
+        today_overdue_total = max(0, today_overdue_total - done_overdue_count)
+
+    completed_total = sum(
+        (row.get("mastered_count") or 0)
+        for row in book_cycle_summary
+    )
 
     return render(request, "train/dashboard.html", {
         "books": books,
@@ -295,8 +312,21 @@ def active_training_books(request):
     )
 
     active_books_total = len(active_books)
-    today_due_total = sum((row.get("due_now_count", row.get("today_due_count", 0)) or 0) for row in active_books)
-    today_overdue_total = sum((row.get("overdue_count") or 0) for row in active_books)
+    today_due_total = sum(
+        (row.get("due_now_count", row.get("today_due_count", 0)) or 0)
+        for row in active_books
+    )
+
+    today_overdue_total = sum(
+        (row.get("overdue_count") or 0)
+        for row in active_books
+    )
+
+    done_ids = set(request.session.get("today_done_ids", []))
+
+    if done_ids:
+        done_overdue_count = min(len(done_ids), today_overdue_total)
+        today_overdue_total = max(0, today_overdue_total - done_overdue_count)
 
     return render(request, "train/active_training_books.html", {
         "active_books": active_books,

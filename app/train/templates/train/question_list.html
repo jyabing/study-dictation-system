@@ -78,6 +78,14 @@
                                         <td class="cell-id">{{ question.id }}</td>
                                         <td class="cell-type">
                                             <span class="chip warning">{{ qtype }}</span>
+
+                                            {% if qtype == "read_cloze" %}
+                                                {% if "{" in question_prompt and "}" in question_prompt %}
+                                                    <span class="chip danger">手动挖空</span>
+                                                {% else %}
+                                                    <span class="chip success">自动挖空</span>
+                                                {% endif %}
+                                            {% endif %}
                                         </td>
                                         <td class="cell-text">
                                             {% if instruction_text %}
@@ -135,6 +143,15 @@
 
                                     <div class="question-meta">
                                         <span class="chip warning">{{ qtype }}</span>
+
+                                        {% if qtype == "read_cloze" %}
+                                            {% if "{" in question_prompt and "}" in question_prompt %}
+                                                <span class="chip danger">手动挖空</span>
+                                            {% else %}
+                                                <span class="chip success">自动挖空</span>
+                                            {% endif %}
+                                        {% endif %}
+    
                                         <span class="chip">ID：{{ question.id }}</span>
                                     </div>
                                 </div>

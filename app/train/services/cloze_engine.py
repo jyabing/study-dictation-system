@@ -396,6 +396,7 @@ def select_non_adjacent_tokens(scored, blank_count):
 # 主函数：生成克漏题
 # =========================
 def generate_cloze(text, min_blank=1, max_blank=2, seed_key=None):
+    text = re.sub(r"[\r\n]+", "", text or "")
     tokens = simple_tokenize(text)
     lang = detect_lang(text)
 

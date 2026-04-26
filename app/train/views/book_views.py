@@ -4,7 +4,9 @@ from ..models import Book, Lesson, Question, QuestionMemory
 from .train_views import (
     get_book_lessons_cycle_summary,
     get_dashboard_books_cycle_summary,
-
+    get_today_plan,
+    _get_scope_plan_items,
+    _build_scope_plan_stats,
 )
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -161,21 +163,39 @@ def dashboard(request):
 
     dashboard_has_priority_books = len(priority_books) > 0
 
-    today_due_total = sum(
-        (row.get("due_now_count", row.get("today_due_count", 0)) or 0)
-        for row in actionable_books
+    dashboard_plan = get_today_plan(request)
+
+    dashboard_due_items = _get_scope_plan_items(
+        dashboard_plan["items"],
+        "global_due",
+        request.user
     )
 
-    today_overdue_total = sum(
-        (row.get("overdue_count") or 0)
-        for row in actionable_books
+    dashboard_overdue_items = _get_scope_plan_items(
+        dashboard_plan["items"],
+        "global_overdue",
+        request.user
     )
 
-    done_ids = set(request.session.get("today_done_ids", []))
+    dashboard_due_stats = _build_scope_plan_stats(
+        request,
+        dashboard_due_items
+    )
 
-    if done_ids:
-        done_overdue_count = min(len(done_ids), today_overdue_total)
-        today_overdue_total = max(0, today_overdue_total - done_overdue_count)
+    dashboard_overdue_stats = _build_scope_plan_stats(
+        request,
+        dashboard_overdue_items
+    )
+
+    today_due_total = max(
+        0,
+        dashboard_due_stats["total"] - dashboard_due_stats["done"]
+    )
+
+    today_overdue_total = max(
+        0,
+        dashboard_overdue_stats["total"] - dashboard_overdue_stats["done"]
+    )
 
     completed_total = sum(
         (row.get("mastered_count") or 0)
@@ -312,21 +332,40 @@ def active_training_books(request):
     )
 
     active_books_total = len(active_books)
-    today_due_total = sum(
-        (row.get("due_now_count", row.get("today_due_count", 0)) or 0)
-        for row in active_books
+
+    dashboard_plan = get_today_plan(request)
+
+    dashboard_due_items = _get_scope_plan_items(
+        dashboard_plan["items"],
+        "global_due",
+        request.user
     )
 
-    today_overdue_total = sum(
-        (row.get("overdue_count") or 0)
-        for row in active_books
+    dashboard_overdue_items = _get_scope_plan_items(
+        dashboard_plan["items"],
+        "global_overdue",
+        request.user
     )
 
-    done_ids = set(request.session.get("today_done_ids", []))
+    dashboard_due_stats = _build_scope_plan_stats(
+        request,
+        dashboard_due_items
+    )
 
-    if done_ids:
-        done_overdue_count = min(len(done_ids), today_overdue_total)
-        today_overdue_total = max(0, today_overdue_total - done_overdue_count)
+    dashboard_overdue_stats = _build_scope_plan_stats(
+        request,
+        dashboard_overdue_items
+    )
+
+    today_due_total = max(
+        0,
+        dashboard_due_stats["total"] - dashboard_due_stats["done"]
+    )
+
+    today_overdue_total = max(
+        0,
+        dashboard_overdue_stats["total"] - dashboard_overdue_stats["done"]
+    )
 
     return render(request, "train/active_training_books.html", {
         "active_books": active_books,

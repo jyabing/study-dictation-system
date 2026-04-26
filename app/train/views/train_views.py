@@ -3667,13 +3667,21 @@ def _get_scope_plan_items(plan_items, scope, obj):
             continue
 
         if scope == "global_due":
-            if bool(item.get("is_due")) and not bool(item.get("is_overdue")):
+            is_due = bool(
+                item.get("is_due")
+                if item.get("is_due") is not None
+                else item.get("due")
+            )
+
+            if is_due and not bool(item.get("is_overdue")):
                 scoped_items.append(item)
+
             continue
 
         if scope == "global_overdue":
             if bool(item.get("is_overdue")):
                 scoped_items.append(item)
+
             continue
 
         scoped_items.append(item)
@@ -3921,7 +3929,7 @@ def _train_api_by_scope(request, scope, obj):
     target_text = _get_train_scope_target_text(scope)
 
     # 只有课内 / 书内训练走今日计划过滤
-    plan_only_scope = scope in {"lesson", "book"}
+    plan_only_scope = scope in {"global_due", "global_overdue"}
 
     # =========================
     # GET：出题（走SRS调度）

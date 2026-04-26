@@ -2500,6 +2500,32 @@ function resetSpeechUi() {
     }
 }
 
+function resetSpeechRecognitionState() {
+    state.recognitionSessionId += 1;
+
+    if (state.recognition) {
+        try {
+            state.recognition.onstart = null;
+            state.recognition.onresult = null;
+            state.recognition.onerror = null;
+            state.recognition.onend = null;
+            state.recognition.stop();
+        } catch (error) {
+            console.warn("reset recognition stop skipped:", error);
+        }
+    }
+
+    state.recognition = null;
+    state.isRecognizing = false;
+    state.pendingRecognitionStart = false;
+    state.recognitionFinalText = "";
+    state.recognitionInterimText = "";
+    state.recognitionShouldAutoSubmit = false;
+    state.recognitionStoppedManually = false;
+
+    resetSpeechUi();
+}
+
 function showTextWorkspace() {
     state.inputMode = "text";
 
@@ -4076,7 +4102,7 @@ if (manualUpgradeBtn) {
 
 if (speechUseTextBtn) {
     speechUseTextBtn.addEventListener("click", () => {
-        stopSpeechRecognition(true);
+        resetSpeechRecognitionState();
         enableSpeechTextFallback();
         setFeedback("已切换到文本输入兜底。", "info");
     });
@@ -4084,8 +4110,7 @@ if (speechUseTextBtn) {
 
 if (speechRetryBtn) {
     speechRetryBtn.addEventListener("click", () => {
-        stopSpeechRecognition(true);
-        resetSpeechUi();
+        resetSpeechRecognitionState();
 
         if (state.current && isSpeechQuestionType(getQuestionType(state.current))) {
             if (textAnswerWorkspace) {
@@ -4123,13 +4148,13 @@ if (speechStopBtn) {
 
 nextBtn.addEventListener("click", () => {
     clearAutoNextTimer();
-    stopSpeechRecognition(true);
+    resetSpeechRecognitionState();
     loadCurrentQuestion();
 });
 
 reloadBtn.addEventListener("click", () => {
     clearAutoNextTimer();
-    stopSpeechRecognition(true);
+    resetSpeechRecognitionState();
     loadCurrentQuestion();
 });
 

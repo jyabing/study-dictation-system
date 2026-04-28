@@ -5192,12 +5192,14 @@ def builder_save(request):
 
     uploaded_audio_file = None
     uploaded_answer_audio_file = None
+    uploaded_prompt_image_file = None
 
     if request.content_type and request.content_type.startswith("multipart/form-data"):
         payload_raw = (request.POST.get("payload") or "").strip()
         data = _safe_json_loads(payload_raw) if payload_raw else {}
         uploaded_audio_file = request.FILES.get("audio_file")
         uploaded_answer_audio_file = request.FILES.get("answer_audio_file")
+        uploaded_prompt_image_file = request.FILES.get("prompt_image_file")
     else:
         data = _safe_json_loads(request.body)
 
@@ -5225,6 +5227,7 @@ def builder_save(request):
     prompt_text = source_text
     answer_text = target_answer
     prompt_audio = (data.get("prompt_audio") or data.get("audio_url") or "").strip()
+    prompt_image_url = (data.get("prompt_image_url") or "").strip()
     answer_audio = (data.get("answer_audio") or "").strip()
 
     accepted_answers_text = (data.get("accepted_answers_text") or "").strip()
@@ -5469,6 +5472,8 @@ def builder_save(request):
                 }
             }],
             audio_file=uploaded_audio_file,
+            prompt_image_file=uploaded_prompt_image_file if item_type == "speak_read" else None,
+            prompt_image_url=prompt_image_url if item_type == "speak_read" else "",
             answer_audio_file=uploaded_answer_audio_file,
             answer_use_tts=answer_use_tts
         )
@@ -5760,6 +5765,24 @@ def question_edit(request, question_id):
             answer_use_tts = request.POST.get("answer_use_tts") == "1"
             asr_lang = (request.POST.get("asr_lang") or "en-US").strip()
             allow_partial_match = request.POST.get("allow_partial_match") == "1"
+
+            has_prompt_audio = bool(
+                training.audio_file
+                or uploaded_audio_file
+                or audio_url
+                or question.audio_url
+            )
+
+            has_answer_audio = bool(
+                training.answer_audio_file
+                or uploaded_answer_audio_file
+            )
+
+            if not has_prompt_audio:
+                use_tts = True
+
+            if not has_answer_audio:
+                answer_use_tts = True
 
             training.answer_use_tts = answer_use_tts
             training.choices = [{

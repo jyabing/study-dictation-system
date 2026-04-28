@@ -155,6 +155,17 @@ class TrainingItem(models.Model):
         null=True
     )
 
+    prompt_image_file = models.FileField(
+        upload_to="images/prompts/",
+        blank=True,
+        null=True
+    )
+
+    prompt_image_url = models.URLField(
+        blank=True,
+        null=True
+    )
+
     answer_audio_file = models.FileField(
         upload_to="audio/answers/",
         blank=True,

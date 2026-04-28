@@ -139,20 +139,22 @@
                                 <div class="field-help">这里填写用户最终需要生成并记忆的目标回答。</div>
                             </div>
 
-                            {% if display_qtype == "listen_asr" or display_qtype == "speak_read" %}
-                                <div class="field-group full">
-                                    <div class="field-label">可接受回答（读音别名）</div>
-                                    <textarea
-                                        name="accepted_answers_text"
-                                        class="textarea"
-                                        placeholder="每行一个可接受回答，例如：&#10;やせがえるまけるないっさこれにあり"
-                                    >{{ accepted_answers_text|default:'' }}</textarea>
-                                    <div class="field-help">
-                                        仅用于听 / 说题。这里填写可接受的读音型答案或别名。每行一个。
-                                        命中后会判为“读音正确，但标准书写需要加强”。
-                                    </div>
+                            <div
+                                id="accepted-answers-block"
+                                class="field-group full listen-speak-only"
+                                {% if display_qtype != "listen_asr" and display_qtype != "speak_read" %}style="display:none;"{% endif %}
+                            >
+                                <div class="field-label">可接受回答（读音别名）</div>
+                                <textarea
+                                    name="accepted_answers_text"
+                                    class="textarea"
+                                    placeholder="每行一个可接受回答，例如：&#10;やせがえるまけるないっさこれにあり"
+                                >{{ accepted_answers_text|default:'' }}</textarea>
+                                <div class="field-help">
+                                    仅用于听 / 说题。这里填写可接受的读音型答案或别名。每行一个。
+                                    命中后会判为“读音正确，但标准书写需要加强”。
                                 </div>
-                            {% endif %}
+                            </div>
 
                             {% if display_qtype == "listen_asr" or display_qtype == "speak_read" %}
                                 <div class="field-group full">
@@ -233,9 +235,9 @@
                                             type="checkbox"
                                             name="use_tts"
                                             value="1"
-                                            {% if listen_meta.use_tts %}checked{% endif %}
+                                            {% if listen_meta.use_tts or not training.audio_file and not obj.audio_url %}checked{% endif %}
                                         >
-                                        没有音频时使用 TTS
+                                        没有题干音频时自动使用 TTS
                                     </label>
 
                                     <label class="field-help" style="display:block; margin-top:8px;">
@@ -243,9 +245,9 @@
                                             type="checkbox"
                                             name="answer_use_tts"
                                             value="1"
-                                            {% if training and training.answer_use_tts %}checked{% endif %}
+                                            {% if training and training.answer_use_tts or training and not training.answer_audio_file %}checked{% endif %}
                                         >
-                                        没有回答音频时使用 TTS 朗读回答
+                                        没有回答音频时自动使用 TTS 朗读回答
                                     </label>
 
                                     <label class="field-help" style="display:block; margin-top:8px;">
@@ -557,5 +559,35 @@ if (form) {
 }
 
 syncQuestionAnswerFields();
+
+const qtypeSelect = document.querySelector('select[name="qtype"]');
+const listenSpeakOnlyBlocks = document.querySelectorAll(".listen-speak-only");
+
+function isListenOrSpeakQtype(value) {
+    return value === "listen_asr" || value === "speak_read";
+}
+
+function refreshListenSpeakOnlyBlocks() {
+    if (!qtypeSelect) {
+        return;
+    }
+
+    const shouldShow = isListenOrSpeakQtype(qtypeSelect.value);
+
+    listenSpeakOnlyBlocks.forEach(function (block) {
+        block.style.display = shouldShow ? "" : "none";
+
+        block.querySelectorAll("input, textarea, select").forEach(function (field) {
+            field.disabled = !shouldShow;
+        });
+    });
+}
+
+if (qtypeSelect) {
+    qtypeSelect.addEventListener("change", refreshListenSpeakOnlyBlocks);
+}
+
+refreshListenSpeakOnlyBlocks();
+
 </script>
 {% endblock %}

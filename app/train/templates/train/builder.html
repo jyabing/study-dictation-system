@@ -617,6 +617,32 @@
                         </div>
                     </div>
 
+                    <div id="prompt_image_url_wrap" class="field hidden" style="margin-top:12px;">
+                        <label for="prompt_image_url">题干图片（URL / 路径）</label>
+                        <input
+                            id="prompt_image_url"
+                            type="text"
+                            placeholder="可选：朗读标记图、重音图、连读图 URL / 路径"
+                            oninput="updatePreview();"
+                        >
+                        <div class="section-sub" style="margin-top:6px;">
+                            用于说 / 看字朗读训练。可放朗读标记图、重音图、连读图、停顿图等辅助图片。
+                        </div>
+                    </div>
+
+                    <div id="prompt_image_file_wrap" class="field hidden" style="margin-top:12px;">
+                        <label for="prompt_image_file">题干图片文件（上传）</label>
+                        <input
+                            id="prompt_image_file"
+                            type="file"
+                            accept="image/*"
+                            onchange="updatePreview();"
+                        >
+                        <div class="section-sub" style="margin-top:6px;">
+                            有上传图片时，训练页优先显示上传图片；没有上传图片时，才回退到上面的图片 URL / 路径。
+                        </div>
+                    </div>
+
                     <div class="checkbox-row">
                         <input type="checkbox" id="use_tts" onchange="updatePreview();">
                         <label for="use_tts" style="margin:0;">没有音频时使用 TTS</label>
@@ -879,6 +905,8 @@
 
             const promptAudioWrap = document.getElementById("prompt_audio_wrap");
             const promptAudioFileWrap = document.getElementById("prompt_audio_file_wrap");
+            const promptImageUrlWrap = document.getElementById("prompt_image_url_wrap");
+            const promptImageFileWrap = document.getElementById("prompt_image_file_wrap");
             const useTtsWrap = document.getElementById("use_tts")
                 ? document.getElementById("use_tts").closest(".checkbox-row")
                 : null;
@@ -897,6 +925,7 @@
             const asrSection = document.getElementById("asr_section");
 
             const isListenOrSpeak = itemType === "listen_asr" || itemType === "speak_read";
+            const isSpeakRead = itemType === "speak_read";
             const isReadChoice = itemType === "read_choice_single" || itemType === "read_choice_multi";
 
             // 回答区：选择题隐藏，其它显示
@@ -927,6 +956,15 @@
 
             // 可接受回答：只在听/说显示
             acceptedAnswersWrap.classList.toggle("hidden", !isListenOrSpeak);
+
+            // 题干图片：只在说 / 看字朗读显示
+            if (promptImageUrlWrap) {
+                promptImageUrlWrap.classList.toggle("hidden", !isSpeakRead);
+            }
+
+            if (promptImageFileWrap) {
+                promptImageFileWrap.classList.toggle("hidden", !isSpeakRead);
+            }
 
             // 题干音频相关：只在听/说显示
             promptAudioWrap.classList.toggle("hidden", !isListenOrSpeak);
@@ -1236,6 +1274,11 @@
                 ? answerAudioFileInput.files[0]
                 : null;
 
+            const promptImageFileInput = document.getElementById("prompt_image_file");
+            const selectedPromptImageFile = promptImageFileInput && promptImageFileInput.files.length
+                ? promptImageFileInput.files[0]
+                : null;
+
             const payload = {
                 lesson_id: document.getElementById("lesson").value,
                 skill: skill,
@@ -1250,6 +1293,9 @@
                 // 旧字段：继续兼容后端旧逻辑
                 prompt_text: promptText,
                 prompt_audio: document.getElementById("prompt_audio").value,
+                prompt_image_url: document.getElementById("prompt_image_url")
+                    ? document.getElementById("prompt_image_url").value
+                    : "",
                 use_tts: document.getElementById("use_tts").checked,
 
                 answer_text: answerText,
@@ -1280,6 +1326,10 @@
 
             if (selectedAudioFile) {
                 formData.append("audio_file", selectedAudioFile);
+            }
+
+            if (selectedPromptImageFile) {
+                formData.append("prompt_image_file", selectedPromptImageFile);
             }
 
             if (selectedAnswerAudioFile) {

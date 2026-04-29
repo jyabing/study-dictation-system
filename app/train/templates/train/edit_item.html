@@ -117,7 +117,6 @@
                                     id="question-display"
                                     class="textarea"
                                     placeholder="请输入题干"
-                                    required
                                 >{% firstof training.source_text obj.prompt_text obj.question_text obj.question "" %}</textarea>
                                 <input type="hidden" name="question" id="question-hidden-1" value="{% firstof training.source_text obj.prompt_text obj.question_text obj.question '' %}">
                                 <input type="hidden" name="question_text" id="question-hidden-2" value="{% firstof training.source_text obj.prompt_text obj.question_text obj.question '' %}">

@@ -5618,7 +5618,29 @@ def question_edit(request, question_id):
         uploaded_prompt_image_file = request.FILES.get("prompt_image_file")
         clear_prompt_image_file = request.POST.get("clear_prompt_image_file") == "1"
 
-        if not source_text:
+        has_source_text = bool(source_text)
+        has_existing_prompt_image = bool(
+            training
+            and training.item_type == "speak_read"
+            and training.prompt_image_file
+            and not clear_prompt_image_file
+        )
+        has_prompt_image = bool(
+            prompt_image_url
+            or uploaded_prompt_image_file
+            or has_existing_prompt_image
+        )
+
+        if training and training.item_type == "speak_read":
+            source_error = (
+                "说-看字朗读题需要填写文字题干，或上传 / 填写题干图片。"
+                if not has_source_text and not has_prompt_image
+                else ""
+            )
+        else:
+            source_error = "题干不能为空" if not has_source_text else ""
+
+        if source_error:
             return render(request, "train/edit_item.html", {
                 "mode": "question",
                 "obj": question,
@@ -5627,7 +5649,7 @@ def question_edit(request, question_id):
                 "display_qtype": display_qtype,
                 "next": next_url,
                 "page_title": "编辑训练题",
-                "error": "题干不能为空",
+                "error": source_error,
                 "choices_json": json.dumps(training.choices or [], ensure_ascii=False) if training else "[]",
                 "cloze_answers_text": "\n".join(training.cloze_answers or []) if training and training.cloze_answers else "",
                 "accepted_answers_text": "\n".join(training.accepted_answers or []) if training and training.accepted_answers else "",

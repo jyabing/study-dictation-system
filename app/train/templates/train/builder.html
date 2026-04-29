@@ -814,6 +814,16 @@
                         <div class="preview-label">提示短语 / 题干</div>
                         <div id="previewQuestion" class="preview-question">请先输入提示短语和题干</div>
 
+                        <div id="previewPromptImageWrap" class="hidden" style="margin-top:12px;">
+                            <div class="preview-label">题干图片</div>
+                            <img
+                                id="previewPromptImage"
+                                src=""
+                                alt="题干图片预览"
+                                style="max-width:100%; border:1px solid #dbeafe; border-radius:12px; background:#fff;"
+                            >
+                        </div>
+
                         <div class="preview-label">训练方式</div>
                         <div id="previewType" class="preview-answer">阅读克漏字</div>
 
@@ -1147,6 +1157,10 @@
             const previewClozeModeWrap = document.getElementById("previewClozeModeWrap");
             const previewClozeModeBadge = document.getElementById("previewClozeModeBadge");
             const previewClozeModeText = document.getElementById("previewClozeModeText");
+            const previewPromptImageWrap = document.getElementById("previewPromptImageWrap");
+            const previewPromptImage = document.getElementById("previewPromptImage");
+            const promptImageUrlInput = document.getElementById("prompt_image_url");
+            const promptImageFileInput = document.getElementById("prompt_image_file");
 
             let previewQuestionText = "";
             if (instructionText && promptText) {
@@ -1167,6 +1181,33 @@
 
             if (previewClozeModeWrap) {
                 previewClozeModeWrap.classList.add("hidden");
+            }
+
+            if (previewPromptImageWrap && previewPromptImage) {
+                let promptImagePreviewUrl = "";
+
+                if (
+                    itemType === "speak_read"
+                    && promptImageFileInput
+                    && promptImageFileInput.files
+                    && promptImageFileInput.files.length
+                ) {
+                    promptImagePreviewUrl = URL.createObjectURL(promptImageFileInput.files[0]);
+                } else if (
+                    itemType === "speak_read"
+                    && promptImageUrlInput
+                    && promptImageUrlInput.value.trim()
+                ) {
+                    promptImagePreviewUrl = promptImageUrlInput.value.trim();
+                }
+
+                if (promptImagePreviewUrl) {
+                    previewPromptImage.src = promptImagePreviewUrl;
+                    previewPromptImageWrap.classList.remove("hidden");
+                } else {
+                    previewPromptImage.removeAttribute("src");
+                    previewPromptImageWrap.classList.add("hidden");
+                }
             }
 
             if (itemType === "read_choice_single" || itemType === "read_choice_multi") {

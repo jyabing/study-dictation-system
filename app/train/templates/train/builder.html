@@ -598,6 +598,11 @@
                             placeholder="例如：佐藤です。 / ask me if i am David / 时光流逝"
                             oninput="updatePreview();"
                         ></textarea>
+
+                        <div id="prompt_text_rule_help" class="field-help">
+                            普通题型需要填写文字题干；说 / 看字朗读可以只上传题干图片，但文字题干和题干图片至少要有一个。
+                        </div>
+
                         <div id="cloze_prompt_help" class="field-help hidden">
                             <strong>克漏字提示：</strong>
                             手动挖空时，在题干里用 <code>{词}</code> 标记空位；自动挖空时，题干不要写 <code>{}</code>，只写提示 / 上文 / 引导语即可，不要和“回答”写成一模一样的完整句。
@@ -1320,6 +1325,23 @@
                 ? promptImageFileInput.files[0]
                 : null;
 
+            const promptImageUrlValue = document.getElementById("prompt_image_url")
+                ? document.getElementById("prompt_image_url").value.trim()
+                : "";
+
+            const hasPromptText = !!promptText.trim();
+            const hasPromptImage = !!promptImageUrlValue || !!selectedPromptImageFile;
+
+            if (itemType === "speak_read") {
+                if (!hasPromptText && !hasPromptImage) {
+                    alert("说 / 看字朗读题需要填写文字题干，或上传 / 填写题干图片。");
+                    return;
+                }
+            } else if (!hasPromptText) {
+                alert("题干不能为空。");
+                return;
+            }
+
             const payload = {
                 lesson_id: document.getElementById("lesson").value,
                 skill: skill,
@@ -1334,9 +1356,7 @@
                 // 旧字段：继续兼容后端旧逻辑
                 prompt_text: promptText,
                 prompt_audio: document.getElementById("prompt_audio").value,
-                prompt_image_url: document.getElementById("prompt_image_url")
-                    ? document.getElementById("prompt_image_url").value
-                    : "",
+                prompt_image_url: promptImageUrlValue,
                 use_tts: document.getElementById("use_tts").checked,
 
                 answer_text: answerText,

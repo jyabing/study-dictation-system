@@ -1449,6 +1449,27 @@ def build_training_payload(training, memory=None, request=None):
         "item_type": training.item_type,
     })
 
+    # =========================
+    # 说 / 看字朗读：题干图片
+    # 优先级：
+    # 1. TrainingItem.prompt_image_file（人工上传）
+    # 2. TrainingItem.prompt_image_url（外部链接）
+    # =========================
+    resolved_prompt_image = ""
+
+    if training.item_type == "speak_read":
+        if getattr(training, "prompt_image_file", None):
+            try:
+                resolved_prompt_image = training.prompt_image_file.url or ""
+            except Exception:
+                resolved_prompt_image = ""
+
+        if not resolved_prompt_image:
+            resolved_prompt_image = (
+                getattr(training, "prompt_image_url", "")
+                or ""
+            ).strip()
+
     cycle = _build_cycle_status(memory)
 
     payload = {
@@ -1466,6 +1487,11 @@ def build_training_payload(training, memory=None, request=None):
 
         "prompt_text": prompt_text,
         "prompt": prompt_text,
+
+        # 题干图片
+        "prompt_image_url": resolved_prompt_image or "",
+        "prompt_image": resolved_prompt_image or "",
+        "has_prompt_image": bool(resolved_prompt_image),
 
         "answer_text": resolved_answer_text,
         "target_answer": resolved_answer_text,
@@ -5286,8 +5312,18 @@ def builder_save(request):
     if not item_type:
         return JsonResponse({"ok": False, "error": "item_type 不能为空"}, status=400)
 
-    if not prompt_text:
+    has_prompt_text = bool(prompt_text)
+    has_prompt_image = bool(prompt_image_url or uploaded_prompt_image_file)
+
+    if item_type == "speak_read":
+        if not has_prompt_text and not has_prompt_image:
+            return JsonResponse({
+                "ok": False,
+                "error": "说-看字朗读题需要填写文字题干或上传题干图片"
+            }, status=400)
+    elif not has_prompt_text:
         return JsonResponse({"ok": False, "error": "题干不能为空"}, status=400)
+
 
     lesson = get_object_or_404(
         Lesson,

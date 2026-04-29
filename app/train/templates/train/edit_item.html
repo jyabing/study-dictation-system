@@ -192,6 +192,59 @@
                                         删除当前上传音频
                                     </label>
 
+                                    {% if display_qtype == "speak_read" %}
+                                        <div class="field-label" style="margin-top:16px;">题干图片</div>
+
+                                        {% if training and training.prompt_image_file %}
+                                            <div class="field-help">当前已上传题干图片。</div>
+                                            <div style="margin-top:8px;">
+                                                <img
+                                                    src="{{ training.prompt_image_file.url }}"
+                                                    alt="题干图片"
+                                                    style="max-width:100%; border:1px solid #dbeafe; border-radius:12px; background:#fff;"
+                                                >
+                                            </div>
+                                            <div class="field-help">
+                                                当前文件：
+                                                <a href="{{ training.prompt_image_file.url }}" target="_blank" rel="noopener">{{ training.prompt_image_file.name }}</a>
+                                            </div>
+                                        {% elif training and training.prompt_image_url %}
+                                            <div class="field-help">当前使用题干图片 URL。</div>
+                                            <div style="margin-top:8px;">
+                                                <img
+                                                    src="{{ training.prompt_image_url }}"
+                                                    alt="题干图片"
+                                                    style="max-width:100%; border:1px solid #dbeafe; border-radius:12px; background:#fff;"
+                                                >
+                                            </div>
+                                            <div class="field-help">
+                                                当前链接：
+                                                <a href="{{ training.prompt_image_url }}" target="_blank" rel="noopener">{{ training.prompt_image_url }}</a>
+                                            </div>
+                                        {% else %}
+                                            <div class="field-help">当前还没有题干图片。可上传朗读标记图，或填写图片 URL。</div>
+                                        {% endif %}
+
+                                        <input type="file" name="prompt_image_file" class="input" accept="image/*">
+                                        <div class="field-help">支持 png / jpg / webp 等图片格式。上传新图片后会替换当前题干图片。</div>
+
+                                        <label class="field-help" style="display:block; margin-top:8px;">
+                                            <input type="checkbox" name="clear_prompt_image_file" value="1">
+                                            删除当前上传题干图片
+                                        </label>
+
+                                        <div class="field-label" style="margin-top:12px;">题干图片链接（URL / 路径）</div>
+                                        <input
+                                            type="text"
+                                            name="prompt_image_url"
+                                            class="input"
+                                            value="{{ training.prompt_image_url|default:'' }}"
+                                            placeholder="可选：填写朗读标记图、重音图、连读图 URL / 路径"
+                                        >
+                                        <div class="field-help">用于说 / 看字朗读。上传图片优先；没有上传图片时，训练页可回退到这里的 URL。</div>
+                                    {% endif %}
+
+
                                     <div class="field-label" style="margin-top:12px;">回答音频</div>
 
                                     {% if training and training.answer_audio_file %}

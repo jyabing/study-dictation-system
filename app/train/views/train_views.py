@@ -5563,6 +5563,7 @@ def question_edit(request, question_id):
 
         audio_url = (request.POST.get("audio_url") or "").strip()
         answer_audio_url = (request.POST.get("answer_audio_url") or "").strip()
+        prompt_image_url = (request.POST.get("prompt_image_url") or "").strip()
 
         accepted_answers_text = (request.POST.get("accepted_answers_text") or "").strip()
 
@@ -5577,6 +5578,9 @@ def question_edit(request, question_id):
 
         uploaded_answer_audio_file = request.FILES.get("answer_audio_file")
         clear_answer_audio_file = request.POST.get("clear_answer_audio_file") == "1"
+
+        uploaded_prompt_image_file = request.FILES.get("prompt_image_file")
+        clear_prompt_image_file = request.POST.get("clear_prompt_image_file") == "1"
 
         if not source_text:
             return render(request, "train/edit_item.html", {
@@ -5610,6 +5614,12 @@ def question_edit(request, question_id):
             training.source_text = source_text
             training.target_answer = target_answer
 
+            if training.item_type == "speak_read":
+                training.prompt_image_url = prompt_image_url
+            else:
+                training.prompt_image_url = ""
+
+
             if training.item_type in {"listen_asr", "speak_read"}:
                 training.accepted_answers = accepted_answers
             else:
@@ -5620,6 +5630,7 @@ def question_edit(request, question_id):
                 "source_text",
                 "target_answer",
                 "accepted_answers",
+                "prompt_image_url",
             ]
 
             if clear_audio_file:
@@ -5643,6 +5654,24 @@ def question_edit(request, question_id):
                     training.answer_audio_file.delete(save=False)
                 training.answer_audio_file = uploaded_answer_audio_file
                 update_fields.append("answer_audio_file")
+
+            if training.item_type == "speak_read":
+                if clear_prompt_image_file:
+                    if training.prompt_image_file:
+                        training.prompt_image_file.delete(save=False)
+                    training.prompt_image_file = None
+                    update_fields.append("prompt_image_file")
+                elif uploaded_prompt_image_file:
+                    if training.prompt_image_file:
+                        training.prompt_image_file.delete(save=False)
+                    training.prompt_image_file = uploaded_prompt_image_file
+                    update_fields.append("prompt_image_file")
+            else:
+                if training.prompt_image_file:
+                    training.prompt_image_file.delete(save=False)
+                training.prompt_image_file = None
+                update_fields.append("prompt_image_file")
+
 
             training.save(update_fields=update_fields)
 

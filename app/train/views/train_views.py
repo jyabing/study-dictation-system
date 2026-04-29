@@ -6,10 +6,13 @@ import hashlib
 import os
 import copy
 import unicodedata
+from io import BytesIO
 
 from datetime import timedelta
 from urllib.parse import quote
 from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from gtts import gTTS
 
 from django.http import JsonResponse
@@ -1061,6 +1064,47 @@ def _guess_choice_tts_lang(training, meta, choices):
     return "en"
 
 
+def _save_tts_audio_to_storage(text, lang, storage_path):
+    """
+    TTS 音频统一保存入口。
+
+    本地开发：
+        default_storage = FileSystemStorage
+        保存到 media/audio/tts/
+
+    Render 线上：
+        default_storage = S3Boto3Storage
+        保存到 Cloudflare R2 的 audio/tts/
+    """
+
+    text = (text or "").strip()
+    if not text:
+        return ""
+
+    if default_storage.exists(storage_path):
+        try:
+            return default_storage.url(storage_path)
+        except Exception:
+            return f"{settings.MEDIA_URL}{storage_path}"
+
+    try:
+        audio_buffer = BytesIO()
+        tts = gTTS(text=text, lang=lang)
+        tts.write_to_fp(audio_buffer)
+        audio_buffer.seek(0)
+
+        default_storage.save(
+            storage_path,
+            ContentFile(audio_buffer.getvalue())
+        )
+
+        return default_storage.url(storage_path)
+
+    except Exception as e:
+        print("TTS generate failed:", e)
+        return ""
+
+
 def _ensure_tts_audio(question, meta):
     prompt_text = (question.prompt_text or "").strip()
     if not prompt_text:
@@ -1069,22 +1113,14 @@ def _ensure_tts_audio(question, meta):
     lang = _guess_tts_lang(meta)
     text_hash = hashlib.md5(prompt_text.encode("utf-8")).hexdigest()[:12]
     filename = f"tts_q{question.id}_{lang}_{text_hash}.mp3"
+    storage_path = f"audio/tts/{filename}"
 
-    rel_dir = os.path.join("audio", "tts")
-    abs_dir = os.path.join(settings.MEDIA_ROOT, rel_dir)
-    abs_path = os.path.join(abs_dir, filename)
+    return _save_tts_audio_to_storage(
+        text=prompt_text,
+        lang=lang,
+        storage_path=storage_path
+    )
 
-    os.makedirs(abs_dir, exist_ok=True)
-
-    if not os.path.exists(abs_path):
-        try:
-            tts = gTTS(text=prompt_text, lang=lang)
-            tts.save(abs_path)
-        except Exception as e:
-            print("TTS generate failed:", e)
-            return ""
-
-    return f"{settings.MEDIA_URL}{rel_dir}/{filename}"
 
 def _build_choice_tts_audio(text, lang="en", prefix="choiceopt"):
     text = (text or "").strip()
@@ -1093,24 +1129,24 @@ def _build_choice_tts_audio(text, lang="en", prefix="choiceopt"):
 
     digest = hashlib.md5(text.encode("utf-8")).hexdigest()[:12]
     filename = f"{prefix}_{lang}_{digest}.mp3"
+    storage_path = f"audio/tts/{filename}"
 
-    rel_dir = "audio/tts"
-    abs_dir = os.path.join(settings.MEDIA_ROOT, rel_dir)
-    os.makedirs(abs_dir, exist_ok=True)
+    return _save_tts_audio_to_storage(
+        text=text,
+        lang=lang,
+        storage_path=storage_path
+    )
 
-    abs_path = os.path.join(abs_dir, filename)
-
-    if not os.path.exists(abs_path):
-        gTTS(text=text, lang=lang).save(abs_path)
-
-    return f"{settings.MEDIA_URL}{rel_dir}/{filename}"
 
 def _get_training_meta_dict(training):
     choices = training.choices or []
+
     if choices and isinstance(choices[0], dict):
         meta = choices[0].get("_meta")
+
         if isinstance(meta, dict):
             return meta
+
     return {}
 
 
@@ -1133,6 +1169,7 @@ def _resolve_choice_audio(choice, lang="en"):
 
     return ""
 
+
 def _build_tts_audio(text, lang="en", prefix="prompttts"):
     text = (text or "").strip()
     if not text:
@@ -1140,17 +1177,14 @@ def _build_tts_audio(text, lang="en", prefix="prompttts"):
 
     digest = hashlib.md5(text.encode("utf-8")).hexdigest()[:12]
     filename = f"{prefix}_{lang}_{digest}.mp3"
+    storage_path = f"audio/tts/{filename}"
 
-    rel_dir = "audio/tts"
-    abs_dir = os.path.join(settings.MEDIA_ROOT, rel_dir)
-    os.makedirs(abs_dir, exist_ok=True)
+    return _save_tts_audio_to_storage(
+        text=text,
+        lang=lang,
+        storage_path=storage_path
+    )
 
-    abs_path = os.path.join(abs_dir, filename)
-
-    if not os.path.exists(abs_path):
-        gTTS(text=text, lang=lang).save(abs_path)
-
-    return f"{settings.MEDIA_URL}{rel_dir}/{filename}"
 
 # =========================
 # 根据记忆等级决定克漏字难度

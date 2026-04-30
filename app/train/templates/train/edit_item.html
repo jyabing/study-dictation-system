@@ -292,6 +292,15 @@
                                         没有题干音频时自动使用 TTS
                                     </label>
 
+                                    <div class="field-label" style="margin-top:12px;">题干 TTS 语言</div>
+                                    <select name="prompt_tts_lang" class="select">
+                                        <option value="en" {% if listen_meta.asr.prompt_tts_lang == "en" or not listen_meta.asr.prompt_tts_lang %}selected{% endif %}>英语</option>
+                                        <option value="ja" {% if listen_meta.asr.prompt_tts_lang == "ja" %}selected{% endif %}>日语</option>
+                                        <option value="zh-CN" {% if listen_meta.asr.prompt_tts_lang == "zh-CN" %}selected{% endif %}>中文</option>
+                                        <option value="ko" {% if listen_meta.asr.prompt_tts_lang == "ko" %}selected{% endif %}>韩语</option>
+                                    </select>
+                                    <div class="field-help">用于没有题干音频时，自动朗读题干。</div>
+
                                     <label class="field-help" style="display:block; margin-top:8px;">
                                         <input
                                             type="checkbox"
@@ -301,6 +310,15 @@
                                         >
                                         没有回答音频时自动使用 TTS 朗读回答
                                     </label>
+
+                                    <div class="field-label" style="margin-top:12px;">回答 TTS 语言</div>
+                                    <select name="answer_tts_lang" class="select">
+                                        <option value="en" {% if listen_meta.asr.answer_tts_lang == "en" or not listen_meta.asr.answer_tts_lang %}selected{% endif %}>英语</option>
+                                        <option value="ja" {% if listen_meta.asr.answer_tts_lang == "ja" %}selected{% endif %}>日语</option>
+                                        <option value="zh-CN" {% if listen_meta.asr.answer_tts_lang == "zh-CN" %}selected{% endif %}>中文</option>
+                                        <option value="ko" {% if listen_meta.asr.answer_tts_lang == "ko" %}selected{% endif %}>韩语</option>
+                                    </select>
+                                    <div class="field-help">用于没有回答音频时，自动朗读标准回答。</div>
 
                                     <label class="field-help" style="display:block; margin-top:8px;">
                                         <input

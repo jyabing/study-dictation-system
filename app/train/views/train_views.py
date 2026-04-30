@@ -1303,6 +1303,9 @@ def build_training_payload(training, memory=None, request=None):
     asr_cfg = meta.get("asr", {}) if isinstance(meta.get("asr"), dict) else {}
     asr_lang = asr_cfg.get("lang") or "en-US"
 
+    prompt_tts_lang = (asr_cfg.get("prompt_tts_lang") or "").strip() or "en"
+    answer_tts_lang = (asr_cfg.get("answer_tts_lang") or "").strip() or "en"
+
     # =========================
     # read_cloze：根据记忆等级动态增加空格
     # =========================
@@ -1389,21 +1392,9 @@ def build_training_payload(training, memory=None, request=None):
         and use_tts
         and prompt_text
     ):
-        tts_lang = "en"
-        lang_upper = str(asr_lang).lower()
-
-        if lang_upper.startswith("ja"):
-            tts_lang = "ja"
-        elif lang_upper.startswith("zh"):
-            tts_lang = "zh-CN"
-        elif lang_upper.startswith("ko"):
-            tts_lang = "ko"
-        else:
-            tts_lang = "en"
-
         resolved_prompt_audio = _build_tts_audio(
             text=prompt_text,
-            lang=tts_lang,
+            lang=prompt_tts_lang,
             prefix=f"prompttts_q{training.question_id}"
         )
 
@@ -1421,18 +1412,6 @@ def build_training_payload(training, memory=None, request=None):
         and answer_use_tts
         and resolved_answer_text
     ):
-        answer_tts_lang = "en"
-        lang_upper = str(asr_lang).lower()
-
-        if lang_upper.startswith("ja"):
-            answer_tts_lang = "ja"
-        elif lang_upper.startswith("zh"):
-            answer_tts_lang = "zh-CN"
-        elif lang_upper.startswith("ko"):
-            answer_tts_lang = "ko"
-        else:
-            answer_tts_lang = "en"
-
         resolved_answer_audio = _build_tts_audio(
             text=resolved_answer_text,
             lang=answer_tts_lang,
@@ -1538,6 +1517,8 @@ def build_training_payload(training, memory=None, request=None):
         "use_tts": use_tts,
         "answer_use_tts": answer_use_tts,
         "asr_lang": asr_lang,
+        "prompt_tts_lang": prompt_tts_lang,
+        "answer_tts_lang": answer_tts_lang,
         "allow_partial_match": bool(asr_cfg.get("allow_partial_match", True)),
     }
 
@@ -5903,6 +5884,10 @@ def question_edit(request, question_id):
             use_tts = request.POST.get("use_tts") == "1"
             answer_use_tts = request.POST.get("answer_use_tts") == "1"
             asr_lang = (request.POST.get("asr_lang") or "en-US").strip()
+
+            prompt_tts_lang = (request.POST.get("prompt_tts_lang") or "en").strip()
+            answer_tts_lang = (request.POST.get("answer_tts_lang") or "en").strip()
+
             allow_partial_match = request.POST.get("allow_partial_match") == "1"
 
             has_prompt_audio = bool(
@@ -5932,7 +5917,9 @@ def question_edit(request, question_id):
                     "answer_use_tts": answer_use_tts,
                     "asr": {
                         "lang": asr_lang,
-                        "allow_partial_match": allow_partial_match,
+                        "prompt_tts_lang": prompt_tts_lang,
+                        "answer_tts_lang": answer_tts_lang,
+                        "allow_partial_match": allow_partial_match
                     }
                 }
             }]

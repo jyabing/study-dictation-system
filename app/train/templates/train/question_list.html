@@ -94,9 +94,19 @@
                                                 <span class="table-empty">—</span>
                                             {% endif %}
                                         </td>
+
                                         <td class="cell-text">
-                                            <div class="table-text clamp-4" title="{{ question_prompt }}">{{ question_prompt }}</div>
+                                            {% if question.has_display_prompt_image %}
+                                                <img
+                                                    src="{{ question.display_prompt_image_url }}"
+                                                    alt="题干图片"
+                                                    style="max-width:180px; max-height:120px; border-radius:12px; border:1px solid rgba(148, 163, 184, 0.35); background:#fff;"
+                                                >
+                                            {% else %}
+                                                <div class="table-text clamp-4" title="{{ question_prompt }}">{{ question_prompt }}</div>
+                                            {% endif %}
                                         </td>
+
                                         <td class="cell-text">
                                             <div class="table-text clamp-4" title="{{ answer_text }}">{{ answer_text }}</div>
                                         </td>
@@ -138,7 +148,18 @@
                                             </div>
                                         {% endif %}
 
-                                        <h3 class="question-title">{{ question_prompt }}</h3>
+                                        {% if question.has_display_prompt_image %}
+                                            <div class="question-title">
+                                                <img
+                                                    src="{{ question.display_prompt_image_url }}"
+                                                    alt="题干图片"
+                                                    style="max-width:100%; max-height:180px; border-radius:12px; border:1px solid rgba(148, 163, 184, 0.35); background:#fff;"
+                                                >
+                                            </div>
+                                        {% else %}
+                                            <h3 class="question-title">{{ question_prompt }}</h3>
+                                        {% endif %}
+                                        
                                     </div>
 
                                     <div class="question-meta">

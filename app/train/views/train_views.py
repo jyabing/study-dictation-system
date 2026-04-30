@@ -4852,6 +4852,24 @@ def lesson_question_list(request, lesson_id):
             if training else (question.answer_text or "").strip()
         )
 
+        display_prompt_image_url = ""
+
+        if training and training.item_type == "speak_read":
+            if getattr(training, "prompt_image_file", None):
+                try:
+                    display_prompt_image_url = training.prompt_image_file.url or ""
+                except Exception:
+                    display_prompt_image_url = ""
+
+            if not display_prompt_image_url:
+                display_prompt_image_url = (
+                    getattr(training, "prompt_image_url", "")
+                    or ""
+                ).strip()
+
+        question.display_prompt_image_url = display_prompt_image_url
+        question.has_display_prompt_image = bool(display_prompt_image_url)
+
     return render(request, "train/question_list.html", {
         "lesson": lesson,
         "book": lesson.book,

@@ -2028,6 +2028,42 @@ function escapeHtml(value) {
         .replaceAll("'", "&#039;");
 }
 
+function normalizeAsrLang(value, fallback = "en-US") {
+    const raw = String(value || "").trim();
+
+    if (!raw) {
+        return fallback;
+    }
+
+    const lower = raw.toLowerCase().replace("_", "-");
+
+    const langMap = {
+        "en": "en-US",
+        "en-us": "en-US",
+        "en-gb": "en-GB",
+        "english": "en-US",
+
+        "ja": "ja-JP",
+        "ja-jp": "ja-JP",
+        "jp": "ja-JP",
+        "japanese": "ja-JP",
+
+        "zh": "zh-CN",
+        "zh-cn": "zh-CN",
+        "zh-hans": "zh-CN",
+        "zh-tw": "zh-TW",
+        "zh-hant": "zh-TW",
+        "chinese": "zh-CN",
+
+        "ko": "ko-KR",
+        "ko-kr": "ko-KR",
+        "kr": "ko-KR",
+        "korean": "ko-KR",
+    };
+
+    return langMap[lower] || raw || fallback;
+}
+
 function pickText(obj, keys, fallback = "") {
     for (const key of keys) {
         const value = obj?.[key];
@@ -2703,13 +2739,19 @@ function submitRecognizedAnswer() {
     answerInput.value = bestText;
 
     if (speechStatus) {
-        speechStatus.textContent = "识别完成，正在提交...";
+        speechStatus.textContent = "识别完成，请确认后手动提交。";
     }
 
-    if (typeof answerForm.requestSubmit === "function") {
-        answerForm.requestSubmit();
-    } else {
-        answerForm.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    setSpeechDebugStatus("已把识别结果填入答案框。请确认内容，必要时修改后再提交。");
+
+    state.recognitionShouldAutoSubmit = false;
+    state.isSpeechSubmitting = false;
+    state.isSpeechActive = false;
+
+    updateSpeechButtons();
+
+    if (answerInput && typeof answerInput.focus === "function") {
+        answerInput.focus();
     }
 }
 
@@ -2950,7 +2992,20 @@ function applyQuestionInputMode(payload) {
     const extra = getExtraText(payload);
     const audioUrl = getAudioUrl(payload);
 
-    state.recognitionLang = pickText(payload, ["asr_lang"], "en-US");
+    state.recognitionLang = normalizeAsrLang(
+        pickText(
+            payload,
+            [
+                "asr_lang",
+                "answer_asr_lang",
+                "answer_tts_lang",
+                "prompt_tts_lang",
+                "language",
+            ],
+            "en-US"
+        ),
+        "en-US"
+    );
 
     stopSpeechRecognition(true);
     renderChoices(payload.choices || []);

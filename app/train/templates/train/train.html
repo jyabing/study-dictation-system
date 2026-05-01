@@ -1752,6 +1752,7 @@ const MANUAL_UPGRADE_URL = "{{ manual_upgrade_url|default:''|escapejs }}";
 const CONTINUE_TRAIN_URL = "{{ continue_train_url|default:''|escapejs }}";
 const LESSON_QUESTION_LIST_URL = "{{ course_map_url|default:''|escapejs }}";
 const BOOK_DETAIL_URL = "{{ book_detail_url|default:''|escapejs }}";
+const ASR_TRANSCRIBE_URL = "{% url 'asr-transcribe-api' %}";
 
 const questionCard = document.getElementById("question-card");
 const emptyCard = document.getElementById("empty-card");
@@ -2011,6 +2012,13 @@ const state = {
     recognitionSessionId: 0,
     pendingRecognitionStart: false,
     recognitionAutoStopTimer: null,
+
+    mediaRecorder: null,
+    mediaStream: null,
+    mediaChunks: [],
+    mediaAutoStopTimer: null,
+    isBackendRecording: false,
+    isBackendUploading: false,
 };
 
 function getCookie(name) {
@@ -2573,6 +2581,7 @@ function resetSpeechRecognitionState() {
     state.recognitionSessionId += 1;
 
     clearRecognitionAutoStopTimer();
+    resetBackendRecordingState();
 
     if (state.recognition) {
         try {
@@ -2665,6 +2674,328 @@ function clearRecognitionAutoStopTimer() {
         clearTimeout(state.recognitionAutoStopTimer);
         state.recognitionAutoStopTimer = null;
     }
+}
+
+function clearBackendRecordingAutoStopTimer() {
+    if (state.mediaAutoStopTimer) {
+        clearTimeout(state.mediaAutoStopTimer);
+        state.mediaAutoStopTimer = null;
+    }
+}
+
+function cleanupBackendRecordingStream() {
+    if (state.mediaStream) {
+        state.mediaStream.getTracks().forEach((track) => {
+            try {
+                track.stop();
+            } catch (error) {
+                console.warn("stop media track failed:", error);
+            }
+        });
+    }
+
+    state.mediaStream = null;
+}
+
+function resetBackendRecordingState() {
+    clearBackendRecordingAutoStopTimer();
+
+    if (state.mediaRecorder) {
+        try {
+            state.mediaRecorder.ondataavailable = null;
+            state.mediaRecorder.onerror = null;
+            state.mediaRecorder.onstop = null;
+
+            if (state.mediaRecorder.state !== "inactive") {
+                state.mediaRecorder.stop();
+            }
+        } catch (error) {
+            console.warn("reset media recorder skipped:", error);
+        }
+    }
+
+    cleanupBackendRecordingStream();
+
+    state.mediaRecorder = null;
+    state.mediaChunks = [];
+    state.isBackendRecording = false;
+    state.isBackendUploading = false;
+}
+
+function getSupportedBackendAudioMimeType() {
+    if (!window.MediaRecorder || typeof MediaRecorder.isTypeSupported !== "function") {
+        return "";
+    }
+
+    const candidates = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/mp4",
+        "audio/aac",
+        "audio/mpeg",
+    ];
+
+    return candidates.find((mimeType) => MediaRecorder.isTypeSupported(mimeType)) || "";
+}
+
+function getAudioFilenameForMimeType(mimeType) {
+    const lower = String(mimeType || "").toLowerCase();
+
+    if (lower.includes("mp4")) {
+        return "speech.mp4";
+    }
+
+    if (lower.includes("aac")) {
+        return "speech.aac";
+    }
+
+    if (lower.includes("mpeg") || lower.includes("mp3")) {
+        return "speech.mp3";
+    }
+
+    return "speech.webm";
+}
+
+function hasBackendRecorderSupport() {
+    return Boolean(
+        navigator.mediaDevices
+        && typeof navigator.mediaDevices.getUserMedia === "function"
+        && window.MediaRecorder
+    );
+}
+
+async function uploadBackendSpeechRecording(sessionId, mimeType) {
+    if (sessionId !== state.recognitionSessionId) {
+        return;
+    }
+
+    const chunks = state.mediaChunks || [];
+
+    if (!chunks.length) {
+        resetBackendRecordingState();
+        showSpeechError("没有录到可上传的音频，请重新录音或改用文本输入。");
+        return;
+    }
+
+    state.isBackendRecording = false;
+    state.isBackendUploading = true;
+
+    if (speechStatus) {
+        speechStatus.textContent = "录音已停止，正在上传识别...";
+    }
+
+    setSpeechDebugStatus(`正在使用后端 ASR 识别：${state.recognitionLang || "en-US"}`);
+
+    const resolvedMimeType = mimeType || chunks[0]?.type || "audio/webm";
+    const audioBlob = new Blob(chunks, { type: resolvedMimeType });
+    const formData = new FormData();
+
+    formData.append(
+        "audio",
+        audioBlob,
+        getAudioFilenameForMimeType(resolvedMimeType)
+    );
+    formData.append("asr_lang", state.recognitionLang || "en-US");
+
+    try {
+        const response = await fetch(ASR_TRANSCRIBE_URL, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+            throw new Error(data.message || data.error || "后端语音识别失败");
+        }
+
+        const transcript = String(data.text || "").trim();
+
+        if (!transcript) {
+            showSpeechError("后端识别完成，但没有得到可用文本。请重新录音或改用文本输入。");
+            setSpeechDebugStatus("后端 ASR 没有返回文本。");
+            return;
+        }
+
+        state.recognitionFinalText = transcript;
+        state.recognitionInterimText = "";
+        state.recognizedText = transcript;
+
+        updateSpeechResult(transcript, "");
+        submitRecognizedAnswer();
+
+        if (speechStatus) {
+            speechStatus.textContent = "后端识别完成，请确认后手动提交。";
+        }
+
+        setSpeechDebugStatus(`后端 ASR 识别完成：${transcript}`);
+
+    } catch (error) {
+        console.error("backend ASR failed:", error);
+        showSpeechError(error.message || "后端语音识别失败，请重新录音或改用文本输入。");
+        setSpeechDebugStatus("后端 ASR 调用失败。");
+
+    } finally {
+        state.isBackendUploading = false;
+        state.mediaRecorder = null;
+        state.mediaChunks = [];
+        cleanupBackendRecordingStream();
+        updateSpeechButtons();
+
+        if (speechStartBtn) {
+            speechStartBtn.style.display = "inline-flex";
+        }
+
+        if (speechStopBtn) {
+            speechStopBtn.style.display = "none";
+        }
+
+        if (speechRetryBtn) {
+            speechRetryBtn.style.display = "inline-flex";
+        }
+    }
+}
+
+async function startBackendSpeechRecording() {
+    if (!state.current || !isSpeechQuestionType(getQuestionType(state.current))) {
+        return;
+    }
+
+    if (!hasBackendRecorderSupport()) {
+        startSpeechRecognition();
+        return;
+    }
+
+    if (state.isBackendRecording || state.isBackendUploading) {
+        return;
+    }
+
+    clearFeedback();
+    clearSpeechError();
+    resetBackendRecordingState();
+
+    state.recognitionFinalText = "";
+    state.recognitionInterimText = "";
+    state.recognitionShouldAutoSubmit = false;
+    state.recognitionStoppedManually = false;
+    state.recognitionSessionId += 1;
+    state.mediaChunks = [];
+
+    const sessionId = state.recognitionSessionId;
+
+    updateSpeechResult("", "");
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = getSupportedBackendAudioMimeType();
+        const options = mimeType ? { mimeType } : {};
+        const recorder = new MediaRecorder(stream, options);
+
+        state.mediaStream = stream;
+        state.mediaRecorder = recorder;
+        state.isBackendRecording = true;
+
+        recorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+                state.mediaChunks.push(event.data);
+            }
+        };
+
+        recorder.onerror = (event) => {
+            console.warn("media recorder error:", event);
+            clearBackendRecordingAutoStopTimer();
+            state.isBackendRecording = false;
+            showSpeechError("录音器发生错误，请重新录音或改用文本输入。");
+            cleanupBackendRecordingStream();
+            updateSpeechButtons();
+        };
+
+        recorder.onstop = () => {
+            clearBackendRecordingAutoStopTimer();
+            state.isBackendRecording = false;
+            uploadBackendSpeechRecording(sessionId, recorder.mimeType || mimeType);
+        };
+
+        recorder.start();
+
+        clearBackendRecordingAutoStopTimer();
+
+        state.mediaAutoStopTimer = setTimeout(() => {
+            if (
+                sessionId === state.recognitionSessionId
+                && state.mediaRecorder
+                && state.mediaRecorder.state === "recording"
+            ) {
+                setSpeechDebugStatus(`已自动停止录音：当前识别语言 ${state.recognitionLang || "en-US"}。正在上传后端识别...`);
+                stopBackendSpeechRecording(false);
+            }
+        }, 8000);
+
+        if (speechStatus) {
+            speechStatus.textContent = `录音已开始：当前识别语言 ${state.recognitionLang || "en-US"}`;
+        }
+
+        setSpeechDebugStatus(`后端录音已开始：当前识别语言 ${state.recognitionLang || "en-US"}。请直接说完整句子，8 秒后会自动停止，也可以手动点“停止录音”。`);
+
+        if (speechStartBtn) {
+            speechStartBtn.style.display = "none";
+        }
+
+        if (speechStopBtn) {
+            speechStopBtn.style.display = "inline-flex";
+        }
+
+        if (speechRetryBtn) {
+            speechRetryBtn.style.display = "none";
+        }
+
+    } catch (error) {
+        console.error("start backend recording failed:", error);
+        resetBackendRecordingState();
+
+        showSpeechError("无法启动后端录音，请检查麦克风权限。已尝试回退到浏览器识别。");
+        startSpeechRecognition();
+    }
+}
+
+function stopBackendSpeechRecording(cancelSubmit = false) {
+    clearBackendRecordingAutoStopTimer();
+
+    if (cancelSubmit) {
+        state.recognitionShouldAutoSubmit = false;
+    }
+
+    if (!state.mediaRecorder || state.mediaRecorder.state === "inactive") {
+        state.isBackendRecording = false;
+        cleanupBackendRecordingStream();
+        updateSpeechButtons();
+        return;
+    }
+
+    try {
+        state.mediaRecorder.stop();
+    } catch (error) {
+        console.warn("stop backend recorder failed:", error);
+        state.isBackendRecording = false;
+        cleanupBackendRecordingStream();
+        updateSpeechButtons();
+    }
+}
+
+function startSpeechRecording() {
+    startBackendSpeechRecording();
+}
+
+function stopSpeechRecording(cancelSubmit = false) {
+    if (state.isBackendRecording || state.mediaRecorder) {
+        stopBackendSpeechRecording(cancelSubmit);
+        return;
+    }
+
+    stopSpeechRecognition(cancelSubmit);
 }
 
 function showSpeechError(message) {
@@ -4244,7 +4575,7 @@ if (speechRetryBtn) {
                 textAnswerWorkspace.style.display = "none";
             }
 
-            startSpeechRecognition();
+            startSpeechRecording();
         }
     });
 }
@@ -4255,21 +4586,23 @@ if (speechStartBtn) {
             return;
         }
 
-        startSpeechRecognition();
+        startSpeechRecording();
     });
 }
 
 if (speechStopBtn) {
     speechStopBtn.addEventListener("click", () => {
-        if (!state.isRecognizing) {
+        if (!state.isRecognizing && !state.isBackendRecording) {
             return;
         }
 
         if (speechStatus) {
-            speechStatus.textContent = "已停止录音，正在结束识别...";
+            speechStatus.textContent = state.isBackendRecording
+                ? "已停止录音，正在上传识别..."
+                : "已停止录音，正在结束识别...";
         }
 
-        stopSpeechRecognition(false);
+        stopSpeechRecording(false);
     });
 }
 

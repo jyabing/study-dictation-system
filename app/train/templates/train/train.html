@@ -2826,7 +2826,7 @@ function startSpeechRecognition() {
         state.pendingRecognitionStart = false;
         state.isRecognizing = true;
 
-        setSpeechDebugStatus("录音已开始：请直接说完整句子，说完后点“停止录音”。");
+        setSpeechDebugStatus(`录音已开始：当前识别语言 ${recognition.lang}。请直接说完整句子，说完后点“停止录音”。`);
 
         if (speechStartBtn) {
             speechStartBtn.style.display = "none";

@@ -124,19 +124,26 @@
                                 <input type="hidden" name="source_text" id="source-text-hidden" value="{% firstof training.source_text obj.prompt_text obj.question_text obj.question '' %}">
                             </div>
 
-                            <div class="field-group full">
-                                <div class="field-label">回答</div>
-                                <textarea
-                                    id="answer-display"
-                                    class="textarea"
-                                    placeholder="请输入目标回答"
-                                    required
-                                >{% firstof training.target_answer obj.answer_text obj.answer "" %}</textarea>
-                                <input type="hidden" name="answer" id="answer-hidden-1" value="{% firstof training.target_answer obj.answer_text obj.answer '' %}">
-                                <input type="hidden" name="answer_text" id="answer-hidden-2" value="{% firstof training.target_answer obj.answer_text obj.answer '' %}">
-                                <input type="hidden" name="target_answer" id="target-answer-hidden" value="{% firstof training.target_answer obj.answer_text obj.answer '' %}">
-                                <div class="field-help">这里填写用户最终需要生成并记忆的目标回答。</div>
-                            </div>
+                            {% if item_type == "read_choice" %}
+                                <input type="hidden" id="answer-display" value="">
+                                <input type="hidden" name="answer" id="answer-hidden-1" value="">
+                                <input type="hidden" name="answer_text" id="answer-hidden-2" value="">
+                                <input type="hidden" name="target_answer" id="target-answer-hidden" value="">
+                            {% else %}
+                                <div class="field-group full">
+                                    <div class="field-label">回答</div>
+                                    <textarea
+                                        id="answer-display"
+                                        class="textarea"
+                                        placeholder="请输入目标回答"
+                                        required
+                                    >{% firstof training.target_answer obj.answer_text obj.answer "" %}</textarea>
+                                    <input type="hidden" name="answer" id="answer-hidden-1" value="{% firstof training.target_answer obj.answer_text obj.answer '' %}">
+                                    <input type="hidden" name="answer_text" id="answer-hidden-2" value="{% firstof training.target_answer obj.answer_text obj.answer '' %}">
+                                    <input type="hidden" name="target_answer" id="target-answer-hidden" value="{% firstof training.target_answer obj.answer_text obj.answer '' %}">
+                                    <div class="field-help">这里填写用户最终需要生成并记忆的目标回答。</div>
+                                </div>
+                            {% endif %}
 
                             <div
                                 id="accepted-answers-block"
@@ -341,6 +348,423 @@
                                     </select>
                                     <div class="field-help">听力识别默认语言。未选择时会使用 en-US。</div>
                                 </div>
+                            {% endif %}
+
+                            {% if item_type == "read_choice" %}
+                                <style>
+                                    .choice-editor-box {
+                                        border: 1px solid #dbeafe;
+                                        border-radius: 14px;
+                                        background: #ffffff;
+                                        padding: 14px;
+                                    }
+
+                                    .choice-editor-toolbar {
+                                        display: grid;
+                                        grid-template-columns: minmax(180px, 260px) 1fr;
+                                        gap: 12px;
+                                        align-items: end;
+                                        margin-bottom: 12px;
+                                    }
+
+                                    .choice-editor-row {
+                                        border: 1px solid #e5e7eb;
+                                        border-radius: 12px;
+                                        background: #f8fafc;
+                                        padding: 12px;
+                                        margin-top: 10px;
+                                    }
+
+                                    .choice-editor-grid {
+                                        display: grid;
+                                        grid-template-columns: 70px minmax(180px, 2fr) 120px minmax(150px, 1.4fr) 130px 80px;
+                                        gap: 8px;
+                                        align-items: end;
+                                    }
+
+                                    .choice-mini-label {
+                                        font-size: 11px;
+                                        color: #64748b;
+                                        margin-bottom: 4px;
+                                    }
+
+                                    .choice-small-btn {
+                                        border: 1px solid #bfdbfe;
+                                        background: #eff6ff;
+                                        color: #1d4ed8;
+                                        border-radius: 10px;
+                                        padding: 8px 10px;
+                                        cursor: pointer;
+                                        font-weight: 700;
+                                    }
+
+                                    .choice-remove-btn {
+                                        border: 1px solid #fecaca;
+                                        background: #fff1f2;
+                                        color: #dc2626;
+                                        border-radius: 10px;
+                                        padding: 8px 10px;
+                                        cursor: pointer;
+                                        font-weight: 700;
+                                    }
+
+                                    @media (max-width: 760px) {
+                                        .choice-editor-toolbar {
+                                            grid-template-columns: 1fr;
+                                        }
+
+                                        .choice-editor-grid {
+                                            grid-template-columns: 1fr;
+                                        }
+                                    }
+                                </style>
+
+                                <div class="field-group full">
+                                    <div class="field-label">选择题选项</div>
+
+                                    <div class="choice-editor-box">
+                                        <div class="choice-editor-toolbar">
+                                            <div>
+                                                <div class="choice-mini-label">选择模式</div>
+                                                <select name="selection_mode" id="selection-mode-select" class="select">
+                                                    <option value="single">单选</option>
+                                                    <option value="multiple">多选</option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <button type="button" id="choice-add-btn" class="choice-small-btn">
+                                                    + 添加选项
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div id="choice-editor-list"></div>
+
+                                        <div class="field-help" style="margin-top:10px;">
+                                            至少保留一个选项，并勾选正确答案。保存后，“回答”会自动同步为正确选项文本。
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script>
+                                    (function () {
+                                        const rawChoicesJson = "{{ choices_json|default:'[]'|escapejs }}";
+                                        let choiceData = [];
+
+                                        try {
+                                            choiceData = JSON.parse(rawChoicesJson || "[]");
+                                        } catch (error) {
+                                            choiceData = [];
+                                        }
+
+                                        const listEl = document.getElementById("choice-editor-list");
+                                        const addBtn = document.getElementById("choice-add-btn");
+                                        const modeSelect = document.getElementById("selection-mode-select");
+
+                                        if (!listEl || !addBtn || !modeSelect) {
+                                            return;
+                                        }
+
+                                        function escapeHtml(value) {
+                                            return String(value || "")
+                                                .replace(/&/g, "&amp;")
+                                                .replace(/</g, "&lt;")
+                                                .replace(/>/g, "&gt;")
+                                                .replace(/"/g, "&quot;")
+                                                .replace(/'/g, "&#039;");
+                                        }
+
+                                        function normalizeChoice(choice) {
+                                            const data = choice || {};
+
+                                            return {
+                                                type: data.type || "text",
+                                                text: data.text || data.content || "",
+                                                image: data.image || data.image_url || "",
+                                                audio: data.audio || "",
+                                                use_tts_when_no_audio: !!data.use_tts_when_no_audio,
+                                                correct: !!data.correct,
+                                                selection_mode: data.selection_mode || "single"
+                                            };
+                                        }
+
+                                        function getSelectionMode() {
+                                            return modeSelect.value || "single";
+                                        }
+
+                                        function syncModeFromChoices() {
+                                            const first = choiceData.find(function (choice) {
+                                                return choice && choice.selection_mode;
+                                            });
+
+                                            if (first && first.selection_mode === "multiple") {
+                                                modeSelect.value = "multiple";
+                                            } else {
+                                                modeSelect.value = "single";
+                                            }
+                                        }
+
+                                        function ensureOneChoice() {
+                                            if (!Array.isArray(choiceData)) {
+                                                choiceData = [];
+                                            }
+
+                                            choiceData = choiceData.map(normalizeChoice);
+
+                                            if (choiceData.length === 0) {
+                                                choiceData.push({
+                                                    type: "text",
+                                                    text: "",
+                                                    image: "",
+                                                    audio: "",
+                                                    use_tts_when_no_audio: false,
+                                                    correct: true,
+                                                    selection_mode: "single"
+                                                });
+                                            }
+                                        }
+
+                                        function keepOnlyFirstCorrectWhenSingle() {
+                                            if (getSelectionMode() !== "single") {
+                                                return;
+                                            }
+
+                                            let found = false;
+
+                                            choiceData.forEach(function (choice) {
+                                                if (choice.correct && !found) {
+                                                    found = true;
+                                                } else {
+                                                    choice.correct = false;
+                                                }
+                                            });
+
+                                            if (!found && choiceData.length > 0) {
+                                                choiceData[0].correct = true;
+                                            }
+                                        }
+
+                                        function renderChoices() {
+                                            keepOnlyFirstCorrectWhenSingle();
+
+                                            listEl.innerHTML = "";
+
+                                            choiceData.forEach(function (choice, index) {
+                                                choice.selection_mode = getSelectionMode();
+
+                                                const row = document.createElement("div");
+                                                row.className = "choice-editor-row";
+
+                                                row.innerHTML = `
+                                                    <div class="choice-editor-grid">
+                                                        <div>
+                                                            <div class="choice-mini-label">正确</div>
+                                                            <label class="field-help" style="display:flex; align-items:center; gap:6px; margin:0;">
+                                                                <input
+                                                                    type="${getSelectionMode() === "single" ? "radio" : "checkbox"}"
+                                                                    name="choice_correct[]"
+                                                                    value="${index}"
+                                                                    data-index="${index}"
+                                                                    data-field="correct"
+                                                                    ${choice.correct ? "checked" : ""}
+                                                                >
+                                                                ${String.fromCharCode(65 + index)}
+                                                            </label>
+                                                        </div>
+
+                                                        <div>
+                                                            <div class="choice-mini-label">选项文本</div>
+                                                            <input
+                                                                type="text"
+                                                                name="choice_text[]"
+                                                                class="input"
+                                                                value="${escapeHtml(choice.text)}"
+                                                                data-index="${index}"
+                                                                data-field="text"
+                                                                placeholder="请输入选项文本；图片 / 音频选项也建议填写文字"
+                                                            >
+                                                        </div>
+
+                                                        <div>
+                                                            <div class="choice-mini-label">类型</div>
+                                                            <select
+                                                                name="choice_type[]"
+                                                                class="select"
+                                                                data-index="${index}"
+                                                                data-field="type"
+                                                            >
+                                                                <option value="text" ${choice.type === "text" ? "selected" : ""}>文字</option>
+                                                                <option value="audio" ${choice.type === "audio" ? "selected" : ""}>音频</option>
+                                                                <option value="image" ${choice.type === "image" ? "selected" : ""}>图片</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div>
+                                                            <div class="choice-mini-label">图片 URL / 路径</div>
+                                                            <input
+                                                                type="text"
+                                                                name="choice_image[]"
+                                                                class="input"
+                                                                value="${escapeHtml(choice.image)}"
+                                                                data-index="${index}"
+                                                                data-field="image"
+                                                                placeholder="图片选项使用，可留空"
+                                                            >
+                                                        </div>
+
+                                                        <div>
+                                                            <div class="choice-mini-label">图片上传</div>
+                                                            <input
+                                                                type="file"
+                                                                name="choice_image_file_${index}"
+                                                                class="input"
+                                                                accept="image/*"
+                                                            >
+                                                        </div>
+
+                                                        <div>
+                                                            <div class="choice-mini-label">音频 URL / 路径</div>
+                                                            <input
+                                                                type="text"
+                                                                name="choice_audio[]"
+                                                                class="input"
+                                                                value="${escapeHtml(choice.audio)}"
+                                                                data-index="${index}"
+                                                                data-field="audio"
+                                                                placeholder="可选"
+                                                            >
+                                                        </div>
+
+                                                        <div>
+                                                            <div class="choice-mini-label">音频上传</div>
+                                                            <input
+                                                                type="file"
+                                                                name="choice_audio_file_${index}"
+                                                                class="input"
+                                                                accept="audio/*"
+                                                            >
+                                                        </div>
+
+                                                        <div>
+                                                            <div class="choice-mini-label">TTS 兜底</div>
+                                                            <label class="field-help" style="display:flex; align-items:center; gap:6px; margin:0;">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    name="choice_use_tts[]"
+                                                                    value="${index}"
+                                                                    data-index="${index}"
+                                                                    data-field="use_tts_when_no_audio"
+                                                                    ${choice.use_tts_when_no_audio ? "checked" : ""}
+                                                                >
+                                                                使用
+                                                            </label>
+                                                        </div>
+
+                                                        <div>
+                                                            <div class="choice-mini-label">操作</div>
+                                                            <button
+                                                                type="button"
+                                                                class="choice-remove-btn"
+                                                                data-index="${index}"
+                                                                data-action="remove"
+                                                            >
+                                                                删除
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                `;
+
+                                                listEl.appendChild(row);
+                                            });
+                                        }
+
+                                        addBtn.addEventListener("click", function () {
+                                            choiceData.push({
+                                                type: "text",
+                                                text: "",
+                                                audio: "",
+                                                use_tts_when_no_audio: false,
+                                                correct: false,
+                                                selection_mode: getSelectionMode()
+                                            });
+
+                                            renderChoices();
+                                        });
+
+                                        modeSelect.addEventListener("change", function () {
+                                            choiceData.forEach(function (choice) {
+                                                choice.selection_mode = getSelectionMode();
+                                            });
+
+                                            renderChoices();
+                                        });
+
+                                        listEl.addEventListener("input", function (event) {
+                                            const target = event.target;
+                                            const index = Number(target.dataset.index);
+                                            const field = target.dataset.field;
+
+                                            if (!Number.isInteger(index) || !choiceData[index] || !field) {
+                                                return;
+                                            }
+
+                                            if (field === "text" || field === "audio" || field === "image") {
+                                                choiceData[index][field] = target.value;
+                                            }
+                                        });
+
+                                        listEl.addEventListener("change", function (event) {
+                                            const target = event.target;
+                                            const index = Number(target.dataset.index);
+                                            const field = target.dataset.field;
+
+                                            if (!Number.isInteger(index) || !choiceData[index] || !field) {
+                                                return;
+                                            }
+
+                                            if (field === "type") {
+                                                choiceData[index].type = target.value;
+                                            }
+
+                                            if (field === "use_tts_when_no_audio") {
+                                                choiceData[index].use_tts_when_no_audio = target.checked;
+                                            }
+
+                                            if (field === "correct") {
+                                                if (getSelectionMode() === "single") {
+                                                    choiceData.forEach(function (choice, choiceIndex) {
+                                                        choice.correct = choiceIndex === index;
+                                                    });
+                                                } else {
+                                                    choiceData[index].correct = target.checked;
+                                                }
+                                            }
+                                        });
+
+                                        listEl.addEventListener("click", function (event) {
+                                            const target = event.target;
+
+                                            if (target.dataset.action !== "remove") {
+                                                return;
+                                            }
+
+                                            const index = Number(target.dataset.index);
+
+                                            if (!Number.isInteger(index)) {
+                                                return;
+                                            }
+
+                                            choiceData.splice(index, 1);
+                                            ensureOneChoice();
+                                            renderChoices();
+                                        });
+
+                                        ensureOneChoice();
+                                        syncModeFromChoices();
+                                        renderChoices();
+                                    })();
+                                </script>
                             {% endif %}
 
                             {% if item_type == "read_cloze" %}

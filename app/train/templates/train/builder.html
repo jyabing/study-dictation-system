@@ -902,6 +902,7 @@
             return {
                 type: c?.type || "text",
                 text: c?.text || c?.content || "",
+                image: c?.image || c?.image_url || "",
                 audio: c?.audio || "",
                 use_tts_when_no_audio: !!c?.use_tts_when_no_audio,
                 correct: !!c?.correct
@@ -1022,6 +1023,7 @@
             choices.push({
                 type: "text",
                 text: "",
+                image: "",
                 audio: "",
                 use_tts_when_no_audio: false,
                 correct: false
@@ -1048,6 +1050,11 @@
             updatePreview();
         }
 
+        function updateChoiceImage(index, value) {
+            choices[index].image = value;
+            updatePreview();
+        }
+
         function updateChoiceAudio(index, value) {
             choices[index].audio = value;
             updatePreview();
@@ -1065,7 +1072,6 @@
                 choices.forEach((c, i) => {
                     choices[i].correct = (i === index);
                 });
-                renderChoices();
             } else {
                 choices[index].correct = checked;
             }
@@ -1099,6 +1105,7 @@
                             <select onchange="updateChoiceType(${index}, this.value)">
                                 <option value="text" ${choice.type === "text" ? "selected" : ""}>文字</option>
                                 <option value="audio" ${choice.type === "audio" ? "selected" : ""}>音频</option>
+                                <option value="image" ${choice.type === "image" ? "selected" : ""}>图片</option>
                             </select>
                         </div>
 
@@ -1108,8 +1115,31 @@
                                 type="text"
                                 value="${escapeHtml(choice.text || "")}"
                                 oninput="updateChoiceText(${index}, this.value)"
-                                placeholder="请输入选项文字"
+                                placeholder="请输入选项文字；图片 / 音频选项也建议填写文字，便于判题和回顾"
                             >
+                        </div>
+
+                        <div>
+                            <label>图片地址或路径</label>
+                            <input
+                                type="text"
+                                value="${escapeHtml(choice.image || "")}"
+                                oninput="updateChoiceImage(${index}, this.value)"
+                                placeholder="图片选项使用；例如 /media/images/xxx.png 或 https://..."
+                            >
+                        </div>
+
+                        <div>
+                            <label>图片文件上传</label>
+                            <input
+                                id="choice_image_file_${index}"
+                                type="file"
+                                accept="image/*"
+                                onchange="updatePreview();"
+                            >
+                            <div class="field-help">
+                                上传后会优先保存为这个选项的图片；没有上传时才使用上面的图片地址或路径。
+                            </div>
                         </div>
 
                         <div>
@@ -1118,8 +1148,21 @@
                                 type="text"
                                 value="${escapeHtml(choice.audio || "")}"
                                 oninput="updateChoiceAudio(${index}, this.value)"
-                                placeholder="没有可留空；有音频时填写 mp3 地址"
+                                placeholder="音频选项使用；没有可留空"
                             >
+                        </div>
+
+                        <div>
+                            <label>音频文件上传</label>
+                            <input
+                                id="choice_audio_file_${index}"
+                                type="file"
+                                accept="audio/*"
+                                onchange="updatePreview();"
+                            >
+                            <div class="field-help">
+                                上传后会优先保存为这个选项的音频；没有上传时才使用上面的音频地址或 TTS。
+                            </div>
                         </div>
 
                         <label class="choice-correct">
@@ -1148,13 +1191,15 @@
         }
 
         function buildChoices() {
-            return choices.map(c => {
+            return choices.map((c, index) => {
                 const item = normalizeChoiceItem(c);
 
                 return {
+                    source_index: index,
                     type: item.type || "text",
                     text: (item.text || "").trim(),
                     content: (item.text || "").trim(),
+                    image: (item.image || "").trim(),
                     audio: (item.audio || "").trim(),
                     use_tts_when_no_audio: !!item.use_tts_when_no_audio,
                     correct: !!item.correct
@@ -1326,10 +1371,53 @@
                 : "";
 
             const promptText = document.getElementById("prompt_text").value;
-            const answerText = document.getElementById("answer_text").value;
+
+            const isReadChoice = (
+                itemType === "read_choice_single" || itemType === "read_choice_multi"
+            );
+
+            const choicesPayload = buildChoices()
+                .filter(function (choice) {
+                    return (choice.text || choice.content || "").trim();
+                });
+
+            choicesPayload.forEach(function (choice) {
+                const imageFileInput = document.getElementById("choice_image_file_" + choice.source_index);
+
+                if (imageFileInput && imageFileInput.files && imageFileInput.files.length) {
+                    choice.image_upload_key = "choice_image_file_" + choice.source_index;
+                }
+
+                const audioFileInput = document.getElementById("choice_audio_file_" + choice.source_index);
+
+                if (audioFileInput && audioFileInput.files && audioFileInput.files.length) {
+                    choice.audio_upload_key = "choice_audio_file_" + choice.source_index;
+                }
+            });
+
+            const choiceCorrectTexts = choicesPayload
+                .filter(function (choice) {
+                    return choice.correct;
+                })
+                .map(function (choice) {
+                    return (choice.text || choice.content || "").trim();
+                })
+                .filter(function (text) {
+                    return text;
+                });
+
+            const rawAnswerText = document.getElementById("answer_text")
+                ? document.getElementById("answer_text").value
+                : "";
+
+            const answerText = isReadChoice
+                ? choiceCorrectTexts.join(" / ")
+                : rawAnswerText;
+
             const acceptedAnswersText = document.getElementById("accepted_answers_text")
                 ? document.getElementById("accepted_answers_text").value
                 : "";
+
             const audioFileInput = document.getElementById("audio_file");
             const selectedAudioFile = audioFileInput && audioFileInput.files.length
                 ? audioFileInput.files[0]
@@ -1362,6 +1450,36 @@
                 return;
             }
 
+            if (isReadChoice) {
+                if (!choicesPayload.length) {
+                    alert("选择题至少需要添加一个选项。");
+                    return;
+                }
+
+                const invalidImageChoice = choicesPayload.find(function (choice) {
+                    return (
+                        choice.type === "image"
+                        && !(choice.image || "").trim()
+                        && !choice.image_upload_key
+                    );
+                });
+
+                if (invalidImageChoice) {
+                    alert("图片选项必须填写图片地址或路径。");
+                    return;
+                }
+
+                if (!choiceCorrectTexts.length) {
+                    alert("选择题必须勾选正确选项。");
+                    return;
+                }
+
+                if (itemType === "read_choice_single" && choiceCorrectTexts.length !== 1) {
+                    alert("阅读单选题只能有一个正确选项。");
+                    return;
+                }
+            }
+
             const payload = {
                 lesson_id: document.getElementById("lesson").value,
                 skill: skill,
@@ -1387,7 +1505,7 @@
                     ? document.getElementById("answer_use_tts").checked
                     : false,
 
-                choices: buildChoices(),
+                choices: choicesPayload,
                 reveal_text_on_wrong: document.getElementById("reveal_text_on_wrong").checked,
 
                 cloze: {
@@ -1423,10 +1541,30 @@
                 formData.append("answer_audio_file", selectedAnswerAudioFile);
             }
 
+            choicesPayload.forEach(function (choice) {
+                if (choice.image_upload_key) {
+                    const imageFileInput = document.getElementById(choice.image_upload_key);
+
+                    if (imageFileInput && imageFileInput.files && imageFileInput.files.length) {
+                        formData.append(choice.image_upload_key, imageFileInput.files[0]);
+                    }
+                }
+
+                if (choice.audio_upload_key) {
+                    const audioFileInput = document.getElementById(choice.audio_upload_key);
+
+                    if (audioFileInput && audioFileInput.files && audioFileInput.files.length) {
+                        formData.append(choice.audio_upload_key, audioFileInput.files[0]);
+                    }
+                }
+            });
+
             fetch("/builder/save/", {
                 method: "POST",
                 body: formData
             })
+
+
             .then(r => r.json())
             .then(data => {
                 if (data.ok) {

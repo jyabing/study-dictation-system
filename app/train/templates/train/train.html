@@ -508,6 +508,39 @@
     background: rgba(255, 114, 114, 0.10);
 }
 
+.choice-image-wrap {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.choice-image {
+    display: block;
+    width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.choice-type-hint {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--muted);
+    word-break: break-word;
+}
+
+.choice-audio-inline {
+    flex: 1;
+    min-width: 0;
+}
+
+.choice-audio-player {
+    width: 100%;
+    max-width: 320px;
+}
+
 .choice-head {
     display: flex;
     align-items: center;
@@ -3895,6 +3928,17 @@ function showCompletedQuestionMode(message, title, subtitle, nextReviewText) {
     setFeedback(message || "当前训练已完成。", "success");
 }
 
+function stopOtherChoiceAudios(currentAudio) {
+    const audios = [...document.querySelectorAll(".choice-audio-player")];
+
+    audios.forEach(audio => {
+        if (audio !== currentAudio) {
+            audio.pause();
+            audio.currentTime = 0;
+        }
+    });
+}
+
 function renderChoices(choices) {
     choicesGrid.innerHTML = "";
     state.selectedChoiceIndex = null;
@@ -3929,22 +3973,47 @@ function renderChoices(choices) {
             "audio_url"
         ], "");
 
+        const imageSrc = pickText(choice, [
+            "resolved_image",
+            "image",
+            "image_url"
+        ], "");
+
         if (choice.type === "audio" || playableAudio) {
-            const playBtn = document.createElement("button");
-            playBtn.type = "button";
-            playBtn.className = "choice-play-btn";
-            playBtn.textContent = "▶ 播放选项";
+            const audioWrap = document.createElement("div");
+            audioWrap.className = "choice-audio-inline";
 
-            playBtn.addEventListener("click", (event) => {
-                event.stopPropagation();
+            if (playableAudio) {
+                const audio = document.createElement("audio");
+                audio.className = "choice-audio-player";
+                audio.controls = true;
+                audio.preload = "none";
+                audio.src = playableAudio;
 
-                if (playableAudio) {
-                    const audio = new Audio(playableAudio);
-                    audio.play().catch(() => {});
-                }
-            });
+                audio.addEventListener("click", event => {
+                    event.stopPropagation();
+                });
 
-            head.appendChild(playBtn);
+                audio.addEventListener("play", () => {
+                    stopOtherChoiceAudios(audio);
+                });
+
+                audioWrap.appendChild(audio);
+            } else {
+                const audioHint = document.createElement("div");
+                audioHint.className = "choice-type-hint";
+                audioHint.textContent = choice.use_tts_when_no_audio
+                    ? "音频选项：没有音频文件，将使用 TTS"
+                    : "音频选项：暂无音频";
+                audioWrap.appendChild(audioHint);
+            }
+
+            head.appendChild(audioWrap);
+        } else if (choice.type === "image" && imageSrc) {
+            const imageHint = document.createElement("div");
+            imageHint.className = "choice-type-hint";
+            imageHint.textContent = "图片选项";
+            head.appendChild(imageHint);
         } else {
             const fallbackText = document.createElement("div");
             fallbackText.style.fontSize = "15px";
@@ -3954,6 +4023,22 @@ function renderChoices(choices) {
             head.appendChild(fallbackText);
         }
 
+        button.appendChild(head);
+
+        if (choice.type === "image" && imageSrc) {
+            const imageWrap = document.createElement("div");
+            imageWrap.className = "choice-image-wrap";
+
+            const image = document.createElement("img");
+            image.className = "choice-image";
+            image.src = imageSrc;
+            image.alt = getChoiceText(choice, index) || "选择题图片选项";
+            image.loading = "lazy";
+
+            imageWrap.appendChild(image);
+            button.appendChild(imageWrap);
+        }
+
         const textWrap = document.createElement("div");
         textWrap.className = "choice-text";
         textWrap.innerHTML = `
@@ -3961,7 +4046,6 @@ function renderChoices(choices) {
             <div>${escapeHtml(getChoiceText(choice, index))}</div>
         `;
 
-        button.appendChild(head);
         button.appendChild(textWrap);
 
         button.addEventListener("click", () => {

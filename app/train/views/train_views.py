@@ -8,12 +8,14 @@ import copy
 import unicodedata
 from io import BytesIO
 from tempfile import NamedTemporaryFile
+import uuid
 
 from datetime import timedelta
 from urllib.parse import quote
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.utils.text import get_valid_filename
 from gtts import gTTS
 from openai import OpenAI
 
@@ -1109,8 +1111,53 @@ def _normalize_choice_answers(raw_answer):
     except Exception:
         pass
 
-    parts = re.split(r"[,，/|]+", text)
+    parts = re.split(r"[\n,，;/；、|]+", text)
     return [p.strip() for p in parts if p.strip()]
+
+def _save_choice_uploads(raw_choices, request_files):
+    """
+    保存每个选择题选项自己的上传图片 / 上传音频。
+    前端会在 choice.image_upload_key / choice.audio_upload_key 里传入对应的 FormData key。
+    保存后把 choice["image"] / choice["audio"] 改成可访问路径。
+    """
+    if not raw_choices:
+        return []
+
+    normalized_choices = []
+
+    for choice in raw_choices:
+        if not isinstance(choice, dict):
+            continue
+
+        item = dict(choice)
+
+        image_upload_key = (item.get("image_upload_key") or "").strip()
+        if image_upload_key:
+            uploaded_image = request_files.get(image_upload_key)
+
+            if uploaded_image:
+                safe_name = get_valid_filename(uploaded_image.name or "choice_image")
+                saved_path = default_storage.save(
+                    f"images/choices/{uuid.uuid4().hex}_{safe_name}",
+                    uploaded_image
+                )
+                item["image"] = default_storage.url(saved_path)
+
+        audio_upload_key = (item.get("audio_upload_key") or "").strip()
+        if audio_upload_key:
+            uploaded_audio = request_files.get(audio_upload_key)
+
+            if uploaded_audio:
+                safe_name = get_valid_filename(uploaded_audio.name or "choice_audio")
+                saved_path = default_storage.save(
+                    f"audio/choices/{uuid.uuid4().hex}_{safe_name}",
+                    uploaded_audio
+                )
+                item["audio"] = default_storage.url(saved_path)
+
+        normalized_choices.append(item)
+
+    return normalized_choices
 
 def _guess_tts_lang(meta):
     asr_cfg = meta.get("asr") or {}
@@ -5305,6 +5352,39 @@ def _split_answer_text(answer_text):
     parts = re.split(r"[\n,，;/；、|]+", text)
     return [p.strip() for p in parts if p.strip()]
 
+def _save_choice_audio_uploads(raw_choices, request_files):
+    """
+    保存每个选择题选项自己的上传音频。
+    前端会在 choice.audio_upload_key 里传入对应的 FormData key。
+    保存后把 choice["audio"] 改成可访问路径。
+    """
+    if not raw_choices:
+        return []
+
+    normalized_choices = []
+
+    for choice in raw_choices:
+        if not isinstance(choice, dict):
+            continue
+
+        item = dict(choice)
+        upload_key = (item.get("audio_upload_key") or "").strip()
+
+        if upload_key:
+            uploaded_file = request_files.get(upload_key)
+
+            if uploaded_file:
+                safe_name = get_valid_filename(uploaded_file.name or "choice_audio")
+                saved_path = default_storage.save(
+                    f"audio/choices/{uuid.uuid4().hex}_{safe_name}",
+                    uploaded_file
+                )
+                item["audio"] = default_storage.url(saved_path)
+
+        normalized_choices.append(item)
+
+    return normalized_choices
+
 
 def _normalize_choices(raw_choices, selection_mode="single", reveal_text_on_wrong=False):
     """
@@ -5314,23 +5394,30 @@ def _normalize_choices(raw_choices, selection_mode="single", reveal_text_on_wron
     normalized = []
     correct_texts = []
 
-    for idx, c in enumerate(raw_choices or []):
+    for c in raw_choices or []:
+        if not isinstance(c, dict):
+            continue
+
         ctype = (c.get("type") or "text").strip()
+        if ctype not in {"text", "audio", "image"}:
+            ctype = "text"
 
         text = (c.get("text") or c.get("content") or "").strip()
+        image = (c.get("image") or c.get("image_url") or "").strip()
         audio = (c.get("audio") or "").strip()
         use_tts_when_no_audio = bool(c.get("use_tts_when_no_audio", False))
         correct = bool(c.get("correct"))
 
-        # 所有选项都必须有文字
+        # 所有选项都必须有文字：用于正确答案、复习显示、无障碍 fallback
         if not text:
             continue
 
         item = {
-            "key": chr(65 + idx),   # A / B / C / D
-            "type": ctype if ctype in {"text", "audio"} else "text",
+            "key": chr(65 + len(normalized)),
+            "type": ctype,
             "text": text,
             "content": text,
+            "image": image,
             "audio": audio,
             "use_tts_when_no_audio": use_tts_when_no_audio,
             "correct": correct,
@@ -5402,6 +5489,7 @@ def builder_save(request):
     use_tts = bool(data.get("use_tts", False))
     answer_use_tts = bool(data.get("answer_use_tts", False))
     raw_choices = data.get("choices") or []
+    raw_choices = _save_choice_uploads(raw_choices, request.FILES)
     reveal_text_on_wrong = bool(
         data.get("reveal_text_on_wrong") or data.get("reveal", False)
     )
@@ -5452,7 +5540,7 @@ def builder_save(request):
     # 现阶段仍然落到 read_choice，额外模式放在 choices 里
     # =========================
     if item_type in {"read_choice_single", "read_choice_multi"}:
-        selection_mode = "multi" if item_type == "read_choice_multi" else "single"
+        selection_mode = "multiple" if item_type == "read_choice_multi" else "single"
 
         choices_payload, correct_texts = _normalize_choices(
             raw_choices=raw_choices,
@@ -5482,7 +5570,9 @@ def builder_save(request):
             instruction_text=instruction_text or prompt_text,
             source_text=source_text,
             target_answer=question.answer_text or target_answer,
+            correct_answers=correct_texts,
             choices=choices_payload,
+            reveal_text_on_wrong=reveal_text_on_wrong,
             audio_file=uploaded_audio_file,
             answer_audio_file=uploaded_answer_audio_file,
             answer_use_tts=answer_use_tts
@@ -5493,9 +5583,12 @@ def builder_save(request):
             "ok": True,
             "question_id": question.id,
             "training_ids": created_items,
+            "training_item_ids": created_items,
             "saved_as": "read_choice",
             "selection_mode": selection_mode
         })
+    
+
     # =========================
     # 读：克漏字（自动克漏）
     # 现阶段：
@@ -5845,14 +5938,18 @@ def question_edit(request, question_id):
         if training.item_type == "read_choice":
             raw_choice_texts = request.POST.getlist("choice_text[]")
             raw_choice_types = request.POST.getlist("choice_type[]")
+            raw_choice_images = request.POST.getlist("choice_image[]")
             raw_choice_audios = request.POST.getlist("choice_audio[]")
             raw_choice_tts_flags = request.POST.getlist("choice_use_tts[]")
             raw_correct_indexes = request.POST.getlist("choice_correct[]")
 
-            selection_mode = "single"
             old_choices = training.choices or []
-            if old_choices:
-                selection_mode = old_choices[0].get("selection_mode") or "single"
+
+            selection_mode = (request.POST.get("selection_mode") or "").strip()
+            if selection_mode not in {"single", "multiple"}:
+                selection_mode = "single"
+                if old_choices:
+                    selection_mode = old_choices[0].get("selection_mode") or "single"
 
             correct_index_set = {
                 int(x) for x in raw_correct_indexes if str(x).isdigit()
@@ -5864,24 +5961,55 @@ def question_edit(request, question_id):
             max_len = max(
                 len(raw_choice_texts),
                 len(raw_choice_types),
+                len(raw_choice_images),
                 len(raw_choice_audios),
-            ) if (raw_choice_texts or raw_choice_types or raw_choice_audios) else 0
+            ) if (
+                raw_choice_texts
+                or raw_choice_types
+                or raw_choice_images
+                or raw_choice_audios
+            ) else 0
 
             for idx in range(max_len):
                 text = (raw_choice_texts[idx] if idx < len(raw_choice_texts) else "").strip()
                 ctype = (raw_choice_types[idx] if idx < len(raw_choice_types) else "text").strip()
+                image = (raw_choice_images[idx] if idx < len(raw_choice_images) else "").strip()
                 audio = (raw_choice_audios[idx] if idx < len(raw_choice_audios) else "").strip()
                 use_tts_when_no_audio = str(idx) in raw_choice_tts_flags
                 correct = idx in correct_index_set
+
+                if ctype not in {"text", "audio", "image"}:
+                    ctype = "text"
+
+                uploaded_choice_image = request.FILES.get(f"choice_image_file_{idx}")
+
+                if uploaded_choice_image:
+                    safe_name = get_valid_filename(uploaded_choice_image.name or "choice_image")
+                    saved_path = default_storage.save(
+                        f"images/choices/{uuid.uuid4().hex}_{safe_name}",
+                        uploaded_choice_image
+                    )
+                    image = default_storage.url(saved_path)
+
+                uploaded_choice_audio = request.FILES.get(f"choice_audio_file_{idx}")
+
+                if uploaded_choice_audio:
+                    safe_name = get_valid_filename(uploaded_choice_audio.name or "choice_audio")
+                    saved_path = default_storage.save(
+                        f"audio/choices/{uuid.uuid4().hex}_{safe_name}",
+                        uploaded_choice_audio
+                    )
+                    audio = default_storage.url(saved_path)
 
                 if not text:
                     continue
 
                 item = {
                     "key": chr(65 + len(normalized_choices)),
-                    "type": ctype if ctype in {"text", "audio"} else "text",
+                    "type": ctype,
                     "text": text,
                     "content": text,
+                    "image": image,
                     "audio": audio,
                     "use_tts_when_no_audio": use_tts_when_no_audio,
                     "correct": correct,
@@ -5900,8 +6028,13 @@ def question_edit(request, question_id):
                 resolved_answer_text = " / ".join(correct_texts)
 
                 training.choices = normalized_choices
+                training.correct_answers = correct_texts
                 training.target_answer = resolved_answer_text
-                training.save(update_fields=["choices", "target_answer"])
+                training.save(update_fields=[
+                    "choices",
+                    "correct_answers",
+                    "target_answer",
+                ])
 
                 question.answer_text = resolved_answer_text
                 question.save(update_fields=["answer_text"])

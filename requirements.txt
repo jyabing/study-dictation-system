@@ -12,6 +12,7 @@ gunicorn==25.3.0
 idna==3.11
 jmespath==1.1.0
 packaging==26.2
+openai==2.9.0
 psycopg2-binary==2.9.12
 python-dateutil==2.9.0.post0
 requests==2.33.0

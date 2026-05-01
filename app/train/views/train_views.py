@@ -7,6 +7,7 @@ import os
 import copy
 import unicodedata
 from io import BytesIO
+from tempfile import NamedTemporaryFile
 
 from datetime import timedelta
 from urllib.parse import quote
@@ -14,6 +15,7 @@ from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from gtts import gTTS
+from openai import OpenAI
 
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
@@ -76,6 +78,107 @@ DAILY_LOAD_LIMIT = 100
 QUEUE_REBUILD_THRESHOLD = 5
 QUEUE_BATCH_SIZE = 20
 WRONG_WORD_REPLAY_MAX = 20
+
+
+ASR_MAX_UPLOAD_SIZE = 12 * 1024 * 1024
+
+
+def _normalize_openai_asr_language(value):
+    raw = str(value or "").strip().lower().replace("_", "-")
+
+    mapping = {
+        "en": "en",
+        "en-us": "en",
+        "en-gb": "en",
+
+        "ja": "ja",
+        "ja-jp": "ja",
+
+        "zh": "zh",
+        "zh-cn": "zh",
+        "zh-tw": "zh",
+
+        "ko": "ko",
+        "ko-kr": "ko",
+    }
+
+    return mapping.get(raw, "")
+
+
+@login_required
+@require_POST
+def asr_transcribe_api(request):
+    audio_file = request.FILES.get("audio")
+
+    if not audio_file:
+        return JsonResponse({
+            "ok": False,
+            "error": "audio_required",
+            "message": "没有收到音频文件。",
+        }, status=400)
+
+    if audio_file.size > ASR_MAX_UPLOAD_SIZE:
+        return JsonResponse({
+            "ok": False,
+            "error": "audio_too_large",
+            "message": "音频文件过大，请缩短录音后重试。",
+        }, status=400)
+
+    api_key = os.getenv("OPENAI_API_KEY") or getattr(settings, "OPENAI_API_KEY", "")
+
+    if not api_key:
+        return JsonResponse({
+            "ok": False,
+            "error": "openai_api_key_missing",
+            "message": "服务器未配置 OPENAI_API_KEY。",
+        }, status=500)
+
+    asr_lang = _normalize_openai_asr_language(request.POST.get("asr_lang") or "")
+    suffix = os.path.splitext(audio_file.name or "")[1] or ".webm"
+
+    tmp_path = ""
+
+    try:
+        with NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp_path = tmp.name
+
+            for chunk in audio_file.chunks():
+                tmp.write(chunk)
+
+        client = OpenAI(api_key=api_key)
+
+        with open(tmp_path, "rb") as f:
+            kwargs = {
+                "model": "gpt-4o-mini-transcribe",
+                "file": f,
+            }
+
+            if asr_lang:
+                kwargs["language"] = asr_lang
+
+            transcript = client.audio.transcriptions.create(**kwargs)
+
+        text = str(getattr(transcript, "text", "") or "").strip()
+
+        return JsonResponse({
+            "ok": True,
+            "text": text,
+            "asr_lang": asr_lang,
+        })
+
+    except Exception as exc:
+        return JsonResponse({
+            "ok": False,
+            "error": "transcribe_failed",
+            "message": str(exc),
+        }, status=500)
+
+    finally:
+        if tmp_path:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
 
 
 # =========================

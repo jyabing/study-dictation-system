@@ -11,6 +11,7 @@ from .views.train_views import (
     book_train_api,
     lesson_train,
     lesson_train_api,
+    asr_transcribe_api,
     stats_page,
     builder_page,
     builder_save,
@@ -67,6 +68,7 @@ urlpatterns = [
     path("book/<int:book_id>/train/", book_train, name="book-train"),
     path("api/book/<int:book_id>/train/", book_train_api, name="book-train-api"),
     path("api/book/<int:book_id>/train/manual-upgrade/", book_train_manual_upgrade, name="book-train-manual-upgrade"),
+    path("api/asr/transcribe/", asr_transcribe_api, name="asr-transcribe-api"),
 
     # Global Train
     path("train/global/due/", global_due_train, name="global-due-train"),

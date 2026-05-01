@@ -600,7 +600,10 @@
                         ></textarea>
 
                         <div id="prompt_text_rule_help" class="field-help">
-                            普通题型需要填写文字题干；说 / 看字朗读可以只上传题干图片，但文字题干和题干图片至少要有一个。
+                            普通题型需要填写文字题干；说 / 看字朗读可以只上传题干图片，但文字题干和题干图片至少要有一个。<br>
+                            <strong>高亮提示：</strong>
+                            需要标红的词语可用 <code>[[词语]]</code> 包起来。
+                            例如：<code>[[すみやかに]]片づけてください。</code>
                         </div>
 
                         <div id="cloze_prompt_help" class="field-help hidden">
@@ -881,6 +884,8 @@
         const TYPE_MAP = {
             listen: [
                 ["listen_asr", "听音识别"],
+                ["listen_choice_single", "听力单选"],
+                ["listen_choice_multi", "听力多选"],
             ],
             speak: [
                 ["speak_read", "看字朗读"],
@@ -897,6 +902,36 @@
 
         let choices = [];
         const INITIAL_ITEM_TYPE = "{{ selected_item_type|default:''|escapejs }}";
+
+        function isChoiceItemType(itemType) {
+            return (
+                itemType === "read_choice_single"
+                || itemType === "read_choice_multi"
+                || itemType === "listen_choice_single"
+                || itemType === "listen_choice_multi"
+            );
+        }
+
+        function isSingleChoiceItemType(itemType) {
+            return (
+                itemType === "read_choice_single"
+                || itemType === "listen_choice_single"
+            );
+        }
+
+        function isMultiChoiceItemType(itemType) {
+            return (
+                itemType === "read_choice_multi"
+                || itemType === "listen_choice_multi"
+            );
+        }
+
+        function isListenChoiceItemType(itemType) {
+            return (
+                itemType === "listen_choice_single"
+                || itemType === "listen_choice_multi"
+            );
+        }
 
         function normalizeChoiceItem(c) {
             return {
@@ -960,9 +995,11 @@
             const choiceSection = document.getElementById("choice_section");
             const asrSection = document.getElementById("asr_section");
 
+            const isListenChoice = isListenChoiceItemType(itemType);
+            const isListenAudioMode = itemType === "listen_asr" || isListenChoice;
             const isListenOrSpeak = itemType === "listen_asr" || itemType === "speak_read";
             const isSpeakRead = itemType === "speak_read";
-            const isReadChoice = itemType === "read_choice_single" || itemType === "read_choice_multi";
+            const isReadChoice = isChoiceItemType(itemType);
 
             // 回答区：选择题隐藏，其它显示
             answerSection.classList.toggle("hidden", isReadChoice);
@@ -1002,13 +1039,13 @@
                 promptImageFileWrap.classList.toggle("hidden", !isSpeakRead);
             }
 
-            // 题干音频相关：只在听/说显示
-            promptAudioWrap.classList.toggle("hidden", !isListenOrSpeak);
+            // 题干音频相关：听音识别 / 听力选择题 / 说题显示
+            promptAudioWrap.classList.toggle("hidden", !(isListenAudioMode || isSpeakRead));
             if (promptAudioFileWrap) {
-                promptAudioFileWrap.classList.toggle("hidden", !isListenOrSpeak);
+                promptAudioFileWrap.classList.toggle("hidden", !(isListenAudioMode || isSpeakRead));
             }
             if (useTtsWrap) {
-                useTtsWrap.classList.toggle("hidden", !isListenOrSpeak);
+                useTtsWrap.classList.toggle("hidden", !(isListenAudioMode || isSpeakRead));
             }
 
             // 回答音频相关：只在听/说显示
@@ -1068,7 +1105,7 @@
         function updateChoiceCorrect(index, checked) {
             const itemType = document.getElementById("item_type").value;
 
-            if (itemType === "read_choice_single" && checked) {
+            if (isSingleChoiceItemType(itemType) && checked) {
                 choices.forEach((c, i) => {
                     choices[i].correct = (i === index);
                 });
@@ -1082,7 +1119,7 @@
         function renderChoices() {
             const wrap = document.getElementById("choices");
             const itemType = document.getElementById("item_type").value;
-            const isSingle = itemType === "read_choice_single";
+            const isSingle = isSingleChoiceItemType(itemType);
 
             wrap.innerHTML = "";
 
@@ -1280,7 +1317,7 @@
                 }
             }
 
-            if (itemType === "read_choice_single" || itemType === "read_choice_multi") {
+            if (isChoiceItemType(itemType)) {
                 previewAnswerWrap.classList.add("hidden");
                 previewChoicesWrap.classList.remove("hidden");
                 previewChoices.innerHTML = "";
@@ -1310,10 +1347,9 @@
                     previewChoices.appendChild(div);
                 });
 
-                previewNote.innerText =
-                    itemType === "read_choice_multi"
-                    ? "这是多选训练。用户需要把所有正确项全部选中。音频选项也必须保留文字内容。"
-                    : "这是单选训练。用户只能选择一个正确项。音频选项也必须保留文字内容。";
+                previewNote.innerText = isMultiChoiceItemType(itemType)
+                    ? "这是多选训练。用户需要把所有正确项全部选中。音频 / 图片选项也必须保留文字内容。"
+                    : "这是单选训练。用户只能选择一个正确项。音频 / 图片选项也必须保留文字内容。";
             } else {
                 previewAnswerWrap.classList.remove("hidden");
                 previewChoicesWrap.classList.add("hidden");
@@ -1372,9 +1408,7 @@
 
             const promptText = document.getElementById("prompt_text").value;
 
-            const isReadChoice = (
-                itemType === "read_choice_single" || itemType === "read_choice_multi"
-            );
+            const isReadChoice = isChoiceItemType(itemType);
 
             const choicesPayload = buildChoices()
                 .filter(function (choice) {
@@ -1474,8 +1508,8 @@
                     return;
                 }
 
-                if (itemType === "read_choice_single" && choiceCorrectTexts.length !== 1) {
-                    alert("阅读单选题只能有一个正确选项。");
+                if (isSingleChoiceItemType(itemType) && choiceCorrectTexts.length !== 1) {
+                    alert("单选题只能有一个正确选项。");
                     return;
                 }
             }

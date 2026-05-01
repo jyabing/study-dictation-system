@@ -541,6 +541,11 @@
     max-width: 320px;
 }
 
+.question-highlight-word {
+    color: #ef4444;
+    font-weight: 900;
+}
+
 .choice-head {
     display: flex;
     align-items: center;
@@ -3472,7 +3477,11 @@ function applyQuestionInputMode(payload) {
             audioWrap.style.display = "flex";
             questionAudio.src = audioUrl;
         } else {
-            questionPrompt.textContent = questionText || "当前题目没有可播放音频，请根据提示短语直接作答。";
+            renderQuestionMarkedText(
+                questionPrompt,
+                questionText,
+                "当前题目没有可播放音频，请根据提示短语直接作答。"
+            );
 
             audioWrap.style.display = "none";
             questionAudio.removeAttribute("src");
@@ -3502,7 +3511,7 @@ function applyQuestionInputMode(payload) {
 
     if (qType === "speak_read") {
         questionTypeBadge.textContent = "类型：speak_read";
-        questionPrompt.textContent = questionText;
+        renderQuestionMarkedText(questionPrompt, questionText);
 
         if (promptImageUrl && questionPromptImageWrap && questionPromptImage) {
             questionPromptImage.src = promptImageUrl;
@@ -3583,12 +3592,12 @@ function applyQuestionInputMode(payload) {
     }
 
     if (qType === "read_cloze" && extra) {
-        questionPrompt.textContent = extra;
+        renderQuestionMarkedText(questionPrompt, extra);
         questionPrompt.classList.add("is-cloze");
         questionExtra.style.display = "none";
         questionExtra.textContent = "";
     } else {
-        questionPrompt.textContent = questionText;
+        renderQuestionMarkedText(questionPrompt, questionText);
 
         if (extra) {
             questionExtra.style.display = "block";
@@ -3937,6 +3946,35 @@ function stopOtherChoiceAudios(currentAudio) {
             audio.currentTime = 0;
         }
     });
+}
+
+
+
+function renderQuestionMarkedText(element, rawText, fallback = "") {
+    if (!element) {
+        return;
+    }
+
+    const text = String(rawText || fallback || "");
+
+    if (!text) {
+        element.textContent = "";
+        return;
+    }
+
+    const pattern = /\[\[([\s\S]+?)\]\]/g;
+    let html = "";
+    let lastIndex = 0;
+    let match = null;
+
+    while ((match = pattern.exec(text)) !== null) {
+        html += escapeHtml(text.slice(lastIndex, match.index));
+        html += `<span class="question-highlight-word">${escapeHtml(match[1])}</span>`;
+        lastIndex = pattern.lastIndex;
+    }
+
+    html += escapeHtml(text.slice(lastIndex));
+    element.innerHTML = html;
 }
 
 function renderChoices(choices) {

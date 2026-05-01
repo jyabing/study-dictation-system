@@ -5539,8 +5539,13 @@ def builder_save(request):
     # 读：选择题（单选 / 多选）
     # 现阶段仍然落到 read_choice，额外模式放在 choices 里
     # =========================
-    if item_type in {"read_choice_single", "read_choice_multi"}:
-        selection_mode = "multiple" if item_type == "read_choice_multi" else "single"
+    if item_type in {
+        "read_choice_single",
+        "read_choice_multi",
+        "listen_choice_single",
+        "listen_choice_multi",
+    }:
+        selection_mode = "multiple" if item_type.endswith("_multi") else "single"
 
         choices_payload, correct_texts = _normalize_choices(
             raw_choices=raw_choices,

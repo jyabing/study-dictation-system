@@ -122,6 +122,12 @@
                                 <input type="hidden" name="question_text" id="question-hidden-2" value="{% firstof training.source_text obj.prompt_text obj.question_text obj.question '' %}">
                                 <input type="hidden" name="prompt_text" id="question-hidden-3" value="{% firstof training.source_text obj.prompt_text obj.question_text obj.question '' %}">
                                 <input type="hidden" name="source_text" id="source-text-hidden" value="{% firstof training.source_text obj.prompt_text obj.question_text obj.question '' %}">
+
+                                <div class="field-help">
+                                    <strong>高亮提示：</strong>
+                                    需要标红的词语可用 <code>[[词语]]</code> 包起来。
+                                    例如：<code>[[すみやかに]]片づけてください。</code>
+                                </div>
                             </div>
 
                             {% if item_type == "read_choice" %}

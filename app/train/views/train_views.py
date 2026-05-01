@@ -1601,6 +1601,52 @@ def build_training_payload(training, memory=None, request=None):
 
     cycle = _build_cycle_status(memory)
 
+    write_direction = ""
+    write_source_text = ""
+    write_target_text = ""
+    write_display_text = ""
+    write_expected_answer = ""
+    write_prompt_label = ""
+    write_answer_label = ""
+
+    if training.item_type == "write":
+        write_source_text = (
+            getattr(training, "source_text", "")
+            or getattr(training.question, "prompt_text", "")
+            or ""
+        ).strip()
+
+        write_target_text = (
+            getattr(training, "target_answer", "")
+            or getattr(training.question, "answer_text", "")
+            or ""
+        ).strip()
+
+        if write_source_text and write_target_text:
+            write_direction = random.choice([
+                "source_to_target",
+                "target_to_source",
+            ])
+        else:
+            write_direction = "source_to_target"
+
+        if write_direction == "target_to_source":
+            write_display_text = write_target_text
+            write_expected_answer = write_source_text
+            write_prompt_label = "请根据下面内容写出对应题干"
+            write_answer_label = "应写出的题干"
+        else:
+            write_display_text = write_source_text
+            write_expected_answer = write_target_text
+            write_prompt_label = "请根据题干写出对应内容"
+            write_answer_label = "应写出的回答"
+
+        if write_display_text:
+            prompt_text = write_display_text
+
+        if write_expected_answer:
+            resolved_answer_text = write_expected_answer
+
     payload = {
         "id": training.id,
         "training_id": training.id,
@@ -1625,6 +1671,12 @@ def build_training_payload(training, memory=None, request=None):
         "answer_text": resolved_answer_text,
         "target_answer": resolved_answer_text,
         "correct_answers": resolved_cloze_answers or ([resolved_answer_text] if resolved_answer_text else []),
+
+        "write_direction": write_direction,
+        "write_source_text": write_source_text,
+        "write_target_text": write_target_text,
+        "write_prompt_label": write_prompt_label,
+        "write_answer_label": write_answer_label,
 
         # 题干音频
         "audio_url": resolved_prompt_audio or "",
@@ -2317,11 +2369,24 @@ def judge_training_answer(training, raw_answer):
     else:
         user_answer = normalize(str(parsed or ""))
 
-    resolved_answer_text = (
-        training.target_answer
-        or q.answer_text
+    write_direction = (request.POST.get("write_direction") or "").strip()
+
+    write_source_text = (
+        getattr(training, "source_text", "")
+        or getattr(q, "prompt_text", "")
         or ""
     ).strip()
+
+    write_target_text = (
+        getattr(training, "target_answer", "")
+        or getattr(q, "answer_text", "")
+        or ""
+    ).strip()
+
+    if item_type == "write" and write_direction == "target_to_source" and write_source_text:
+        resolved_answer_text = write_source_text
+    else:
+        resolved_answer_text = write_target_text
 
     correct_text = normalize(resolved_answer_text)
     is_correct = check_answer(user_answer, correct_text)

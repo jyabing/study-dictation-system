@@ -2032,6 +2032,7 @@ const state = {
     current: null,
     startedAt: 0,
     selectedChoiceIndex: null,
+    writeDirection: "",
     loading: false,
     autoNextTimer: null,
     inputMode: "text",
@@ -3403,6 +3404,8 @@ function applyQuestionInputMode(payload) {
     const extra = getExtraText(payload);
     const audioUrl = getAudioUrl(payload);
 
+    state.writeDirection = payload.write_direction || "";
+
     state.recognitionLang = normalizeAsrLang(
         pickText(
             payload,
@@ -3620,6 +3623,14 @@ function applyQuestionInputMode(payload) {
     if (qType === "read_cloze") {
         answerInput.value = JSON.stringify(clozeAnswerTags);
         answerInput.placeholder = "请输入每个空的答案";
+    } else if (qType === "write") {
+        answerInput.value = "";
+        answerInput.placeholder = payload.write_answer_label || "请输入对应内容，然后提交";
+
+        if (payload.write_prompt_label) {
+            questionExtra.style.display = "block";
+            questionExtra.textContent = payload.write_prompt_label;
+        }
     } else {
         answerInput.value = "";
         answerInput.placeholder = Array.isArray(payload.choices) && payload.choices.length > 0
@@ -4524,6 +4535,10 @@ async function submitAnswer(event) {
     formData.append("used_hint", state.usedHint ? "1" : "0");
     formData.append("is_empty_submission", isEmptyAnswer ? "1" : "0");
     formData.append("retry_count", String(state.retryCount));
+
+    if (qType === "write" && state.writeDirection) {
+        formData.append("write_direction", state.writeDirection);
+    }
 
     try {
         const response = await fetch(API_URL, {

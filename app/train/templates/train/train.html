@@ -2010,6 +2010,7 @@ const state = {
     recognitionStoppedManually: false,
     recognitionSessionId: 0,
     pendingRecognitionStart: false,
+    recognitionAutoStopTimer: null,
 };
 
 function getCookie(name) {
@@ -2571,6 +2572,8 @@ function resetSpeechUi() {
 function resetSpeechRecognitionState() {
     state.recognitionSessionId += 1;
 
+    clearRecognitionAutoStopTimer();
+
     if (state.recognition) {
         try {
             state.recognition.onstart = null;
@@ -2655,6 +2658,13 @@ function getSpeechRecognitionCtor() {
 
 function hasSpeechRecognitionSupport() {
     return Boolean(getSpeechRecognitionCtor());
+}
+
+function clearRecognitionAutoStopTimer() {
+    if (state.recognitionAutoStopTimer) {
+        clearTimeout(state.recognitionAutoStopTimer);
+        state.recognitionAutoStopTimer = null;
+    }
 }
 
 function showSpeechError(message) {
@@ -2756,6 +2766,8 @@ function submitRecognizedAnswer() {
 }
 
 function stopSpeechRecognition(cancelSubmit = false) {
+    clearRecognitionAutoStopTimer();
+
     if (!state.recognition) {
         return;
     }
@@ -2826,7 +2838,20 @@ function startSpeechRecognition() {
         state.pendingRecognitionStart = false;
         state.isRecognizing = true;
 
-        setSpeechDebugStatus(`录音已开始：当前识别语言 ${recognition.lang}。请直接说完整句子，说完后点“停止录音”。`);
+        clearRecognitionAutoStopTimer();
+
+        state.recognitionAutoStopTimer = setTimeout(() => {
+            if (
+                sessionId === state.recognitionSessionId
+                && state.recognition
+                && state.isRecognizing
+            ) {
+                setSpeechDebugStatus(`已自动停止录音：当前识别语言 ${recognition.lang}。正在整理识别结果...`);
+                stopSpeechRecognition(false);
+            }
+        }, 8000);
+
+        setSpeechDebugStatus(`录音已开始：当前识别语言 ${recognition.lang}。请直接说完整句子，8 秒后会自动停止，也可以手动点“停止录音”。`);
 
         if (speechStartBtn) {
             speechStartBtn.style.display = "none";
@@ -2883,6 +2908,8 @@ function startSpeechRecognition() {
     };
 
     recognition.onerror = (event) => {
+        clearRecognitionAutoStopTimer();
+
         if (sessionId !== state.recognitionSessionId) {
             return;
         }
@@ -2920,6 +2947,8 @@ function startSpeechRecognition() {
     };
 
     recognition.onend = () => {
+        clearRecognitionAutoStopTimer();
+
         if (sessionId !== state.recognitionSessionId) {
             return;
         }

@@ -35,6 +35,15 @@
 
                             <div class="question-prompt" id="question-prompt">正在加载当前题目...</div>
 
+                            <div class="question-prompt-image-wrap" id="question-prompt-image-wrap" style="display:none;">
+                                <img
+                                    id="question-prompt-image"
+                                    class="question-prompt-image"
+                                    src=""
+                                    alt="题干图片"
+                                >
+                            </div>
+
                             <div class="question-extra" id="question-extra" style="display:none;"></div>
 
                             <div class="audio-wrap" id="audio-wrap" style="display:none;">
@@ -413,6 +422,21 @@
     letter-spacing: -0.01em;
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+.question-prompt-image-wrap {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.question-prompt-image {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: #ffffff;
 }
 
 .question-extra {
@@ -1750,6 +1774,8 @@ const questionInstruction = document.getElementById("question-instruction");
 const questionInstructionToggle = document.getElementById("question-instruction-toggle");
 const showHintBtn = document.getElementById("show-hint-btn");
 const questionPrompt = document.getElementById("question-prompt");
+const questionPromptImageWrap = document.getElementById("question-prompt-image-wrap");
+const questionPromptImage = document.getElementById("question-prompt-image");
 const questionExtra = document.getElementById("question-extra");
 const audioWrap = document.getElementById("audio-wrap");
 const questionAudio = document.getElementById("question-audio");
@@ -2436,6 +2462,12 @@ function getQuestionText(payload) {
     ], "当前题目加载成功，但没有找到可显示的题干。");
 }
 
+function getQuestionPromptImageUrl(payload) {
+    return pickText(payload, [
+        "prompt_image_url", "prompt_image", "image_url", "image"
+    ], "");
+}
+
 function getInstructionText(payload) {
     return pickText(payload, [
         "instruction_text", "instruction", "task", "guide", "hint"
@@ -2914,6 +2946,7 @@ function applyQuestionInputMode(payload) {
     const qType = getQuestionType(payload);
     const instructionText = getInstructionText(payload);
     const questionText = getQuestionText(payload);
+    const promptImageUrl = getQuestionPromptImageUrl(payload);
     const extra = getExtraText(payload);
     const audioUrl = getAudioUrl(payload);
 
@@ -2924,6 +2957,11 @@ function applyQuestionInputMode(payload) {
 
     state.usedHint = false;
     state.retryCount = 0;
+
+    if (questionPromptImageWrap && questionPromptImage) {
+        questionPromptImage.removeAttribute("src");
+        questionPromptImageWrap.style.display = "none";
+    }
 
     updateQuestionSource(payload);
     updateTrainMode(payload);
@@ -3004,6 +3042,11 @@ function applyQuestionInputMode(payload) {
     if (qType === "speak_read") {
         questionTypeBadge.textContent = "类型：speak_read";
         questionPrompt.textContent = questionText;
+
+        if (promptImageUrl && questionPromptImageWrap && questionPromptImage) {
+            questionPromptImage.src = promptImageUrl;
+            questionPromptImageWrap.style.display = "block";
+        }
 
         if (extra) {
             questionExtra.style.display = "block";

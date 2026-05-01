@@ -2563,17 +2563,30 @@ function resetSpeechUi() {
     if (speechStatus) {
         speechStatus.textContent = "等待开始录音";
     }
+}
+
+function updateSpeechButtons() {
+    const isBusy = Boolean(
+        state.isRecognizing
+        || state.pendingRecognitionStart
+        || state.isBackendRecording
+        || state.isBackendUploading
+    );
 
     if (speechStartBtn) {
-        speechStartBtn.style.display = "inline-flex";
+        speechStartBtn.style.display = isBusy ? "none" : "inline-flex";
     }
 
     if (speechStopBtn) {
-        speechStopBtn.style.display = "none";
+        speechStopBtn.style.display = (
+            state.isRecognizing
+            || state.pendingRecognitionStart
+            || state.isBackendRecording
+        ) ? "inline-flex" : "none";
     }
 
     if (speechRetryBtn) {
-        speechRetryBtn.style.display = "none";
+        speechRetryBtn.style.display = isBusy ? "none" : "inline-flex";
     }
 }
 

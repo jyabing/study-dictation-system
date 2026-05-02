@@ -2051,7 +2051,7 @@ def _build_segmented_hint_payload(answer_text, stage):
     }
 
 
-def judge_training_answer(training, raw_answer):
+def judge_training_answer(training, raw_answer, write_direction=""):
     """
     根据 TrainingItem 类型统一判题
     返回:
@@ -2369,7 +2369,7 @@ def judge_training_answer(training, raw_answer):
     else:
         user_answer = normalize(str(parsed or ""))
 
-    write_direction = (request.POST.get("write_direction") or "").strip()
+    write_direction = (write_direction or "").strip()
 
     write_source_text = (
         getattr(training, "source_text", "")
@@ -4477,6 +4477,7 @@ def _train_api_by_scope(request, scope, obj):
 
         training_id = request.POST.get("training_id")
         raw_answer = request.POST.get("answer", "")
+        write_direction = (request.POST.get("write_direction") or "").strip()
         duration = int(request.POST.get("duration", 0) or 0) / 1000
         used_hint = request.POST.get("used_hint") == "1"
         retry_count = int(request.POST.get("retry_count", 0) or 0)
@@ -4505,7 +4506,11 @@ def _train_api_by_scope(request, scope, obj):
                 }, status=404)
 
             if is_empty_submission:
-                judge = judge_wrong_word_replay(target, "")
+                judge = judge_training_answer(
+                    training,
+                    "",
+                    write_direction=write_direction,
+                )
                 hint_stage = _session_next_empty_submit_stage(request, training_id)
                 hint_payload = _build_segmented_hint_payload(
                     judge.get("display_answer", ""),
@@ -4715,7 +4720,11 @@ def _train_api_by_scope(request, scope, obj):
 
         _session_clear_empty_submit_stage(request)
 
-        judge = judge_training_answer(training, raw_answer)
+        judge = judge_training_answer(
+            training,
+            raw_answer,
+            write_direction=write_direction,
+        )
 
         is_correct = judge["is_correct"]
 

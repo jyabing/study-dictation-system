@@ -3623,7 +3623,7 @@ function applyQuestionInputMode(payload) {
     if (qType === "read_cloze") {
         answerInput.value = JSON.stringify(clozeAnswerTags);
         answerInput.placeholder = "请输入每个空的答案";
-    } else if (qType === "write") {
+    } else if (qType === "write" || qType === "write_text") {
         answerInput.value = "";
         answerInput.placeholder = payload.write_answer_label || "请输入对应内容，然后提交";
 
@@ -4536,7 +4536,7 @@ async function submitAnswer(event) {
     formData.append("is_empty_submission", isEmptyAnswer ? "1" : "0");
     formData.append("retry_count", String(state.retryCount));
 
-    if (qType === "write" && state.writeDirection) {
+    if ((qType === "write" || qType === "write_text") && state.writeDirection) {
         formData.append("write_direction", state.writeDirection);
     }
 

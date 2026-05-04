@@ -308,6 +308,150 @@ def _normalize_japanese_variants(text: str) -> str:
 def normalize(text: str):
     text = unicodedata.normalize("NFKC", text or "")
     return text.strip().lower()
+def _expand_english_contractions_for_match(text: str) -> str:
+    """
+    accepted_answers 专用：
+    展开常见英文缩写，解决 we're / we are 这类 ASR 与输入差异。
+    """
+    text = unicodedata.normalize("NFKC", text or "")
+    text = text.strip().lower()
+    text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
+
+    contraction_map = {
+        "i'm": "i am",
+        "you're": "you are",
+        "we're": "we are",
+        "they're": "they are",
+        "he's": "he is",
+        "she's": "she is",
+        "it's": "it is",
+        "that's": "that is",
+        "what's": "what is",
+        "who's": "who is",
+        "where's": "where is",
+        "there's": "there is",
+        "here's": "here is",
+        "i've": "i have",
+        "you've": "you have",
+        "we've": "we have",
+        "they've": "they have",
+        "i'll": "i will",
+        "you'll": "you will",
+        "we'll": "we will",
+        "they'll": "they will",
+        "i'd": "i would",
+        "you'd": "you would",
+        "we'd": "we would",
+        "they'd": "they would",
+        "can't": "cannot",
+        "won't": "will not",
+        "don't": "do not",
+        "doesn't": "does not",
+        "didn't": "did not",
+        "isn't": "is not",
+        "aren't": "are not",
+        "wasn't": "was not",
+        "weren't": "were not",
+        "haven't": "have not",
+        "hasn't": "has not",
+        "hadn't": "had not",
+        "shouldn't": "should not",
+        "wouldn't": "would not",
+        "couldn't": "could not",
+        "mustn't": "must not",
+    }
+
+    for src, dst in contraction_map.items():
+        text = re.sub(rf"\b{re.escape(src)}\b", dst, text)
+
+    return text
+
+
+def _remove_answer_noise_for_match(text: str) -> str:
+    """
+    accepted_answers 专用：
+    去掉大小写、空格、标点、引号差异。
+    """
+    text = unicodedata.normalize("NFKC", text or "")
+    text = text.strip().lower()
+    text = text.replace("’", "'").replace("‘", "'").replace("`", "'")
+
+    remove_chars = (
+        " \t\r\n"
+        ".,!?;:'\""
+        "“”‘’"
+        "()[]{}<>"
+        "，。！？；：「」『』（）【】、・"
+        "〜~…"
+    )
+
+    for ch in remove_chars:
+        text = text.replace(ch, "")
+
+    return text
+
+
+def _normalize_answer_loose_keys(text: str):
+    """
+    accepted_answers 专用：
+    同一个答案生成多个宽松匹配 key。
+    """
+    raw = unicodedata.normalize("NFKC", text or "")
+    raw = raw.strip().lower()
+    raw = raw.replace("’", "'").replace("‘", "'").replace("`", "'")
+
+    expanded = _expand_english_contractions_for_match(raw)
+    apostrophe_removed = raw.replace("'", "")
+
+    keys = {
+        _remove_answer_noise_for_match(raw),
+        _remove_answer_noise_for_match(expanded),
+        _remove_answer_noise_for_match(apostrophe_removed),
+    }
+
+    return {key for key in keys if key}
+
+
+def _accepted_answer_matches(user_answer, accepted_answer, item_type=""):
+    """
+    accepted_answers 专用统一判定。
+    不改变普通标准答案判题，只增强“可接受回答”的命中能力。
+    """
+    raw_user = str(user_answer or "").strip()
+    raw_accepted = str(accepted_answer or "").strip()
+
+    if not raw_user or not raw_accepted:
+        return False
+
+    if raw_user == raw_accepted:
+        return True
+
+    if normalize(raw_user) == normalize(raw_accepted):
+        return True
+
+    if _normalize_japanese_variants(raw_user) == _normalize_japanese_variants(raw_accepted):
+        return True
+
+    user_keys = _normalize_answer_loose_keys(raw_user)
+    accepted_keys = _normalize_answer_loose_keys(raw_accepted)
+
+    if user_keys & accepted_keys:
+        return True
+
+    if item_type == "listen_asr":
+        for user_key in user_keys:
+            for accepted_key in accepted_keys:
+                if len(accepted_key) >= 5 and accepted_key in user_key:
+                    return True
+
+        jp_user = _normalize_japanese_variants(raw_user)
+        jp_accepted = _normalize_japanese_variants(raw_accepted)
+
+        if len(jp_accepted) >= 4 and jp_accepted in jp_user:
+            return True
+
+    return False
+
 
 
 def is_close(a, b):
@@ -2267,17 +2411,11 @@ def judge_training_answer(training, raw_answer, write_direction=""):
         if not is_correct and accepted_answers:
             for accepted in accepted_answers:
                 if item_type in {"speak_read", "listen_asr"}:
-                    raw_user = str(user_answer_raw or "").strip()
-                    raw_accepted = str(accepted or "").strip()
-
-                    accepted_ok = False
-                    if raw_user and raw_accepted:
-                        if raw_user == raw_accepted:
-                            accepted_ok = True
-                        elif normalize(raw_user) == normalize(raw_accepted):
-                            accepted_ok = True
-                        elif _normalize_japanese_variants(raw_user) == _normalize_japanese_variants(raw_accepted):
-                            accepted_ok = True
+                    accepted_ok = _accepted_answer_matches(
+                        user_answer_raw,
+                        accepted,
+                        item_type=item_type
+                    )
 
                     if accepted_ok:
                         layered = {

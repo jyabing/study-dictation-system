@@ -2266,7 +2266,7 @@ def judge_training_answer(training, raw_answer, write_direction=""):
 
         if not is_correct and accepted_answers:
             for accepted in accepted_answers:
-                if item_type == "speak_read":
+                if item_type in {"speak_read", "listen_asr"}:
                     raw_user = str(user_answer_raw or "").strip()
                     raw_accepted = str(accepted or "").strip()
 

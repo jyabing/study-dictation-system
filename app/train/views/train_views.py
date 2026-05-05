@@ -1777,13 +1777,13 @@ def build_training_payload(training, memory=None, request=None):
         if write_direction == "target_to_source":
             write_display_text = write_target_text
             write_expected_answer = write_source_text
-            write_prompt_label = "请根据下面内容写出对应题干"
-            write_answer_label = "应写出的题干"
+            write_prompt_label = "反向检查：请根据日文表达写出中文意思"
+            write_answer_label = "应写出的中文意思"
         else:
             write_display_text = write_source_text
             write_expected_answer = write_target_text
-            write_prompt_label = "请根据题干写出对应内容"
-            write_answer_label = "应写出的回答"
+            write_prompt_label = "正向训练：请根据中文意思写出日文表达"
+            write_answer_label = "应写出的日文表达"
 
         if write_display_text:
             prompt_text = write_display_text

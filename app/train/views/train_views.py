@@ -6012,6 +6012,24 @@ def question_edit(request, question_id):
         question.training_items.order_by("id")
     )
 
+    similar_content_training_items = []
+
+    if training:
+        similar_source_text = (training.source_text or "").strip()
+        similar_target_answer = (training.target_answer or "").strip()
+
+        if similar_source_text and similar_target_answer:
+            similar_content_training_items = list(
+                TrainingItem.objects.select_related("question", "question__lesson", "question__lesson__book")
+                .filter(
+                    question__lesson__book__owner=request.user,
+                    source_text__iexact=similar_source_text,
+                    target_answer__iexact=similar_target_answer,
+                )
+                .exclude(question_id=question.id)
+                .order_by("question_id", "id")
+            )
+
     if request.method == "POST":
         instruction_text = (request.POST.get("instruction_text") or "").strip()
 
@@ -6080,6 +6098,7 @@ def question_edit(request, question_id):
                 "next": next_url,
                 "page_title": "编辑训练题",
                 "related_training_items": related_training_items,
+                "similar_content_training_items": similar_content_training_items,
                 "error": source_error,
                 "choices_json": json.dumps(training.choices or [], ensure_ascii=False) if training else "[]",
                 "cloze_answers_text": "\n".join(training.cloze_answers or []) if training and training.cloze_answers else "",
@@ -6413,6 +6432,7 @@ def question_edit(request, question_id):
         "next": next_url,
         "page_title": "编辑训练题",
         "related_training_items": related_training_items,
+        "similar_content_training_items": similar_content_training_items,
         "choices_json": json.dumps(training.choices or [], ensure_ascii=False) if training else "[]",
         "cloze_answers_text": "\n".join(training.cloze_answers or []) if training and training.cloze_answers else "",
         "accepted_answers_text": "\n".join(training.accepted_answers or []) if training and training.accepted_answers else "",

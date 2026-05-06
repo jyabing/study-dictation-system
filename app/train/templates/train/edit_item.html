@@ -299,6 +299,67 @@
                                 </div>
                             {% endif %}
 
+
+                            {% if similar_content_training_items %}
+                                <div class="field-group full">
+                                    <div class="field-label">同内容训练项对照</div>
+                                    <div class="field-help">
+                                        不同 question_id，但题干和回答相同的训练项。用于发现同一句内容在 listen_asr / speak_read / write 中可接受回答不一致的问题。
+                                    </div>
+
+                                    <div class="related-training-table-wrap">
+                                        <table class="related-training-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Question ID</th>
+                                                    <th>题型</th>
+                                                    <th>提示短语</th>
+                                                    <th>题干</th>
+                                                    <th>回答</th>
+                                                    <th>可接受回答</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in similar_content_training_items %}
+                                                    <tr>
+                                                        <td>{{ item.id }}</td>
+                                                        <td>{{ item.question_id }}</td>
+                                                        <td>{{ item.item_type }}</td>
+                                                        <td>{{ item.instruction_text|default:"-"|truncatechars:40 }}</td>
+                                                        <td>{{ item.source_text|default:"-"|truncatechars:50 }}</td>
+                                                        <td>{{ item.target_answer|default:"-"|truncatechars:50 }}</td>
+                                                        <td>{{ item.accepted_answers|length }} 条</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="related-training-mobile">
+                                        {% for item in similar_content_training_items %}
+                                            <div class="related-training-card">
+                                                <div class="related-training-card-title">
+                                                    ID {{ item.id }} ｜ Question {{ item.question_id }} ｜ {{ item.item_type }}
+                                                </div>
+                                                <div class="related-training-card-line">
+                                                    <strong>提示：</strong>{{ item.instruction_text|default:"-" }}
+                                                </div>
+                                                <div class="related-training-card-line">
+                                                    <strong>题干：</strong>{{ item.source_text|default:"-" }}
+                                                </div>
+                                                <div class="related-training-card-line">
+                                                    <strong>回答：</strong>{{ item.target_answer|default:"-" }}
+                                                </div>
+                                                <div class="related-training-card-line">
+                                                    <strong>可接受回答：</strong>{{ item.accepted_answers|length }} 条
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
+
                             {% if display_qtype == "listen_asr" or display_qtype == "speak_read" %}
                                 <div class="field-group full">
                                     <div class="field-label">声音设置</div>

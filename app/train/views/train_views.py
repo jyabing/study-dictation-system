@@ -4084,25 +4084,39 @@ def _get_scope_plan_items(plan_items, scope, obj):
 
 
 def _get_today_done_ids(request):
-    today_str = str(timezone.localdate())
-    session_date = request.session.get("today_done_date")
+    """
+    今日已完成训练项：
+    不再使用浏览器 session，改为从 StudyLog 按 user + 当天 + 答对记录 查询。
+    这样手机和电脑同账号会同步。
+    """
+    user = getattr(request, "user", None)
 
-    if session_date != today_str:
-        request.session["today_done_date"] = today_str
-        request.session["today_done_ids"] = []
+    if not user or not user.is_authenticated:
         return []
 
-    return list(request.session.get("today_done_ids", []))
+    local_now = timezone.localtime(timezone.now())
+    day_start = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    day_end = day_start + timedelta(days=1)
+
+    return list(
+        StudyLog.objects.filter(
+            user=user,
+            training_item_id__isnull=False,
+            is_correct=True,
+            created_at__gte=day_start,
+            created_at__lt=day_end,
+        )
+        .values_list("training_item_id", flat=True)
+        .distinct()
+    )
 
 
 def _add_today_done_id(request, training_id):
-    done_ids = _get_today_done_ids(request)
-
-    if training_id not in done_ids:
-        done_ids.append(training_id)
-        request.session["today_done_ids"] = done_ids
-
-    return done_ids
+    """
+    兼容旧调用入口：
+    今日完成状态现在由 StudyLog 记录决定，这里不再写 session。
+    """
+    return _get_today_done_ids(request)
 
 
 def _build_scope_plan_stats(request, scope_items):

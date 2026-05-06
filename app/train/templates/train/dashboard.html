@@ -385,7 +385,7 @@
                     <h2 class="global-review-entry__title">全局复习入口</h2>
                     <p class="global-review-entry__desc">
                         这两个入口不限制当前书或当前课，直接按全局范围进入训练。
-                        “今日到期复习”优先处理今天该做的内容；“全局逾期补做”专门清理已经错过窗口的任务。
+                        “今日计划到期任务”优先处理今天该做的内容；“今日计划逾期补做”专门清理已经错过窗口的任务。
                     </p>
                 </div>
                 <span class="global-review-entry__hint">统一入口</span>
@@ -404,11 +404,11 @@
                     <tbody>
                         <tr>
                             <td>
-                                <div class="global-review-table__title">今日到期复习</div>
+                                <div class="global-review-table__title">今日计划到期任务</div>
                             </td>
                             <td>
                                 <div class="global-review-table__desc">
-                                    面向今天应处理的全局到期任务，不受当前书册或当前课节限制。
+                                    今日计划中剩余的到期任务，不等同于书册实时到期库存。
                                 </div>
                             </td>
                             <td>
@@ -422,11 +422,11 @@
                         </tr>
                         <tr>
                             <td>
-                                <div class="global-review-table__title">全局逾期补做</div>
+                                <div class="global-review-table__title">今日计划逾期补做</div>
                             </td>
                             <td>
                                 <div class="global-review-table__desc">
-                                    专门清理已经逾期的任务，优先把错过复习窗口的内容补回来。
+                                    今日计划中剩余的逾期补做任务；书册上的“已逾期”是实时库存。
                                 </div>
                             </td>
                             <td>
@@ -447,12 +447,12 @@
                     <article class="global-review-card">
                         <div class="global-review-card__top">
                             <div>
-                                <h3 class="global-review-card__title">今日到期复习</h3>
+                                <h3 class="global-review-card__title">今日计划到期任务</h3>
                             </div>
                             <span class="global-review-count warning">{{ dashboard_due_total }}</span>
                         </div>
                         <p class="global-review-card__desc">
-                            按全局范围进入今天该做的到期任务，不限制当前书或当前课。
+                            今日计划中剩余的到期任务，不等同于书册实时到期库存。
                         </p>
                         <div class="global-review-card__actions">
                             <a href="{% url 'global-due-train' %}" class="primary-btn">进入复习</a>
@@ -462,12 +462,12 @@
                     <article class="global-review-card">
                         <div class="global-review-card__top">
                             <div>
-                                <h3 class="global-review-card__title">全局逾期补做</h3>
+                                <h3 class="global-review-card__title">今日计划逾期补做</h3>
                             </div>
                             <span class="global-review-count danger">{{ dashboard_overdue_total }}</span>
                         </div>
                         <p class="global-review-card__desc">
-                            专门补做已经逾期的全局任务，先把超窗内容清掉。
+                            今日计划中剩余的逾期补做任务；书册上的“已逾期”是实时库存。
                         </p>
                         <div class="global-review-card__actions">
                             <a href="{% url 'global-overdue-train' %}" class="ghost-btn">进入补做</a>

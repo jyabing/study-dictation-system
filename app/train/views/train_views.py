@@ -6008,6 +6008,10 @@ def question_edit(request, question_id):
 
     display_qtype = item_type or ""
 
+    related_training_items = list(
+        question.training_items.order_by("id")
+    )
+
     if request.method == "POST":
         instruction_text = (request.POST.get("instruction_text") or "").strip()
 
@@ -6075,6 +6079,7 @@ def question_edit(request, question_id):
                 "display_qtype": display_qtype,
                 "next": next_url,
                 "page_title": "编辑训练题",
+                "related_training_items": related_training_items,
                 "error": source_error,
                 "choices_json": json.dumps(training.choices or [], ensure_ascii=False) if training else "[]",
                 "cloze_answers_text": "\n".join(training.cloze_answers or []) if training and training.cloze_answers else "",
@@ -6407,6 +6412,7 @@ def question_edit(request, question_id):
         "display_qtype": display_qtype,
         "next": next_url,
         "page_title": "编辑训练题",
+        "related_training_items": related_training_items,
         "choices_json": json.dumps(training.choices or [], ensure_ascii=False) if training else "[]",
         "cloze_answers_text": "\n".join(training.cloze_answers or []) if training and training.cloze_answers else "",
         "accepted_answers_text": "\n".join(training.accepted_answers or []) if training and training.accepted_answers else "",

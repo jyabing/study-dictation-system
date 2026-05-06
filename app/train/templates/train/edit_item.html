@@ -168,6 +168,137 @@
                                 </div>
                             </div>
 
+
+                            {% if related_training_items %}
+                                <div class="field-group full">
+                                    <div class="field-label">同题训练项对照</div>
+                                    <div class="field-help">
+                                        同一个 question_id 下的训练项。用于检查 listen_asr / speak_read / write 等训练项的回答和可接受回答是否一致。
+                                    </div>
+
+                                    <style>
+                                        .related-training-table-wrap {
+                                            display: block;
+                                            overflow-x: auto;
+                                            margin-top: 10px;
+                                            border: 1px solid #dbeafe;
+                                            border-radius: 12px;
+                                            background: #ffffff;
+                                        }
+
+                                        .related-training-table {
+                                            width: 100%;
+                                            min-width: 760px;
+                                            border-collapse: collapse;
+                                            font-size: 13px;
+                                        }
+
+                                        .related-training-table th,
+                                        .related-training-table td {
+                                            padding: 10px;
+                                            border-bottom: 1px solid #e5e7eb;
+                                            vertical-align: top;
+                                            text-align: left;
+                                        }
+
+                                        .related-training-table th {
+                                            background: #eff6ff;
+                                            font-weight: 800;
+                                            color: #1e3a8a;
+                                        }
+
+                                        .related-training-table tr:last-child td {
+                                            border-bottom: none;
+                                        }
+
+                                        .related-training-mobile {
+                                            display: none;
+                                            margin-top: 10px;
+                                            gap: 10px;
+                                        }
+
+                                        .related-training-card {
+                                            border: 1px solid #dbeafe;
+                                            border-radius: 12px;
+                                            padding: 12px;
+                                            background: #ffffff;
+                                        }
+
+                                        .related-training-card-title {
+                                            font-weight: 800;
+                                            color: #1e3a8a;
+                                            margin-bottom: 8px;
+                                        }
+
+                                        .related-training-card-line {
+                                            font-size: 13px;
+                                            margin: 4px 0;
+                                            color: #374151;
+                                            word-break: break-word;
+                                        }
+
+                                        @media (max-width: 720px) {
+                                            .related-training-table-wrap {
+                                                display: none;
+                                            }
+
+                                            .related-training-mobile {
+                                                display: grid;
+                                            }
+                                        }
+                                    </style>
+
+                                    <div class="related-training-table-wrap">
+                                        <table class="related-training-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>题型</th>
+                                                    <th>提示短语</th>
+                                                    <th>题干</th>
+                                                    <th>回答</th>
+                                                    <th>可接受回答</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in related_training_items %}
+                                                    <tr>
+                                                        <td>{{ item.id }}</td>
+                                                        <td>{{ item.item_type }}</td>
+                                                        <td>{{ item.instruction_text|default:"-"|truncatechars:40 }}</td>
+                                                        <td>{{ item.source_text|default:"-"|truncatechars:50 }}</td>
+                                                        <td>{{ item.target_answer|default:"-"|truncatechars:50 }}</td>
+                                                        <td>{{ item.accepted_answers|length }} 条</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="related-training-mobile">
+                                        {% for item in related_training_items %}
+                                            <div class="related-training-card">
+                                                <div class="related-training-card-title">
+                                                    ID {{ item.id }} ｜ {{ item.item_type }}
+                                                </div>
+                                                <div class="related-training-card-line">
+                                                    <strong>提示：</strong>{{ item.instruction_text|default:"-" }}
+                                                </div>
+                                                <div class="related-training-card-line">
+                                                    <strong>题干：</strong>{{ item.source_text|default:"-" }}
+                                                </div>
+                                                <div class="related-training-card-line">
+                                                    <strong>回答：</strong>{{ item.target_answer|default:"-" }}
+                                                </div>
+                                                <div class="related-training-card-line">
+                                                    <strong>可接受回答：</strong>{{ item.accepted_answers|length }} 条
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
+
                             {% if display_qtype == "listen_asr" or display_qtype == "speak_read" %}
                                 <div class="field-group full">
                                     <div class="field-label">声音设置</div>

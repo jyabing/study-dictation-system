@@ -3396,6 +3396,33 @@ function startSpeechRecognition() {
     }
 }
 
+function getWritePlaceholder(payload, instructionText) {
+    const instruction = String(instructionText || "").trim();
+    const answerLabel = String(payload?.write_answer_label || "").trim();
+
+    if (instruction.includes("假名") && instruction.includes("汉字")) {
+        return "请输入对应假名或对应汉字";
+    }
+
+    if (instruction.includes("假名")) {
+        return "请输入对应假名";
+    }
+
+    if (instruction.includes("汉字")) {
+        return "请输入对应汉字";
+    }
+
+    if (instruction.includes("中文") || instruction.includes("意思")) {
+        return "请输入中文意思";
+    }
+
+    if (instruction.includes("日文") || instruction.includes("表达")) {
+        return "请输入日文表达";
+    }
+
+    return instruction || answerLabel || "请输入对应内容，然后提交";
+}
+
 function applyQuestionInputMode(payload) {
     const qType = getQuestionType(payload);
     const instructionText = getInstructionText(payload);
@@ -3625,7 +3652,7 @@ function applyQuestionInputMode(payload) {
         answerInput.placeholder = "请输入每个空的答案";
     } else if (qType === "write" || qType === "write_text") {
         answerInput.value = "";
-        answerInput.placeholder = instructionText || payload.write_answer_label || "请输入对应内容，然后提交";
+        answerInput.placeholder = getWritePlaceholder(payload, instructionText);
 
         if (payload.write_prompt_label) {
             questionExtra.style.display = "block";

@@ -3625,7 +3625,7 @@ function applyQuestionInputMode(payload) {
         answerInput.placeholder = "请输入每个空的答案";
     } else if (qType === "write" || qType === "write_text") {
         answerInput.value = "";
-        answerInput.placeholder = payload.write_answer_label || "请输入对应内容，然后提交";
+        answerInput.placeholder = instructionText || payload.write_answer_label || "请输入对应内容，然后提交";
 
         if (payload.write_prompt_label) {
             questionExtra.style.display = "block";

@@ -27,6 +27,10 @@
 
                             <div class="question-type-badge" id="question-type-badge">加载中</div>
 
+                            <div class="question-target-badge" id="question-target-badge" style="display:none;">
+                                训练目标：-
+                            </div>
+
                             <div class="question-instruction-toggle" id="question-instruction-toggle" style="display:none;">
                                 <button type="button" class="ghost-btn" id="show-hint-btn">查看提示</button>
                             </div>
@@ -388,6 +392,21 @@
     border: 1px solid rgba(110, 168, 255, 0.30);
     background: rgba(110, 168, 255, 0.16);
     color: #244a86;
+}
+
+.question-target-badge {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    border: 1px solid rgba(122, 214, 163, 0.30);
+    background: rgba(122, 214, 163, 0.14);
+    color: #1f5f37;
 }
 
 .question-instruction {
@@ -1809,6 +1828,7 @@ const statPlanProgress = document.getElementById("stat-plan-progress");
 const statMemoryLevel = document.getElementById("stat-memory-level");
 
 const questionTypeBadge = document.getElementById("question-type-badge");
+const questionTargetBadge = document.getElementById("question-target-badge");
 const questionInstruction = document.getElementById("question-instruction");
 const questionInstructionToggle = document.getElementById("question-instruction-toggle");
 const showHintBtn = document.getElementById("show-hint-btn");
@@ -3423,6 +3443,34 @@ function getWritePlaceholder(payload, instructionText) {
     return instruction || answerLabel || "请输入对应内容，然后提交";
 }
 
+function getWriteTargetLabel(payload, instructionText) {
+    const instruction = String(instructionText || "").trim();
+    const answerLabel = String(payload?.write_answer_label || "").trim();
+    const combined = `${instruction} ${answerLabel}`;
+
+    if (combined.includes("假名") && combined.includes("汉字")) {
+        return "训练目标：假名 / 汉字";
+    }
+
+    if (combined.includes("假名")) {
+        return "训练目标：假名";
+    }
+
+    if (combined.includes("汉字")) {
+        return "训练目标：汉字";
+    }
+
+    if (combined.includes("中文") || combined.includes("意思")) {
+        return "训练目标：中文意思";
+    }
+
+    if (combined.includes("日文") || combined.includes("表达")) {
+        return "训练目标：日文表达";
+    }
+
+    return "";
+}
+
 function applyQuestionInputMode(payload) {
     const qType = getQuestionType(payload);
     const instructionText = getInstructionText(payload);
@@ -3432,6 +3480,18 @@ function applyQuestionInputMode(payload) {
     const audioUrl = getAudioUrl(payload);
 
     state.writeDirection = payload.write_direction || "";
+
+    const writeTargetLabel = getWriteTargetLabel(payload, instructionText);
+
+    if (questionTargetBadge) {
+        if ((qType === "write" || qType === "write_text") && writeTargetLabel) {
+            questionTargetBadge.textContent = writeTargetLabel;
+            questionTargetBadge.style.display = "inline-flex";
+        } else {
+            questionTargetBadge.textContent = "";
+            questionTargetBadge.style.display = "none";
+        }
+    }
 
     state.recognitionLang = normalizeAsrLang(
         pickText(

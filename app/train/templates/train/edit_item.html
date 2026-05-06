@@ -171,12 +171,35 @@
 
                             {% if related_training_items %}
                                 <div class="field-group full">
-                                    <div class="field-label">同题训练项对照</div>
+                                    <details class="related-training-details">
+                                        <summary class="field-label related-training-summary">同题训练项对照（{{ related_training_items|length }} 条）</summary>
                                     <div class="field-help">
                                         同一个 question_id 下的训练项。用于检查 listen_asr / speak_read / write 等训练项的回答和可接受回答是否一致。
                                     </div>
 
                                     <style>
+                                        .related-training-details {
+                                            display: block;
+                                        }
+
+                                        .related-training-summary {
+                                            cursor: pointer;
+                                            user-select: none;
+                                            margin-bottom: 8px;
+                                        }
+
+                                        .related-training-summary::-webkit-details-marker {
+                                            display: none;
+                                        }
+
+                                        .related-training-summary::before {
+                                            content: "▶ ";
+                                        }
+
+                                        .related-training-details[open] .related-training-summary::before {
+                                            content: "▼ ";
+                                        }
+
                                         .related-training-table-wrap {
                                             display: block;
                                             overflow-x: auto;
@@ -296,13 +319,15 @@
                                             </div>
                                         {% endfor %}
                                     </div>
+                                    </details>
                                 </div>
                             {% endif %}
 
 
                             {% if similar_content_training_items %}
                                 <div class="field-group full">
-                                    <div class="field-label">同内容训练项对照</div>
+                                    <details class="related-training-details">
+                                        <summary class="field-label related-training-summary">同内容训练项对照（{{ similar_content_training_items|length }} 条）</summary>
                                     <div class="field-help">
                                         不同 question_id，但题干和回答相同的训练项。用于发现同一句内容在 listen_asr / speak_read / write 中可接受回答不一致的问题。
                                     </div>
@@ -357,6 +382,7 @@
                                             </div>
                                         {% endfor %}
                                     </div>
+                                    </details>
                                 </div>
                             {% endif %}
 

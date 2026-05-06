@@ -303,6 +303,207 @@ class TrainingItem(models.Model):
 
 
 # =========================
+# 🎧 PracticePlaylist（用户个人播放列表）
+# =========================
+class PracticePlaylist(models.Model):
+
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="practice_playlists"
+    )
+
+    title = models.CharField(
+        max_length=200
+    )
+
+    description = models.TextField(
+        blank=True,
+        default=""
+    )
+
+    sort_order = models.IntegerField(
+        default=0
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return self.title
+
+
+# =========================
+# 🎵 PracticeTrack（用户个人音频）
+# =========================
+class PracticeTrack(models.Model):
+
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="practice_tracks"
+    )
+
+    playlist = models.ForeignKey(
+        PracticePlaylist,
+        on_delete=models.CASCADE,
+        related_name="tracks"
+    )
+
+    title = models.CharField(
+        max_length=200
+    )
+
+    audio_file = models.FileField(
+        upload_to="practice/audio/",
+        blank=True,
+        null=True
+    )
+
+    source_url = models.URLField(
+        blank=True,
+        default=""
+    )
+
+    original_bpm = models.PositiveIntegerField(
+        blank=True,
+        null=True
+    )
+
+    notes = models.TextField(
+        blank=True,
+        default=""
+    )
+
+    sort_order = models.IntegerField(
+        default=0
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        ordering = ["playlist", "sort_order", "id"]
+
+    def save(self, *args, **kwargs):
+        if self.playlist_id:
+            self.owner = self.playlist.owner
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+
+# =========================
+# ✂️ PracticeSegment（A-B 片段 + 步进步退设置）
+# =========================
+class PracticeSegment(models.Model):
+
+    END_MODE_CHOICES = [
+        ("stop", "到目标后停止"),
+        ("keep", "到目标后保持"),
+        ("repeat", "回到起始速度"),
+        ("step_down", "到目标后步退"),
+        ("ping_pong", "往返循环"),
+    ]
+
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="practice_segments"
+    )
+
+    track = models.ForeignKey(
+        PracticeTrack,
+        on_delete=models.CASCADE,
+        related_name="segments"
+    )
+
+    title = models.CharField(
+        max_length=200,
+        blank=True,
+        default=""
+    )
+
+    start_time = models.FloatField(
+        default=0
+    )
+
+    end_time = models.FloatField(
+        default=0
+    )
+
+    start_speed = models.FloatField(
+        default=0.70
+    )
+
+    end_speed = models.FloatField(
+        default=1.00
+    )
+
+    speed_step = models.FloatField(
+        default=0.05
+    )
+
+    repeat_per_step = models.PositiveIntegerField(
+        default=3
+    )
+
+    end_mode = models.CharField(
+        max_length=20,
+        choices=END_MODE_CHOICES,
+        default="step_down"
+    )
+
+    preserve_pitch = models.BooleanField(
+        default=True
+    )
+
+    notes = models.TextField(
+        blank=True,
+        default=""
+    )
+
+    sort_order = models.IntegerField(
+        default=0
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        ordering = ["track", "sort_order", "id"]
+
+    def save(self, *args, **kwargs):
+        if self.track_id:
+            self.owner = self.track.owner
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        if self.title:
+            return self.title
+        return f"{self.track.title} [{self.start_time:.1f}s - {self.end_time:.1f}s]"
+
+
+# =========================
 # 🧠 QuestionMemory（SRS记忆层）
 # =========================
 class QuestionMemory(models.Model):
@@ -361,7 +562,7 @@ class QuestionMemory(models.Model):
 
     def __str__(self):
         return f"{self.user} - T{self.item_id or 'OLD'}"
-    
+
 
 # =========================
 # 🧩 WordMemory（词级 / blank级 记忆层）
@@ -465,7 +666,7 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} (Lv{self.level})"
-    
+
 # =========================
 # 📝 StudyLog（学习行为日志）
 # =========================

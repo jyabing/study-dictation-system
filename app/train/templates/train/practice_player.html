@@ -1,0 +1,1330 @@
+{% extends "train/base_train.html" %}
+
+{% block title %}自由练习播放器{% endblock %}
+
+{% block body_class %}practice-player-page{% endblock %}
+
+{% block extra_css %}
+<style>
+.practice-shell {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 26px 18px 56px;
+}
+
+.practice-card {
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 26px;
+    box-shadow: var(--shadow);
+    padding: 22px;
+}
+
+.practice-player-stage {
+    position: relative;
+    overflow: hidden;
+    border-radius: 30px;
+    border: 1px solid rgba(110, 168, 255, 0.26);
+    background:
+        radial-gradient(circle at top left, rgba(110, 168, 255, 0.24), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(34, 211, 238, 0.14), transparent 38%),
+        var(--card);
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.16);
+    padding: 24px;
+}
+
+.practice-player-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent 42%);
+    pointer-events: none;
+}
+
+.practice-player-content {
+    position: relative;
+    z-index: 1;
+}
+
+.practice-title-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 18px;
+}
+
+.practice-title {
+    margin: 0 0 7px;
+    font-size: 30px;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+}
+
+.practice-subtitle {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.65;
+    font-size: 14px;
+}
+
+.practice-mode-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 12px;
+    color: var(--muted);
+    background: var(--soft);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+
+.practice-title-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.practice-library-return {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    border: 1px solid rgba(110, 168, 255, 0.34);
+    border-radius: 999px;
+    padding: 8px 12px;
+    color: var(--primary);
+    background: rgba(110, 168, 255, 0.10);
+    font-size: 13px;
+    font-weight: 900;
+    text-decoration: none;
+}
+
+.practice-player-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 18px;
+    align-items: stretch;
+}
+
+.practice-deck {
+    border: 1px solid rgba(110, 168, 255, 0.20);
+    background: rgba(255, 255, 255, 0.055);
+    border-radius: 24px;
+    padding: 18px;
+}
+
+.practice-file-row {
+    margin-bottom: 14px;
+}
+
+.practice-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.practice-field label {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 750;
+}
+
+.practice-field input,
+.practice-field select {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    background: var(--input);
+    color: var(--text);
+    padding: 12px 13px;
+    font-size: 15px;
+    outline: none;
+}
+
+.practice-field input:focus,
+.practice-field select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(110, 168, 255, 0.12);
+}
+
+.practice-audio-frame {
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    background: var(--soft);
+    padding: 16px;
+}
+
+.practice-audio-label {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.practice-audio {
+    width: 100%;
+}
+
+.practice-loop-strip {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.practice-status-panel {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.practice-stat {
+    border: 1px solid var(--border);
+    background: var(--soft);
+    border-radius: 20px;
+    padding: 16px;
+}
+
+.practice-stat.main {
+    background: linear-gradient(135deg, rgba(110, 168, 255, 0.20), rgba(34, 211, 238, 0.08));
+    border-color: rgba(110, 168, 255, 0.30);
+}
+
+.practice-stat-label {
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 6px;
+    font-weight: 800;
+}
+
+.practice-stat-value {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+}
+
+.practice-main-controls {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    gap: 18px;
+}
+
+.practice-section-title {
+    margin: 0 0 14px;
+    font-size: 17px;
+    font-weight: 850;
+}
+
+.practice-button-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.practice-auto-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.9fr);
+    gap: 10px;
+}
+
+.practice-btn {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--soft);
+    color: var(--text);
+    padding: 12px 14px;
+    font-weight: 850;
+    cursor: pointer;
+    min-height: 48px;
+}
+
+.practice-btn.primary {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.practice-btn.danger {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.22);
+}
+
+.practice-btn.strong {
+    font-size: 16px;
+}
+
+.practice-note {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.65;
+}
+
+.practice-settings {
+    margin-top: 18px;
+}
+
+.practice-settings-card {
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 26px;
+    box-shadow: var(--shadow);
+    padding: 22px;
+}
+
+.practice-settings-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.practice-settings-title {
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+}
+
+.practice-settings-text {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.practice-form-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.practice-form-grid .practice-field:nth-child(1),
+.practice-form-grid .practice-field:nth-child(2),
+.practice-form-grid .practice-field:nth-child(3),
+.practice-form-grid .practice-field:nth-child(4) {
+    grid-column: span 1;
+}
+
+.practice-form-grid .practice-field:nth-child(5),
+.practice-form-grid .practice-field:nth-child(6) {
+    grid-column: span 1;
+}
+
+.practice-segment-panel {
+    margin-top: 18px;
+}
+
+.practice-segment-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.practice-segment-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    border: 1px solid var(--border);
+    background: var(--soft);
+    border-radius: 18px;
+    padding: 12px 14px;
+    text-decoration: none;
+    color: var(--text);
+}
+
+.practice-segment-row:hover {
+    border-color: var(--primary);
+}
+
+.practice-segment-row.is-active {
+    border-color: var(--primary);
+    background: rgba(110, 168, 255, 0.10);
+}
+
+.practice-segment-title {
+    font-size: 14px;
+    font-weight: 900;
+    margin-bottom: 4px;
+}
+
+.practice-segment-meta {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.practice-segment-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 850;
+}
+
+
+.practice-segment-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.practice-segment-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.practice-delete-form {
+    margin: 0;
+}
+
+.practice-delete-btn {
+    border: 1px solid rgba(239, 68, 68, 0.28);
+    border-radius: 999px;
+    background: rgba(239, 68, 68, 0.10);
+    color: #ef4444;
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 850;
+    cursor: pointer;
+}
+
+.practice-plan-wrap {
+    margin-top: 18px;
+}
+
+.practice-plan-details {
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 26px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.practice-plan-details summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 18px 22px;
+}
+
+.practice-plan-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.practice-plan-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+}
+
+.practice-plan-head h2 {
+    margin: 0;
+}
+
+.practice-plan-body {
+    border-top: 1px solid var(--border);
+    padding: 18px 22px 22px;
+}
+
+.practice-plan-table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    border-radius: 18px;
+}
+
+.practice-plan-table th,
+.practice-plan-table td {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 10px;
+    text-align: left;
+    font-size: 14px;
+}
+
+.practice-plan-table th {
+    color: var(--muted);
+    font-weight: 850;
+    background: var(--soft);
+}
+
+.practice-plan-table tr.is-active td {
+    font-weight: 900;
+    color: var(--primary);
+}
+
+.practice-mobile-cards {
+    display: none;
+}
+
+.practice-mobile-step {
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 14px;
+    background: var(--soft);
+    margin-bottom: 10px;
+    line-height: 1.55;
+}
+
+.practice-mobile-step.is-active {
+    border-color: var(--primary);
+}
+
+@media (max-width: 1040px) {
+    .practice-form-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 920px) {
+    .practice-player-main,
+    .practice-main-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .practice-status-panel {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .practice-form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    .practice-shell {
+        padding: 16px 12px 40px;
+    }
+
+    .practice-player-stage,
+    .practice-card,
+    .practice-settings-card {
+        border-radius: 22px;
+        padding: 16px;
+    }
+
+    .practice-title-row,
+    .practice-settings-head,
+    .practice-plan-head {
+        display: grid;
+        gap: 10px;
+    }
+
+    .practice-title-actions {
+        justify-content: flex-start;
+    }
+
+    .practice-title {
+        font-size: 24px;
+    }
+
+    .practice-loop-strip,
+    .practice-status-panel,
+    .practice-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .practice-button-grid,
+    .practice-auto-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .practice-segment-row {
+        grid-template-columns: 1fr;
+    }
+
+    .practice-segment-action {
+        width: fit-content;
+    }
+
+    .practice-btn {
+        width: 100%;
+        min-height: 50px;
+    }
+
+    .practice-desktop-table {
+        display: none;
+    }
+
+    .practice-mobile-cards {
+        display: block;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="practice-shell">
+    <section class="practice-player-stage">
+        <div class="practice-player-content">
+            <div class="practice-title-row">
+                <div>
+                    <h1 class="practice-title">自由练习播放器</h1>
+                    <p class="practice-subtitle">
+                        选择音频，设定 A-B 片段，然后用慢速、步进、步退或往返循环进行模仿练习。
+                    </p>
+                </div>
+                <div class="practice-title-actions">
+                    <a href="{% url 'practice-library' %}" class="practice-library-return">返回我的播放列表</a>
+
+                    {% if selected_segment %}
+                        <div class="practice-mode-pill">
+                            当前片段：
+                            {% if selected_segment.title %}
+                                {{ selected_segment.title }}
+                            {% else %}
+                                {{ selected_segment.start_time|floatformat:1 }}s - {{ selected_segment.end_time|floatformat:1 }}s
+                            {% endif %}
+                        </div>
+                    {% elif selected_track %}
+                        <div class="practice-mode-pill">当前曲目：{{ selected_track.title }}</div>
+                    {% else %}
+                        <div class="practice-mode-pill">独立练习，不绑定 SRS</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="practice-player-main">
+                <div class="practice-deck">
+                    <div class="practice-file-row">
+                        <div class="practice-field">
+                            <label for="practice-audio-file">音频文件</label>
+                            <input id="practice-audio-file" type="file" accept="audio/*">
+                            {% if selected_track %}
+                                <p class="practice-note">
+                                    已从“我的播放列表”载入：{{ selected_track.title }}。重新选择本地文件会临时覆盖当前曲目。
+                                </p>
+
+                                <form
+                                    method="post"
+                                    action="{% url 'practice-track-delete' selected_track.id %}"
+                                    class="practice-delete-form"
+                                    onsubmit="return confirm('确定删除这个曲目吗？曲目下所有片段也会一起删除。');"
+                                >
+                                    {% csrf_token %}
+                                    <button type="submit" class="practice-delete-btn">删除当前曲目</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="practice-audio-frame">
+                        <div class="practice-audio-label">
+                            <span>Practice Deck</span>
+                            <span>A-B Loop / Progressive Tempo</span>
+                        </div>
+
+                        <audio id="practice-audio" class="practice-audio" controls preload="metadata"></audio>
+                    </div>
+
+                    <div class="practice-field">
+                        <label for="loop-start">A 点，秒</label>
+                        <input
+                            id="loop-start"
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value="{% if selected_segment %}{{ selected_segment.start_time|floatformat:3 }}{% else %}0{% endif %}"
+                        >
+                    </div>
+
+                    <div class="practice-field">
+                        <label for="loop-end">B 点，秒</label>
+                        <input
+                            id="loop-end"
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value="{% if selected_segment %}{{ selected_segment.end_time|floatformat:3 }}{% else %}0{% endif %}"
+                        >
+                    </div>
+                </div>
+
+                <div class="practice-status-panel">
+                    <div class="practice-stat main">
+                        <div class="practice-stat-label">当前速度</div>
+                        <div class="practice-stat-value" id="current-speed">1.00x</div>
+                    </div>
+
+                    <div class="practice-stat">
+                        <div class="practice-stat-label">当前步骤</div>
+                        <div class="practice-stat-value" id="current-step">-</div>
+                    </div>
+
+                    <div class="practice-stat">
+                        <div class="practice-stat-label">本速度重复</div>
+                        <div class="practice-stat-value" id="current-repeat">0 / 0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="practice-main-controls">
+                <div>
+                    <h2 class="practice-section-title">A-B 设置</h2>
+                    <div class="practice-button-grid">
+                        <button class="practice-btn" type="button" id="set-a-btn">设为 A</button>
+                        <button class="practice-btn" type="button" id="set-b-btn">设为 B</button>
+                        <button class="practice-btn primary" type="button" id="play-loop-btn">播放 A-B</button>
+                        <button class="practice-btn danger" type="button" id="stop-btn">停止</button>
+                    </div>
+                </div>
+
+                <div>
+                    <h2 class="practice-section-title">自动练习</h2>
+                    <div class="practice-auto-grid">
+                        <button class="practice-btn primary strong" type="button" id="start-progressive-btn">开始自动练习</button>
+                        <button class="practice-btn" type="button" id="preview-plan-btn">预览速度计划</button>
+                    </div>
+                    <p class="practice-note">
+                        自动练习会读取下方设置。练习中也可以随时修改速度、步长、重复次数和结束方式。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="practice-settings">
+        <div class="practice-settings-card">
+            <div class="practice-settings-head">
+                <div>
+                    <h2 class="practice-settings-title">Progressive Tempo / 步进步退设置</h2>
+                    <p class="practice-settings-text">
+                        这里保持展开，方便练习时随时调整。音乐练习可理解成 BPM 比例；语言影子跟读可理解成播放倍速。
+                    </p>
+                </div>
+                <div class="practice-mode-pill">随时可改</div>
+            </div>
+
+            <div class="practice-form-grid">
+                <div class="practice-field">
+                    <label for="start-speed">Start Speed</label>
+                    <input
+                        id="start-speed"
+                        type="number"
+                        min="0.25"
+                        max="2"
+                        step="0.05"
+                        value="{% if selected_segment %}{{ selected_segment.start_speed|floatformat:2 }}{% else %}0.70{% endif %}"
+                    >
+                </div>
+
+                <div class="practice-field">
+                    <label for="end-speed">End Speed</label>
+                    <input
+                        id="end-speed"
+                        type="number"
+                        min="0.25"
+                        max="2"
+                        step="0.05"
+                        value="{% if selected_segment %}{{ selected_segment.end_speed|floatformat:2 }}{% else %}1.00{% endif %}"
+                    >
+                </div>
+
+                <div class="practice-field">
+                    <label for="speed-step">Step</label>
+                    <input
+                        id="speed-step"
+                        type="number"
+                        min="0.01"
+                        max="0.5"
+                        step="0.01"
+                        value="{% if selected_segment %}{{ selected_segment.speed_step|floatformat:2 }}{% else %}0.05{% endif %}"
+                    >
+                </div>
+
+                <div class="practice-field">
+                    <label for="repeat-per-step">每个速度重复次数</label>
+                    <input
+                        id="repeat-per-step"
+                        type="number"
+                        min="1"
+                        max="99"
+                        step="1"
+                        value="{% if selected_segment %}{{ selected_segment.repeat_per_step }}{% else %}3{% endif %}"
+                    >
+                </div>
+
+                <div class="practice-field">
+                    <label for="end-mode">结束方式</label>
+                    <select id="end-mode">
+                        <option value="stop" {% if selected_segment and selected_segment.end_mode == "stop" %}selected{% endif %}>到目标后停止</option>
+                        <option value="keep" {% if selected_segment and selected_segment.end_mode == "keep" %}selected{% endif %}>到目标后保持</option>
+                        <option value="repeat" {% if selected_segment and selected_segment.end_mode == "repeat" %}selected{% endif %}>回到起始速度</option>
+                        <option value="step_down" {% if not selected_segment or selected_segment.end_mode == "step_down" %}selected{% endif %}>到目标后步退</option>
+                        <option value="ping_pong" {% if selected_segment and selected_segment.end_mode == "ping_pong" %}selected{% endif %}>往返循环</option>
+                    </select>
+                </div>
+
+                <div class="practice-field">
+                    <label for="preserve-pitch">音高</label>
+                    <select id="preserve-pitch">
+                        <option value="true" {% if not selected_segment or selected_segment.preserve_pitch %}selected{% endif %}>尽量保持音高</option>
+                        <option value="false" {% if selected_segment and not selected_segment.preserve_pitch %}selected{% endif %}>允许跟随速度变化</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    {% if selected_track %}
+        <section class="practice-settings">
+            <div class="practice-settings-card">
+                <div class="practice-settings-head">
+                    <div>
+                        <h2 class="practice-settings-title">保存当前片段</h2>
+                        <p class="practice-settings-text">
+                            保存当前 A-B 时间、速度范围、步进、重复次数和结束方式。保存后会回到当前曲目的播放器页面。
+                        </p>
+                    </div>
+                    <div class="practice-mode-pill">保存到当前曲目</div>
+                </div>
+
+                <form
+                    method="post"
+                    action="{% url 'practice-segment-save' selected_track.id %}"
+                    id="save-segment-form"
+                    class="practice-form-grid"
+                >
+                    {% csrf_token %}
+
+                    {% if selected_segment %}
+                        <input type="hidden" name="segment_id" value="{{ selected_segment.id }}">
+                    {% endif %}
+
+                    <div class="practice-field">
+                        <label for="save-segment-title">片段名称</label>
+                        <input
+                            id="save-segment-title"
+                            type="text"
+                            name="title"
+                            maxlength="200"
+                            value="{% if selected_segment %}{{ selected_segment.title }}{% endif %}"
+                            placeholder="例如：副歌第一句 / 影子跟读 01"
+                        >
+                    </div>
+
+                    <input type="hidden" name="start_time" id="save-segment-start-time">
+                    <input type="hidden" name="end_time" id="save-segment-end-time">
+                    <input type="hidden" name="start_speed" id="save-segment-start-speed">
+                    <input type="hidden" name="end_speed" id="save-segment-end-speed">
+                    <input type="hidden" name="speed_step" id="save-segment-speed-step">
+                    <input type="hidden" name="repeat_per_step" id="save-segment-repeat-per-step">
+                    <input type="hidden" name="end_mode" id="save-segment-end-mode">
+                    <input type="hidden" name="preserve_pitch" id="save-segment-preserve-pitch">
+
+                    <button type="submit" class="practice-btn primary strong">
+                        {% if selected_segment %}
+                            更新当前片段
+                        {% else %}
+                            保存当前片段
+                        {% endif %}
+                    </button>
+                </form>
+            </div>
+        </section>
+    {% endif %}
+
+    {% if selected_track %}
+        <section class="practice-segment-panel">
+            <div class="practice-settings-card">
+                <div class="practice-settings-head">
+                    <div>
+                        <h2 class="practice-settings-title">当前曲目的已保存片段</h2>
+                        <p class="practice-settings-text">
+                            不用回到播放列表，也可以直接切换这个曲目下的 A-B 片段。
+                        </p>
+                    </div>
+                    <div class="practice-mode-pill">
+                        片段 {{ track_segments|length }}
+                    </div>
+                </div>
+
+                {% if track_segments %}
+                    <div class="practice-segment-grid">
+                        {% for segment in track_segments %}
+                            <div class="practice-segment-row {% if selected_segment and selected_segment.id == segment.id %}is-active{% endif %}">
+                                <a href="{% url 'practice-player-segment' segment.id %}" class="practice-segment-link">
+                                    <div class="practice-segment-title">
+                                        {% if segment.title %}
+                                            {{ segment.title }}
+                                        {% else %}
+                                            {{ segment.start_time|floatformat:1 }}s - {{ segment.end_time|floatformat:1 }}s
+                                        {% endif %}
+                                    </div>
+                                    <div class="practice-segment-meta">
+                                        A-B：{{ segment.start_time|floatformat:1 }}s - {{ segment.end_time|floatformat:1 }}s /
+                                        速度：{{ segment.start_speed|floatformat:2 }}x → {{ segment.end_speed|floatformat:2 }}x /
+                                        重复：{{ segment.repeat_per_step }} /
+                                        模式：{{ segment.get_end_mode_display }}
+                                    </div>
+                                </a>
+
+                                <div class="practice-segment-tools">
+                                    <a href="{% url 'practice-player-segment' segment.id %}" class="practice-segment-action">
+                                        {% if selected_segment and selected_segment.id == segment.id %}
+                                            当前片段
+                                        {% else %}
+                                            打开
+                                        {% endif %}
+                                    </a>
+
+                                    <form
+                                        method="post"
+                                        action="{% url 'practice-segment-delete' segment.id %}"
+                                        class="practice-delete-form"
+                                        onsubmit="return confirm('确定删除这个片段吗？');"
+                                    >
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="player">
+                                        <button type="submit" class="practice-delete-btn">删除</button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="practice-note">
+                        当前曲目还没有保存片段。设置 A-B 和速度后，点击“保存当前片段”即可加入这里。
+                    </p>
+                {% endif %}
+            </div>
+        </section>
+    {% endif %}
+
+    <section class="practice-plan-wrap">
+        <details class="practice-plan-details">
+            <summary>
+                <div class="practice-plan-head">
+                    <h2 class="practice-section-title">速度计划</h2>
+                    <div class="practice-mode-pill">点击展开 / 桌面端表格 / 手机端卡片</div>
+                </div>
+            </summary>
+
+            <div class="practice-plan-body">
+                <div class="practice-desktop-table">
+                    <table class="practice-plan-table">
+                        <thead>
+                            <tr>
+                                <th>步骤</th>
+                                <th>速度</th>
+                                <th>说明</th>
+                            </tr>
+                        </thead>
+                        <tbody id="plan-table-body">
+                            <tr>
+                                <td colspan="3">点击“预览速度计划”生成。</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="practice-mobile-cards" id="plan-mobile-cards">
+                    <div class="practice-mobile-step">点击“预览速度计划”生成。</div>
+                </div>
+            </div>
+        </details>
+    </section>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const audioFileInput = document.getElementById("practice-audio-file");
+    const audio = document.getElementById("practice-audio");
+    const serverTrackAudioUrl = "{{ track_audio_url|default:''|escapejs }}";
+
+    const loopStartInput = document.getElementById("loop-start");
+    const loopEndInput = document.getElementById("loop-end");
+
+    const startSpeedInput = document.getElementById("start-speed");
+    const endSpeedInput = document.getElementById("end-speed");
+    const speedStepInput = document.getElementById("speed-step");
+    const repeatPerStepInput = document.getElementById("repeat-per-step");
+    const endModeInput = document.getElementById("end-mode");
+    const preservePitchInput = document.getElementById("preserve-pitch");
+
+    const currentSpeedEl = document.getElementById("current-speed");
+    const currentStepEl = document.getElementById("current-step");
+    const currentRepeatEl = document.getElementById("current-repeat");
+
+    const planTableBody = document.getElementById("plan-table-body");
+    const planMobileCards = document.getElementById("plan-mobile-cards");
+
+    const state = {
+        plan: [],
+        stepIndex: 0,
+        repeatCount: 0,
+        repeatPerStep: 1,
+        progressiveEnabled: false,
+        loopEnabled: false,
+    };
+
+    function toNumber(value, fallback) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    function roundSpeed(value) {
+        return Math.round(value * 100) / 100;
+    }
+
+    function getLoopStart() {
+        return Math.max(0, toNumber(loopStartInput.value, 0));
+    }
+
+    function getLoopEnd() {
+        const fallback = Number.isFinite(audio.duration) ? audio.duration : 0;
+        return Math.max(0, toNumber(loopEndInput.value, fallback));
+    }
+
+    function applyPitchSetting() {
+        const preserve = preservePitchInput.value === "true";
+
+        audio.preservesPitch = preserve;
+        audio.webkitPreservesPitch = preserve;
+        audio.mozPreservesPitch = preserve;
+    }
+
+    function applySpeed(speed) {
+        const safeSpeed = Math.min(2, Math.max(0.25, roundSpeed(speed)));
+
+        applyPitchSetting();
+        audio.playbackRate = safeSpeed;
+        currentSpeedEl.textContent = safeSpeed.toFixed(2) + "x";
+    }
+
+    function buildBasePlan() {
+        const start = roundSpeed(toNumber(startSpeedInput.value, 0.7));
+        const end = roundSpeed(toNumber(endSpeedInput.value, 1));
+        const step = Math.abs(roundSpeed(toNumber(speedStepInput.value, 0.05))) || 0.05;
+
+        const result = [];
+        const direction = start <= end ? 1 : -1;
+        let current = start;
+
+        while (
+            direction > 0
+                ? current <= end + 0.0001
+                : current >= end - 0.0001
+        ) {
+            result.push(roundSpeed(current));
+            current = roundSpeed(current + step * direction);
+        }
+
+        if (result[result.length - 1] !== end) {
+            result.push(end);
+        }
+
+        return result;
+    }
+
+    function buildPlan() {
+        const basePlan = buildBasePlan();
+        const mode = endModeInput.value;
+
+        if (mode === "step_down" || mode === "ping_pong") {
+            const backward = basePlan.slice(0, -1).reverse();
+            return basePlan.concat(backward);
+        }
+
+        return basePlan;
+    }
+
+    function renderPlan() {
+        state.plan = buildPlan();
+
+        planTableBody.innerHTML = "";
+        planMobileCards.innerHTML = "";
+
+        state.plan.forEach((speed, index) => {
+            const isActive = index === state.stepIndex && state.progressiveEnabled;
+            const description = index === 0
+                ? "起始速度"
+                : (index === state.plan.length - 1 ? "最后速度" : "练习速度");
+
+            const row = document.createElement("tr");
+            row.className = isActive ? "is-active" : "";
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${speed.toFixed(2)}x</td>
+                <td>${description}</td>
+            `;
+            planTableBody.appendChild(row);
+
+            const card = document.createElement("div");
+            card.className = "practice-mobile-step" + (isActive ? " is-active" : "");
+            card.innerHTML = `
+                <strong>步骤 ${index + 1}</strong><br>
+                速度：${speed.toFixed(2)}x<br>
+                ${description}
+            `;
+            planMobileCards.appendChild(card);
+        });
+
+        if (!state.plan.length) {
+            planTableBody.innerHTML = `<tr><td colspan="3">没有生成速度计划。</td></tr>`;
+            planMobileCards.innerHTML = `<div class="practice-mobile-step">没有生成速度计划。</div>`;
+        }
+    }
+
+    function updateStatus() {
+        const total = state.plan.length || 0;
+        currentStepEl.textContent = total ? `${state.stepIndex + 1} / ${total}` : "-";
+        currentRepeatEl.textContent = `${state.repeatCount} / ${state.repeatPerStep}`;
+        renderPlan();
+    }
+
+        function moveToNextStep() {
+        const mode = endModeInput.value;
+
+        state.repeatCount += 1;
+
+        if (state.repeatCount < state.repeatPerStep) {
+            updateStatus();
+            return;
+        }
+
+        state.repeatCount = 0;
+
+        if (state.stepIndex < state.plan.length - 1) {
+            state.stepIndex += 1;
+            applySpeed(state.plan[state.stepIndex]);
+            updateStatus();
+            return;
+        }
+
+        if (mode === "stop") {
+            state.progressiveEnabled = false;
+            state.loopEnabled = false;
+            audio.pause();
+            updateStatus();
+            return;
+        }
+
+        if (mode === "keep") {
+            state.progressiveEnabled = false;
+            updateStatus();
+            return;
+        }
+
+        if (mode === "repeat" || mode === "step_down" || mode === "ping_pong") {
+            state.stepIndex = 0;
+            applySpeed(state.plan[state.stepIndex]);
+            updateStatus();
+            return;
+        }
+
+        state.progressiveEnabled = false;
+        updateStatus();
+    }
+
+    function safePlay() {
+        const playPromise = audio.play();
+
+        if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(function (error) {
+                console.warn("audio play failed:", error);
+            });
+        }
+    }
+
+    function handleLoopBoundary() {
+        const start = getLoopStart();
+        const end = getLoopEnd();
+
+        if (!state.loopEnabled) {
+            return;
+        }
+
+        if (end <= start) {
+            return;
+        }
+
+        if (state.progressiveEnabled) {
+            moveToNextStep();
+        }
+
+        if (!state.loopEnabled) {
+            return;
+        }
+
+        audio.currentTime = start;
+        safePlay();
+    }
+
+    function playLoop() {
+        const start = getLoopStart();
+        const end = getLoopEnd();
+
+        if (!audio.src) {
+            alert("请先选择音频文件。");
+            return;
+        }
+
+        if (end <= start) {
+            alert("B 点必须大于 A 点。");
+            return;
+        }
+
+        state.loopEnabled = true;
+        audio.currentTime = start;
+        safePlay();
+    }
+
+    audioFileInput.addEventListener("change", function () {
+        const file = audioFileInput.files && audioFileInput.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        const url = URL.createObjectURL(file);
+        audio.src = url;
+        audio.load();
+
+        state.progressiveEnabled = false;
+        state.loopEnabled = false;
+        state.stepIndex = 0;
+        state.repeatCount = 0;
+
+        applySpeed(1);
+        updateStatus();
+    });
+
+    audio.addEventListener("loadedmetadata", function () {
+        if (!loopEndInput.value || Number(loopEndInput.value) <= 0) {
+            loopEndInput.value = audio.duration ? audio.duration.toFixed(1) : "0";
+        }
+    });
+
+    audio.addEventListener("timeupdate", function () {
+        if (!state.loopEnabled) {
+            return;
+        }
+
+        const start = getLoopStart();
+        const end = getLoopEnd();
+
+        if (end > start && audio.currentTime >= end) {
+            handleLoopBoundary();
+        }
+    });
+
+    audio.addEventListener("ended", function () {
+        if (!state.loopEnabled) {
+            return;
+        }
+
+        handleLoopBoundary();
+    });
+
+    document.getElementById("set-a-btn").addEventListener("click", function () {
+        loopStartInput.value = audio.currentTime.toFixed(1);
+    });
+
+    document.getElementById("set-b-btn").addEventListener("click", function () {
+        loopEndInput.value = audio.currentTime.toFixed(1);
+    });
+
+    document.getElementById("play-loop-btn").addEventListener("click", function () {
+        state.progressiveEnabled = false;
+        playLoop();
+    });
+
+    document.getElementById("stop-btn").addEventListener("click", function () {
+        state.progressiveEnabled = false;
+        state.loopEnabled = false;
+        audio.pause();
+        updateStatus();
+    });
+
+    document.getElementById("preview-plan-btn").addEventListener("click", function () {
+        state.progressiveEnabled = false;
+        state.stepIndex = 0;
+        state.repeatCount = 0;
+        state.repeatPerStep = Math.max(1, parseInt(repeatPerStepInput.value, 10) || 1);
+        renderPlan();
+        updateStatus();
+    });
+
+    document.getElementById("start-progressive-btn").addEventListener("click", function () {
+        state.plan = buildPlan();
+        state.stepIndex = 0;
+        state.repeatCount = 0;
+        state.repeatPerStep = Math.max(1, parseInt(repeatPerStepInput.value, 10) || 1);
+        state.progressiveEnabled = true;
+
+        if (!state.plan.length) {
+            alert("速度计划为空。");
+            return;
+        }
+
+        applySpeed(state.plan[0]);
+        updateStatus();
+        playLoop();
+    });
+
+    
+    const saveSegmentForm = document.getElementById("save-segment-form");
+
+    if (saveSegmentForm) {
+        saveSegmentForm.addEventListener("submit", function (event) {
+            const start = getLoopStart();
+            const end = getLoopEnd();
+
+            if (end <= start) {
+                event.preventDefault();
+                alert("保存失败：B 点必须大于 A 点。");
+                return;
+            }
+
+            document.getElementById("save-segment-start-time").value = start.toFixed(3);
+            document.getElementById("save-segment-end-time").value = end.toFixed(3);
+            document.getElementById("save-segment-start-speed").value = toNumber(startSpeedInput.value, 0.70);
+            document.getElementById("save-segment-end-speed").value = toNumber(endSpeedInput.value, 1.00);
+            document.getElementById("save-segment-speed-step").value = toNumber(speedStepInput.value, 0.05);
+            document.getElementById("save-segment-repeat-per-step").value = Math.max(1, parseInt(repeatPerStepInput.value, 10) || 3);
+            document.getElementById("save-segment-end-mode").value = endModeInput.value;
+            document.getElementById("save-segment-preserve-pitch").value = preservePitchInput.value === "true" ? "1" : "0";
+        });
+    }
+
+    if (serverTrackAudioUrl) {
+        audio.src = serverTrackAudioUrl;
+        audio.load();
+    }
+
+    renderPlan();
+
+    if (serverTrackAudioUrl) {
+        applySpeed(toNumber(startSpeedInput.value, 1));
+    } else {
+        applySpeed(1);
+    }
+
+    updateStatus();
+})();
+</script>
+{% endblock %}

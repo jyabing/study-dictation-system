@@ -25,6 +25,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from app.train.services.cloze_engine import generate_cloze
 from ..services.srs_engine import (
     get_next_review as srs_get_next_review,
@@ -44,6 +45,9 @@ from ..models import (
     UserProfile,
     StudyLog,
     TrainingItem,
+    PracticePlaylist,
+    PracticeTrack,
+    PracticeSegment,
 )
 
 # =========================
@@ -1211,7 +1215,7 @@ def _choose_dynamic_item_type(training, memory):
 
     # fallback：仅旧数据使用
     return training.item_type
-    
+
 
 def _extract_training_meta(training):
     choices = training.choices or []
@@ -5818,7 +5822,7 @@ def builder_save(request):
             "saved_as": "read_choice",
             "selection_mode": selection_mode
         })
-    
+
 
     # =========================
     # 读：克漏字（自动克漏）
@@ -5909,7 +5913,7 @@ def builder_save(request):
             "training_ids": created_items,
             "saved_as": "read_cloze"
         })
-    
+
 
     # =========================
     # 写：文字作答
@@ -6442,6 +6446,489 @@ def question_edit(request, question_id):
             else {}
         ),
     })
+
+@login_required
+def practice_player_page(request, track_id=None, segment_id=None):
+    selected_track = None
+    selected_segment = None
+    track_audio_url = ""
+    track_segments = []
+
+    if segment_id is not None:
+        selected_segment = get_object_or_404(
+            PracticeSegment,
+            id=segment_id,
+            owner=request.user
+        )
+        selected_track = selected_segment.track
+
+    elif track_id is not None:
+        selected_track = get_object_or_404(
+            PracticeTrack,
+            id=track_id,
+            owner=request.user
+        )
+
+    if selected_track:
+        if selected_track.audio_file:
+            track_audio_url = selected_track.audio_file.url
+        elif selected_track.source_url:
+            track_audio_url = selected_track.source_url
+
+        track_segments = (
+            selected_track.segments
+            .all()
+            .order_by("sort_order", "id")
+        )
+
+    return render(request, "train/practice_player.html", {
+        "page_title": "自由练习播放器",
+        "selected_track": selected_track,
+        "selected_segment": selected_segment,
+        "track_audio_url": track_audio_url,
+        "track_segments": track_segments,
+    })
+
+
+@login_required
+def practice_library_page(request):
+    playlists = (
+        PracticePlaylist.objects
+        .filter(owner=request.user)
+        .prefetch_related("tracks__segments")
+        .order_by("sort_order", "id")
+    )
+
+    return render(request, "train/practice_library.html", {
+        "page_title": "我的播放列表",
+        "playlists": playlists,
+    })
+
+
+@login_required
+@require_POST
+def practice_playlist_create(request):
+    title = (request.POST.get("title") or "").strip()
+    description = (request.POST.get("description") or "").strip()
+
+    if not title:
+        return redirect("practice-library")
+
+    sort_order = (
+        PracticePlaylist.objects
+        .filter(owner=request.user)
+        .count()
+    )
+
+    PracticePlaylist.objects.create(
+        owner=request.user,
+        title=title,
+        description=description,
+        sort_order=sort_order,
+    )
+
+    return redirect("practice-library")
+
+@login_required
+@require_POST
+def practice_playlist_update(request, playlist_id):
+    playlist = get_object_or_404(
+        PracticePlaylist,
+        id=playlist_id,
+        owner=request.user
+    )
+
+    title = (request.POST.get("title") or "").strip()
+    description = (request.POST.get("description") or "").strip()
+
+    if not title:
+        messages.error(request, "保存失败：播放列表名称不能为空。")
+        return redirect("practice-library")
+
+    playlist.title = title
+    playlist.description = description
+    playlist.save()
+
+    messages.success(request, f"已更新播放列表：{playlist.title}。")
+    return redirect("practice-library")
+
+
+@login_required
+@require_POST
+def practice_playlist_delete(request, playlist_id):
+    playlist = get_object_or_404(
+        PracticePlaylist,
+        id=playlist_id,
+        owner=request.user
+    )
+
+    playlist_title = playlist.title
+    audio_file_names = list(
+        playlist.tracks
+        .filter(audio_file__isnull=False)
+        .exclude(audio_file="")
+        .values_list("audio_file", flat=True)
+    )
+
+    playlist.delete()
+
+    deleted_count, failed_count = _delete_practice_audio_files(audio_file_names)
+
+    if failed_count:
+        messages.warning(
+            request,
+            f"已删除播放列表：{playlist_title}。但有 {failed_count} 个音频文件未能删除。"
+        )
+    else:
+        messages.success(
+            request,
+            f"已删除播放列表：{playlist_title}，并清理 {deleted_count} 个音频文件。"
+        )
+
+    return redirect("practice-library")
+
+
+def _delete_practice_audio_files(file_names):
+    deleted_count = 0
+    failed_count = 0
+
+    for file_name in file_names:
+        if not file_name:
+            continue
+
+        try:
+            default_storage.delete(file_name)
+            deleted_count += 1
+        except Exception:
+            failed_count += 1
+
+    return deleted_count, failed_count
+
+@login_required
+@require_POST
+def practice_track_upload(request, playlist_id):
+    playlist = get_object_or_404(
+        PracticePlaylist,
+        id=playlist_id,
+        owner=request.user
+    )
+
+    uploaded_audio = request.FILES.get("audio_file")
+    title = (request.POST.get("title") or "").strip()
+    original_bpm_raw = (request.POST.get("original_bpm") or "").strip()
+    notes = (request.POST.get("notes") or "").strip()
+
+    if not uploaded_audio:
+        return redirect("practice-library")
+
+    if not title:
+        title = os.path.splitext(uploaded_audio.name)[0]
+
+    original_bpm = None
+    if original_bpm_raw:
+        try:
+            parsed_bpm = int(original_bpm_raw)
+            if parsed_bpm > 0:
+                original_bpm = parsed_bpm
+        except ValueError:
+            original_bpm = None
+
+    sort_order = playlist.tracks.count()
+
+    PracticeTrack.objects.create(
+        owner=request.user,
+        playlist=playlist,
+        title=title,
+        audio_file=uploaded_audio,
+        original_bpm=original_bpm,
+        notes=notes,
+        sort_order=sort_order,
+    )
+
+    return redirect("practice-library")
+
+
+@login_required
+@require_POST
+def practice_track_update(request, track_id):
+    track = get_object_or_404(
+        PracticeTrack,
+        id=track_id,
+        owner=request.user
+    )
+
+    title = (request.POST.get("title") or "").strip()
+    original_bpm_raw = (request.POST.get("original_bpm") or "").strip()
+    notes = (request.POST.get("notes") or "").strip()
+    uploaded_audio = request.FILES.get("audio_file")
+
+    if not title:
+        messages.error(request, "保存失败：曲目名称不能为空。")
+        return redirect("practice-library")
+
+    original_bpm = None
+
+    if original_bpm_raw:
+        try:
+            parsed_bpm = int(original_bpm_raw)
+            if parsed_bpm > 0:
+                original_bpm = parsed_bpm
+        except ValueError:
+            original_bpm = None
+
+    old_audio_file_name = track.audio_file.name if track.audio_file else ""
+
+    track.title = title
+    track.original_bpm = original_bpm
+    track.notes = notes
+
+    if uploaded_audio:
+        track.audio_file = uploaded_audio
+
+    track.save()
+
+    deleted_count = 0
+    failed_count = 0
+
+    if uploaded_audio and old_audio_file_name:
+        new_audio_file_name = track.audio_file.name if track.audio_file else ""
+
+        if old_audio_file_name != new_audio_file_name:
+            deleted_count, failed_count = _delete_practice_audio_files([old_audio_file_name])
+
+    if uploaded_audio and failed_count:
+        messages.warning(
+            request,
+            f"已更新曲目：{track.title}，但旧音频文件未能删除。"
+        )
+    elif uploaded_audio and deleted_count:
+        messages.success(
+            request,
+            f"已更新曲目：{track.title}，并替换音频文件。"
+        )
+    elif uploaded_audio:
+        messages.success(
+            request,
+            f"已更新曲目：{track.title}，已设置新音频文件。"
+        )
+    else:
+        messages.success(
+            request,
+            f"已更新曲目：{track.title}。"
+        )
+
+    return redirect("practice-library")
+
+@login_required
+@require_POST
+def practice_track_delete(request, track_id):
+    track = get_object_or_404(
+        PracticeTrack,
+        id=track_id,
+        owner=request.user
+    )
+
+    track_title = track.title
+    audio_file_name = track.audio_file.name if track.audio_file else ""
+
+    track.delete()
+
+    deleted_count, failed_count = _delete_practice_audio_files([audio_file_name])
+
+    if failed_count:
+        messages.warning(
+            request,
+            f"已删除曲目：{track_title}。但音频文件未能删除。"
+        )
+    elif deleted_count:
+        messages.success(
+            request,
+            f"已删除曲目：{track_title}，并清理音频文件。"
+        )
+    else:
+        messages.success(
+            request,
+            f"已删除曲目：{track_title}。"
+        )
+
+    return redirect("practice-library")
+
+@login_required
+@require_POST
+def practice_segment_save(request, track_id):
+    track = get_object_or_404(
+        PracticeTrack,
+        id=track_id,
+        owner=request.user
+    )
+
+    def parse_float(name, default):
+        raw = (request.POST.get(name) or "").strip()
+
+        try:
+            return float(raw)
+        except ValueError:
+            return default
+
+    def parse_int(name, default):
+        raw = (request.POST.get(name) or "").strip()
+
+        try:
+            value = int(raw)
+            return value if value > 0 else default
+        except ValueError:
+            return default
+
+    title = (request.POST.get("title") or "").strip()
+    segment_id_raw = (request.POST.get("segment_id") or "").strip()
+
+    start_time = max(0, parse_float("start_time", 0))
+    end_time = max(0, parse_float("end_time", 0))
+
+    if end_time <= start_time:
+        messages.error(request, "保存失败：B 点必须大于 A 点。")
+
+        if segment_id_raw:
+            return redirect("practice-player-segment", segment_id=segment_id_raw)
+
+        return redirect("practice-player-track", track_id=track.id)
+
+    start_speed = max(0.25, parse_float("start_speed", 0.70))
+    end_speed = max(0.25, parse_float("end_speed", 1.00))
+    speed_step = max(0.01, parse_float("speed_step", 0.05))
+    repeat_per_step = parse_int("repeat_per_step", 3)
+
+    end_mode = (request.POST.get("end_mode") or "step_down").strip()
+    valid_end_modes = {item[0] for item in PracticeSegment.END_MODE_CHOICES}
+
+    if end_mode not in valid_end_modes:
+        end_mode = "step_down"
+
+    preserve_pitch = (request.POST.get("preserve_pitch") or "1") == "1"
+
+    segment = None
+    is_update = False
+
+    if segment_id_raw:
+        segment = get_object_or_404(
+            PracticeSegment,
+            id=segment_id_raw,
+            owner=request.user,
+            track=track
+        )
+        is_update = True
+
+    if segment is None:
+        segment = PracticeSegment(
+            owner=request.user,
+            track=track,
+            sort_order=track.segments.count()
+        )
+
+    segment.title = title
+    segment.start_time = start_time
+    segment.end_time = end_time
+    segment.start_speed = start_speed
+    segment.end_speed = end_speed
+    segment.speed_step = speed_step
+    segment.repeat_per_step = repeat_per_step
+    segment.end_mode = end_mode
+    segment.preserve_pitch = preserve_pitch
+    segment.save()
+
+    if is_update:
+        messages.success(request, "已更新当前片段。")
+    else:
+        messages.success(request, "已保存为新片段。")
+
+    return redirect("practice-player-segment", segment_id=segment.id)
+
+
+@login_required
+@require_POST
+def practice_segment_update(request, segment_id):
+    segment = get_object_or_404(
+        PracticeSegment,
+        id=segment_id,
+        owner=request.user
+    )
+
+    def parse_float(name, default):
+        raw = (request.POST.get(name) or "").strip()
+
+        try:
+            return float(raw)
+        except ValueError:
+            return default
+
+    def parse_int(name, default):
+        raw = (request.POST.get(name) or "").strip()
+
+        try:
+            value = int(raw)
+            return value if value > 0 else default
+        except ValueError:
+            return default
+
+    title = (request.POST.get("title") or "").strip()
+
+    start_time = max(0, parse_float("start_time", segment.start_time))
+    end_time = max(0, parse_float("end_time", segment.end_time))
+
+    if end_time <= start_time:
+        messages.error(request, "保存失败：B 点必须大于 A 点。")
+        return redirect("practice-library")
+
+    start_speed = max(0.25, parse_float("start_speed", segment.start_speed))
+    end_speed = max(0.25, parse_float("end_speed", segment.end_speed))
+    speed_step = max(0.01, parse_float("speed_step", segment.speed_step))
+    repeat_per_step = parse_int("repeat_per_step", segment.repeat_per_step)
+
+    end_mode = (request.POST.get("end_mode") or segment.end_mode).strip()
+    valid_end_modes = {item[0] for item in PracticeSegment.END_MODE_CHOICES}
+
+    if end_mode not in valid_end_modes:
+        end_mode = segment.end_mode
+
+    preserve_pitch_raw = (request.POST.get("preserve_pitch") or "").strip()
+    preserve_pitch = preserve_pitch_raw in ("1", "true", "on", "yes")
+
+    segment.title = title
+    segment.start_time = start_time
+    segment.end_time = end_time
+    segment.start_speed = start_speed
+    segment.end_speed = end_speed
+    segment.speed_step = speed_step
+    segment.repeat_per_step = repeat_per_step
+    segment.end_mode = end_mode
+    segment.preserve_pitch = preserve_pitch
+    segment.save()
+
+    display_title = segment.title or f"{segment.start_time:.1f}s - {segment.end_time:.1f}s"
+    messages.success(request, f"已更新片段：{display_title}。")
+
+    return redirect("practice-library")
+
+
+@login_required
+@require_POST
+def practice_segment_delete(request, segment_id):
+    segment = get_object_or_404(
+        PracticeSegment,
+        id=segment_id,
+        owner=request.user
+    )
+
+    track_id = segment.track_id
+    next_target = (request.POST.get("next") or "").strip()
+
+    segment.delete()
+    messages.success(request, "已删除片段。")
+
+    if next_target == "library":
+        return redirect("practice-library")
+
+    return redirect("practice-player-track", track_id=track_id)
 
 @login_required
 @require_POST

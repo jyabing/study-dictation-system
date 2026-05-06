@@ -4,6 +4,9 @@ from .models import (
     Lesson,
     Question,
     TrainingItem,
+    PracticePlaylist,
+    PracticeTrack,
+    PracticeSegment,
     QuestionMemory,
     UserProfile
 )
@@ -135,6 +138,82 @@ class TrainingItemAdmin(admin.ModelAdmin):
     def target_answer_short(self, obj):
         return (obj.target_answer or "")[:24]
     target_answer_short.short_description = "回答"
+
+
+@admin.register(PracticePlaylist)
+class PracticePlaylistAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "title",
+        "owner",
+        "sort_order",
+        "created_at",
+    )
+
+    list_filter = (
+        "owner",
+    )
+
+    search_fields = (
+        "title",
+        "description",
+        "owner__username",
+    )
+
+
+@admin.register(PracticeTrack)
+class PracticeTrackAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "title",
+        "owner",
+        "playlist",
+        "original_bpm",
+        "sort_order",
+        "created_at",
+    )
+
+    list_filter = (
+        "owner",
+        "playlist",
+    )
+
+    search_fields = (
+        "title",
+        "notes",
+        "source_url",
+        "owner__username",
+        "playlist__title",
+    )
+
+
+@admin.register(PracticeSegment)
+class PracticeSegmentAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "title",
+        "owner",
+        "track",
+        "start_time",
+        "end_time",
+        "start_speed",
+        "end_speed",
+        "end_mode",
+        "sort_order",
+    )
+
+    list_filter = (
+        "owner",
+        "end_mode",
+        "preserve_pitch",
+    )
+
+    search_fields = (
+        "title",
+        "notes",
+        "owner__username",
+        "track__title",
+    )
 
 
 @admin.register(QuestionMemory)

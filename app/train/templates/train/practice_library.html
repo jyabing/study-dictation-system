@@ -1,0 +1,1241 @@
+{% extends "train/base_train.html" %}
+
+{% block title %}我的播放列表{% endblock %}
+
+{% block body_class %}practice-library-page{% endblock %}
+
+{% block extra_css %}
+<style>
+.practice-library-shell {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 28px 18px 56px;
+}
+
+.practice-library-hero,
+.practice-library-card {
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    padding: 20px;
+}
+
+.practice-library-hero {
+    margin-bottom: 18px;
+}
+
+.practice-library-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.practice-library-title {
+    margin: 0 0 8px;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+}
+
+.practice-library-subtitle {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.7;
+    font-size: 14px;
+}
+
+.practice-library-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+
+.practice-quick-nav {
+    margin-bottom: 18px;
+}
+
+.practice-quick-nav-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.practice-quick-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 900;
+}
+
+.practice-quick-links {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.practice-quick-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--soft);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.practice-quick-link:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.practice-collapse {
+    display: block;
+}
+
+.practice-collapse-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    list-style: none;
+    font-size: 15px;
+    font-weight: 900;
+    color: var(--text);
+}
+
+.practice-collapse-summary::-webkit-details-marker {
+    display: none;
+}
+
+.practice-collapse-summary::after {
+    content: "展开";
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 850;
+}
+
+.practice-collapse[open] > .practice-collapse-summary::after {
+    content: "收起";
+}
+
+.practice-collapse > form,
+.practice-collapse > .practice-create-form,
+.practice-collapse > .practice-track-create-form,
+.practice-collapse > .practice-playlist-edit-form,
+.practice-collapse > .practice-track-edit-form,
+.practice-collapse > .practice-segment-edit-form {
+    margin-top: 12px;
+}
+
+
+.practice-create-card {
+    margin-bottom: 18px;
+}
+
+.practice-create-form {
+    display: grid;
+    grid-template-columns: minmax(180px, 0.8fr) minmax(240px, 1.2fr) auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.practice-create-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.practice-create-field label {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.practice-create-field input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--input);
+    color: var(--text);
+    padding: 11px 12px;
+    font-size: 15px;
+    outline: none;
+}
+
+.practice-create-field input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(110, 168, 255, 0.12);
+}
+
+
+.practice-track-create-card {
+    margin: 12px 0 16px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--soft);
+}
+
+.practice-track-create-title {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 900;
+}
+
+.practice-track-create-form {
+    display: grid;
+    grid-template-columns: minmax(160px, 0.9fr) minmax(180px, 1fr) minmax(120px, 0.5fr) auto;
+    gap: 10px;
+    align-items: end;
+}
+
+.practice-playlist-edit-card {
+    margin: 12px 0 16px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--soft);
+}
+
+.practice-playlist-edit-title {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 900;
+}
+
+.practice-playlist-edit-form {
+    display: grid;
+    grid-template-columns: minmax(180px, 0.9fr) minmax(240px, 1.2fr) auto;
+    gap: 10px;
+    align-items: end;
+}
+
+
+.practice-track-edit-card {
+    margin-top: 10px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--soft);
+}
+
+.practice-track-edit-title {
+    margin: 0 0 10px;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.practice-track-edit-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+
+.practice-segment-edit-card {
+    margin-top: 8px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.practice-segment-edit-title {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.practice-segment-edit-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.practice-segment-edit-form .practice-create-field.full {
+    grid-column: 1 / -1;
+}
+
+.practice-library-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--soft);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.practice-playlist-list {
+    display: grid;
+    gap: 18px;
+}
+
+.practice-playlist-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.practice-playlist-title {
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-weight: 900;
+}
+
+.practice-playlist-desc {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.practice-library-empty {
+    color: var(--muted);
+    line-height: 1.7;
+}
+
+.practice-track-table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    border-radius: 18px;
+}
+
+.practice-track-table th,
+.practice-track-table td {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 10px;
+    text-align: left;
+    font-size: 14px;
+    vertical-align: top;
+}
+
+.practice-track-table th {
+    color: var(--muted);
+    font-weight: 850;
+    background: var(--soft);
+}
+
+.practice-track-title {
+    font-weight: 900;
+    margin-bottom: 4px;
+}
+
+.practice-track-meta {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.practice-segment-list {
+    display: grid;
+    gap: 6px;
+}
+
+.practice-segment-chip {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 10px;
+    background: var(--soft);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 750;
+    text-decoration: none;
+}
+
+.practice-segment-chip:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+
+.practice-segment-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.practice-delete-form {
+    margin: 0;
+}
+
+.practice-delete-btn {
+    border: 1px solid rgba(239, 68, 68, 0.28);
+    border-radius: 999px;
+    background: rgba(239, 68, 68, 0.10);
+    color: #ef4444;
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 850;
+    cursor: pointer;
+}
+
+.practice-track-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.practice-library-mobile {
+    display: none;
+}
+
+.practice-track-card {
+    border: 1px solid var(--border);
+    background: var(--soft);
+    border-radius: 18px;
+    padding: 14px;
+    margin-bottom: 10px;
+}
+
+.practice-track-card-title {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 900;
+}
+
+.practice-track-card-line {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    margin-top: 6px;
+}
+
+@media (max-width: 780px) {
+    .practice-library-shell {
+        padding: 18px 12px 42px;
+    }
+
+    .practice-library-hero,
+    .practice-library-card {
+        border-radius: 20px;
+        padding: 16px;
+    }
+
+    .practice-library-title {
+        font-size: 23px;
+    }
+
+    .practice-library-desktop {
+        display: none;
+    }
+
+    .practice-library-mobile {
+        display: block;
+    }
+
+    .practice-library-actions {
+        width: 100%;
+    }
+
+    .practice-library-actions .primary-btn,
+    .practice-library-actions .ghost-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .practice-create-form {
+        grid-template-columns: 1fr;
+    }
+
+    .practice-create-form .primary-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .practice-track-create-form {
+        grid-template-columns: 1fr;
+    }
+
+    .practice-track-create-form .primary-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .practice-playlist-edit-form {
+        grid-template-columns: 1fr;
+    }
+
+    .practice-playlist-edit-form .primary-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .practice-track-edit-form .primary-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .practice-segment-edit-form {
+        grid-template-columns: 1fr;
+    }
+
+    .practice-segment-edit-form .primary-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="practice-library-shell" id="practice-library-top">
+    <section class="practice-library-hero">
+        <div class="practice-library-head">
+            <div>
+                <h1 class="practice-library-title">我的播放列表</h1>
+                <p class="practice-library-subtitle">
+                    这里显示当前登录用户自己的练习素材。播放列表、音频和 A-B 片段都按用户隔离，不和遗忘循环强绑定。
+                </p>
+            </div>
+
+            <div class="practice-library-actions">
+                <a href="{% url 'practice-player' %}" class="primary-btn">打开自由播放器</a>
+                <a href="#practice-create-section" class="ghost-btn">创建播放列表</a>
+                <a href="#practice-playlist-section" class="ghost-btn">跳到播放列表</a>
+                <a href="#practice-library-top" class="ghost-btn">返回顶部</a>
+            </div>
+        </div>
+    </section>
+
+    
+    {% if playlists %}
+        <section class="practice-library-card practice-quick-nav">
+            <div class="practice-quick-nav-head">
+                <h2 class="practice-quick-title">快速定位</h2>
+                <a href="#practice-library-top" class="practice-quick-link">返回顶部</a>
+            </div>
+
+            <div class="practice-quick-links">
+                <a href="#practice-create-section" class="practice-quick-link">创建播放列表</a>
+                <a href="#practice-playlist-section" class="practice-quick-link">播放列表区域</a>
+
+                {% for playlist in playlists %}
+                    <a href="#playlist-{{ playlist.id }}" class="practice-quick-link">
+                        {{ playlist.title }}
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+    
+    <section class="practice-library-card practice-create-card" id="practice-create-section">
+        <details class="practice-collapse" open>
+            <summary class="practice-collapse-summary">
+                <span>创建播放列表</span>
+            </summary>
+
+            <form method="post" action="{% url 'practice-playlist-create' %}" class="practice-create-form">
+            {% csrf_token %}
+
+            <div class="practice-create-field">
+                <label for="playlist-title">播放列表名称</label>
+                <input id="playlist-title" type="text" name="title" maxlength="200" required placeholder="例如：日语影子跟读">
+            </div>
+
+            <div class="practice-create-field">
+                <label for="playlist-description">说明</label>
+                <input id="playlist-description" type="text" name="description" placeholder="例如：NHK、电影台词、钢琴片段">
+            </div>
+
+            <button type="submit" class="primary-btn">创建播放列表</button>
+            </form>
+        </details>
+    </section>
+
+    <section class="practice-playlist-list" id="practice-playlist-section">
+        {% if playlists %}
+            {% for playlist in playlists %}
+                <article class="practice-library-card" id="playlist-{{ playlist.id }}">
+                    <div class="practice-playlist-title-row">
+                        <div>
+                            <h2 class="practice-playlist-title">{{ playlist.title }}</h2>
+                            <p class="practice-playlist-desc">
+                                {{ playlist.description|default:"暂无播放列表说明。" }}
+                            </p>
+                        </div>
+
+                        <div class="practice-track-actions">
+                            <span class="practice-library-pill">
+                                曲目 {{ playlist.tracks.all|length }}
+                            </span>
+
+                            <a href="#practice-library-top" class="ghost-btn">返回顶部</a>
+
+                            <form
+                                method="post"
+                                action="{% url 'practice-playlist-delete' playlist.id %}"
+                                class="practice-delete-form"
+                                onsubmit="return confirm('确定删除这个播放列表吗？列表下所有曲目和片段也会一起删除。');"
+                            >
+                                {% csrf_token %}
+                                <button type="submit" class="practice-delete-btn">删除播放列表</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <details class="practice-playlist-edit-card practice-collapse">
+                        <summary class="practice-collapse-summary">
+                            <span>编辑播放列表</span>
+                        </summary>
+
+                        <form
+                            method="post"
+                            action="{% url 'practice-playlist-update' playlist.id %}"
+                            class="practice-playlist-edit-form"
+                        >
+                            {% csrf_token %}
+
+                            <div class="practice-create-field">
+                                <label for="playlist-edit-title-{{ playlist.id }}">播放列表名称</label>
+                                <input
+                                    id="playlist-edit-title-{{ playlist.id }}"
+                                    type="text"
+                                    name="title"
+                                    maxlength="200"
+                                    required
+                                    value="{{ playlist.title }}"
+                                >
+                            </div>
+
+                            <div class="practice-create-field">
+                                <label for="playlist-edit-description-{{ playlist.id }}">说明</label>
+                                <input
+                                    id="playlist-edit-description-{{ playlist.id }}"
+                                    type="text"
+                                    name="description"
+                                    value="{{ playlist.description }}"
+                                    placeholder="例如：NHK、电影台词、钢琴片段"
+                                >
+                            </div>
+
+                            <button type="submit" class="primary-btn">保存修改</button>
+                        </form>
+                    </details>
+                    
+                    <details class="practice-track-create-card practice-collapse">
+                        <summary class="practice-collapse-summary">
+                            <span>上传音频曲目</span>
+                        </summary>
+
+                        <form
+                            method="post"
+                            action="{% url 'practice-track-upload' playlist.id %}"
+                            enctype="multipart/form-data"
+                            class="practice-track-create-form"
+                        >
+                            {% csrf_token %}
+
+                            <div class="practice-create-field">
+                                <label for="track-title-{{ playlist.id }}">曲目名称</label>
+                                <input
+                                    id="track-title-{{ playlist.id }}"
+                                    type="text"
+                                    name="title"
+                                    maxlength="200"
+                                    placeholder="不填则使用文件名"
+                                >
+                            </div>
+
+                            <div class="practice-create-field">
+                                <label for="track-audio-{{ playlist.id }}">音频文件</label>
+                                <input
+                                    id="track-audio-{{ playlist.id }}"
+                                    type="file"
+                                    name="audio_file"
+                                    accept="audio/*"
+                                    required
+                                >
+                            </div>
+
+                            <div class="practice-create-field">
+                                <label for="track-bpm-{{ playlist.id }}">原始 BPM</label>
+                                <input
+                                    id="track-bpm-{{ playlist.id }}"
+                                    type="number"
+                                    name="original_bpm"
+                                    min="1"
+                                    step="1"
+                                    placeholder="可选"
+                                >
+                            </div>
+
+                            <button type="submit" class="primary-btn">上传曲目</button>
+                        </form>
+                    </details>
+
+                    {% if playlist.tracks.all %}
+                        <div class="practice-library-desktop">
+                            <table class="practice-track-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 28%;">音频</th>
+                                        <th style="width: 16%;">BPM</th>
+                                        <th style="width: 34%;">A-B 片段</th>
+                                        <th style="width: 22%;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for track in playlist.tracks.all %}
+                                        <tr>
+                                            <td>
+                                                <div class="practice-track-title">{{ track.title }}</div>
+                                                <div class="practice-track-meta">
+                                                    {% if track.audio_file %}
+                                                        已上传音频文件
+                                                    {% elif track.source_url %}
+                                                        外部音频 URL
+                                                    {% else %}
+                                                        暂无音频来源
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if track.original_bpm %}
+                                                    {{ track.original_bpm }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if track.segments.all %}
+                                                    <div class="practice-segment-list">
+                                                        {% for segment in track.segments.all %}
+                                                            <div class="practice-segment-line">
+                                                                <a href="{% url 'practice-player-segment' segment.id %}" class="practice-segment-chip">
+                                                                    {% if segment.title %}
+                                                                        {{ segment.title }}
+                                                                    {% else %}
+                                                                        {{ segment.start_time|floatformat:1 }}s - {{ segment.end_time|floatformat:1 }}s
+                                                                    {% endif %}
+                                                                    / {{ segment.start_speed|floatformat:2 }}x → {{ segment.end_speed|floatformat:2 }}x
+                                                                </a>
+
+                                                                <form
+                                                                    method="post"
+                                                                    action="{% url 'practice-segment-delete' segment.id %}"
+                                                                    class="practice-delete-form"
+                                                                    onsubmit="return confirm('确定删除这个片段吗？');"
+                                                                >
+                                                                    {% csrf_token %}
+                                                                    <input type="hidden" name="next" value="library">
+                                                                    <button type="submit" class="practice-delete-btn">删除</button>
+                                                                </form>
+                                                            </div>
+
+                                                            <details class="practice-segment-edit-card practice-collapse">
+                                                                <summary class="practice-collapse-summary">
+                                                                    <span>编辑片段</span>
+                                                                </summary>
+
+                                                                <form
+                                                                    method="post"
+                                                                    action="{% url 'practice-segment-update' segment.id %}"
+                                                                    class="practice-segment-edit-form"
+                                                                >
+                                                                    {% csrf_token %}
+
+                                                                    <div class="practice-create-field full">
+                                                                        <label for="segment-edit-title-desktop-{{ segment.id }}">片段名称</label>
+                                                                        <input
+                                                                            id="segment-edit-title-desktop-{{ segment.id }}"
+                                                                            type="text"
+                                                                            name="title"
+                                                                            maxlength="200"
+                                                                            value="{{ segment.title }}"
+                                                                            placeholder="可留空，留空时显示 A-B 时间"
+                                                                        >
+                                                                    </div>
+
+                                                                    <div class="practice-create-field">
+                                                                        <label for="segment-edit-start-desktop-{{ segment.id }}">A 点，秒</label>
+                                                                        <input
+                                                                            id="segment-edit-start-desktop-{{ segment.id }}"
+                                                                            type="number"
+                                                                            name="start_time"
+                                                                            min="0"
+                                                                            step="0.1"
+                                                                            value="{{ segment.start_time|floatformat:3 }}"
+                                                                        >
+                                                                    </div>
+
+                                                                    <div class="practice-create-field">
+                                                                        <label for="segment-edit-end-desktop-{{ segment.id }}">B 点，秒</label>
+                                                                        <input
+                                                                            id="segment-edit-end-desktop-{{ segment.id }}"
+                                                                            type="number"
+                                                                            name="end_time"
+                                                                            min="0"
+                                                                            step="0.1"
+                                                                            value="{{ segment.end_time|floatformat:3 }}"
+                                                                        >
+                                                                    </div>
+
+                                                                    <div class="practice-create-field">
+                                                                        <label for="segment-edit-start-speed-desktop-{{ segment.id }}">Start Speed</label>
+                                                                        <input
+                                                                            id="segment-edit-start-speed-desktop-{{ segment.id }}"
+                                                                            type="number"
+                                                                            name="start_speed"
+                                                                            min="0.25"
+                                                                            max="2"
+                                                                            step="0.05"
+                                                                            value="{{ segment.start_speed|floatformat:2 }}"
+                                                                        >
+                                                                    </div>
+
+                                                                    <div class="practice-create-field">
+                                                                        <label for="segment-edit-end-speed-desktop-{{ segment.id }}">End Speed</label>
+                                                                        <input
+                                                                            id="segment-edit-end-speed-desktop-{{ segment.id }}"
+                                                                            type="number"
+                                                                            name="end_speed"
+                                                                            min="0.25"
+                                                                            max="2"
+                                                                            step="0.05"
+                                                                            value="{{ segment.end_speed|floatformat:2 }}"
+                                                                        >
+                                                                    </div>
+
+                                                                    <div class="practice-create-field">
+                                                                        <label for="segment-edit-step-desktop-{{ segment.id }}">Step</label>
+                                                                        <input
+                                                                            id="segment-edit-step-desktop-{{ segment.id }}"
+                                                                            type="number"
+                                                                            name="speed_step"
+                                                                            min="0.01"
+                                                                            max="0.5"
+                                                                            step="0.01"
+                                                                            value="{{ segment.speed_step|floatformat:2 }}"
+                                                                        >
+                                                                    </div>
+
+                                                                    <div class="practice-create-field">
+                                                                        <label for="segment-edit-repeat-desktop-{{ segment.id }}">重复次数</label>
+                                                                        <input
+                                                                            id="segment-edit-repeat-desktop-{{ segment.id }}"
+                                                                            type="number"
+                                                                            name="repeat_per_step"
+                                                                            min="1"
+                                                                            step="1"
+                                                                            value="{{ segment.repeat_per_step }}"
+                                                                        >
+                                                                    </div>
+
+                                                                    <div class="practice-create-field">
+                                                                        <label for="segment-edit-end-mode-desktop-{{ segment.id }}">结束方式</label>
+                                                                        <select id="segment-edit-end-mode-desktop-{{ segment.id }}" name="end_mode">
+                                                                            <option value="stop" {% if segment.end_mode == "stop" %}selected{% endif %}>到目标后停止</option>
+                                                                            <option value="keep" {% if segment.end_mode == "keep" %}selected{% endif %}>到目标后保持</option>
+                                                                            <option value="repeat" {% if segment.end_mode == "repeat" %}selected{% endif %}>回到起始速度</option>
+                                                                            <option value="step_down" {% if segment.end_mode == "step_down" %}selected{% endif %}>到目标后步退</option>
+                                                                            <option value="ping_pong" {% if segment.end_mode == "ping_pong" %}selected{% endif %}>往返循环</option>
+                                                                        </select>
+                                                                    </div>
+
+                                                                    <div class="practice-create-field">
+                                                                        <label for="segment-edit-pitch-desktop-{{ segment.id }}">音高</label>
+                                                                        <select id="segment-edit-pitch-desktop-{{ segment.id }}" name="preserve_pitch">
+                                                                            <option value="1" {% if segment.preserve_pitch %}selected{% endif %}>尽量保持音高</option>
+                                                                            <option value="0" {% if not segment.preserve_pitch %}selected{% endif %}>允许跟随速度变化</option>
+                                                                        </select>
+                                                                    </div>
+
+                                                                    <button type="submit" class="primary-btn">保存片段</button>
+                                                                </form>
+                                                            </details>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% else %}
+                                                    <span class="practice-track-meta">暂无片段</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="practice-track-actions">
+                                                    <a href="{% url 'practice-player-track' track.id %}" class="ghost-btn">打开播放器</a>
+
+                                                    <form
+                                                        method="post"
+                                                        action="{% url 'practice-track-delete' track.id %}"
+                                                        class="practice-delete-form"
+                                                        onsubmit="return confirm('确定删除这个曲目吗？曲目下所有片段也会一起删除。');"
+                                                    >
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="practice-delete-btn">删除曲目</button>
+                                                    </form>
+                                                </div>
+
+                                                <details class="practice-track-edit-card practice-collapse">
+                                                    <summary class="practice-collapse-summary">
+                                                        <span>编辑曲目</span>
+                                                    </summary>
+
+                                                    <form
+                                                        method="post"
+                                                        action="{% url 'practice-track-update' track.id %}"
+                                                        enctype="multipart/form-data"
+                                                        class="practice-track-edit-form"
+                                                    >
+                                                        {% csrf_token %}
+
+                                                        <div class="practice-create-field">
+                                                            <label for="track-edit-title-desktop-{{ track.id }}">曲目名称</label>
+                                                            <input
+                                                                id="track-edit-title-desktop-{{ track.id }}"
+                                                                type="text"
+                                                                name="title"
+                                                                maxlength="200"
+                                                                required
+                                                                value="{{ track.title }}"
+                                                            >
+                                                        </div>
+
+                                                        <div class="practice-create-field">
+                                                            <label for="track-edit-bpm-desktop-{{ track.id }}">原始 BPM</label>
+                                                            <input
+                                                                id="track-edit-bpm-desktop-{{ track.id }}"
+                                                                type="number"
+                                                                name="original_bpm"
+                                                                min="1"
+                                                                step="1"
+                                                                value="{% if track.original_bpm %}{{ track.original_bpm }}{% endif %}"
+                                                                placeholder="可选"
+                                                            >
+                                                        </div>
+
+                                                        <div class="practice-create-field">
+                                                            <label for="track-edit-notes-desktop-{{ track.id }}">备注</label>
+                                                            <input
+                                                                id="track-edit-notes-desktop-{{ track.id }}"
+                                                                type="text"
+                                                                name="notes"
+                                                                value="{{ track.notes }}"
+                                                                placeholder="例如：副歌练习、影子跟读素材"
+                                                            >
+                                                        </div>
+
+                                                        <div class="practice-create-field">
+                                                            <label for="track-edit-audio-desktop-{{ track.id }}">替换音频文件</label>
+                                                            <input
+                                                                id="track-edit-audio-desktop-{{ track.id }}"
+                                                                type="file"
+                                                                name="audio_file"
+                                                                accept="audio/*"
+                                                            >
+                                                        </div>
+
+                                                        <button type="submit" class="primary-btn">保存曲目</button>
+                                                    </form>
+                                                </details>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="practice-library-mobile">
+                            {% for track in playlist.tracks.all %}
+                                <article class="practice-track-card">
+                                    <h3 class="practice-track-card-title">{{ track.title }}</h3>
+
+                                    <div class="practice-track-card-line">
+                                        BPM：
+                                        {% if track.original_bpm %}
+                                            {{ track.original_bpm }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="practice-track-card-line">
+                                        音频：
+                                        {% if track.audio_file %}
+                                            已上传音频文件
+                                        {% elif track.source_url %}
+                                            外部音频 URL
+                                        {% else %}
+                                            暂无音频来源
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="practice-track-card-line">
+                                        片段：
+                                        {% if track.segments.all %}
+                                            {% for segment in track.segments.all %}
+                                                <div class="practice-segment-line">
+                                                    <a href="{% url 'practice-player-segment' segment.id %}" class="practice-segment-chip">
+                                                        {% if segment.title %}
+                                                            {{ segment.title }}
+                                                        {% else %}
+                                                            {{ segment.start_time|floatformat:1 }}s - {{ segment.end_time|floatformat:1 }}s
+                                                        {% endif %}
+                                                        / {{ segment.start_speed|floatformat:2 }}x → {{ segment.end_speed|floatformat:2 }}x
+                                                    </a>
+
+                                                    <form
+                                                        method="post"
+                                                        action="{% url 'practice-segment-delete' segment.id %}"
+                                                        class="practice-delete-form"
+                                                        onsubmit="return confirm('确定删除这个片段吗？');"
+                                                    >
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="next" value="library">
+                                                        <button type="submit" class="practice-delete-btn">删除</button>
+                                                    </form>
+                                                </div>
+
+                                                <details class="practice-segment-edit-card practice-collapse">
+                                                    <summary class="practice-collapse-summary">
+                                                        <span>编辑片段</span>
+                                                    </summary>
+
+                                                    <form
+                                                        method="post"
+                                                        action="{% url 'practice-segment-update' segment.id %}"
+                                                        class="practice-segment-edit-form"
+                                                    >
+                                                        {% csrf_token %}
+
+                                                        <div class="practice-create-field full">
+                                                            <label for="segment-edit-title-mobile-{{ segment.id }}">片段名称</label>
+                                                            <input
+                                                                id="segment-edit-title-mobile-{{ segment.id }}"
+                                                                type="text"
+                                                                name="title"
+                                                                maxlength="200"
+                                                                value="{{ segment.title }}"
+                                                                placeholder="可留空，留空时显示 A-B 时间"
+                                                            >
+                                                        </div>
+
+                                                        <div class="practice-create-field">
+                                                            <label for="segment-edit-start-mobile-{{ segment.id }}">A 点，秒</label>
+                                                            <input
+                                                                id="segment-edit-start-mobile-{{ segment.id }}"
+                                                                type="number"
+                                                                name="start_time"
+                                                                min="0"
+                                                                step="0.1"
+                                                                value="{{ segment.start_time|floatformat:3 }}"
+                                                            >
+                                                        </div>
+
+                                                        <div class="practice-create-field">
+                                                            <label for="segment-edit-end-mobile-{{ segment.id }}">B 点，秒</label>
+                                                            <input
+                                                                id="segment-edit-end-mobile-{{ segment.id }}"
+                                                                type="number"
+                                                                name="end_time"
+                                                                min="0"
+                                                                step="0.1"
+                                                                value="{{ segment.end_time|floatformat:3 }}"
+                                                            >
+                                                        </div>
+
+                                                        <div class="practice-create-field">
+                                                            <label for="segment-edit-start-speed-mobile-{{ segment.id }}">Start Speed</label>
+                                                            <input
+                                                                id="segment-edit-start-speed-mobile-{{ segment.id }}"
+                                                                type="number"
+                                                                name="start_speed"
+                                                                min="0.25"
+                                                                max="2"
+                                                                step="0.05"
+                                                                value="{{ segment.start_speed|floatformat:2 }}"
+                                                            >
+                                                        </div>
+
+                                                        <div class="practice-create-field">
+                                                            <label for="segment-edit-end-speed-mobile-{{ segment.id }}">End Speed</label>
+                                                            <input
+                                                                id="segment-edit-end-speed-mobile-{{ segment.id }}"
+                                                                type="number"
+                                                                name="end_speed"
+                                                                min="0.25"
+                                                                max="2"
+                                                                step="0.05"
+                                                                value="{{ segment.end_speed|floatformat:2 }}"
+                                                            >
+                                                        </div>
+
+                                                        <div class="practice-create-field">
+                                                            <label for="segment-edit-step-mobile-{{ segment.id }}">Step</label>
+                                                            <input
+                                                                id="segment-edit-step-mobile-{{ segment.id }}"
+                                                                type="number"
+                                                                name="speed_step"
+                                                                min="0.01"
+                                                                max="0.5"
+                                                                step="0.01"
+                                                                value="{{ segment.speed_step|floatformat:2 }}"
+                                                            >
+                                                        </div>
+
+                                                        <div class="practice-create-field">
+                                                            <label for="segment-edit-repeat-mobile-{{ segment.id }}">重复次数</label>
+                                                            <input
+                                                                id="segment-edit-repeat-mobile-{{ segment.id }}"
+                                                                type="number"
+                                                                name="repeat_per_step"
+                                                                min="1"
+                                                                step="1"
+                                                                value="{{ segment.repeat_per_step }}"
+                                                            >
+                                                        </div>
+
+                                                        <div class="practice-create-field">
+                                                            <label for="segment-edit-end-mode-mobile-{{ segment.id }}">结束方式</label>
+                                                            <select id="segment-edit-end-mode-mobile-{{ segment.id }}" name="end_mode">
+                                                                <option value="stop" {% if segment.end_mode == "stop" %}selected{% endif %}>到目标后停止</option>
+                                                                <option value="keep" {% if segment.end_mode == "keep" %}selected{% endif %}>到目标后保持</option>
+                                                                <option value="repeat" {% if segment.end_mode == "repeat" %}selected{% endif %}>回到起始速度</option>
+                                                                <option value="step_down" {% if segment.end_mode == "step_down" %}selected{% endif %}>到目标后步退</option>
+                                                                <option value="ping_pong" {% if segment.end_mode == "ping_pong" %}selected{% endif %}>往返循环</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="practice-create-field">
+                                                            <label for="segment-edit-pitch-mobile-{{ segment.id }}">音高</label>
+                                                            <select id="segment-edit-pitch-mobile-{{ segment.id }}" name="preserve_pitch">
+                                                                <option value="1" {% if segment.preserve_pitch %}selected{% endif %}>尽量保持音高</option>
+                                                                <option value="0" {% if not segment.preserve_pitch %}selected{% endif %}>允许跟随速度变化</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <button type="submit" class="primary-btn">保存片段</button>
+                                                    </form>
+                                                </details>
+                                            {% endfor %}
+                                        {% else %}
+                                            暂无片段
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="practice-track-actions" style="margin-top:12px;">
+                                        <a href="{% url 'practice-player-track' track.id %}" class="ghost-btn">打开播放器</a>
+
+                                        <form
+                                            method="post"
+                                            action="{% url 'practice-track-delete' track.id %}"
+                                            class="practice-delete-form"
+                                            onsubmit="return confirm('确定删除这个曲目吗？曲目下所有片段也会一起删除。');"
+                                        >
+                                            {% csrf_token %}
+                                            <button type="submit" class="practice-delete-btn">删除曲目</button>
+                                        </form>
+                                    </div>
+
+                                    <details class="practice-track-edit-card practice-collapse">
+                                        <summary class="practice-collapse-summary">
+                                            <span>编辑曲目</span>
+                                        </summary>
+
+                                        <form
+                                            method="post"
+                                            action="{% url 'practice-track-update' track.id %}"
+                                            enctype="multipart/form-data"
+                                            class="practice-track-edit-form"
+                                        >
+                                            {% csrf_token %}
+
+                                            <div class="practice-create-field">
+                                                <label for="track-edit-title-mobile-{{ track.id }}">曲目名称</label>
+                                                <input
+                                                    id="track-edit-title-mobile-{{ track.id }}"
+                                                    type="text"
+                                                    name="title"
+                                                    maxlength="200"
+                                                    required
+                                                    value="{{ track.title }}"
+                                                >
+                                            </div>
+
+                                            <div class="practice-create-field">
+                                                <label for="track-edit-bpm-mobile-{{ track.id }}">原始 BPM</label>
+                                                <input
+                                                    id="track-edit-bpm-mobile-{{ track.id }}"
+                                                    type="number"
+                                                    name="original_bpm"
+                                                    min="1"
+                                                    step="1"
+                                                    value="{% if track.original_bpm %}{{ track.original_bpm }}{% endif %}"
+                                                    placeholder="可选"
+                                                >
+                                            </div>
+
+                                            <div class="practice-create-field">
+                                                <label for="track-edit-notes-mobile-{{ track.id }}">备注</label>
+                                                <input
+                                                    id="track-edit-notes-mobile-{{ track.id }}"
+                                                    type="text"
+                                                    name="notes"
+                                                    value="{{ track.notes }}"
+                                                    placeholder="例如：副歌练习、影子跟读素材"
+                                                >
+                                            </div>
+                                            
+                                            <div class="practice-create-field">
+                                                <label for="track-edit-audio-mobile-{{ track.id }}">替换音频文件</label>
+                                                <input
+                                                    id="track-edit-audio-mobile-{{ track.id }}"
+                                                    type="file"
+                                                    name="audio_file"
+                                                    accept="audio/*"
+                                                >
+                                            </div>
+
+                                            <button type="submit" class="primary-btn">保存曲目</button>
+                                        </form>
+                                    </details>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="practice-library-empty">
+                            这个播放列表还没有音频。当前版本先通过 Django admin 添加曲目，下一步再做网页上传。
+                        </div>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        {% else %}
+            <article class="practice-library-card">
+                <div class="practice-library-empty">
+                    当前用户还没有播放列表。你可以先在 Django admin 里添加 Practice playlist、Practice track 和 Practice segment。
+                    下一步我们再做网页端创建和上传。
+                </div>
+            </article>
+        {% endif %}
+    </section>
+</main>
+{% endblock %}

@@ -36,6 +36,8 @@
         <details class="user-menu global-user-menu">
             <summary class="user-pill">{{ request.user.username }}</summary>
             <div class="user-dropdown">
+                <a href="{% url 'practice-player' %}" class="user-dropdown-link">自由练习播放器</a>
+                <a href="{% url 'practice-library' %}" class="user-dropdown-link">我的播放列表</a>
                 <a href="{% url 'stats-page' %}" class="user-dropdown-link">学习统计</a>
                 <a href="{% url 'password_change' %}" class="user-dropdown-link">修改密码</a>
                 <a href="{% url 'logout' %}" class="user-dropdown-link">退出登录</a>
@@ -44,6 +46,43 @@
         {% endif %}
     </div>
     {% endblock %}
+
+        {% if messages %}
+    <div
+        class="global-message-stack"
+        style="
+            position: fixed;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            width: min(520px, calc(100% - 28px));
+            display: grid;
+            gap: 10px;
+            pointer-events: none;
+        "
+    >
+        {% for message in messages %}
+            <div
+                class="global-message global-message-{{ message.tags }}"
+                style="
+                    border: 1px solid rgba(110, 168, 255, 0.28);
+                    background: rgba(15, 23, 42, 0.92);
+                    color: #fff;
+                    border-radius: 16px;
+                    padding: 12px 14px;
+                    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.26);
+                    font-size: 14px;
+                    font-weight: 800;
+                    line-height: 1.5;
+                    text-align: center;
+                "
+            >
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     {% block content %}{% endblock %}
 

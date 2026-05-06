@@ -3424,7 +3424,7 @@ def get_lesson_round_progress(request, lesson):
         }
 
     now = timezone.now()
-    done_ids = set(request.session.get("today_done_ids", []))
+    done_ids = set(_get_today_done_ids(request))
 
     items = TrainingItem.objects.select_related("question__lesson").filter(
         question__lesson=lesson
@@ -4346,7 +4346,7 @@ def _train_api_by_scope(request, scope, obj):
 
         print("🔥 API HIT")
 
-        done_ids = request.session.get("today_done_ids", [])
+        done_ids = set(_get_today_done_ids(request))
 
         # =========================
         # 0) 错词回炉优先：只回炉错掉的那个 blank

@@ -495,6 +495,20 @@
     align-items: end;
 }
 
+.practice-mini-btn {
+    width: fit-content;
+    min-height: 32px;
+    margin-top: 8px;
+    padding: 0 10px;
+    border: 1px solid rgba(110, 168, 255, 0.34);
+    border-radius: 999px;
+    background: rgba(110, 168, 255, 0.10);
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
 .practice-marker-edit-details {
     margin-top: 10px;
     border-top: 1px solid var(--border);
@@ -764,7 +778,24 @@
     }
 
     .practice-form-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .practice-form-grid .practice-field {
+        min-width: 0;
+    }
+
+    .practice-form-grid .practice-field label {
+        font-size: 12px;
+        line-height: 1.35;
+    }
+
+    .practice-form-grid .practice-field input,
+    .practice-form-grid .practice-field select {
+        min-height: 46px;
+        padding: 10px 11px;
+        font-size: 16px;
     }
 
     .practice-loop-strip {
@@ -1177,6 +1208,9 @@
                                 step="0.1"
                                 value="0"
                             >
+                            <button type="button" class="practice-mini-btn" id="marker-set-a-btn">
+                                当前播放位置设为 A
+                            </button>
                         </div>
 
                         <div class="practice-field">
@@ -1189,6 +1223,9 @@
                                 step="0.1"
                                 value="0"
                             >
+                            <button type="button" class="practice-mini-btn" id="marker-set-b-btn">
+                                当前播放位置设为 B
+                            </button>
                         </div>
 
                         <input type="hidden" name="start_speed" id="marker-create-start-speed">
@@ -1979,6 +2016,31 @@
             document.getElementById("save-segment-repeat-per-step").value = Math.max(1, parseInt(repeatPerStepInput.value, 10) || 3);
             document.getElementById("save-segment-end-mode").value = endModeInput.value;
             document.getElementById("save-segment-preserve-pitch").value = preservePitchInput.value === "true" ? "1" : "0";
+        });
+    }
+
+    const markerSetABtn = document.getElementById("marker-set-a-btn");
+    const markerSetBBtn = document.getElementById("marker-set-b-btn");
+
+    if (markerSetABtn) {
+        markerSetABtn.addEventListener("click", function () {
+            if (!audio.src) {
+                alert("请先载入音频。");
+                return;
+            }
+
+            document.getElementById("marker-create-start").value = audio.currentTime.toFixed(3);
+        });
+    }
+
+    if (markerSetBBtn) {
+        markerSetBBtn.addEventListener("click", function () {
+            if (!audio.src) {
+                alert("请先载入音频。");
+                return;
+            }
+
+            document.getElementById("marker-create-end").value = audio.currentTime.toFixed(3);
         });
     }
 

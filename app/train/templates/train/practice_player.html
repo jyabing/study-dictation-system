@@ -209,6 +209,13 @@
     gap: 8px;
 }
 
+.practice-precise-actions {
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
 .practice-precise-btn {
     border: 1px solid rgba(110, 168, 255, 0.28);
     border-radius: 999px;
@@ -541,9 +548,15 @@
 
 .practice-marker-create-form {
     display: grid;
-    grid-template-columns: minmax(180px, 1fr) minmax(100px, 0.5fr) minmax(100px, 0.5fr) auto;
-    gap: 10px;
-    align-items: end;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    align-items: start;
+}
+
+.practice-marker-ab-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
 }
 
 .practice-mini-btn {
@@ -883,6 +896,15 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
+    .practice-precise-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .practice-marker-ab-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
     .practice-precise-btn {
         min-height: 38px;
         font-size: 12px;
@@ -919,13 +941,8 @@
     }
 
     .practice-marker-create-form {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-    }
-
-    .practice-marker-create-form .practice-field:first-child,
-    .practice-marker-create-form .practice-btn {
-        grid-column: 1 / -1;
+        grid-template-columns: 1fr;
+        gap: 14px;
     }
 
     .practice-marker-create-form .practice-btn {
@@ -1045,6 +1062,16 @@
                                 <button type="button" class="practice-precise-btn" data-seek-delta="1">+1s</button>
                                 <button type="button" class="practice-precise-btn" data-seek-delta="5">+5s</button>
                             </div>
+
+                            <div class="practice-precise-actions">
+                                <button type="button" class="practice-precise-btn primary" id="precise-set-a-btn">
+                                    当前时间设为 A
+                                </button>
+                                <button type="button" class="practice-precise-btn primary" id="precise-set-b-btn">
+                                    当前时间设为 B
+                                </button>
+                            </div>
+
                         </div>
                     </div>
 
@@ -1295,34 +1322,36 @@
                             >
                         </div>
 
-                        <div class="practice-field">
-                            <label for="marker-create-start">A 点，秒</label>
-                            <input
-                                id="marker-create-start"
-                                type="number"
-                                name="start_time"
-                                min="0"
-                                step="0.1"
-                                value="0"
-                            >
-                            <button type="button" class="practice-mini-btn" id="marker-set-a-btn">
-                                设为 A
-                            </button>
-                        </div>
+                        <div class="practice-marker-ab-grid">
+                            <div class="practice-field">
+                                <label for="marker-create-start">A 点，秒</label>
+                                <input
+                                    id="marker-create-start"
+                                    type="number"
+                                    name="start_time"
+                                    min="0"
+                                    step="0.1"
+                                    value="0"
+                                >
+                                <button type="button" class="practice-mini-btn" id="marker-set-a-btn">
+                                    设为 A
+                                </button>
+                            </div>
 
-                        <div class="practice-field">
-                            <label for="marker-create-end">B 点，秒</label>
-                            <input
-                                id="marker-create-end"
-                                type="number"
-                                name="end_time"
-                                min="0"
-                                step="0.1"
-                                value="0"
-                            >
-                            <button type="button" class="practice-mini-btn" id="marker-set-b-btn">
-                                设为 B
-                            </button>
+                            <div class="practice-field">
+                                <label for="marker-create-end">B 点，秒</label>
+                                <input
+                                    id="marker-create-end"
+                                    type="number"
+                                    name="end_time"
+                                    min="0"
+                                    step="0.1"
+                                    value="0"
+                                >
+                                <button type="button" class="practice-mini-btn" id="marker-set-b-btn">
+                                    设为 B
+                                </button>
+                            </div>
                         </div>
 
                         <input type="hidden" name="start_speed" id="marker-create-start-speed">
@@ -1582,6 +1611,11 @@
     const currentRepeatEl = document.getElementById("current-repeat");
     const preciseCurrentTimeEl = document.getElementById("precise-current-time");
 
+    const markerCreateStartInput = document.getElementById("marker-create-start");
+    const markerCreateEndInput = document.getElementById("marker-create-end");
+    const preciseSetABtn = document.getElementById("precise-set-a-btn");
+    const preciseSetBBtn = document.getElementById("precise-set-b-btn");
+
     const planTableBody = document.getElementById("plan-table-body");
     const planMobileCards = document.getElementById("plan-mobile-cards");
 
@@ -1682,6 +1716,34 @@
         }
 
         updatePreciseTime();
+    }
+
+    function writeTimeToInput(inputEl, value) {
+        if (!inputEl) {
+            return;
+        }
+
+        inputEl.value = toNumber(value, 0).toFixed(3);
+    }
+
+    function syncCurrentTimeToPoint(pointType) {
+        if (!audio.src) {
+            alert("请先载入音频。");
+            return;
+        }
+
+        const current = audio.currentTime || 0;
+
+        if (pointType === "a") {
+            writeTimeToInput(loopStartInput, current);
+            writeTimeToInput(markerCreateStartInput, current);
+            return;
+        }
+
+        if (pointType === "b") {
+            writeTimeToInput(loopEndInput, current);
+            writeTimeToInput(markerCreateEndInput, current);
+        }
     }
 
     function renderMarkerTimeline() {
@@ -1835,7 +1897,7 @@
         renderPlan();
     }
 
-        function moveToNextStep() {
+    function moveToNextStep() {
         const mode = endModeInput.value;
 
         state.repeatCount += 1;
@@ -2095,11 +2157,11 @@
     });
 
     document.getElementById("set-a-btn").addEventListener("click", function () {
-        loopStartInput.value = audio.currentTime.toFixed(1);
+        syncCurrentTimeToPoint("a");
     });
 
     document.getElementById("set-b-btn").addEventListener("click", function () {
-        loopEndInput.value = audio.currentTime.toFixed(1);
+        syncCurrentTimeToPoint("b");
     });
 
     document.getElementById("play-loop-btn").addEventListener("click", function () {
@@ -2170,23 +2232,25 @@
 
     if (markerSetABtn) {
         markerSetABtn.addEventListener("click", function () {
-            if (!audio.src) {
-                alert("请先载入音频。");
-                return;
-            }
-
-            document.getElementById("marker-create-start").value = audio.currentTime.toFixed(3);
+            syncCurrentTimeToPoint("a");
         });
     }
 
     if (markerSetBBtn) {
         markerSetBBtn.addEventListener("click", function () {
-            if (!audio.src) {
-                alert("请先载入音频。");
-                return;
-            }
+            syncCurrentTimeToPoint("b");
+        });
+    }
 
-            document.getElementById("marker-create-end").value = audio.currentTime.toFixed(3);
+    if (preciseSetABtn) {
+        preciseSetABtn.addEventListener("click", function () {
+            syncCurrentTimeToPoint("a");
+        });
+    }
+
+    if (preciseSetBBtn) {
+        preciseSetBBtn.addEventListener("click", function () {
+            syncCurrentTimeToPoint("b");
         });
     }
 

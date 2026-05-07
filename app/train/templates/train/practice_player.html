@@ -381,6 +381,231 @@
     font-weight: 850;
 }
 
+.practice-marker-panel {
+    margin-top: 10px;
+}
+
+.practice-marker-strip {
+    display: grid;
+    gap: 10px;
+}
+
+.practice-marker-timeline {
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.045);
+    padding: 16px 14px 14px;
+}
+
+.practice-marker-timeline-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 850;
+}
+
+.practice-marker-track {
+    position: relative;
+    height: 54px;
+    border-radius: 999px;
+    background:
+        linear-gradient(90deg, rgba(110, 168, 255, 0.18), rgba(34, 211, 238, 0.12)),
+        var(--soft);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.practice-marker-range {
+    position: absolute;
+    top: 9px;
+    bottom: 9px;
+    left: var(--marker-left, 0%);
+    width: var(--marker-width, 0%);
+    min-width: 8px;
+    border: 1px solid rgba(110, 168, 255, 0.48);
+    border-radius: 999px;
+    background: rgba(110, 168, 255, 0.22);
+    cursor: pointer;
+}
+
+.practice-marker-range.is-active {
+    background: rgba(110, 168, 255, 0.38);
+    border-color: var(--primary);
+}
+
+.practice-marker-range::before,
+.practice-marker-range::after {
+    content: "";
+    position: absolute;
+    top: -6px;
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 12px solid var(--text);
+}
+
+.practice-marker-range::before {
+    left: -7px;
+}
+
+.practice-marker-range::after {
+    right: -7px;
+}
+
+.practice-marker-range-label {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: max-content;
+    max-width: 140px;
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 900;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+
+.practice-marker-create-card {
+    margin-bottom: 16px;
+    border: 1px solid rgba(110, 168, 255, 0.22);
+    border-radius: 20px;
+    background: rgba(110, 168, 255, 0.07);
+    padding: 14px;
+}
+
+.practice-marker-create-title {
+    margin: 0 0 10px;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.practice-marker-create-form {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) minmax(100px, 0.5fr) minmax(100px, 0.5fr) auto;
+    gap: 10px;
+    align-items: end;
+}
+
+.practice-marker-edit-details {
+    margin-top: 10px;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+}
+
+.practice-marker-edit-details summary {
+    cursor: pointer;
+    list-style: none;
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.practice-marker-edit-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.practice-marker-edit-form {
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) minmax(96px, 0.45fr) minmax(96px, 0.45fr) auto;
+    gap: 10px;
+    align-items: end;
+    margin-top: 10px;
+}
+
+.practice-marker-timeline-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.practice-marker-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    border: 1px solid var(--border);
+    background: var(--soft);
+    border-radius: 18px;
+    padding: 12px 14px;
+}
+
+.practice-marker-card.is-active {
+    border-color: var(--primary);
+    background: rgba(110, 168, 255, 0.10);
+}
+
+.practice-marker-main {
+    min-width: 0;
+}
+
+.practice-marker-title {
+    font-size: 14px;
+    font-weight: 900;
+    margin-bottom: 6px;
+}
+
+.practice-marker-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.practice-marker-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--primary);
+    box-shadow: 0 0 0 5px rgba(110, 168, 255, 0.12);
+}
+
+.practice-marker-meta {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+    margin-top: 6px;
+}
+
+.practice-marker-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.practice-marker-apply-btn {
+    border: 1px solid rgba(110, 168, 255, 0.36);
+    border-radius: 999px;
+    background: rgba(110, 168, 255, 0.12);
+    color: var(--primary);
+    min-height: 32px;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.practice-marker-hint {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
 
 .practice-segment-link {
     text-decoration: none;
@@ -551,6 +776,41 @@
 
     .practice-segment-row {
         grid-template-columns: 1fr;
+    }
+
+    .practice-marker-card {
+        grid-template-columns: 1fr;
+    }
+
+    .practice-marker-actions {
+        justify-content: flex-start;
+    }
+
+    .practice-marker-track {
+        height: 64px;
+    }
+
+    .practice-marker-range-label {
+        max-width: 92px;
+        font-size: 10px;
+    }
+
+    .practice-marker-create-form {
+        grid-template-columns: 1fr;
+    }
+
+    .practice-marker-create-form .practice-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .practice-marker-edit-form {
+        grid-template-columns: 1fr;
+    }
+
+    .practice-marker-edit-form .practice-btn {
+        width: 100%;
+        justify-content: center;
     }
 
     .practice-segment-action {
@@ -786,7 +1046,7 @@
         </div>
     </section>
 
-    
+
     {% if selected_track %}
         <section class="practice-settings">
             <div class="practice-settings-card">
@@ -845,42 +1105,169 @@
         </section>
     {% endif %}
 
-    {% if selected_track %}
+        {% if selected_track %}
         <section class="practice-segment-panel">
-            <div class="practice-settings-card">
+            <div class="practice-settings-card practice-marker-panel">
                 <div class="practice-settings-head">
                     <div>
-                        <h2 class="practice-settings-title">当前曲目的已保存片段</h2>
+                        <h2 class="practice-settings-title">Marker 再生 / 多段 A-B 区间</h2>
                         <p class="practice-settings-text">
-                            不用回到播放列表，也可以直接切换这个曲目下的 A-B 片段。
+                            每个 Marker 区间都对应一个已保存片段，并保留自己的步进步退设置。点击“套用此段”后，可以直接开始自动练习。
                         </p>
                     </div>
                     <div class="practice-mode-pill">
-                        片段 {{ track_segments|length }}
+                        区间 {{ track_segments|length }}
                     </div>
                 </div>
 
+                <div class="practice-marker-create-card">
+                    <h3 class="practice-marker-create-title">新增 Marker 区间</h3>
+
+                    <form
+                        method="post"
+                        action="{% url 'practice-segment-save' selected_track.id %}"
+                        id="marker-create-segment-form"
+                        class="practice-marker-create-form"
+                    >
+                        {% csrf_token %}
+
+                        <div class="practice-field">
+                            <label for="marker-create-title">片段名称</label>
+                            <input
+                                id="marker-create-title"
+                                type="text"
+                                name="title"
+                                maxlength="200"
+                                placeholder="例如：前奏 / 第一句 / 副歌"
+                            >
+                        </div>
+
+                        <div class="practice-field">
+                            <label for="marker-create-start">A 点，秒</label>
+                            <input
+                                id="marker-create-start"
+                                type="number"
+                                name="start_time"
+                                min="0"
+                                step="0.1"
+                                value="0"
+                            >
+                        </div>
+
+                        <div class="practice-field">
+                            <label for="marker-create-end">B 点，秒</label>
+                            <input
+                                id="marker-create-end"
+                                type="number"
+                                name="end_time"
+                                min="0"
+                                step="0.1"
+                                value="0"
+                            >
+                        </div>
+
+                        <input type="hidden" name="start_speed" id="marker-create-start-speed">
+                        <input type="hidden" name="end_speed" id="marker-create-end-speed">
+                        <input type="hidden" name="speed_step" id="marker-create-speed-step">
+                        <input type="hidden" name="repeat_per_step" id="marker-create-repeat-per-step">
+                        <input type="hidden" name="end_mode" id="marker-create-end-mode">
+                        <input type="hidden" name="preserve_pitch" id="marker-create-preserve-pitch">
+
+                        <button type="submit" class="practice-btn primary strong">
+                            新增 Marker 区间
+                        </button>
+                    </form>
+
+                    <p class="practice-marker-hint">
+                        这里新增的区间会使用当前下方 Progressive Tempo 设置：Start Speed、End Speed、Step、重复次数、结束方式和音高。
+                    </p>
+                </div>
+
                 {% if track_segments %}
-                    <div class="practice-segment-grid">
-                        {% for segment in track_segments %}
-                            <div class="practice-segment-row {% if selected_segment and selected_segment.id == segment.id %}is-active{% endif %}">
-                                <a href="{% url 'practice-player-segment' segment.id %}" class="practice-segment-link">
-                                    <div class="practice-segment-title">
+                    <div class="practice-marker-timeline">
+                        <div class="practice-marker-timeline-head">
+                            <span>Marker 时间轴</span>
+                            <span id="marker-timeline-duration">等待音频时长</span>
+                        </div>
+
+                        <div class="practice-marker-track" id="marker-timeline-track">
+                            {% for segment in track_segments %}
+                                <button
+                                    type="button"
+                                    class="practice-marker-range {% if selected_segment and selected_segment.id == segment.id %}is-active{% endif %}"
+                                    data-marker-range="1"
+                                    data-start="{{ segment.start_time|floatformat:3 }}"
+                                    data-end="{{ segment.end_time|floatformat:3 }}"
+                                    data-start-speed="{{ segment.start_speed|floatformat:2 }}"
+                                    data-end-speed="{{ segment.end_speed|floatformat:2 }}"
+                                    data-speed-step="{{ segment.speed_step|floatformat:2 }}"
+                                    data-repeat="{{ segment.repeat_per_step }}"
+                                    data-end-mode="{{ segment.end_mode }}"
+                                    data-preserve-pitch="{% if segment.preserve_pitch %}true{% else %}false{% endif %}"
+                                    data-title="{% if segment.title %}{{ segment.title }}{% else %}Marker {{ forloop.counter }}{% endif %}"
+                                    title="{% if segment.title %}{{ segment.title }}{% else %}Marker {{ forloop.counter }}{% endif %}: {{ segment.start_time|floatformat:1 }}s → {{ segment.end_time|floatformat:1 }}s"
+                                >
+                                    <span class="practice-marker-range-label">
                                         {% if segment.title %}
                                             {{ segment.title }}
                                         {% else %}
-                                            {{ segment.start_time|floatformat:1 }}s - {{ segment.end_time|floatformat:1 }}s
+                                            {{ segment.start_time|floatformat:1 }}s → {{ segment.end_time|floatformat:1 }}s
+                                        {% endif %}
+                                    </span>
+                                </button>
+                            {% endfor %}
+                        </div>
+
+                        <div class="practice-marker-timeline-foot">
+                            <span>00:00</span>
+                            <span id="marker-timeline-end">--:--</span>
+                        </div>
+                    </div>
+
+                    <div class="practice-marker-strip">
+                        {% for segment in track_segments %}
+                            <div class="practice-marker-card {% if selected_segment and selected_segment.id == segment.id %}is-active{% endif %}">
+                                <div class="practice-marker-main">
+                                    <div class="practice-marker-title">
+                                        {% if segment.title %}
+                                            {{ segment.title }}
+                                        {% else %}
+                                            Marker {{ forloop.counter }}
                                         {% endif %}
                                     </div>
-                                    <div class="practice-segment-meta">
-                                        A-B：{{ segment.start_time|floatformat:1 }}s - {{ segment.end_time|floatformat:1 }}s /
+
+                                    <div class="practice-marker-time">
+                                        <span class="practice-marker-dot"></span>
+                                        <span>{{ segment.start_time|floatformat:1 }}s</span>
+                                        <span>→</span>
+                                        <span>{{ segment.end_time|floatformat:1 }}s</span>
+                                    </div>
+
+                                    <div class="practice-marker-meta">
                                         速度：{{ segment.start_speed|floatformat:2 }}x → {{ segment.end_speed|floatformat:2 }}x /
+                                        Step：{{ segment.speed_step|floatformat:2 }} /
                                         重复：{{ segment.repeat_per_step }} /
                                         模式：{{ segment.get_end_mode_display }}
                                     </div>
-                                </a>
+                                </div>
 
-                                <div class="practice-segment-tools">
+                                <div class="practice-marker-actions">
+                                    <button
+                                        type="button"
+                                        class="practice-marker-apply-btn"
+                                        data-start="{{ segment.start_time|floatformat:3 }}"
+                                        data-end="{{ segment.end_time|floatformat:3 }}"
+                                        data-start-speed="{{ segment.start_speed|floatformat:2 }}"
+                                        data-end-speed="{{ segment.end_speed|floatformat:2 }}"
+                                        data-speed-step="{{ segment.speed_step|floatformat:2 }}"
+                                        data-repeat="{{ segment.repeat_per_step }}"
+                                        data-end-mode="{{ segment.end_mode }}"
+                                        data-preserve-pitch="{% if segment.preserve_pitch %}true{% else %}false{% endif %}"
+                                        data-title="{% if segment.title %}{{ segment.title }}{% endif %}"
+                                    >
+                                        套用此段
+                                    </button>
+
                                     <a href="{% url 'practice-player-segment' segment.id %}" class="practice-segment-action">
                                         {% if selected_segment and selected_segment.id == segment.id %}
                                             当前片段
@@ -900,12 +1287,77 @@
                                         <button type="submit" class="practice-delete-btn">删除</button>
                                     </form>
                                 </div>
+
+                                <details class="practice-marker-edit-details">
+                                    <summary>编辑此区间 A-B</summary>
+
+                                    <form
+                                        method="post"
+                                        action="{% url 'practice-segment-update' segment.id %}"
+                                        class="practice-marker-edit-form"
+                                    >
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="player">
+
+                                        <div class="practice-field">
+                                            <label for="marker-edit-title-{{ segment.id }}">片段名称</label>
+                                            <input
+                                                id="marker-edit-title-{{ segment.id }}"
+                                                type="text"
+                                                name="title"
+                                                maxlength="200"
+                                                value="{{ segment.title }}"
+                                                placeholder="例如：前奏 / 第一句"
+                                            >
+                                        </div>
+
+                                        <div class="practice-field">
+                                            <label for="marker-edit-start-{{ segment.id }}">A 点，秒</label>
+                                            <input
+                                                id="marker-edit-start-{{ segment.id }}"
+                                                type="number"
+                                                name="start_time"
+                                                min="0"
+                                                step="0.1"
+                                                value="{{ segment.start_time|floatformat:3 }}"
+                                            >
+                                        </div>
+
+                                        <div class="practice-field">
+                                            <label for="marker-edit-end-{{ segment.id }}">B 点，秒</label>
+                                            <input
+                                                id="marker-edit-end-{{ segment.id }}"
+                                                type="number"
+                                                name="end_time"
+                                                min="0"
+                                                step="0.1"
+                                                value="{{ segment.end_time|floatformat:3 }}"
+                                            >
+                                        </div>
+
+                                        <input type="hidden" name="start_speed" value="{{ segment.start_speed|floatformat:2 }}">
+                                        <input type="hidden" name="end_speed" value="{{ segment.end_speed|floatformat:2 }}">
+                                        <input type="hidden" name="speed_step" value="{{ segment.speed_step|floatformat:2 }}">
+                                        <input type="hidden" name="repeat_per_step" value="{{ segment.repeat_per_step }}">
+                                        <input type="hidden" name="end_mode" value="{{ segment.end_mode }}">
+                                        <input type="hidden" name="preserve_pitch" value="{% if segment.preserve_pitch %}1{% else %}0{% endif %}">
+
+                                        <button type="submit" class="practice-btn primary">
+                                            保存 A-B
+                                        </button>
+                                    </form>
+                                </details>
+
                             </div>
                         {% endfor %}
                     </div>
+
+                    <p class="practice-marker-hint">
+                        “套用此段”只改变当前播放器里的 A-B 和步进步退设置；“打开”会进入该片段页面并作为当前片段进行更新。
+                    </p>
                 {% else %}
                     <p class="practice-note">
-                        当前曲目还没有保存片段。设置 A-B 和速度后，点击“保存当前片段”即可加入这里。
+                        当前曲目还没有 Marker 区间。设置 A-B 和速度后，点击“保存当前片段”即可加入这里。
                     </p>
                 {% endif %}
             </div>
@@ -954,6 +1406,7 @@
     const audioFileInput = document.getElementById("practice-audio-file");
     const audio = document.getElementById("practice-audio");
     const serverTrackAudioUrl = "{{ track_audio_url|default:''|escapejs }}";
+    let serverTrackObjectUrl = "";
 
     const loopStartInput = document.getElementById("loop-start");
     const loopEndInput = document.getElementById("loop-end");
@@ -988,6 +1441,93 @@
 
     function roundSpeed(value) {
         return Math.round(value * 100) / 100;
+    }
+
+    function loadServerTrackAudio() {
+        if (!serverTrackAudioUrl) {
+            return;
+        }
+
+        fetch(serverTrackAudioUrl, {
+            credentials: "same-origin"
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error("audio fetch failed: " + response.status);
+                }
+
+                return response.blob();
+            })
+            .then(function (blob) {
+                if (serverTrackObjectUrl) {
+                    URL.revokeObjectURL(serverTrackObjectUrl);
+                }
+
+                serverTrackObjectUrl = URL.createObjectURL(blob);
+                audio.src = serverTrackObjectUrl;
+                audio.load();
+
+                console.log("[audio] loaded server track as blob url");
+            })
+            .catch(function (error) {
+                console.warn("[audio] blob load failed, fallback to direct url:", error);
+
+                audio.src = serverTrackAudioUrl;
+                audio.load();
+            });
+    }
+
+    function formatTime(seconds) {
+        const safeSeconds = Math.max(0, Math.floor(toNumber(seconds, 0)));
+        const minutes = Math.floor(safeSeconds / 60);
+        const restSeconds = safeSeconds % 60;
+
+        return String(minutes).padStart(2, "0") + ":" + String(restSeconds).padStart(2, "0");
+    }
+
+    function renderMarkerTimeline() {
+        const ranges = document.querySelectorAll("[data-marker-range='1']");
+        const durationLabel = document.getElementById("marker-timeline-duration");
+        const endLabel = document.getElementById("marker-timeline-end");
+
+        if (!ranges.length) {
+            return;
+        }
+
+        const duration = Number.isFinite(audio.duration) && audio.duration > 0
+            ? audio.duration
+            : 0;
+
+        if (!duration) {
+            if (durationLabel) {
+                durationLabel.textContent = "等待音频时长";
+            }
+
+            if (endLabel) {
+                endLabel.textContent = "--:--";
+            }
+
+            return;
+        }
+
+        if (durationLabel) {
+            durationLabel.textContent = "总时长 " + formatTime(duration);
+        }
+
+        if (endLabel) {
+            endLabel.textContent = formatTime(duration);
+        }
+
+        ranges.forEach(function (range) {
+            const start = Math.max(0, toNumber(range.dataset.start, 0));
+            const end = Math.max(start, toNumber(range.dataset.end, start));
+            const left = Math.min(100, Math.max(0, (start / duration) * 100));
+            const right = Math.min(100, Math.max(0, (end / duration) * 100));
+            const width = Math.max(1.2, right - left);
+
+            range.style.setProperty("--marker-left", left.toFixed(3) + "%");
+            range.style.setProperty("--marker-width", width.toFixed(3) + "%");
+        });
     }
 
     function getLoopStart() {
@@ -1150,6 +1690,66 @@
         }
     }
 
+    function seekAndPlay(start) {
+        const safeStart = Math.max(0, toNumber(start, 0));
+
+        console.log("[seekAndPlay] requested start =", safeStart);
+        console.log("[seekAndPlay] before seek currentTime =", audio.currentTime);
+        console.log("[seekAndPlay] readyState =", audio.readyState);
+        console.log("[seekAndPlay] duration =", audio.duration);
+
+        audio.pause();
+
+        function trySeek(attempt) {
+            try {
+                audio.currentTime = safeStart;
+            } catch (error) {
+                console.warn("[seekAndPlay] currentTime set failed:", error);
+            }
+
+            window.setTimeout(function () {
+                const diff = Math.abs(audio.currentTime - safeStart);
+
+                console.log(
+                    "[seekAndPlay] attempt =",
+                    attempt,
+                    "currentTime =",
+                    audio.currentTime,
+                    "diff =",
+                    diff
+                );
+
+                if (diff <= 0.35) {
+                    safePlay();
+                    return;
+                }
+
+                if (attempt < 8) {
+                    trySeek(attempt + 1);
+                    return;
+                }
+
+                console.warn(
+                    "[seekAndPlay] seek did not reach target. requested =",
+                    safeStart,
+                    "actual =",
+                    audio.currentTime
+                );
+
+                safePlay();
+            }, 120);
+        }
+
+        if (audio.readyState >= 1) {
+            trySeek(1);
+            return;
+        }
+
+        audio.addEventListener("loadedmetadata", function () {
+            trySeek(1);
+        }, { once: true });
+    }
+
     function handleLoopBoundary() {
         const start = getLoopStart();
         const end = getLoopEnd();
@@ -1170,8 +1770,7 @@
             return;
         }
 
-        audio.currentTime = start;
-        safePlay();
+        seekAndPlay(start);
     }
 
     function playLoop() {
@@ -1189,15 +1788,75 @@
         }
 
         state.loopEnabled = true;
-        audio.currentTime = start;
-        safePlay();
+        seekAndPlay(start);
     }
+
+    function applyMarkerSegment(button) {
+        const start = toNumber(button.dataset.start, 0);
+        const end = toNumber(button.dataset.end, 0);
+
+        if (end <= start) {
+            alert("这个 Marker 区间无效：B 点必须大于 A 点。");
+            return;
+        }
+
+        loopStartInput.value = start.toFixed(3);
+        loopEndInput.value = end.toFixed(3);
+
+        startSpeedInput.value = toNumber(button.dataset.startSpeed, 0.70).toFixed(2);
+        endSpeedInput.value = toNumber(button.dataset.endSpeed, 1.00).toFixed(2);
+        speedStepInput.value = toNumber(button.dataset.speedStep, 0.05).toFixed(2);
+        repeatPerStepInput.value = Math.max(1, parseInt(button.dataset.repeat, 10) || 3);
+
+        if (button.dataset.endMode) {
+            endModeInput.value = button.dataset.endMode;
+        }
+
+        preservePitchInput.value = button.dataset.preservePitch === "false" ? "false" : "true";
+
+        const titleInput = document.getElementById("save-segment-title");
+
+        if (titleInput && button.dataset.title) {
+            titleInput.value = button.dataset.title;
+        }
+
+        state.progressiveEnabled = false;
+        state.loopEnabled = false;
+        state.stepIndex = 0;
+        state.repeatCount = 0;
+        state.repeatPerStep = Math.max(1, parseInt(repeatPerStepInput.value, 10) || 1);
+
+        applySpeed(toNumber(startSpeedInput.value, 1));
+        renderPlan();
+        updateStatus();
+
+        if (audio.src) {
+            audio.currentTime = start;
+        }
+    }
+
+    document.querySelectorAll(".practice-marker-apply-btn").forEach(function (button) {
+        button.addEventListener("click", function () {
+            applyMarkerSegment(button);
+        });
+    });
+
+    document.querySelectorAll("[data-marker-range='1']").forEach(function (range) {
+        range.addEventListener("click", function () {
+            applyMarkerSegment(range);
+        });
+    });
 
     audioFileInput.addEventListener("change", function () {
         const file = audioFileInput.files && audioFileInput.files[0];
 
         if (!file) {
             return;
+        }
+
+        if (serverTrackObjectUrl) {
+            URL.revokeObjectURL(serverTrackObjectUrl);
+            serverTrackObjectUrl = "";
         }
 
         const url = URL.createObjectURL(file);
@@ -1217,6 +1876,8 @@
         if (!loopEndInput.value || Number(loopEndInput.value) <= 0) {
             loopEndInput.value = audio.duration ? audio.duration.toFixed(1) : "0";
         }
+
+        renderMarkerTimeline();
     });
 
     audio.addEventListener("timeupdate", function () {
@@ -1286,7 +1947,7 @@
         playLoop();
     });
 
-    
+
     const saveSegmentForm = document.getElementById("save-segment-form");
 
     if (saveSegmentForm) {
@@ -1311,12 +1972,40 @@
         });
     }
 
+    const markerCreateSegmentForm = document.getElementById("marker-create-segment-form");
+
+    if (markerCreateSegmentForm) {
+        markerCreateSegmentForm.addEventListener("submit", function (event) {
+            const markerStartInput = document.getElementById("marker-create-start");
+            const markerEndInput = document.getElementById("marker-create-end");
+
+            const start = Math.max(0, toNumber(markerStartInput.value, 0));
+            const end = Math.max(0, toNumber(markerEndInput.value, 0));
+
+            if (end <= start) {
+                event.preventDefault();
+                alert("新增失败：B 点必须大于 A 点。");
+                return;
+            }
+
+            markerStartInput.value = start.toFixed(3);
+            markerEndInput.value = end.toFixed(3);
+
+            document.getElementById("marker-create-start-speed").value = toNumber(startSpeedInput.value, 0.70);
+            document.getElementById("marker-create-end-speed").value = toNumber(endSpeedInput.value, 1.00);
+            document.getElementById("marker-create-speed-step").value = toNumber(speedStepInput.value, 0.05);
+            document.getElementById("marker-create-repeat-per-step").value = Math.max(1, parseInt(repeatPerStepInput.value, 10) || 3);
+            document.getElementById("marker-create-end-mode").value = endModeInput.value;
+            document.getElementById("marker-create-preserve-pitch").value = preservePitchInput.value === "true" ? "1" : "0";
+        });
+    }
+
     if (serverTrackAudioUrl) {
-        audio.src = serverTrackAudioUrl;
-        audio.load();
+        loadServerTrackAudio();
     }
 
     renderPlan();
+    renderMarkerTimeline();
 
     if (serverTrackAudioUrl) {
         applySpeed(toNumber(startSpeedInput.value, 1));

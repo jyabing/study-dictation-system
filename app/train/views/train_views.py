@@ -6907,6 +6907,11 @@ def practice_segment_update(request, segment_id):
     display_title = segment.title or f"{segment.start_time:.1f}s - {segment.end_time:.1f}s"
     messages.success(request, f"已更新片段：{display_title}。")
 
+    next_target = (request.POST.get("next") or "").strip()
+
+    if next_target == "player":
+        return redirect("practice-player-segment", segment_id=segment.id)
+
     return redirect("practice-library")
 
 

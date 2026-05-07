@@ -763,10 +763,33 @@
         font-size: 24px;
     }
 
-    .practice-loop-strip,
-    .practice-status-panel,
     .practice-form-grid {
         grid-template-columns: 1fr;
+    }
+
+    .practice-loop-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .practice-status-panel {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .practice-stat {
+        border-radius: 16px;
+        padding: 12px 8px;
+    }
+
+    .practice-stat-label {
+        font-size: 11px;
+        margin-bottom: 5px;
+    }
+
+    .practice-stat-value {
+        font-size: 22px;
+        letter-spacing: -0.04em;
     }
 
     .practice-button-grid,
@@ -897,26 +920,28 @@
                         <audio id="practice-audio" class="practice-audio" controls preload="metadata"></audio>
                     </div>
 
-                    <div class="practice-field">
-                        <label for="loop-start">A 点，秒</label>
-                        <input
-                            id="loop-start"
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value="{% if selected_segment %}{{ selected_segment.start_time|floatformat:3 }}{% else %}0{% endif %}"
-                        >
-                    </div>
+                    <div class="practice-loop-strip">
+                        <div class="practice-field">
+                            <label for="loop-start">A 点，秒</label>
+                            <input
+                                id="loop-start"
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                value="{% if selected_segment %}{{ selected_segment.start_time|floatformat:3 }}{% else %}0{% endif %}"
+                            >
+                        </div>
 
-                    <div class="practice-field">
-                        <label for="loop-end">B 点，秒</label>
-                        <input
-                            id="loop-end"
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value="{% if selected_segment %}{{ selected_segment.end_time|floatformat:3 }}{% else %}0{% endif %}"
-                        >
+                        <div class="practice-field">
+                            <label for="loop-end">B 点，秒</label>
+                            <input
+                                id="loop-end"
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                value="{% if selected_segment %}{{ selected_segment.end_time|floatformat:3 }}{% else %}0{% endif %}"
+                            >
+                        </div>
                     </div>
                 </div>
 
@@ -1467,7 +1492,6 @@
                 audio.src = serverTrackObjectUrl;
                 audio.load();
 
-                console.log("[audio] loaded server track as blob url");
             })
             .catch(function (error) {
                 console.warn("[audio] blob load failed, fallback to direct url:", error);
@@ -1693,11 +1717,6 @@
     function seekAndPlay(start) {
         const safeStart = Math.max(0, toNumber(start, 0));
 
-        console.log("[seekAndPlay] requested start =", safeStart);
-        console.log("[seekAndPlay] before seek currentTime =", audio.currentTime);
-        console.log("[seekAndPlay] readyState =", audio.readyState);
-        console.log("[seekAndPlay] duration =", audio.duration);
-
         audio.pause();
 
         function trySeek(attempt) {
@@ -1709,15 +1728,6 @@
 
             window.setTimeout(function () {
                 const diff = Math.abs(audio.currentTime - safeStart);
-
-                console.log(
-                    "[seekAndPlay] attempt =",
-                    attempt,
-                    "currentTime =",
-                    audio.currentTime,
-                    "diff =",
-                    diff
-                );
 
                 if (diff <= 0.35) {
                     safePlay();

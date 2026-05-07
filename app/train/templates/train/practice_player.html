@@ -828,6 +828,15 @@
         grid-template-columns: 1fr 1fr;
     }
 
+    .practice-shell-has-track .practice-deck > .practice-loop-strip {
+        display: none;
+    }
+
+    .practice-shell-has-track #set-a-btn,
+    .practice-shell-has-track #set-b-btn {
+        display: none;
+    }
+
     .practice-segment-row {
         grid-template-columns: 1fr;
     }
@@ -850,12 +859,24 @@
     }
 
     .practice-marker-create-form {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .practice-marker-create-form .practice-field:first-child,
+    .practice-marker-create-form .practice-btn {
+        grid-column: 1 / -1;
     }
 
     .practice-marker-create-form .practice-btn {
         width: 100%;
         justify-content: center;
+    }
+
+    .practice-mini-btn {
+        width: 100%;
+        padding: 0 8px;
+        font-size: 11px;
     }
 
     .practice-marker-edit-form {
@@ -888,7 +909,7 @@
 {% endblock %}
 
 {% block content %}
-<main class="practice-shell">
+<main class="practice-shell {% if selected_track %}practice-shell-has-track{% endif %}">
     <section class="practice-player-stage">
         <div class="practice-player-content">
             <div class="practice-title-row">
@@ -1209,7 +1230,7 @@
                                 value="0"
                             >
                             <button type="button" class="practice-mini-btn" id="marker-set-a-btn">
-                                当前播放位置设为 A
+                                设为 A
                             </button>
                         </div>
 
@@ -1224,7 +1245,7 @@
                                 value="0"
                             >
                             <button type="button" class="practice-mini-btn" id="marker-set-b-btn">
-                                当前播放位置设为 B
+                                设为 B
                             </button>
                         </div>
 

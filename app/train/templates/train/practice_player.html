@@ -175,6 +175,57 @@
     width: 100%;
 }
 
+.practice-precise-control {
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    background: rgba(110, 168, 255, 0.07);
+    border-radius: 18px;
+    padding: 12px;
+}
+
+.practice-precise-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.practice-precise-title {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.practice-precise-time {
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+}
+
+.practice-precise-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.practice-precise-btn {
+    border: 1px solid rgba(110, 168, 255, 0.28);
+    border-radius: 999px;
+    background: var(--soft);
+    color: var(--text);
+    min-height: 34px;
+    padding: 0 8px;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.practice-precise-btn.primary {
+    background: rgba(110, 168, 255, 0.16);
+    color: var(--primary);
+}
+
 .practice-loop-strip {
     margin-top: 14px;
     display: grid;
@@ -828,6 +879,15 @@
         grid-template-columns: 1fr 1fr;
     }
 
+    .practice-precise-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .practice-precise-btn {
+        min-height: 38px;
+        font-size: 12px;
+    }
+
     .practice-shell-has-track .practice-deck > .practice-loop-strip {
         display: none;
     }
@@ -970,6 +1030,22 @@
                         </div>
 
                         <audio id="practice-audio" class="practice-audio" controls preload="metadata"></audio>
+
+                        <div class="practice-precise-control">
+                            <div class="practice-precise-head">
+                                <div class="practice-precise-title">精确定位</div>
+                                <div class="practice-precise-time" id="precise-current-time">00:00.000</div>
+                            </div>
+
+                            <div class="practice-precise-grid">
+                                <button type="button" class="practice-precise-btn" data-seek-delta="-5">-5s</button>
+                                <button type="button" class="practice-precise-btn" data-seek-delta="-1">-1s</button>
+                                <button type="button" class="practice-precise-btn" data-seek-delta="-0.1">-0.1s</button>
+                                <button type="button" class="practice-precise-btn" data-seek-delta="0.1">+0.1s</button>
+                                <button type="button" class="practice-precise-btn" data-seek-delta="1">+1s</button>
+                                <button type="button" class="practice-precise-btn" data-seek-delta="5">+5s</button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="practice-loop-strip">
@@ -1504,6 +1580,7 @@
     const currentSpeedEl = document.getElementById("current-speed");
     const currentStepEl = document.getElementById("current-step");
     const currentRepeatEl = document.getElementById("current-repeat");
+    const preciseCurrentTimeEl = document.getElementById("precise-current-time");
 
     const planTableBody = document.getElementById("plan-table-body");
     const planMobileCards = document.getElementById("plan-mobile-cards");
@@ -1565,6 +1642,46 @@
         const restSeconds = safeSeconds % 60;
 
         return String(minutes).padStart(2, "0") + ":" + String(restSeconds).padStart(2, "0");
+    }
+
+    function formatPreciseTime(seconds) {
+        const safeSeconds = Math.max(0, toNumber(seconds, 0));
+        const minutes = Math.floor(safeSeconds / 60);
+        const rest = safeSeconds - minutes * 60;
+
+        return String(minutes).padStart(2, "0") + ":" + rest.toFixed(3).padStart(6, "0");
+    }
+
+    function updatePreciseTime() {
+        if (!preciseCurrentTimeEl) {
+            return;
+        }
+
+        preciseCurrentTimeEl.textContent = formatPreciseTime(audio.currentTime || 0);
+    }
+
+    function seekByDelta(delta) {
+        if (!audio.src) {
+            alert("请先载入音频。");
+            return;
+        }
+
+        const duration = Number.isFinite(audio.duration) && audio.duration > 0
+            ? audio.duration
+            : Number.MAX_SAFE_INTEGER;
+
+        const nextTime = Math.min(
+            duration,
+            Math.max(0, (audio.currentTime || 0) + delta)
+        );
+
+        try {
+            audio.currentTime = nextTime;
+        } catch (error) {
+            console.warn("audio precise seek failed:", error);
+        }
+
+        updatePreciseTime();
     }
 
     function renderMarkerTimeline() {
@@ -1949,6 +2066,8 @@
     });
 
     audio.addEventListener("timeupdate", function () {
+        updatePreciseTime();
+
         if (!state.loopEnabled) {
             return;
         }
@@ -1967,6 +2086,12 @@
         }
 
         handleLoopBoundary();
+    });
+
+    document.querySelectorAll("[data-seek-delta]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            seekByDelta(toNumber(button.dataset.seekDelta, 0));
+        });
     });
 
     document.getElementById("set-a-btn").addEventListener("click", function () {
@@ -2106,6 +2231,7 @@
         applySpeed(1);
     }
 
+    updatePreciseTime();
     updateStatus();
 })();
 </script>

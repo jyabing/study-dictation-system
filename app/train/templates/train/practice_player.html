@@ -296,6 +296,20 @@
     gap: 10px;
 }
 
+.practice-tempo-actions {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    gap: 10px;
+}
+
+.practice-tempo-actions-note {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.65;
+}
+
 .practice-btn {
     border: 1px solid var(--border);
     border-radius: 16px;
@@ -888,7 +902,8 @@
     }
 
     .practice-button-grid,
-    .practice-auto-grid {
+    .practice-auto-grid,
+    .practice-tempo-actions {
         grid-template-columns: 1fr 1fr;
     }
 
@@ -1128,17 +1143,6 @@
                         <button class="practice-btn danger" type="button" id="stop-btn">停止</button>
                     </div>
                 </div>
-
-                <div>
-                    <h2 class="practice-section-title">自动练习</h2>
-                    <div class="practice-auto-grid">
-                        <button class="practice-btn primary strong" type="button" id="start-progressive-btn">开始自动练习</button>
-                        <button class="practice-btn" type="button" id="preview-plan-btn">预览速度计划</button>
-                    </div>
-                    <p class="practice-note">
-                        自动练习会读取下方设置。练习中也可以随时修改速度、步长、重复次数和结束方式。
-                    </p>
-                </div>
             </div>
         </div>
     </section>
@@ -1223,6 +1227,19 @@
                     </select>
                 </div>
             </div>
+
+            <div class="practice-tempo-actions">
+                <button class="practice-btn primary strong" type="button" id="start-progressive-btn">
+                    开始自动练习
+                </button>
+                <button class="practice-btn" type="button" id="preview-plan-btn">
+                    刷新速度计划
+                </button>
+            </div>
+
+            <p class="practice-tempo-actions-note">
+                自动练习会读取本区域设置。修改速度、步长、重复次数或结束方式后，速度计划会自动刷新。
+            </p>
         </div>
     </section>
 
@@ -2183,6 +2200,29 @@
         state.repeatPerStep = Math.max(1, parseInt(repeatPerStepInput.value, 10) || 1);
         renderPlan();
         updateStatus();
+    });
+
+    function refreshTempoPlanFromSettings() {
+        state.repeatPerStep = Math.max(1, parseInt(repeatPerStepInput.value, 10) || 1);
+
+        if (state.stepIndex >= buildPlan().length) {
+            state.stepIndex = 0;
+            state.repeatCount = 0;
+        }
+
+        updateStatus();
+    }
+
+    [
+        startSpeedInput,
+        endSpeedInput,
+        speedStepInput,
+        repeatPerStepInput,
+        endModeInput,
+        preservePitchInput
+    ].forEach(function (input) {
+        input.addEventListener("input", refreshTempoPlanFromSettings);
+        input.addEventListener("change", refreshTempoPlanFromSettings);
     });
 
     document.getElementById("start-progressive-btn").addEventListener("click", function () {

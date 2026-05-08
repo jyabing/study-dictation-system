@@ -233,6 +233,113 @@
     color: var(--primary);
 }
 
+.practice-player-tabs {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.045);
+    border-radius: 999px;
+    padding: 5px;
+}
+
+.practice-player-tab {
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    min-height: 38px;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.practice-player-tab.is-active {
+    background: var(--card);
+    color: var(--text);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
+}
+
+.practice-player-tab-panel {
+    display: none;
+}
+
+.practice-player-tab-panel.is-active {
+    display: block;
+}
+
+.practice-quick-marker-panel {
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    background: rgba(110, 168, 255, 0.07);
+    border-radius: 18px;
+    padding: 12px;
+}
+
+.practice-quick-marker-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.practice-quick-marker-track {
+    position: relative;
+    height: 50px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background:
+        linear-gradient(90deg, rgba(110, 168, 255, 0.18), rgba(34, 211, 238, 0.12)),
+        var(--soft);
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.practice-quick-marker-list {
+    display: grid;
+    gap: 8px;
+}
+
+.practice-quick-marker-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    border: 1px solid var(--border);
+    background: var(--soft);
+    border-radius: 16px;
+    padding: 10px;
+}
+
+.practice-quick-marker-card.is-active {
+    border-color: var(--primary);
+    background: rgba(110, 168, 255, 0.12);
+}
+
+.practice-quick-marker-title {
+    font-size: 13px;
+    font-weight: 900;
+    margin-bottom: 4px;
+}
+
+.practice-quick-marker-meta {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.practice-quick-marker-actions {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .practice-loop-strip {
     margin-top: 14px;
     display: grid;
@@ -942,6 +1049,14 @@
         grid-template-columns: 1fr;
     }
 
+    .practice-quick-marker-card {
+        grid-template-columns: 1fr;
+    }
+
+    .practice-quick-marker-actions {
+        justify-content: flex-start;
+    }
+
     .practice-marker-actions {
         justify-content: flex-start;
     }
@@ -1063,6 +1178,19 @@
 
                         <audio id="practice-audio" class="practice-audio" controls preload="metadata"></audio>
 
+                                                {% if selected_track %}
+                            <div class="practice-player-tabs">
+                                <button type="button" class="practice-player-tab is-active" data-player-tab="ab">
+                                    AB Loop
+                                </button>
+                                <button type="button" class="practice-player-tab" data-player-tab="marker">
+                                    Marker 再生
+                                </button>
+                            </div>
+
+                            <div class="practice-player-tab-panel is-active" data-player-panel="ab">
+                        {% endif %}
+
                         <div class="practice-precise-control">
                             <div class="practice-precise-head">
                                 <div class="practice-precise-title">精确定位</div>
@@ -1086,8 +1214,100 @@
                                     当前时间设为 B
                                 </button>
                             </div>
-
                         </div>
+
+                        {% if selected_track %}
+                            </div>
+
+                            <div class="practice-player-tab-panel" data-player-panel="marker">
+                                <div class="practice-quick-marker-panel">
+                                    <div class="practice-quick-marker-head">
+                                        <span>快速 Marker</span>
+                                        <span>区间 {{ track_segments|length }}</span>
+                                    </div>
+
+                                    {% if track_segments %}
+                                        <div class="practice-quick-marker-track">
+                                            {% for segment in track_segments %}
+                                                <button
+                                                    type="button"
+                                                    class="practice-marker-range {% if selected_segment and selected_segment.id == segment.id %}is-active{% endif %}"
+                                                    data-marker-range="1"
+                                                    data-start="{{ segment.start_time|floatformat:3 }}"
+                                                    data-end="{{ segment.end_time|floatformat:3 }}"
+                                                    data-start-speed="{{ segment.start_speed|floatformat:2 }}"
+                                                    data-end-speed="{{ segment.end_speed|floatformat:2 }}"
+                                                    data-speed-step="{{ segment.speed_step|floatformat:2 }}"
+                                                    data-repeat="{{ segment.repeat_per_step }}"
+                                                    data-end-mode="{{ segment.end_mode }}"
+                                                    data-preserve-pitch="{% if segment.preserve_pitch %}true{% else %}false{% endif %}"
+                                                    data-title="{% if segment.title %}{{ segment.title }}{% else %}Marker {{ forloop.counter }}{% endif %}"
+                                                    title="{% if segment.title %}{{ segment.title }}{% else %}Marker {{ forloop.counter }}{% endif %}: {{ segment.start_time|floatformat:1 }}s → {{ segment.end_time|floatformat:1 }}s"
+                                                >
+                                                    <span class="practice-marker-range-label">
+                                                        {% if segment.title %}
+                                                            {{ segment.title }}
+                                                        {% else %}
+                                                            {{ segment.start_time|floatformat:1 }}s → {{ segment.end_time|floatformat:1 }}s
+                                                        {% endif %}
+                                                    </span>
+                                                </button>
+                                            {% endfor %}
+                                        </div>
+
+                                        <div class="practice-quick-marker-list">
+                                            {% for segment in track_segments %}
+                                                <div class="practice-quick-marker-card {% if selected_segment and selected_segment.id == segment.id %}is-active{% endif %}">
+                                                    <div>
+                                                        <div class="practice-quick-marker-title">
+                                                            {% if segment.title %}
+                                                                {{ segment.title }}
+                                                            {% else %}
+                                                                Marker {{ forloop.counter }}
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="practice-quick-marker-meta">
+                                                            {{ segment.start_time|floatformat:1 }}s → {{ segment.end_time|floatformat:1 }}s /
+                                                            {{ segment.start_speed|floatformat:2 }}x → {{ segment.end_speed|floatformat:2 }}x
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="practice-quick-marker-actions">
+                                                        <button
+                                                            type="button"
+                                                            class="practice-marker-apply-btn"
+                                                            data-start="{{ segment.start_time|floatformat:3 }}"
+                                                            data-end="{{ segment.end_time|floatformat:3 }}"
+                                                            data-start-speed="{{ segment.start_speed|floatformat:2 }}"
+                                                            data-end-speed="{{ segment.end_speed|floatformat:2 }}"
+                                                            data-speed-step="{{ segment.speed_step|floatformat:2 }}"
+                                                            data-repeat="{{ segment.repeat_per_step }}"
+                                                            data-end-mode="{{ segment.end_mode }}"
+                                                            data-preserve-pitch="{% if segment.preserve_pitch %}true{% else %}false{% endif %}"
+                                                            data-title="{% if segment.title %}{{ segment.title }}{% endif %}"
+                                                        >
+                                                            套用
+                                                        </button>
+
+                                                        <a href="{% url 'practice-player-segment' segment.id %}" class="practice-segment-action">
+                                                            {% if selected_segment and selected_segment.id == segment.id %}
+                                                                当前
+                                                            {% else %}
+                                                                打开
+                                                            {% endif %}
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="practice-note">
+                                            当前曲目还没有 Marker 区间。可以先用 AB Loop 设定 A/B，再到下方保存为 Marker。
+                                        </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
                     </div>
 
                     <div class="practice-loop-strip">
@@ -2108,6 +2328,20 @@
     document.querySelectorAll("[data-marker-range='1']").forEach(function (range) {
         range.addEventListener("click", function () {
             applyMarkerSegment(range);
+        });
+    });
+
+    document.querySelectorAll("[data-player-tab]").forEach(function (tab) {
+        tab.addEventListener("click", function () {
+            const target = tab.dataset.playerTab;
+
+            document.querySelectorAll("[data-player-tab]").forEach(function (item) {
+                item.classList.toggle("is-active", item === tab);
+            });
+
+            document.querySelectorAll("[data-player-panel]").forEach(function (panel) {
+                panel.classList.toggle("is-active", panel.dataset.playerPanel === target);
+            });
         });
     });
 

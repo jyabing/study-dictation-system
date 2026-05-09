@@ -419,6 +419,25 @@
     letter-spacing: -0.03em;
 }
 
+.practice-status-panel-compact {
+    margin-bottom: 14px;
+}
+
+.practice-status-panel-compact .practice-stat {
+    padding: 12px;
+    border-radius: 16px;
+}
+
+.practice-status-panel-compact .practice-stat-label {
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+
+.practice-status-panel-compact .practice-stat-value {
+    font-size: 20px;
+    line-height: 1.15;
+}
+
 .practice-main-controls {
     margin-top: 18px;
     display: grid;
@@ -1063,6 +1082,14 @@
         letter-spacing: -0.04em;
     }
 
+    .practice-status-panel-compact .practice-stat-value {
+        font-size: 18px;
+    }
+
+    .practice-status-panel-compact .practice-stat {
+        padding: 10px 7px;
+    }
+
     .practice-button-grid,
     .practice-auto-grid,
     .practice-tempo-actions,
@@ -1586,7 +1613,7 @@
                     <div class="practice-mode-pill">高级设置</div>
                 </div>
 
-            <div class="practice-status-panel">
+            <div class="practice-status-panel practice-status-panel-compact">
                 <div class="practice-stat main">
                     <div class="practice-stat-label">当前速度</div>
                     <div class="practice-stat-value" id="current-speed">1.00x</div>

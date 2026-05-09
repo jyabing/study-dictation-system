@@ -269,6 +269,14 @@
     display: block;
 }
 
+.practice-ab-panel-actions {
+    margin-top: 12px;
+}
+
+.practice-ab-panel-actions .practice-section-title {
+    margin-bottom: 10px;
+}
+
 .practice-quick-marker-panel {
     margin-top: 12px;
     border: 1px solid var(--border);
@@ -340,6 +348,39 @@
     justify-content: flex-end;
 }
 
+.practice-quick-marker-create {
+    margin: 10px 0 12px;
+    border: 1px solid rgba(110, 168, 255, 0.22);
+    border-radius: 18px;
+    background: rgba(110, 168, 255, 0.06);
+    overflow: hidden;
+}
+
+.practice-quick-marker-create summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 12px;
+}
+
+.practice-quick-marker-create summary::-webkit-details-marker {
+    display: none;
+}
+
+.practice-quick-marker-create-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.practice-quick-marker-create-body {
+    border-top: 1px solid var(--border);
+    padding: 12px;
+}
+
 .practice-loop-strip {
     margin-top: 14px;
     display: grid;
@@ -394,6 +435,12 @@
 .practice-button-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.practice-ab-play-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
 }
 
@@ -851,6 +898,14 @@
     padding: 18px 22px;
 }
 
+.practice-plan-details summary:hover {
+    background: rgba(110, 168, 255, 0.06);
+}
+
+.practice-plan-details[open] summary {
+    border-bottom: 1px solid var(--border);
+}
+
 .practice-plan-details summary::-webkit-details-marker {
     display: none;
 }
@@ -1010,7 +1065,8 @@
 
     .practice-button-grid,
     .practice-auto-grid,
-    .practice-tempo-actions {
+    .practice-tempo-actions,
+    .practice-ab-play-grid {
         grid-template-columns: 1fr 1fr;
     }
 
@@ -1033,11 +1089,6 @@
     }
 
     .practice-shell-has-track .practice-deck > .practice-loop-strip {
-        display: none;
-    }
-
-    .practice-shell-has-track #set-a-btn,
-    .practice-shell-has-track #set-b-btn {
         display: none;
     }
 
@@ -1178,7 +1229,7 @@
 
                         <audio id="practice-audio" class="practice-audio" controls preload="metadata"></audio>
 
-                                                {% if selected_track %}
+                        {% if selected_track %}
                             <div class="practice-player-tabs">
                                 <button type="button" class="practice-player-tab is-active" data-player-tab="ab">
                                     AB Loop
@@ -1194,6 +1245,22 @@
                         <div class="practice-precise-control">
                             <div class="practice-precise-head">
                                 <div class="practice-precise-title">精确定位</div>
+                                <div class="practice-title-actions">
+                                    {% if selected_segment %}
+                                        <div class="practice-mode-pill">
+                                            当前片段：
+                                            {% if selected_segment.title %}
+                                                {{ selected_segment.title }}
+                                            {% else %}
+                                                {{ selected_segment.start_time|floatformat:1 }}s - {{ selected_segment.end_time|floatformat:1 }}s
+                                            {% endif %}
+                                        </div>
+                                    {% elif selected_track %}
+                                        <div class="practice-mode-pill">当前曲目：{{ selected_track.title }}</div>
+                                    {% else %}
+                                        <div class="practice-mode-pill">独立练习，不绑定 SRS</div>
+                                    {% endif %}
+                                </div>
                                 <div class="practice-precise-time" id="precise-current-time">00:00.000</div>
                             </div>
 
@@ -1214,6 +1281,36 @@
                                     当前时间设为 B
                                 </button>
                             </div>
+
+                            <div class="practice-field">
+                                <label for="loop-start">A 点，秒</label>
+                                <input
+                                    id="loop-start"
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    value="{% if selected_segment %}{{ selected_segment.start_time|floatformat:3 }}{% else %}0{% endif %}"
+                                >
+                            </div>
+
+                            <div class="practice-field">
+                                <label for="loop-end">B 点，秒</label>
+                                <input
+                                    id="loop-end"
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    value="{% if selected_segment %}{{ selected_segment.end_time|floatformat:3 }}{% else %}0{% endif %}"
+                                >
+                            </div>
+                        </div>
+
+                        <div class="practice-ab-panel-actions">
+                            <h2 class="practice-section-title">A-B 设置</h2>
+                            <div class="practice-ab-play-grid">
+                                <button class="practice-btn primary" type="button" id="play-loop-btn">播放 A-B</button>
+                                <button class="practice-btn danger" type="button" id="stop-btn">停止</button>
+                            </div>
                         </div>
 
                         {% if selected_track %}
@@ -1226,157 +1323,284 @@
                                         <span>区间 {{ track_segments|length }}</span>
                                     </div>
 
-                                    {% if track_segments %}
-                                        <div class="practice-quick-marker-track">
-                                            {% for segment in track_segments %}
-                                                <button
-                                                    type="button"
-                                                    class="practice-marker-range {% if selected_segment and selected_segment.id == segment.id %}is-active{% endif %}"
-                                                    data-marker-range="1"
-                                                    data-start="{{ segment.start_time|floatformat:3 }}"
-                                                    data-end="{{ segment.end_time|floatformat:3 }}"
-                                                    data-start-speed="{{ segment.start_speed|floatformat:2 }}"
-                                                    data-end-speed="{{ segment.end_speed|floatformat:2 }}"
-                                                    data-speed-step="{{ segment.speed_step|floatformat:2 }}"
-                                                    data-repeat="{{ segment.repeat_per_step }}"
-                                                    data-end-mode="{{ segment.end_mode }}"
-                                                    data-preserve-pitch="{% if segment.preserve_pitch %}true{% else %}false{% endif %}"
-                                                    data-title="{% if segment.title %}{{ segment.title }}{% else %}Marker {{ forloop.counter }}{% endif %}"
-                                                    title="{% if segment.title %}{{ segment.title }}{% else %}Marker {{ forloop.counter }}{% endif %}: {{ segment.start_time|floatformat:1 }}s → {{ segment.end_time|floatformat:1 }}s"
-                                                >
-                                                    <span class="practice-marker-range-label">
-                                                        {% if segment.title %}
-                                                            {{ segment.title }}
-                                                        {% else %}
-                                                            {{ segment.start_time|floatformat:1 }}s → {{ segment.end_time|floatformat:1 }}s
-                                                        {% endif %}
-                                                    </span>
-                                                </button>
-                                            {% endfor %}
-                                        </div>
+                                        <details class="practice-quick-marker-create">
+                                            <summary>
+                                                <div class="practice-quick-marker-create-head">
+                                                    <span>＋ 新增 Marker 区间</span>
+                                                    <span>使用当前步进步退设置</span>
+                                                </div>
+                                            </summary>
 
-                                        <div class="practice-quick-marker-list">
-                                            {% for segment in track_segments %}
-                                                <div class="practice-quick-marker-card {% if selected_segment and selected_segment.id == segment.id %}is-active{% endif %}">
-                                                    <div>
-                                                        <div class="practice-quick-marker-title">
+                                            <div class="practice-quick-marker-create-body">
+                                                <form
+                                                    method="post"
+                                                    action="{% url 'practice-segment-save' selected_track.id %}"
+                                                    id="marker-create-segment-form"
+                                                    class="practice-marker-create-form"
+                                                >
+                                                    {% csrf_token %}
+
+                                                    <div class="practice-field">
+                                                        <label for="marker-create-title">片段名称</label>
+                                                        <input
+                                                            id="marker-create-title"
+                                                            type="text"
+                                                            name="title"
+                                                            maxlength="200"
+                                                            placeholder="例如：前奏 / 第一句 / 副歌"
+                                                        >
+                                                    </div>
+
+                                                    <div class="practice-marker-ab-grid">
+                                                        <div class="practice-field">
+                                                            <label for="marker-create-start">A 点，秒</label>
+                                                            <input
+                                                                id="marker-create-start"
+                                                                type="number"
+                                                                name="start_time"
+                                                                min="0"
+                                                                step="0.1"
+                                                                value="0"
+                                                            >
+                                                            <button type="button" class="practice-mini-btn" id="marker-set-a-btn">
+                                                                设为 A
+                                                            </button>
+                                                        </div>
+
+                                                        <div class="practice-field">
+                                                            <label for="marker-create-end">B 点，秒</label>
+                                                            <input
+                                                                id="marker-create-end"
+                                                                type="number"
+                                                                name="end_time"
+                                                                min="0"
+                                                                step="0.1"
+                                                                value="0"
+                                                            >
+                                                            <button type="button" class="practice-mini-btn" id="marker-set-b-btn">
+                                                                设为 B
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <input type="hidden" name="start_speed" id="marker-create-start-speed">
+                                                    <input type="hidden" name="end_speed" id="marker-create-end-speed">
+                                                    <input type="hidden" name="speed_step" id="marker-create-speed-step">
+                                                    <input type="hidden" name="repeat_per_step" id="marker-create-repeat-per-step">
+                                                    <input type="hidden" name="end_mode" id="marker-create-end-mode">
+                                                    <input type="hidden" name="preserve_pitch" id="marker-create-preserve-pitch">
+
+                                                    <button type="submit" class="practice-btn primary strong">
+                                                        新增 Marker 区间
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </details>
+
+                                        {% if track_segments %}
+                                            <div class="practice-quick-marker-track">
+                                                {% for segment in track_segments %}
+                                                    <button
+                                                        type="button"
+                                                        class="practice-marker-range {% if selected_segment and selected_segment.id == segment.id %}is-active{% endif %}"
+                                                        data-marker-range="1"
+                                                        data-start="{{ segment.start_time|floatformat:3 }}"
+                                                        data-end="{{ segment.end_time|floatformat:3 }}"
+                                                        data-start-speed="{{ segment.start_speed|floatformat:2 }}"
+                                                        data-end-speed="{{ segment.end_speed|floatformat:2 }}"
+                                                        data-speed-step="{{ segment.speed_step|floatformat:2 }}"
+                                                        data-repeat="{{ segment.repeat_per_step }}"
+                                                        data-end-mode="{{ segment.end_mode }}"
+                                                        data-preserve-pitch="{% if segment.preserve_pitch %}true{% else %}false{% endif %}"
+                                                        data-title="{% if segment.title %}{{ segment.title }}{% else %}Marker {{ forloop.counter }}{% endif %}"
+                                                        title="{% if segment.title %}{{ segment.title }}{% else %}Marker {{ forloop.counter }}{% endif %}: {{ segment.start_time|floatformat:1 }}s → {{ segment.end_time|floatformat:1 }}s"
+                                                    >
+                                                        <span class="practice-marker-range-label">
                                                             {% if segment.title %}
                                                                 {{ segment.title }}
                                                             {% else %}
-                                                                Marker {{ forloop.counter }}
+                                                                {{ segment.start_time|floatformat:1 }}s → {{ segment.end_time|floatformat:1 }}s
                                                             {% endif %}
-                                                        </div>
-                                                        <div class="practice-quick-marker-meta">
-                                                            {{ segment.start_time|floatformat:1 }}s → {{ segment.end_time|floatformat:1 }}s /
-                                                            {{ segment.start_speed|floatformat:2 }}x → {{ segment.end_speed|floatformat:2 }}x
-                                                        </div>
-                                                    </div>
+                                                        </span>
+                                                    </button>
+                                                {% endfor %}
+                                            </div>
 
-                                                    <div class="practice-quick-marker-actions">
-                                                        <button
-                                                            type="button"
-                                                            class="practice-marker-apply-btn"
-                                                            data-start="{{ segment.start_time|floatformat:3 }}"
-                                                            data-end="{{ segment.end_time|floatformat:3 }}"
-                                                            data-start-speed="{{ segment.start_speed|floatformat:2 }}"
-                                                            data-end-speed="{{ segment.end_speed|floatformat:2 }}"
-                                                            data-speed-step="{{ segment.speed_step|floatformat:2 }}"
-                                                            data-repeat="{{ segment.repeat_per_step }}"
-                                                            data-end-mode="{{ segment.end_mode }}"
-                                                            data-preserve-pitch="{% if segment.preserve_pitch %}true{% else %}false{% endif %}"
-                                                            data-title="{% if segment.title %}{{ segment.title }}{% endif %}"
-                                                        >
-                                                            套用
-                                                        </button>
+                                            <div class="practice-quick-marker-list">
+                                                {% for segment in track_segments %}
+                                                    <div class="practice-quick-marker-card {% if selected_segment and selected_segment.id == segment.id %}is-active{% endif %}">
+                                                        <div>
+                                                            <div class="practice-quick-marker-title">
+                                                                {% if segment.title %}
+                                                                    {{ segment.title }}
+                                                                {% else %}
+                                                                    Marker {{ forloop.counter }}
+                                                                {% endif %}
+                                                            </div>
+                                                            <div class="practice-quick-marker-meta">
+                                                                速度：{{ segment.start_speed|floatformat:2 }}x → {{ segment.end_speed|floatformat:2 }}x /
+                                                                Step：{{ segment.speed_step|floatformat:2 }} /
+                                                                重复：{{ segment.repeat_per_step }} /
+                                                                模式：{{ segment.get_end_mode_display }}
+                                                                {% if segment.preserve_pitch %}
+                                                                    / 保持音高
+                                                                {% endif %}
+                                                                / 时间：{{ segment.start_time|floatformat:1 }}s → {{ segment.end_time|floatformat:1 }}s
+                                                            </div>
+                                                        </div>
 
-                                                        <a href="{% url 'practice-player-segment' segment.id %}" class="practice-segment-action">
-                                                            {% if selected_segment and selected_segment.id == segment.id %}
-                                                                当前
-                                                            {% else %}
-                                                                打开
-                                                            {% endif %}
-                                                        </a>
+                                                        <div class="practice-quick-marker-actions">
+                                                            <button
+                                                                type="button"
+                                                                class="practice-marker-apply-btn"
+                                                                data-start="{{ segment.start_time|floatformat:3 }}"
+                                                                data-end="{{ segment.end_time|floatformat:3 }}"
+                                                                data-start-speed="{{ segment.start_speed|floatformat:2 }}"
+                                                                data-end-speed="{{ segment.end_speed|floatformat:2 }}"
+                                                                data-speed-step="{{ segment.speed_step|floatformat:2 }}"
+                                                                data-repeat="{{ segment.repeat_per_step }}"
+                                                                data-end-mode="{{ segment.end_mode }}"
+                                                                data-preserve-pitch="{% if segment.preserve_pitch %}true{% else %}false{% endif %}"
+                                                                data-title="{% if segment.title %}{{ segment.title }}{% endif %}"
+                                                            >
+                                                                套用
+                                                            </button>
+
+                                                            <a href="{% url 'practice-player-segment' segment.id %}" class="practice-segment-action">
+                                                                {% if selected_segment and selected_segment.id == segment.id %}
+                                                                    当前
+                                                                {% else %}
+                                                                    打开
+                                                                {% endif %}
+                                                            </a>
+
+                                                            <form
+                                                                method="post"
+                                                                action="{% url 'practice-segment-delete' segment.id %}"
+                                                                class="practice-delete-form"
+                                                                onsubmit="return confirm('确定删除这个片段吗？');"
+                                                            >
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="next" value="player">
+                                                                <button type="submit" class="practice-delete-btn">删除</button>
+                                                            </form>
+                                                        </div>
+
+                                                        <details class="practice-marker-edit-details">
+                                                            <summary>编辑此区间 A-B</summary>
+
+                                                            <form
+                                                                method="post"
+                                                                action="{% url 'practice-segment-update' segment.id %}"
+                                                                class="practice-marker-edit-form"
+                                                            >
+                                                                {% csrf_token %}
+                                                                <input type="hidden" name="next" value="player">
+
+                                                                <div class="practice-field">
+                                                                    <label for="marker-edit-title-{{ segment.id }}">片段名称</label>
+                                                                    <input
+                                                                        id="marker-edit-title-{{ segment.id }}"
+                                                                        type="text"
+                                                                        name="title"
+                                                                        maxlength="200"
+                                                                        value="{{ segment.title }}"
+                                                                        placeholder="例如：前奏 / 第一句"
+                                                                    >
+                                                                </div>
+
+                                                                <div class="practice-field">
+                                                                    <label for="marker-edit-start-{{ segment.id }}">A 点，秒</label>
+                                                                    <input
+                                                                        id="marker-edit-start-{{ segment.id }}"
+                                                                        type="number"
+                                                                        name="start_time"
+                                                                        min="0"
+                                                                        step="0.1"
+                                                                        value="{{ segment.start_time|floatformat:3 }}"
+                                                                    >
+                                                                </div>
+
+                                                                <div class="practice-field">
+                                                                    <label for="marker-edit-end-{{ segment.id }}">B 点，秒</label>
+                                                                    <input
+                                                                        id="marker-edit-end-{{ segment.id }}"
+                                                                        type="number"
+                                                                        name="end_time"
+                                                                        min="0"
+                                                                        step="0.1"
+                                                                        value="{{ segment.end_time|floatformat:3 }}"
+                                                                    >
+                                                                </div>
+
+                                                                <input type="hidden" name="start_speed" value="{{ segment.start_speed|floatformat:2 }}">
+                                                                <input type="hidden" name="end_speed" value="{{ segment.end_speed|floatformat:2 }}">
+                                                                <input type="hidden" name="speed_step" value="{{ segment.speed_step|floatformat:2 }}">
+                                                                <input type="hidden" name="repeat_per_step" value="{{ segment.repeat_per_step }}">
+                                                                <input type="hidden" name="end_mode" value="{{ segment.end_mode }}">
+                                                                <input type="hidden" name="preserve_pitch" value="{% if segment.preserve_pitch %}1{% else %}0{% endif %}">
+
+                                                                <button type="submit" class="practice-btn primary">
+                                                                    保存 A-B
+                                                                </button>
+                                                            </form>
+                                                        </details>
                                                     </div>
-                                                </div>
-                                            {% endfor %}
-                                        </div>
-                                    {% else %}
-                                        <p class="practice-note">
-                                            当前曲目还没有 Marker 区间。可以先用 AB Loop 设定 A/B，再到下方保存为 Marker。
-                                        </p>
-                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <p class="practice-note">
+                                                当前曲目还没有 Marker 区间。先用 AB Loop 设定 A/B，再展开这里新增为 Marker。
+                                            </p>
+                                        {% endif %}
+                                    </div>
                                 </div>
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="practice-loop-strip">
-                        <div class="practice-field">
-                            <label for="loop-start">A 点，秒</label>
-                            <input
-                                id="loop-start"
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                value="{% if selected_segment %}{{ selected_segment.start_time|floatformat:3 }}{% else %}0{% endif %}"
-                            >
-                        </div>
-
-                        <div class="practice-field">
-                            <label for="loop-end">B 点，秒</label>
-                            <input
-                                id="loop-end"
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                value="{% if selected_segment %}{{ selected_segment.end_time|floatformat:3 }}{% else %}0{% endif %}"
-                            >
+                            {% endif %}
                         </div>
                     </div>
-                </div>
 
-                <div class="practice-status-panel">
-                    <div class="practice-stat main">
-                        <div class="practice-stat-label">当前速度</div>
-                        <div class="practice-stat-value" id="current-speed">1.00x</div>
-                    </div>
 
-                    <div class="practice-stat">
-                        <div class="practice-stat-label">当前步骤</div>
-                        <div class="practice-stat-value" id="current-step">-</div>
-                    </div>
-
-                    <div class="practice-stat">
-                        <div class="practice-stat-label">本速度重复</div>
-                        <div class="practice-stat-value" id="current-repeat">0 / 0</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="practice-main-controls">
-                <div>
-                    <h2 class="practice-section-title">A-B 设置</h2>
-                    <div class="practice-button-grid">
-                        <button class="practice-btn" type="button" id="set-a-btn">设为 A</button>
-                        <button class="practice-btn" type="button" id="set-b-btn">设为 B</button>
-                        <button class="practice-btn primary" type="button" id="play-loop-btn">播放 A-B</button>
-                        <button class="practice-btn danger" type="button" id="stop-btn">停止</button>
-                    </div>
                 </div>
             </div>
         </div>
     </section>
 
     <section class="practice-settings">
-        <div class="practice-settings-card">
-            <div class="practice-settings-head">
-                <div>
-                    <h2 class="practice-settings-title">Progressive Tempo / 步进步退设置</h2>
-                    <p class="practice-settings-text">
-                        这里保持展开，方便练习时随时调整。音乐练习可理解成 BPM 比例；语言影子跟读可理解成播放倍速。
-                    </p>
+        <details class="practice-plan-details">
+            <summary>
+                <div class="practice-plan-head">
+                    <h2 class="practice-section-title">Progressive Tempo / 步进步退设置</h2>
+                    <div class="practice-mode-pill">点击展开</div>
                 </div>
-                <div class="practice-mode-pill">随时可改</div>
+            </summary>
+
+            <div class="practice-plan-body">
+                <div class="practice-settings-card">
+                    <div class="practice-settings-head">
+                        <div>
+                            <h2 class="practice-settings-title">Progressive Tempo / 步进步退设置</h2>
+                            <p class="practice-settings-text">
+                                自动练习会读取这里的速度、步长、重复次数、结束方式和音高设置。
+                            </p>
+                        </div>
+                    <div class="practice-mode-pill">高级设置</div>
+                </div>
+
+            <div class="practice-status-panel">
+                <div class="practice-stat main">
+                    <div class="practice-stat-label">当前速度</div>
+                    <div class="practice-stat-value" id="current-speed">1.00x</div>
+                </div>
+
+                <div class="practice-stat">
+                    <div class="practice-stat-label">当前步骤</div>
+                    <div class="practice-stat-value" id="current-step">-</div>
+                </div>
+
+                <div class="practice-stat">
+                    <div class="practice-stat-label">本速度重复</div>
+                    <div class="practice-stat-value" id="current-repeat">0 / 0</div>
+                </div>
             </div>
 
             <div class="practice-form-grid">
@@ -1460,22 +1684,33 @@
             <p class="practice-tempo-actions-note">
                 自动练习会读取本区域设置。修改速度、步长、重复次数或结束方式后，速度计划会自动刷新。
             </p>
-        </div>
+                </div>
+            </div>
+        </details>
     </section>
 
 
     {% if selected_track %}
         <section class="practice-settings">
-            <div class="practice-settings-card">
-                <div class="practice-settings-head">
-                    <div>
-                        <h2 class="practice-settings-title">保存当前片段</h2>
-                        <p class="practice-settings-text">
-                            保存当前 A-B 时间、速度范围、步进、重复次数和结束方式。保存后会回到当前曲目的播放器页面。
-                        </p>
+            <details class="practice-plan-details">
+                <summary>
+                    <div class="practice-plan-head">
+                        <h2 class="practice-section-title">保存当前片段</h2>
+                        <div class="practice-mode-pill">保存到当前曲目</div>
                     </div>
-                    <div class="practice-mode-pill">保存到当前曲目</div>
-                </div>
+                </summary>
+
+                <div class="practice-plan-body">
+                    <div class="practice-settings-card">
+                        <div class="practice-settings-head">
+                            <div>
+                                <h2 class="practice-settings-title">保存当前片段</h2>
+                                <p class="practice-settings-text">
+                                    保存当前 A-B 时间、速度范围、步进、重复次数和结束方式。保存后会回到当前曲目的播放器页面。
+                                </p>
+                            </div>
+                            <div class="practice-mode-pill">保存到当前曲目</div>
+                        </div>
 
                 <form
                     method="post"
@@ -1518,274 +1753,9 @@
                         {% endif %}
                     </button>
                 </form>
-            </div>
-        </section>
-    {% endif %}
-
-        {% if selected_track %}
-        <section class="practice-segment-panel">
-            <div class="practice-settings-card practice-marker-panel">
-                <div class="practice-settings-head">
-                    <div>
-                        <h2 class="practice-settings-title">Marker 再生 / 多段 A-B 区间</h2>
-                        <p class="practice-settings-text">
-                            每个 Marker 区间都对应一个已保存片段，并保留自己的步进步退设置。点击“套用此段”后，可以直接开始自动练习。
-                        </p>
-                    </div>
-                    <div class="practice-mode-pill">
-                        区间 {{ track_segments|length }}
                     </div>
                 </div>
-
-                <div class="practice-marker-create-card">
-                    <h3 class="practice-marker-create-title">新增 Marker 区间</h3>
-
-                    <form
-                        method="post"
-                        action="{% url 'practice-segment-save' selected_track.id %}"
-                        id="marker-create-segment-form"
-                        class="practice-marker-create-form"
-                    >
-                        {% csrf_token %}
-
-                        <div class="practice-field">
-                            <label for="marker-create-title">片段名称</label>
-                            <input
-                                id="marker-create-title"
-                                type="text"
-                                name="title"
-                                maxlength="200"
-                                placeholder="例如：前奏 / 第一句 / 副歌"
-                            >
-                        </div>
-
-                        <div class="practice-marker-ab-grid">
-                            <div class="practice-field">
-                                <label for="marker-create-start">A 点，秒</label>
-                                <input
-                                    id="marker-create-start"
-                                    type="number"
-                                    name="start_time"
-                                    min="0"
-                                    step="0.1"
-                                    value="0"
-                                >
-                                <button type="button" class="practice-mini-btn" id="marker-set-a-btn">
-                                    设为 A
-                                </button>
-                            </div>
-
-                            <div class="practice-field">
-                                <label for="marker-create-end">B 点，秒</label>
-                                <input
-                                    id="marker-create-end"
-                                    type="number"
-                                    name="end_time"
-                                    min="0"
-                                    step="0.1"
-                                    value="0"
-                                >
-                                <button type="button" class="practice-mini-btn" id="marker-set-b-btn">
-                                    设为 B
-                                </button>
-                            </div>
-                        </div>
-
-                        <input type="hidden" name="start_speed" id="marker-create-start-speed">
-                        <input type="hidden" name="end_speed" id="marker-create-end-speed">
-                        <input type="hidden" name="speed_step" id="marker-create-speed-step">
-                        <input type="hidden" name="repeat_per_step" id="marker-create-repeat-per-step">
-                        <input type="hidden" name="end_mode" id="marker-create-end-mode">
-                        <input type="hidden" name="preserve_pitch" id="marker-create-preserve-pitch">
-
-                        <button type="submit" class="practice-btn primary strong">
-                            新增 Marker 区间
-                        </button>
-                    </form>
-
-                    <p class="practice-marker-hint">
-                        这里新增的区间会使用当前下方 Progressive Tempo 设置：Start Speed、End Speed、Step、重复次数、结束方式和音高。
-                    </p>
-                </div>
-
-                {% if track_segments %}
-                    <div class="practice-marker-timeline">
-                        <div class="practice-marker-timeline-head">
-                            <span>Marker 时间轴</span>
-                            <span id="marker-timeline-duration">等待音频时长</span>
-                        </div>
-
-                        <div class="practice-marker-track" id="marker-timeline-track">
-                            {% for segment in track_segments %}
-                                <button
-                                    type="button"
-                                    class="practice-marker-range {% if selected_segment and selected_segment.id == segment.id %}is-active{% endif %}"
-                                    data-marker-range="1"
-                                    data-start="{{ segment.start_time|floatformat:3 }}"
-                                    data-end="{{ segment.end_time|floatformat:3 }}"
-                                    data-start-speed="{{ segment.start_speed|floatformat:2 }}"
-                                    data-end-speed="{{ segment.end_speed|floatformat:2 }}"
-                                    data-speed-step="{{ segment.speed_step|floatformat:2 }}"
-                                    data-repeat="{{ segment.repeat_per_step }}"
-                                    data-end-mode="{{ segment.end_mode }}"
-                                    data-preserve-pitch="{% if segment.preserve_pitch %}true{% else %}false{% endif %}"
-                                    data-title="{% if segment.title %}{{ segment.title }}{% else %}Marker {{ forloop.counter }}{% endif %}"
-                                    title="{% if segment.title %}{{ segment.title }}{% else %}Marker {{ forloop.counter }}{% endif %}: {{ segment.start_time|floatformat:1 }}s → {{ segment.end_time|floatformat:1 }}s"
-                                >
-                                    <span class="practice-marker-range-label">
-                                        {% if segment.title %}
-                                            {{ segment.title }}
-                                        {% else %}
-                                            {{ segment.start_time|floatformat:1 }}s → {{ segment.end_time|floatformat:1 }}s
-                                        {% endif %}
-                                    </span>
-                                </button>
-                            {% endfor %}
-                        </div>
-
-                        <div class="practice-marker-timeline-foot">
-                            <span>00:00</span>
-                            <span id="marker-timeline-end">--:--</span>
-                        </div>
-                    </div>
-
-                    <div class="practice-marker-strip">
-                        {% for segment in track_segments %}
-                            <div class="practice-marker-card {% if selected_segment and selected_segment.id == segment.id %}is-active{% endif %}">
-                                <div class="practice-marker-main">
-                                    <div class="practice-marker-title">
-                                        {% if segment.title %}
-                                            {{ segment.title }}
-                                        {% else %}
-                                            Marker {{ forloop.counter }}
-                                        {% endif %}
-                                    </div>
-
-                                    <div class="practice-marker-time">
-                                        <span class="practice-marker-dot"></span>
-                                        <span>{{ segment.start_time|floatformat:1 }}s</span>
-                                        <span>→</span>
-                                        <span>{{ segment.end_time|floatformat:1 }}s</span>
-                                    </div>
-
-                                    <div class="practice-marker-meta">
-                                        速度：{{ segment.start_speed|floatformat:2 }}x → {{ segment.end_speed|floatformat:2 }}x /
-                                        Step：{{ segment.speed_step|floatformat:2 }} /
-                                        重复：{{ segment.repeat_per_step }} /
-                                        模式：{{ segment.get_end_mode_display }}
-                                    </div>
-                                </div>
-
-                                <div class="practice-marker-actions">
-                                    <button
-                                        type="button"
-                                        class="practice-marker-apply-btn"
-                                        data-start="{{ segment.start_time|floatformat:3 }}"
-                                        data-end="{{ segment.end_time|floatformat:3 }}"
-                                        data-start-speed="{{ segment.start_speed|floatformat:2 }}"
-                                        data-end-speed="{{ segment.end_speed|floatformat:2 }}"
-                                        data-speed-step="{{ segment.speed_step|floatformat:2 }}"
-                                        data-repeat="{{ segment.repeat_per_step }}"
-                                        data-end-mode="{{ segment.end_mode }}"
-                                        data-preserve-pitch="{% if segment.preserve_pitch %}true{% else %}false{% endif %}"
-                                        data-title="{% if segment.title %}{{ segment.title }}{% endif %}"
-                                    >
-                                        套用此段
-                                    </button>
-
-                                    <a href="{% url 'practice-player-segment' segment.id %}" class="practice-segment-action">
-                                        {% if selected_segment and selected_segment.id == segment.id %}
-                                            当前片段
-                                        {% else %}
-                                            打开
-                                        {% endif %}
-                                    </a>
-
-                                    <form
-                                        method="post"
-                                        action="{% url 'practice-segment-delete' segment.id %}"
-                                        class="practice-delete-form"
-                                        onsubmit="return confirm('确定删除这个片段吗？');"
-                                    >
-                                        {% csrf_token %}
-                                        <input type="hidden" name="next" value="player">
-                                        <button type="submit" class="practice-delete-btn">删除</button>
-                                    </form>
-                                </div>
-
-                                <details class="practice-marker-edit-details">
-                                    <summary>编辑此区间 A-B</summary>
-
-                                    <form
-                                        method="post"
-                                        action="{% url 'practice-segment-update' segment.id %}"
-                                        class="practice-marker-edit-form"
-                                    >
-                                        {% csrf_token %}
-                                        <input type="hidden" name="next" value="player">
-
-                                        <div class="practice-field">
-                                            <label for="marker-edit-title-{{ segment.id }}">片段名称</label>
-                                            <input
-                                                id="marker-edit-title-{{ segment.id }}"
-                                                type="text"
-                                                name="title"
-                                                maxlength="200"
-                                                value="{{ segment.title }}"
-                                                placeholder="例如：前奏 / 第一句"
-                                            >
-                                        </div>
-
-                                        <div class="practice-field">
-                                            <label for="marker-edit-start-{{ segment.id }}">A 点，秒</label>
-                                            <input
-                                                id="marker-edit-start-{{ segment.id }}"
-                                                type="number"
-                                                name="start_time"
-                                                min="0"
-                                                step="0.1"
-                                                value="{{ segment.start_time|floatformat:3 }}"
-                                            >
-                                        </div>
-
-                                        <div class="practice-field">
-                                            <label for="marker-edit-end-{{ segment.id }}">B 点，秒</label>
-                                            <input
-                                                id="marker-edit-end-{{ segment.id }}"
-                                                type="number"
-                                                name="end_time"
-                                                min="0"
-                                                step="0.1"
-                                                value="{{ segment.end_time|floatformat:3 }}"
-                                            >
-                                        </div>
-
-                                        <input type="hidden" name="start_speed" value="{{ segment.start_speed|floatformat:2 }}">
-                                        <input type="hidden" name="end_speed" value="{{ segment.end_speed|floatformat:2 }}">
-                                        <input type="hidden" name="speed_step" value="{{ segment.speed_step|floatformat:2 }}">
-                                        <input type="hidden" name="repeat_per_step" value="{{ segment.repeat_per_step }}">
-                                        <input type="hidden" name="end_mode" value="{{ segment.end_mode }}">
-                                        <input type="hidden" name="preserve_pitch" value="{% if segment.preserve_pitch %}1{% else %}0{% endif %}">
-
-                                        <button type="submit" class="practice-btn primary">
-                                            保存 A-B
-                                        </button>
-                                    </form>
-                                </details>
-
-                            </div>
-                        {% endfor %}
-                    </div>
-
-                    <p class="practice-marker-hint">
-                        “套用此段”只改变当前播放器里的 A-B 和步进步退设置；“打开”会进入该片段页面并作为当前片段进行更新。
-                    </p>
-                {% else %}
-                    <p class="practice-note">
-                        当前曲目还没有 Marker 区间。设置 A-B 和速度后，点击“保存当前片段”即可加入这里。
-                    </p>
-                {% endif %}
-            </div>
+            </details>
         </section>
     {% endif %}
 
@@ -1793,8 +1763,8 @@
         <details class="practice-plan-details">
             <summary>
                 <div class="practice-plan-head">
-                    <h2 class="practice-section-title">速度计划</h2>
-                    <div class="practice-mode-pill">点击展开 / 桌面端表格 / 手机端卡片</div>
+                    <h2 class="practice-section-title">速度计划详情</h2>
+                    <div class="practice-mode-pill">点击展开</div>
                 </div>
             </summary>
 
@@ -1831,6 +1801,7 @@
     const audioFileInput = document.getElementById("practice-audio-file");
     const audio = document.getElementById("practice-audio");
     const serverTrackAudioUrl = "{{ track_audio_url|default:''|escapejs }}";
+    const selectedSegmentStart = {% if selected_segment %}{{ selected_segment.start_time|floatformat:3 }}{% else %}null{% endif %};
     let serverTrackObjectUrl = "";
 
     const loopStartInput = document.getElementById("loop-start");
@@ -2315,7 +2286,7 @@
         updateStatus();
 
         if (audio.src) {
-            audio.currentTime = start;
+            seekAndPlay(start);
         }
     }
 
@@ -2370,12 +2341,30 @@
         updateStatus();
     });
 
+    let didInitialSegmentSeek = false;
+
     audio.addEventListener("loadedmetadata", function () {
         if (!loopEndInput.value || Number(loopEndInput.value) <= 0) {
             loopEndInput.value = audio.duration ? audio.duration.toFixed(1) : "0";
         }
 
         renderMarkerTimeline();
+
+        if (
+            !didInitialSegmentSeek &&
+            selectedSegmentStart !== null &&
+            Number.isFinite(selectedSegmentStart) &&
+            selectedSegmentStart > 0
+        ) {
+            didInitialSegmentSeek = true;
+
+            try {
+                audio.currentTime = selectedSegmentStart;
+                updatePreciseTime();
+            } catch (error) {
+                console.warn("initial segment seek failed:", error);
+            }
+        }
     });
 
     audio.addEventListener("timeupdate", function () {
@@ -2405,14 +2394,6 @@
         button.addEventListener("click", function () {
             seekByDelta(toNumber(button.dataset.seekDelta, 0));
         });
-    });
-
-    document.getElementById("set-a-btn").addEventListener("click", function () {
-        syncCurrentTimeToPoint("a");
-    });
-
-    document.getElementById("set-b-btn").addEventListener("click", function () {
-        syncCurrentTimeToPoint("b");
     });
 
     document.getElementById("play-loop-btn").addEventListener("click", function () {

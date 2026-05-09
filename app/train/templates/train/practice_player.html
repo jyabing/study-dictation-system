@@ -1011,7 +1011,42 @@
 
 @media (max-width: 720px) {
     .practice-shell {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
         padding: 16px 12px 40px;
+        box-sizing: border-box;
+    }
+
+    .practice-player-stage,
+    .practice-player-content,
+    .practice-player-main,
+    .practice-deck,
+    .practice-audio-frame,
+    .practice-precise-control,
+    .practice-card,
+    .practice-settings-card {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    .practice-audio-label {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .practice-audio-label span {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .practice-audio {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
     }
 
     .practice-player-stage,

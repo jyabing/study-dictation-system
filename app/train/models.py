@@ -383,6 +383,11 @@ class PracticeTrack(models.Model):
         default=""
     )
 
+    shadow_caption_source = models.TextField(
+        blank=True,
+        default=""
+    )
+
     sort_order = models.IntegerField(
         default=0
     )

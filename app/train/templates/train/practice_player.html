@@ -233,6 +233,196 @@
     color: var(--primary);
 }
 
+.practice-shadow-caption {
+    margin: 14px 0;
+    border: 1px solid rgba(110, 168, 255, 0.24);
+    border-radius: 20px;
+    background:
+        radial-gradient(circle at top left, rgba(110, 168, 255, 0.16), transparent 34%),
+        rgba(110, 168, 255, 0.06);
+    padding: 14px;
+}
+
+.practice-shadow-caption-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.practice-shadow-caption-window {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.3fr) minmax(0, 0.85fr);
+    gap: 10px;
+    align-items: center;
+    min-height: 68px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--soft);
+    padding: 12px;
+    text-align: center;
+    transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.practice-shadow-caption-window.is-empty {
+    opacity: 0.48;
+    filter: grayscale(0.2);
+}
+
+.practice-shadow-word {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 42px;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.35;
+    font-weight: 900;
+    text-align: center;
+}
+
+.practice-shadow-word.is-muted {
+    color: var(--muted);
+    opacity: 0.58;
+    font-size: 15px;
+}
+
+.practice-shadow-word.is-current {
+    max-height: 72px;
+    color: var(--primary);
+    font-size: 24px;
+    letter-spacing: -0.03em;
+}
+
+.practice-shadow-word.is-pulse {
+    animation: practiceShadowPulse 0.28s ease-out;
+}
+
+@keyframes practiceShadowPulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.82;
+    }
+
+    45% {
+        transform: scale(1.08);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.practice-shadow-caption-hint {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.practice-shadow-caption-warning {
+    color: #f59e0b;
+    font-weight: 850;
+}
+
+.practice-shadow-caption-warning:empty {
+    display: none;
+}
+
+.practice-shadow-editor {
+    margin: 12px 0 14px;
+    border: 1px solid rgba(110, 168, 255, 0.22);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.045);
+    overflow: hidden;
+}
+
+.practice-shadow-editor summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 12px 14px;
+}
+
+.practice-shadow-editor summary::-webkit-details-marker {
+    display: none;
+}
+
+.practice-shadow-editor[open] summary {
+    border-bottom: 1px solid var(--border);
+}
+
+.practice-shadow-editor-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.practice-shadow-editor-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.practice-shadow-editor-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    color: var(--primary);
+    font-size: 13px;
+    line-height: 1;
+    transition: transform 0.18s ease;
+}
+
+.practice-shadow-editor:not([open]) .practice-shadow-editor-arrow {
+    transform: rotate(-90deg);
+}
+
+.practice-shadow-editor-body {
+    padding: 14px;
+}
+
+.practice-shadow-editor-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.practice-shadow-textarea {
+    width: 100%;
+    min-height: 132px;
+    resize: vertical;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--input);
+    color: var(--text);
+    padding: 12px 13px;
+    font-size: 14px;
+    line-height: 1.6;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.practice-shadow-textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(110, 168, 255, 0.12);
+}
+
 .practice-player-tabs {
     margin-top: 12px;
     display: grid;
@@ -760,6 +950,12 @@
     cursor: pointer;
 }
 
+.practice-mini-btn.danger {
+    border-color: rgba(239, 68, 68, 0.28);
+    background: rgba(239, 68, 68, 0.10);
+    color: #ef4444;
+}
+
 .practice-marker-edit-details {
     margin-top: 10px;
     border-top: 1px solid var(--border);
@@ -1167,6 +1363,81 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .practice-shadow-caption {
+        margin: 12px 0;
+        border-radius: 18px;
+        padding: 12px;
+    }
+
+    .practice-shadow-caption-head {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 6px;
+        align-items: start;
+    }
+
+    .practice-shadow-caption-window {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        min-height: 0;
+        padding: 12px;
+    }
+
+    .practice-shadow-word {
+        min-height: 34px;
+    }
+
+    .practice-shadow-word.is-current {
+        min-height: 46px;
+        max-height: 96px;
+        font-size: clamp(24px, 8vw, 34px);
+        line-height: 1.2;
+    }
+
+    .practice-shadow-word.is-muted {
+        font-size: 14px;
+    }
+
+    .practice-shadow-caption-hint {
+        font-size: 11px;
+    }
+
+    .practice-shadow-editor {
+        margin: 10px 0 12px;
+        border-radius: 16px;
+    }
+
+    .practice-shadow-editor summary {
+        padding: 11px 12px;
+    }
+
+    .practice-shadow-editor-head {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 5px;
+        align-items: start;
+    }
+
+    .practice-shadow-editor-body {
+        padding: 12px;
+    }
+
+    .practice-shadow-editor-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .practice-shadow-editor-actions .practice-mini-btn {
+        width: 100%;
+        margin-top: 0;
+    }
+
+    .practice-shadow-textarea {
+        min-height: 150px;
+        font-size: 16px;
+    }
+
     .practice-marker-ab-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
@@ -1352,6 +1623,89 @@
                                 </div>
                                 <div class="practice-precise-time" id="precise-current-time">00:00.000</div>
                             </div>
+
+                            <div class="practice-shadow-caption" id="shadow-caption-panel">
+                                <div class="practice-shadow-caption-head">
+                                    <span>短视野片段跟读 / Lyrics Shadowing</span>
+                                    <span id="shadow-caption-status">未读取片段</span>
+                                </div>
+
+                                <div class="practice-shadow-caption-window" id="shadow-caption-window">
+                                    <span class="practice-shadow-word is-muted" id="shadow-caption-prev">前一片段</span>
+                                    <span class="practice-shadow-word is-current" id="shadow-caption-current">当前片段</span>
+                                    <span class="practice-shadow-word is-muted" id="shadow-caption-next">后一片段</span>
+                                </div>
+
+                                <p class="practice-shadow-caption-hint">
+                                    播放时会根据当前时间显示前一片段、当前片段和后一片段，用于看字幕/歌词的短视野跟读训练。
+                                </p>
+                            </div>
+
+                            <details class="practice-shadow-editor" open>
+                                <summary>
+                                    <div class="practice-shadow-editor-head">
+                                        <span class="practice-shadow-editor-title">
+                                            <span class="practice-shadow-editor-arrow" aria-hidden="true">▾</span>
+                                            <span>字幕 / 歌词时间轴</span>
+                                        </span>
+                                        <span>格式：秒数、分:秒 或 [分:秒]LRC · 点击可收起/展开</span>
+                                    </div>
+                                </summary>
+
+                                <div class="practice-shadow-editor-body">
+                                    <div class="practice-field">
+                                        <label for="shadow-caption-source">字幕 / 歌词片段内容</label>
+                                        <textarea
+                                            id="shadow-caption-source"
+                                            name="shadow_caption_source"
+                                            {% if selected_track %}form="shadow-caption-save-form"{% endif %}
+                                            class="practice-shadow-textarea"
+                                            rows="6"
+                                            placeholder="0:00|葡萄熟了&#10;1:20|一年又一年&#10;[02:10.50]我跟着字幕练习短视野跟读&#10;2:40|只看当前片段，不看整段歌词&#10;3:00|听觉和视觉一起跟上节奏"
+                                        >{% if selected_track %}{{ selected_track.shadow_caption_source }}{% endif %}</textarea>
+                                    </div>
+
+                                    {% if selected_track %}
+                                        <form
+                                            id="shadow-caption-save-form"
+                                            method="post"
+                                            action="{% url 'practice-track-shadow-caption-save' selected_track.id %}"
+                                        >
+                                            {% csrf_token %}
+                                            {% if selected_segment %}
+                                                <input type="hidden" name="segment_id" value="{{ selected_segment.id }}">
+                                            {% endif %}
+                                        </form>
+                                    {% endif %}
+
+                                    <div class="practice-shadow-editor-actions">
+                                        <button type="button" class="practice-mini-btn" id="shadow-caption-parse-btn">
+                                            重新读取片段
+                                        </button>
+
+                                        {% if selected_track %}
+                                            <button
+                                                type="submit"
+                                                form="shadow-caption-save-form"
+                                                class="practice-mini-btn"
+                                                id="shadow-caption-save-btn"
+                                            >
+                                                保存到当前曲目
+                                            </button>
+                                        {% endif %}
+
+                                        <button type="button" class="practice-mini-btn danger" id="shadow-caption-clear-btn">
+                                            清空片段
+                                        </button>
+                                    </div>
+
+                                    <p class="practice-shadow-caption-hint practice-shadow-caption-warning" id="shadow-caption-parse-hint"></p>
+
+                                    <p class="practice-shadow-caption-hint">
+                                        输入或修改片段后会自动读取；也可以点击“重新读取片段”手动刷新。点击“保存到当前曲目”后，会绑定到当前曲目，之后打开该曲目或其片段时自动载入。
+                                    </p>
+                                </div>
+                            </details>
 
                             <div class="practice-precise-grid">
                                 <button type="button" class="practice-precise-btn" data-seek-delta="-5">-5s</button>
@@ -1908,6 +2262,17 @@
     const currentRepeatEl = document.getElementById("current-repeat");
     const preciseCurrentTimeEl = document.getElementById("precise-current-time");
 
+    const shadowCaptionSourceInput = document.getElementById("shadow-caption-source");
+    const shadowCaptionStatusEl = document.getElementById("shadow-caption-status");
+    const shadowCaptionParseHintEl = document.getElementById("shadow-caption-parse-hint");
+    const shadowCaptionWindowEl = document.getElementById("shadow-caption-window");
+    const shadowCaptionPrevEl = document.getElementById("shadow-caption-prev");
+    const shadowCaptionCurrentEl = document.getElementById("shadow-caption-current");
+    const shadowCaptionNextEl = document.getElementById("shadow-caption-next");
+
+    const shadowCaptionParseBtn = document.getElementById("shadow-caption-parse-btn");
+    const shadowCaptionClearBtn = document.getElementById("shadow-caption-clear-btn");
+
     const markerCreateStartInput = document.getElementById("marker-create-start");
     const markerCreateEndInput = document.getElementById("marker-create-end");
     const preciseSetABtn = document.getElementById("precise-set-a-btn");
@@ -1923,11 +2288,320 @@
         repeatPerStep: 1,
         progressiveEnabled: false,
         loopEnabled: false,
+        shadowCaptions: [],
+        shadowLastIndex: null,
     };
 
     function toNumber(value, fallback) {
         const parsed = Number(value);
         return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    function parseShadowCaptionTime(timeText) {
+        const raw = String(timeText || "").trim();
+
+        if (!raw) {
+            return null;
+        }
+
+        if (!raw.includes(":")) {
+            const seconds = Number(raw);
+            return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
+        }
+
+        const parts = raw.split(":").map(function (part) {
+            return part.trim();
+        });
+
+        if (parts.length === 2) {
+            const minutes = Number(parts[0]);
+            const seconds = Number(parts[1]);
+
+            if (!Number.isFinite(minutes) || !Number.isFinite(seconds)) {
+                return null;
+            }
+
+            if (minutes < 0 || seconds < 0) {
+                return null;
+            }
+
+            return minutes * 60 + seconds;
+        }
+
+        if (parts.length === 3) {
+            const hours = Number(parts[0]);
+            const minutes = Number(parts[1]);
+            const seconds = Number(parts[2]);
+
+            if (!Number.isFinite(hours) || !Number.isFinite(minutes) || !Number.isFinite(seconds)) {
+                return null;
+            }
+
+            if (hours < 0 || minutes < 0 || seconds < 0) {
+                return null;
+            }
+
+            return hours * 3600 + minutes * 60 + seconds;
+        }
+
+        return null;
+    }
+
+    function parseShadowCaptionSource() {
+        const result = {
+            captions: [],
+            ignoredCount: 0
+        };
+
+        if (!shadowCaptionSourceInput) {
+            return result;
+        }
+
+        shadowCaptionSourceInput.value
+            .split(/\r?\n/)
+            .forEach(function (line) {
+                const trimmed = line.trim();
+
+                if (!trimmed) {
+                    return;
+                }
+
+                const lrcMatch = trimmed.match(/^((?:\[[^\]]+\])+)(.*)$/);
+
+                if (lrcMatch) {
+                    const timeTags = lrcMatch[1].match(/\[([^\]]+)\]/g) || [];
+                    const captionText = lrcMatch[2].trim();
+                    let addedCount = 0;
+
+                    timeTags.forEach(function (timeTag) {
+                        const timeText = timeTag.replace(/^\[/, "").replace(/\]$/, "").trim();
+                        const time = parseShadowCaptionTime(timeText);
+
+                        if (time === null || !captionText) {
+                            return;
+                        }
+
+                        result.captions.push({
+                            time: time,
+                            text: captionText
+                        });
+
+                        addedCount += 1;
+                    });
+
+                    if (!addedCount) {
+                        result.ignoredCount += 1;
+                    }
+
+                    return;
+                }
+
+                const separatorIndex = trimmed.indexOf("|");
+
+                if (separatorIndex <= 0) {
+                    result.ignoredCount += 1;
+                    return;
+                }
+
+                const timeText = trimmed.slice(0, separatorIndex).trim();
+                const captionText = trimmed.slice(separatorIndex + 1).trim();
+                const time = parseShadowCaptionTime(timeText);
+
+                if (time === null || !captionText) {
+                    result.ignoredCount += 1;
+                    return;
+                }
+
+                result.captions.push({
+                    time: time,
+                    text: captionText
+                });
+            });
+
+        result.captions.sort(function (a, b) {
+            return a.time - b.time;
+        });
+
+        return result;
+    }
+
+    function renderShadowCaptionParseHint(ignoredCount) {
+        if (!shadowCaptionParseHintEl) {
+            return;
+        }
+
+        if (!ignoredCount) {
+            shadowCaptionParseHintEl.textContent = "";
+            return;
+        }
+
+        shadowCaptionParseHintEl.textContent = "已忽略 " + ignoredCount + " 行格式不正确或内容为空的内容。";
+    }
+
+    function findShadowCaptionIndex(captions, currentTime) {
+        if (!captions.length) {
+            return -1;
+        }
+
+        const safeCurrentTime = Math.max(0, toNumber(currentTime, 0));
+        let activeIndex = -1;
+
+        captions.forEach(function (caption, index) {
+            if (caption.time <= safeCurrentTime) {
+                activeIndex = index;
+            }
+        });
+
+        return activeIndex;
+    }
+
+    function renderShadowCaptionByIndex(captions, activeIndex) {
+        const hasActive = activeIndex >= 0 && captions[activeIndex];
+
+        if (!hasActive) {
+            resetShadowCaptionDisplay();
+            return;
+        }
+
+        setShadowCaptionEmptyState(false);
+
+        if (shadowCaptionPrevEl) {
+            shadowCaptionPrevEl.textContent = captions[activeIndex - 1]
+                ? captions[activeIndex - 1].text
+                : "前一片段";
+        }
+
+        if (shadowCaptionCurrentEl) {
+            shadowCaptionCurrentEl.textContent = captions[activeIndex].text;
+        }
+
+        if (shadowCaptionNextEl) {
+            shadowCaptionNextEl.textContent = captions[activeIndex + 1]
+                ? captions[activeIndex + 1].text
+                : "后一片段";
+        }
+    }
+
+    function resetShadowCaptionDisplay() {
+        if (shadowCaptionPrevEl) {
+            shadowCaptionPrevEl.textContent = "前一片段";
+        }
+
+        if (shadowCaptionCurrentEl) {
+            shadowCaptionCurrentEl.textContent = "当前片段";
+        }
+
+        if (shadowCaptionNextEl) {
+            shadowCaptionNextEl.textContent = "后一片段";
+        }
+
+        setShadowCaptionEmptyState(true);
+    }
+
+    function setShadowCaptionEmptyState(isEmpty) {
+        if (!shadowCaptionWindowEl) {
+            return;
+        }
+
+        shadowCaptionWindowEl.classList.toggle("is-empty", isEmpty);
+    }
+
+    function pulseShadowCurrentWord() {
+        if (!shadowCaptionCurrentEl) {
+            return;
+        }
+
+        shadowCaptionCurrentEl.classList.remove("is-pulse");
+
+        window.requestAnimationFrame(function () {
+            shadowCaptionCurrentEl.classList.add("is-pulse");
+        });
+    }
+
+    function testParseShadowCaptionSource() {
+        const parsed = parseShadowCaptionSource();
+        const captions = parsed.captions;
+        const activeIndex = findShadowCaptionIndex(captions, audio.currentTime || 0);
+
+        if (shadowCaptionStatusEl) {
+            shadowCaptionStatusEl.textContent = captions.length
+                ? "已读取 " + captions.length + " 个片段"
+                : "未读取片段";
+        }
+
+        renderShadowCaptionParseHint(parsed.ignoredCount);
+        renderShadowCaptionByIndex(captions, activeIndex);
+    }
+
+    function refreshShadowCaptionFromAudio(forceRender) {
+        if (!state.shadowCaptions.length) {
+            return;
+        }
+
+        const activeIndex = findShadowCaptionIndex(state.shadowCaptions, audio.currentTime || 0);
+
+        if (!forceRender && activeIndex === state.shadowLastIndex) {
+            return;
+        }
+
+        const didChangeActiveWord = activeIndex !== state.shadowLastIndex;
+
+        state.shadowLastIndex = activeIndex;
+        renderShadowCaptionByIndex(state.shadowCaptions, activeIndex);
+
+        if (didChangeActiveWord && activeIndex >= 0) {
+            pulseShadowCurrentWord();
+        }
+    }
+
+    function reloadShadowCaptionsFromInput() {
+        const parsed = parseShadowCaptionSource();
+
+        state.shadowCaptions = parsed.captions;
+        state.shadowLastIndex = null;
+
+        if (shadowCaptionStatusEl) {
+            shadowCaptionStatusEl.textContent = state.shadowCaptions.length
+                ? "已读取 " + state.shadowCaptions.length + " 个片段"
+                : "未读取片段";
+        }
+
+        renderShadowCaptionParseHint(parsed.ignoredCount);
+
+        if (!state.shadowCaptions.length) {
+            resetShadowCaptionDisplay();
+            return;
+        }
+
+        refreshShadowCaptionFromAudio(true);
+    }
+
+    function initShadowCaptionsFromInput() {
+        if (!shadowCaptionSourceInput) {
+            return;
+        }
+
+        if (!shadowCaptionSourceInput.value.trim()) {
+            return;
+        }
+
+        reloadShadowCaptionsFromInput();
+    }
+
+    function clearShadowCaptions() {
+        if (shadowCaptionSourceInput) {
+            shadowCaptionSourceInput.value = "";
+        }
+
+        state.shadowCaptions = [];
+        state.shadowLastIndex = null;
+
+        if (shadowCaptionStatusEl) {
+            shadowCaptionStatusEl.textContent = "未读取片段";
+        }
+
+        renderShadowCaptionParseHint(0);
+        resetShadowCaptionDisplay();
     }
 
     function roundSpeed(value) {
@@ -2194,6 +2868,32 @@
         renderPlan();
     }
 
+    if (shadowCaptionParseBtn) {
+        shadowCaptionParseBtn.addEventListener("click", function () {
+            reloadShadowCaptionsFromInput();
+        });
+    }
+
+    if (shadowCaptionClearBtn) {
+        shadowCaptionClearBtn.addEventListener("click", function () {
+            const confirmed = window.confirm("确定清空当前片段内容吗？此操作不会影响已保存的曲目。");
+
+            if (!confirmed) {
+                return;
+            }
+
+            clearShadowCaptions();
+        });
+    }
+
+    if (shadowCaptionSourceInput) {
+        shadowCaptionSourceInput.addEventListener("input", function () {
+            reloadShadowCaptionsFromInput();
+        });
+    }
+
+    initShadowCaptionsFromInput();
+
     function moveToNextStep() {
         const mode = endModeInput.value;
 
@@ -2458,6 +3158,7 @@
 
     audio.addEventListener("timeupdate", function () {
         updatePreciseTime();
+        refreshShadowCaptionFromAudio(false);
 
         if (!state.loopEnabled) {
             return;

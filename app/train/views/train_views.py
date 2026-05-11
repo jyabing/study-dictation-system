@@ -6721,6 +6721,42 @@ def practice_track_update(request, track_id):
 
 @login_required
 @require_POST
+def practice_track_shadow_caption_save(request, track_id):
+    track = get_object_or_404(
+        PracticeTrack,
+        id=track_id,
+        owner=request.user
+    )
+
+    shadow_caption_source = (request.POST.get("shadow_caption_source") or "").strip()
+    segment_id_raw = (request.POST.get("segment_id") or "").strip()
+
+    track.shadow_caption_source = shadow_caption_source
+    track.save(update_fields=["shadow_caption_source", "updated_at"])
+
+    if shadow_caption_source:
+        messages.success(request, "已保存到当前曲目。")
+    else:
+        messages.success(request, "已清空片段时间轴。")
+
+    if segment_id_raw:
+        segment = (
+            PracticeSegment.objects
+            .filter(
+                id=segment_id_raw,
+                owner=request.user,
+                track=track
+            )
+            .first()
+        )
+
+        if segment:
+            return redirect("practice-player-segment", segment_id=segment.id)
+
+    return redirect("practice-player-track", track_id=track.id)
+
+@login_required
+@require_POST
 def practice_track_delete(request, track_id):
     track = get_object_or_404(
         PracticeTrack,

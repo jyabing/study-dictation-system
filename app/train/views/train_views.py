@@ -4006,6 +4006,25 @@ def _get_scope_training_qs(scope, obj):
 
     return qs.none()
 
+def _get_scope_dictation_qs(scope, obj):
+    """
+    获取当前范围内可用于听写考核的写作题。
+
+    规则：
+    - 只允许写作训练题进入听写考核
+    - 必须启用 is_dictation_enabled
+    - 必须有 dictation_text
+    - 必须是启用状态 is_active=True
+    """
+    return (
+        _get_scope_training_qs(scope, obj)
+        .filter(
+            item_type="write",
+            is_active=True,
+            is_dictation_enabled=True,
+        )
+        .exclude(dictation_text="")
+    )
 
 def _training_in_scope(training, scope, obj):
     question = getattr(training, "question", None)

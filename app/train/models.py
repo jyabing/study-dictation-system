@@ -290,6 +290,20 @@ class TrainingItem(models.Model):
         default=True
     )
 
+    # =========================
+    # 听写考核控制
+    # =========================
+    is_dictation_enabled = models.BooleanField(
+        default=False,
+        help_text="是否允许该写作训练题进入听写考核"
+    )
+
+    dictation_text = models.TextField(
+        blank=True,
+        default="",
+        help_text="专门用于听写播放和 TTS 生成的文本"
+    )
+
     sort_order = models.IntegerField(
         default=0
     )

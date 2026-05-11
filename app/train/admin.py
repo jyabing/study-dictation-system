@@ -39,6 +39,7 @@ class TrainingItemAdmin(admin.ModelAdmin):
         "language",
         "answer_type",
         "difficulty",
+        "is_dictation_enabled",
         "is_active",
         "sort_order",
     )
@@ -49,6 +50,7 @@ class TrainingItemAdmin(admin.ModelAdmin):
         "answer_type",
         "grading_mode",
         "cloze_mode",
+        "is_dictation_enabled",
         "is_active",
         "difficulty",
     )
@@ -115,6 +117,14 @@ class TrainingItemAdmin(admin.ModelAdmin):
                 "target_audio",
             )
         }),
+
+        ("听写考核", {
+            "fields": (
+                "is_dictation_enabled",
+                "dictation_text",
+            )
+        }),
+
         ("管理信息", {
             "fields": (
                 "tags",

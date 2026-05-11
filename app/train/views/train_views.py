@@ -4124,11 +4124,34 @@ def _add_today_done_id(request, training_id):
 
 
 def _build_scope_plan_stats(request, scope_items):
+    """
+    今日计划统计：
+    - total 只统计仍然需要出题的计划项
+    - 已掌握 mastered 的题不再占用“今日待处理”
+    - done 仍然按今天 StudyLog 答对记录计算
+    """
     done_ids = set(_get_today_done_ids(request))
-    total = len(scope_items)
+
+    active_scope_items = []
+
+    for item in scope_items:
+        training_obj = item.get("training")
+
+        if not training_obj:
+            continue
+
+        memory_obj = get_item_memory(request.user, training_obj)
+        cycle_obj = _build_cycle_status(memory_obj)
+
+        if cycle_obj.get("is_mastered"):
+            continue
+
+        active_scope_items.append(item)
+
+    total = len(active_scope_items)
 
     done = sum(
-        1 for item in scope_items
+        1 for item in active_scope_items
         if item["training"].id in done_ids
     )
 

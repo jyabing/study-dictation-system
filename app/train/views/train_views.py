@@ -5732,6 +5732,9 @@ def builder_save(request):
     prompt_image_url = (data.get("prompt_image_url") or "").strip()
     answer_audio = (data.get("answer_audio") or "").strip()
 
+    is_dictation_enabled = bool(data.get("is_dictation_enabled", False))
+    dictation_text = (data.get("dictation_text") or "").strip()
+
     accepted_answers_text = (data.get("accepted_answers_text") or "").strip()
     accepted_answers = [
         line.strip()
@@ -5925,7 +5928,9 @@ def builder_save(request):
             }],
             audio_file=uploaded_audio_file,
             answer_audio_file=uploaded_answer_audio_file,
-            answer_use_tts=answer_use_tts
+            answer_use_tts=answer_use_tts,
+            is_dictation_enabled=is_dictation_enabled,
+            dictation_text=dictation_text
         )
 
         created_items.append(training.id)

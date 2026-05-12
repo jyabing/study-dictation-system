@@ -12,6 +12,7 @@
     }
 
     .dictation-session-card,
+    .dictation-answer-card,
     .dictation-result-card {
         padding: 22px;
         border: 1px solid rgba(110, 168, 255, 0.20);
@@ -121,12 +122,88 @@
         background: rgba(148, 163, 184, 0.10);
     }
 
+    .dictation-answer-card {
+        margin-top: 18px;
+    }
+
+    .dictation-answer-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+    .dictation-answer-title {
+        font-size: 22px;
+        font-weight: 900;
+    }
+
+    .dictation-answer-subtitle {
+        margin-top: 6px;
+        color: var(--text-muted);
+        font-size: 14px;
+        line-height: 1.7;
+    }
+
+    .dictation-play-placeholder {
+        width: 100%;
+        min-height: 58px;
+        border: 1px dashed rgba(110, 168, 255, 0.42);
+        border-radius: 18px;
+        background: rgba(59, 130, 246, 0.10);
+        color: var(--text);
+        font-size: 16px;
+        font-weight: 900;
+        cursor: not-allowed;
+    }
+
+    .dictation-answer-input {
+        width: 100%;
+        min-height: 54px;
+        margin-top: 14px;
+        padding: 0 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.30);
+        background: rgba(15, 23, 42, 0.14);
+        color: var(--text);
+        font-size: 18px;
+        font-weight: 800;
+        box-sizing: border-box;
+    }
+
+    .dictation-answer-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .dictation-submit-placeholder {
+        width: 100%;
+        min-height: 50px;
+        margin-top: 14px;
+        border: 0;
+        border-radius: 999px;
+        color: #ffffff;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        box-shadow: 0 14px 32px rgba(37, 99, 235, 0.32);
+        font-size: 16px;
+        font-weight: 900;
+        cursor: not-allowed;
+    }
+
+    .dictation-answer-note {
+        margin-top: 12px;
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1.7;
+    }
+
     @media (max-width: 768px) {
         .dictation-session-page {
             margin: 20px auto 40px;
         }
 
         .dictation-session-card,
+        .dictation-answer-card,
         .dictation-result-card {
             padding: 18px;
             border-radius: 18px;
@@ -198,6 +275,40 @@
             <a href="{{ back_url }}" class="dictation-back">返回书册</a>
         </div>
     </section>
+
+    {% for result in results %}
+        {% if forloop.first %}
+            <section class="dictation-answer-card">
+                <div class="dictation-answer-top">
+                    <div>
+                        <div class="dictation-answer-title">第 {{ result.order_index }} 题</div>
+                        <div class="dictation-answer-subtitle">
+                            共 {{ session.total_count }} 题。本步只搭建答题界面，暂不判题、不保存答案。
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="dictation-play-placeholder" disabled>
+                    ▶ 播放音频（占位）
+                </button>
+
+                <input
+                    type="text"
+                    class="dictation-answer-input"
+                    placeholder="请输入你听到的内容"
+                    disabled
+                >
+
+                <button type="button" class="dictation-submit-placeholder" disabled>
+                    提交答案（暂未接入）
+                </button>
+
+                <div class="dictation-answer-note">
+                    下一步会接入真实音频 / TTS、启用输入框、提交答案、三次机会和结果保存。
+                </div>
+            </section>
+        {% endif %}
+    {% endfor %}
 
     <div class="dictation-result-list">
         {% for result in results %}

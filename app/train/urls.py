@@ -11,6 +11,8 @@ from .views.train_views import (
     book_train_api,
     lesson_train,
     lesson_train_api,
+    dictation_book_check,
+    dictation_lesson_check,
     asr_transcribe_api,
     practice_player_page,
     practice_library_page,
@@ -92,6 +94,8 @@ urlpatterns = [
 
     # Book + Lesson
     path("book/<int:book_id>/train/", book_train, name="book-train"),
+    path("dictation/book/<int:book_id>/check/", dictation_book_check, name="dictation-book-check"),
+    path("dictation/lesson/<int:lesson_id>/check/", dictation_lesson_check, name="dictation-lesson-check"),
     path("api/book/<int:book_id>/train/", book_train_api, name="book-train-api"),
     path("api/book/<int:book_id>/train/manual-upgrade/", book_train_manual_upgrade, name="book-train-manual-upgrade"),
     path("api/asr/transcribe/", asr_transcribe_api, name="asr-transcribe-api"),

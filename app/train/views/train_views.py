@@ -4338,6 +4338,51 @@ def _render_train_page(request, scope, obj):
 
     return render(request, "train/train.html", context)
 
+@login_required
+def dictation_book_check(request, book_id):
+    book = get_object_or_404(
+        Book,
+        id=book_id,
+        owner=request.user
+    )
+
+    dictation_items = _get_scope_dictation_qs("book", book)
+    dictation_count = dictation_items.count()
+
+    return render(request, "train/dictation_check.html", {
+        "scope_type": "book",
+        "scope_label": "书册",
+        "scope_title": book.title,
+        "dictation_count": dictation_count,
+        "minimum_required": 1,
+        "can_start": dictation_count >= 1,
+        "back_url": reverse("book-detail", args=[book.id]),
+        "start_url": "#",
+    })
+
+
+@login_required
+def dictation_lesson_check(request, lesson_id):
+    lesson = get_object_or_404(
+        Lesson,
+        id=lesson_id,
+        book__owner=request.user
+    )
+
+    dictation_items = _get_scope_dictation_qs("lesson", lesson)
+    dictation_count = dictation_items.count()
+
+    return render(request, "train/dictation_check.html", {
+        "scope_type": "lesson",
+        "scope_label": "课节",
+        "scope_title": lesson.title,
+        "dictation_count": dictation_count,
+        "minimum_required": 1,
+        "can_start": dictation_count >= 1,
+        "back_url": reverse("book-detail", args=[lesson.book_id]),
+        "start_url": "#",
+    })
+
 # =========================
 # 页面：训练页
 # =========================

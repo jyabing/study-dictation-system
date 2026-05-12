@@ -1,0 +1,229 @@
+{% extends "train/base_train.html" %}
+
+{% block title %}听写考核会话{% endblock %}
+
+{% block body_class %}dictation-session-body{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dictation-session-page {
+        width: min(var(--max-width), calc(100% - 32px));
+        margin: 28px auto 48px;
+    }
+
+    .dictation-session-card,
+    .dictation-result-card {
+        padding: 22px;
+        border: 1px solid rgba(110, 168, 255, 0.20);
+        border-radius: 22px;
+        background: linear-gradient(180deg, var(--panel), var(--panel-2));
+        box-shadow: var(--shadow);
+    }
+
+    .dictation-session-title {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+    }
+
+    .dictation-session-subtitle {
+        margin-top: 10px;
+        color: var(--text-muted);
+        line-height: 1.7;
+        font-size: 14px;
+    }
+
+    .dictation-session-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 22px;
+    }
+
+    .dictation-session-stat {
+        padding: 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        background: rgba(15, 23, 42, 0.18);
+    }
+
+    .dictation-session-label {
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .dictation-session-value {
+        margin-top: 8px;
+        font-size: 22px;
+        font-weight: 900;
+        word-break: break-word;
+    }
+
+    .dictation-result-list {
+        display: grid;
+        gap: 14px;
+        margin-top: 18px;
+    }
+
+    .dictation-result-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .dictation-result-title {
+        font-size: 18px;
+        font-weight: 900;
+    }
+
+    .dictation-result-meta {
+        margin-top: 10px;
+        color: var(--text-muted);
+        line-height: 1.7;
+        font-size: 14px;
+    }
+
+    .dictation-snapshot {
+        margin-top: 12px;
+        padding: 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        background: rgba(15, 23, 42, 0.18);
+        font-size: 18px;
+        font-weight: 900;
+        line-height: 1.7;
+    }
+
+    .dictation-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 22px;
+    }
+
+    .dictation-actions a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 16px;
+        border-radius: 999px;
+        font-weight: 900;
+        text-decoration: none;
+    }
+
+    .dictation-back {
+        color: var(--text);
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        background: rgba(148, 163, 184, 0.10);
+    }
+
+    @media (max-width: 768px) {
+        .dictation-session-page {
+            margin: 20px auto 40px;
+        }
+
+        .dictation-session-card,
+        .dictation-result-card {
+            padding: 18px;
+            border-radius: 18px;
+        }
+
+        .dictation-session-title {
+            font-size: 24px;
+        }
+
+        .dictation-session-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .dictation-result-head {
+            flex-direction: column;
+        }
+
+        .dictation-actions {
+            flex-direction: column;
+        }
+
+        .dictation-actions a {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dictation-session-page">
+    <section class="dictation-session-card">
+        <h1 class="dictation-session-title">听写考核会话</h1>
+
+        <div class="dictation-session-subtitle">
+            当前页面先用于确认本次随机抽题结果。下一步会在这里接入真正的听写答题界面。
+        </div>
+
+        <div class="dictation-session-grid">
+            <div class="dictation-session-stat">
+                <div class="dictation-session-label">Session ID</div>
+                <div class="dictation-session-value">{{ session.id }}</div>
+            </div>
+
+            <div class="dictation-session-stat">
+                <div class="dictation-session-label">范围</div>
+                <div class="dictation-session-value">
+                    {% if session.lesson %}
+                        {{ session.lesson.title }}
+                    {% elif session.book %}
+                        {{ session.book.title }}
+                    {% else %}
+                        未知
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="dictation-session-stat">
+                <div class="dictation-session-label">总题数</div>
+                <div class="dictation-session-value">{{ session.total_count }}</div>
+            </div>
+
+            <div class="dictation-session-stat">
+                <div class="dictation-session-label">状态</div>
+                <div class="dictation-session-value">{{ session.status }}</div>
+            </div>
+        </div>
+
+        <div class="dictation-actions">
+            <a href="{{ back_url }}" class="dictation-back">返回书册</a>
+        </div>
+    </section>
+
+    <div class="dictation-result-list">
+        {% for result in results %}
+            <section class="dictation-result-card">
+                <div class="dictation-result-head">
+                    <div>
+                        <div class="dictation-result-title">第 {{ result.order_index }} 题</div>
+                        <div class="dictation-result-meta">
+                            TrainingItem ID：{{ result.training_item_id }}
+                            ｜Question ID：{{ result.question_id }}
+                            ｜尝试次数：{{ result.attempt_count }}
+                            ｜结果：{% if result.is_correct %}正确{% else %}未完成 / 未正确{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dictation-snapshot">
+                    {{ result.dictation_text_snapshot }}
+                </div>
+            </section>
+        {% empty %}
+            <section class="dictation-result-card">
+                <div class="dictation-result-title">暂无题目</div>
+                <div class="dictation-result-meta">这个听写会话还没有生成题目。</div>
+            </section>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

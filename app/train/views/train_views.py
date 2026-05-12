@@ -4463,6 +4463,25 @@ def _create_dictation_session(request, scope, obj):
 
     return session
 
+@login_required
+def dictation_session_detail(request, session_id):
+    session = get_object_or_404(
+        DictationSession.objects.select_related("book", "lesson"),
+        id=session_id,
+        user=request.user
+    )
+
+    results = (
+        session.results
+        .select_related("training_item", "question")
+        .order_by("order_index", "id")
+    )
+
+    return render(request, "train/dictation_session_detail.html", {
+        "session": session,
+        "results": results,
+        "back_url": reverse("book-detail", args=[session.book_id]) if session.book_id else reverse("dashboard"),
+    })
 
 @login_required
 def dictation_book_start(request, book_id):
@@ -4477,7 +4496,7 @@ def dictation_book_start(request, book_id):
     if session is None:
         return redirect("dictation-book-check", book_id=book.id)
 
-    return redirect("dictation-book-check", book_id=book.id)
+    return redirect("dictation-session-detail", session_id=session.id)
 
 
 @login_required
@@ -4493,7 +4512,7 @@ def dictation_lesson_start(request, lesson_id):
     if session is None:
         return redirect("dictation-lesson-check", lesson_id=lesson.id)
 
-    return redirect("dictation-lesson-check", lesson_id=lesson.id)
+    return redirect("dictation-session-detail", session_id=session.id)
 
 # =========================
 # 页面：训练页

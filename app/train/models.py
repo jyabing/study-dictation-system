@@ -734,3 +734,116 @@ class StudyLog(models.Model):
     def __str__(self):
         result = "correct" if self.is_correct else "wrong"
         return f"{self.user.username} - {result} - {self.created_at:%Y-%m-%d %H:%M:%S}"
+
+# =========================
+# 🎧 DictationSession（听写考核会话）
+# =========================
+class DictationSession(models.Model):
+
+    STATUS_CHOICES = [
+        ("in_progress", "进行中"),
+        ("finished", "已完成"),
+        ("abandoned", "已放弃"),
+    ]
+
+    SCOPE_TYPE_CHOICES = [
+        ("book", "书册"),
+        ("lesson", "课节"),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="dictation_sessions"
+    )
+
+    scope_type = models.CharField(
+        max_length=20,
+        choices=SCOPE_TYPE_CHOICES
+    )
+
+    book = models.ForeignKey(
+        Book,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="dictation_sessions"
+    )
+
+    lesson = models.ForeignKey(
+        Lesson,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="dictation_sessions"
+    )
+
+    total_count = models.PositiveSmallIntegerField(default=0)
+    correct_count = models.PositiveSmallIntegerField(default=0)
+    wrong_count = models.PositiveSmallIntegerField(default=0)
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="in_progress"
+    )
+
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-started_at"]
+
+    def __str__(self):
+        return f"{self.user.username} - dictation {self.id} - {self.status}"
+
+
+# =========================
+# 🎧 DictationResult（听写考核单题结果）
+# =========================
+class DictationResult(models.Model):
+
+    session = models.ForeignKey(
+        DictationSession,
+        on_delete=models.CASCADE,
+        related_name="results"
+    )
+
+    training_item = models.ForeignKey(
+        TrainingItem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="dictation_results"
+    )
+
+    question = models.ForeignKey(
+        Question,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="dictation_results"
+    )
+
+    order_index = models.PositiveSmallIntegerField(default=0)
+
+    dictation_text_snapshot = models.TextField(blank=True, default="")
+
+    is_correct = models.BooleanField(default=False)
+    attempt_count = models.PositiveSmallIntegerField(default=0)
+    correct_attempt_number = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    user_answers = models.JSONField(blank=True, default=list)
+
+    timed_out = models.BooleanField(default=False)
+    duration_ms = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    answered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["session", "order_index", "id"]
+
+    def __str__(self):
+        result = "correct" if self.is_correct else "wrong"
+        return f"DictationResult S{self.session_id} #{self.order_index} - {result}"

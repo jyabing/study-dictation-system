@@ -1756,6 +1756,10 @@ def build_training_payload(training, memory=None, request=None):
     write_expected_answer = ""
     write_prompt_label = ""
     write_answer_label = ""
+    write_prompt_type = ""
+    write_answer_type = ""
+    write_direction_label = ""
+    write_placeholder = ""
 
     if training.item_type == "write":
         write_source_text = (
@@ -1770,6 +1774,23 @@ def build_training_payload(training, memory=None, request=None):
             or ""
         ).strip()
 
+        write_meta = meta.get("write") if isinstance(meta.get("write"), dict) else {}
+
+        # 旧数据兼容：
+        # 当前系统里 source_text 通常是中文意思，target_answer 通常是日文表达。
+        # 后续如果新增假名字段，可以从 meta.write 里传入更精确的 source_type / target_type。
+        source_type = (
+            write_meta.get("source_type")
+            or write_meta.get("source_label")
+            or "中文意思"
+        )
+
+        target_type = (
+            write_meta.get("target_type")
+            or write_meta.get("target_label")
+            or "日文表达"
+        )
+
         if write_source_text and write_target_text:
             write_direction = random.choice([
                 "source_to_target",
@@ -1781,13 +1802,20 @@ def build_training_payload(training, memory=None, request=None):
         if write_direction == "target_to_source":
             write_display_text = write_target_text
             write_expected_answer = write_source_text
-            write_prompt_label = "反向检查：请根据日文表达写出中文意思"
-            write_answer_label = "应写出的中文意思"
+
+            write_prompt_type = target_type
+            write_answer_type = source_type
         else:
             write_display_text = write_source_text
             write_expected_answer = write_target_text
-            write_prompt_label = "正向训练：请根据中文意思写出日文表达"
-            write_answer_label = "应写出的日文表达"
+
+            write_prompt_type = source_type
+            write_answer_type = target_type
+
+        write_direction_label = f"{write_prompt_type} → {write_answer_type}"
+        write_prompt_label = f"当前训练：{write_direction_label}"
+        write_answer_label = f"应写出的{write_answer_type}"
+        write_placeholder = f"请输入{write_answer_type}"
 
         if write_display_text:
             prompt_text = write_display_text
@@ -1825,6 +1853,10 @@ def build_training_payload(training, memory=None, request=None):
         "write_target_text": write_target_text,
         "write_prompt_label": write_prompt_label,
         "write_answer_label": write_answer_label,
+        "write_prompt_type": write_prompt_type,
+        "write_answer_type": write_answer_type,
+        "write_direction_label": write_direction_label,
+        "write_placeholder": write_placeholder,
 
         # 题干音频
         "audio_url": resolved_prompt_audio or "",

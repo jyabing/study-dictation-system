@@ -5395,6 +5395,7 @@ def lesson_question_list(request, lesson_id):
         "read_choice": "read",
         "read_choice_single": "read",
         "read_choice_multi": "read",
+        "write": "write",
         "write_text": "write",
     }
 
@@ -5476,7 +5477,7 @@ def lesson_question_list(request, lesson_id):
             {"value": "speak_read", "label": "speak_read"},
             {"value": "listen_asr", "label": "listen_asr"},
             {"value": "read_choice", "label": "read_choice"},
-            {"value": "write_text", "label": "write_text"},
+            {"value": "write", "label": "write"},
         ],
     })
 
@@ -6143,9 +6144,46 @@ def builder_save(request):
     # 现阶段映射到 write
     # =========================
     if item_type == "write_text":
-        if not answer_text:
+        raw_write_fields = data.get("write_fields") or data.get("fields") or []
+
+        write_fields = []
+        if isinstance(raw_write_fields, list):
+            for field in raw_write_fields:
+                if not isinstance(field, dict):
+                    continue
+
+                key = str(field.get("key") or "").strip()
+                label = str(field.get("label") or "").strip()
+                text = str(field.get("text") or field.get("value") or "").strip()
+
+                if not key or not label or not text:
+                    continue
+
+                write_fields.append({
+                    "key": key,
+                    "label": label,
+                    "text": text,
+                })
+
+        if not answer_text and len(write_fields) < 2:
             question.delete()
-            return JsonResponse({"ok": False, "error": "写作题必须填写回答"}, status=400)
+            return JsonResponse({"ok": False, "error": "写作题必须填写回答，或至少填写两个写作三字段内容"}, status=400)
+
+        # 旧数据兼容：
+        # 如果前端没有传 write_fields，就继续按 source_text / target_answer 两字段保存。
+        if not write_fields:
+            write_fields = [
+                {
+                    "key": "source_text",
+                    "label": "中文意思",
+                    "text": source_text,
+                },
+                {
+                    "key": "target_answer",
+                    "label": "日文表达",
+                    "text": target_answer,
+                },
+            ]
 
         training = TrainingItem.objects.create(
             question=question,
@@ -6156,7 +6194,10 @@ def builder_save(request):
             choices=[{
                 "_meta": {
                     "skill": skill,
-                    "item_type": item_type
+                    "item_type": item_type,
+                    "write": {
+                        "fields": write_fields
+                    }
                 }
             }],
             audio_file=uploaded_audio_file,
@@ -6257,6 +6298,31 @@ def question_edit(request, question_id):
                 .order_by("question_id", "id")
             )
 
+    write_field_values = {
+        "jp_kanji": "",
+        "kana": "",
+        "zh_meaning": "",
+    }
+
+    if training and training.item_type == "write":
+        old_choices = training.choices or []
+
+        if old_choices and isinstance(old_choices[0], dict):
+            meta = old_choices[0].get("_meta", {}) or {}
+            write_meta = meta.get("write") if isinstance(meta.get("write"), dict) else {}
+            write_fields = write_meta.get("fields") or []
+
+            if isinstance(write_fields, list):
+                for field in write_fields:
+                    if not isinstance(field, dict):
+                        continue
+
+                    key = str(field.get("key") or "").strip()
+                    text = str(field.get("text") or field.get("value") or "").strip()
+
+                    if key in write_field_values:
+                        write_field_values[key] = text
+
     if request.method == "POST":
         instruction_text = (request.POST.get("instruction_text") or "").strip()
 
@@ -6271,6 +6337,32 @@ def question_edit(request, question_id):
             or request.POST.get("answer_text")
             or ""
         ).strip()
+
+        write_jp_kanji = (request.POST.get("write_jp_kanji") or "").strip()
+        write_kana = (request.POST.get("write_kana") or "").strip()
+        write_zh_meaning = (request.POST.get("write_zh_meaning") or "").strip()
+        
+        write_fields = []
+        if write_jp_kanji:
+            write_fields.append({
+                "key": "jp_kanji",
+                "label": "日文汉字",
+                "text": write_jp_kanji,
+            })
+
+        if write_kana:
+            write_fields.append({
+                "key": "kana",
+                "label": "假名",
+                "text": write_kana,
+            })
+
+        if write_zh_meaning:
+            write_fields.append({
+                "key": "zh_meaning",
+                "label": "中文意译",
+                "text": write_zh_meaning,
+            })
 
         audio_url = (request.POST.get("audio_url") or "").strip()
         answer_audio_url = (request.POST.get("answer_audio_url") or "").strip()
@@ -6335,6 +6427,7 @@ def question_edit(request, question_id):
                     if training and training.choices and isinstance((training.choices or [])[0], dict)
                     else {}
                 ),
+                "write_field_values": write_field_values,
             })
 
         # 通用字段先保存（旧字段继续兼容）
@@ -6348,6 +6441,25 @@ def question_edit(request, question_id):
             training.instruction_text = instruction_text
             training.source_text = source_text
             training.target_answer = target_answer
+
+            if training.item_type == "write" and len(write_fields) >= 2:
+                old_choices = training.choices or []
+
+                if old_choices and isinstance(old_choices[0], dict):
+                    first_choice = dict(old_choices[0])
+                    meta = first_choice.get("_meta", {}) or {}
+                else:
+                    first_choice = {}
+                    meta = {}
+
+                meta["skill"] = "write"
+                meta["item_type"] = "write_text"
+                meta["write"] = {
+                    "fields": write_fields
+                }
+
+                first_choice["_meta"] = meta
+                training.choices = [first_choice]
 
             if training.item_type == "speak_read":
                 training.prompt_image_url = prompt_image_url
@@ -6367,6 +6479,9 @@ def question_edit(request, question_id):
                 "accepted_answers",
                 "prompt_image_url",
             ]
+
+            if training.item_type == "write" and len(write_fields) >= 2:
+                update_fields.append("choices")
 
             if clear_audio_file:
                 if training.audio_file:
@@ -6668,6 +6783,7 @@ def question_edit(request, question_id):
             if training and training.choices and isinstance((training.choices or [])[0], dict)
             else {}
         ),
+        "write_field_values": write_field_values,
     })
 
 @login_required

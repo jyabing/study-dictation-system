@@ -702,6 +702,46 @@
                     </div>
                 </div>
 
+                <div id="write_fields_section" class="card section hidden">
+                    <div class="section-title">写作三字段训练</div>
+                    <div class="section-sub">
+                        用于「日文汉字 / 假名 / 中文意译」之间随机互换出题。填写后，写作训练会随机生成六种方向。
+                    </div>
+
+                    <div class="grid-3" style="margin-top:12px;">
+                        <div class="field">
+                            <label for="write_jp_kanji">日文汉字</label>
+                            <textarea
+                                id="write_jp_kanji"
+                                placeholder="例如：突拍子もない話"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+
+                        <div class="field">
+                            <label for="write_kana">假名</label>
+                            <textarea
+                                id="write_kana"
+                                placeholder="例如：とっぴょうしもないはなし"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+
+                        <div class="field">
+                            <label for="write_zh_meaning">中文意译</label>
+                            <textarea
+                                id="write_zh_meaning"
+                                placeholder="例如：荒唐离奇的话 / 出人意料的话"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <div class="section-sub" style="margin-top:10px; margin-bottom:0;">
+                        保存时会优先用这里生成三字段训练数据；为了兼容旧页面，系统也会同步填充上方的「题干 / 回答」。
+                    </div>
+                </div>                
+
                 <div id="cloze_section" class="card section hidden">
                     <div class="section-title">克漏字配置</div>
                     <div class="section-sub">读-克漏字用于随着熟练度自动增加空格。</div>
@@ -994,12 +1034,14 @@
             const clozeAutoTip = document.getElementById("cloze_auto_tip");
             const choiceSection = document.getElementById("choice_section");
             const asrSection = document.getElementById("asr_section");
+            const writeFieldsSection = document.getElementById("write_fields_section");
 
             const isListenChoice = isListenChoiceItemType(itemType);
             const isListenAudioMode = itemType === "listen_asr" || isListenChoice;
             const isListenOrSpeak = itemType === "listen_asr" || itemType === "speak_read";
             const isSpeakRead = itemType === "speak_read";
             const isReadChoice = isChoiceItemType(itemType);
+            const isWriteText = itemType === "write_text";
 
             // 回答区：选择题隐藏，其它显示
             answerSection.classList.toggle("hidden", isReadChoice);
@@ -1023,6 +1065,11 @@
 
             // 选择题区
             choiceSection.classList.toggle("hidden", !isReadChoice);
+
+            // 写作三字段区：只在写作题显示
+            if (writeFieldsSection) {
+                writeFieldsSection.classList.toggle("hidden", !isWriteText);
+            }
 
             // 听说识别配置区
             asrSection.classList.toggle("hidden", !isListenOrSpeak);
@@ -1227,6 +1274,50 @@
             });
         }
 
+        function getWriteFieldValues() {
+            const jpKanji = document.getElementById("write_jp_kanji")
+                ? document.getElementById("write_jp_kanji").value.trim()
+                : "";
+
+            const kana = document.getElementById("write_kana")
+                ? document.getElementById("write_kana").value.trim()
+                : "";
+
+            const zhMeaning = document.getElementById("write_zh_meaning")
+                ? document.getElementById("write_zh_meaning").value.trim()
+                : "";
+
+            return {
+                jpKanji: jpKanji,
+                kana: kana,
+                zhMeaning: zhMeaning
+            };
+        }
+
+        function syncWriteFieldsToMainInputs() {
+            const itemType = document.getElementById("item_type").value;
+
+            if (itemType !== "write_text") {
+                return;
+            }
+
+            const values = getWriteFieldValues();
+
+            const promptInput = document.getElementById("prompt_text");
+            const answerInput = document.getElementById("answer_text");
+
+            // 兼容旧字段：
+            // 题干优先放中文意译，回答优先放日文汉字。
+            // 真正的三字段训练会在下一步通过 write_fields 保存。
+            if (promptInput) {
+                promptInput.value = values.zhMeaning || values.jpKanji || values.kana || "";
+            }
+
+            if (answerInput) {
+                answerInput.value = values.jpKanji || values.kana || values.zhMeaning || "";
+            }
+        }
+
         function buildChoices() {
             return choices.map((c, index) => {
                 const item = normalizeChoiceItem(c);
@@ -1408,6 +1499,35 @@
 
             const promptText = document.getElementById("prompt_text").value;
 
+            const writeFieldValues = getWriteFieldValues();
+            const writeFields = [];
+
+            if (itemType === "write_text") {
+                if (writeFieldValues.jpKanji) {
+                    writeFields.push({
+                        key: "jp_kanji",
+                        label: "日文汉字",
+                        text: writeFieldValues.jpKanji
+                    });
+                }
+
+                if (writeFieldValues.kana) {
+                    writeFields.push({
+                        key: "kana",
+                        label: "假名",
+                        text: writeFieldValues.kana
+                    });
+                }
+
+                if (writeFieldValues.zhMeaning) {
+                    writeFields.push({
+                        key: "zh_meaning",
+                        label: "中文意译",
+                        text: writeFieldValues.zhMeaning
+                    });
+                }
+            }
+
             const isReadChoice = isChoiceItemType(itemType);
 
             const choicesPayload = buildChoices()
@@ -1479,6 +1599,16 @@
                     alert("说 / 看字朗读题需要填写文字题干，或上传 / 填写题干图片。");
                     return;
                 }
+            } else if (itemType === "write_text") {
+                if (!hasPromptText && writeFields.length < 2) {
+                    alert("写作题请填写题干，或至少填写两个写作三字段内容。");
+                    return;
+                }
+
+                if (writeFields.length > 0 && writeFields.length < 2) {
+                    alert("写作三字段训练至少需要填写两个字段，才能互换出题。");
+                    return;
+                }
             } else if (!hasPromptText) {
                 alert("题干不能为空。");
                 return;
@@ -1524,6 +1654,7 @@
                 source_text: promptText,
                 target_answer: answerText,
                 accepted_answers_text: acceptedAnswersText,
+                write_fields: writeFields,
 
                 // 旧字段：继续兼容后端旧逻辑
                 prompt_text: promptText,

@@ -151,6 +151,48 @@
                                 </div>
                             {% endif %}
 
+                            {% if display_qtype == "write" %}
+                                <div class="field-group full">
+                                    <div class="field-label">写作三字段训练</div>
+
+                                    <div class="grid-3">
+                                        <div class="field-group">
+                                            <div class="field-label">日文汉字</div>
+                                            <textarea
+                                                name="write_jp_kanji"
+                                                id="write-jp-kanji-display"
+                                                class="textarea"
+                                                placeholder="例如：突拍子もない話"
+                                            >{{ write_field_values.jp_kanji|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">假名</div>
+                                            <textarea
+                                                name="write_kana"
+                                                id="write-kana-display"
+                                                class="textarea"
+                                                placeholder="例如：とっぴょうしもないはなし"
+                                            >{{ write_field_values.kana|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">中文意译</div>
+                                            <textarea
+                                                name="write_zh_meaning"
+                                                id="write-zh-meaning-display"
+                                                class="textarea"
+                                                placeholder="例如：荒唐离奇的话 / 出人意料的话"
+                                            >{{ write_field_values.zh_meaning|default:'' }}</textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="field-help">
+                                        当前只用于显示和确认三字段内容。下一步再接保存逻辑。
+                                    </div>
+                                </div>
+                            {% endif %}
+
                             <div
                                 id="accepted-answers-block"
                                 class="field-group full listen-speak-only"

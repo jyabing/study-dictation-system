@@ -8,7 +8,9 @@ from .models import (
     PracticeTrack,
     PracticeSegment,
     QuestionMemory,
-    UserProfile
+    UserProfile,
+    DictationSession,
+    DictationResult,
 )
 
 
@@ -234,3 +236,71 @@ class QuestionMemoryAdmin(admin.ModelAdmin):
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ("user", "xp", "level", "streak")
+
+@admin.register(DictationSession)
+class DictationSessionAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "user",
+        "scope_type",
+        "book",
+        "lesson",
+        "total_count",
+        "correct_count",
+        "wrong_count",
+        "status",
+        "started_at",
+        "finished_at",
+    )
+
+    list_filter = (
+        "scope_type",
+        "status",
+        "started_at",
+    )
+
+    search_fields = (
+        "user__username",
+        "book__title",
+        "lesson__title",
+    )
+
+    readonly_fields = (
+        "started_at",
+    )
+
+
+@admin.register(DictationResult)
+class DictationResultAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "session",
+        "training_item",
+        "question",
+        "order_index",
+        "is_correct",
+        "attempt_count",
+        "correct_attempt_number",
+        "timed_out",
+        "duration_ms",
+        "created_at",
+        "answered_at",
+    )
+
+    list_filter = (
+        "is_correct",
+        "timed_out",
+        "created_at",
+    )
+
+    search_fields = (
+        "dictation_text_snapshot",
+        "user_answers",
+        "session__user__username",
+        "question__prompt_text",
+        "training_item__dictation_text",
+    )
+
+    readonly_fields = (
+        "created_at",
+    )

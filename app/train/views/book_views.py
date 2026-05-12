@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
-from ..models import Book, Lesson, Question, QuestionMemory
+from django.db.models import Count
+from ..models import Book, Lesson, Question, QuestionMemory, TrainingItem
 from .train_views import (
     get_book_lessons_cycle_summary,
     get_dashboard_books_cycle_summary,
@@ -419,6 +420,24 @@ def book_detail(request, book_id):
 
     lessons = list(lessons)
 
+    dictation_count_rows = (
+        TrainingItem.objects
+        .filter(
+            question__lesson__book=book,
+            item_type="write",
+            is_active=True,
+            is_dictation_enabled=True,
+        )
+        .exclude(dictation_text="")
+        .values("question__lesson_id")
+        .annotate(count=Count("id"))
+    )
+
+    dictation_count_map = {
+        row["question__lesson_id"]: row["count"]
+        for row in dictation_count_rows
+    }
+
     for lesson in lessons:
         row = lesson_summary_map.get(lesson.id, {})
 
@@ -444,6 +463,7 @@ def book_detail(request, book_id):
         lesson.priority_status = row.get("priority_status", "idle")
         lesson.priority_status_label = row.get("priority_status_label", "暂无安排")
         lesson.risk_level = row.get("risk_level", "稳定")
+        lesson.dictation_count = dictation_count_map.get(lesson.id, 0)
 
     book_cycle_summary_list = get_dashboard_books_cycle_summary(request.user, [book])
     book_cycle_summary = book_cycle_summary_list[0] if book_cycle_summary_list else {

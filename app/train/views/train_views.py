@@ -48,6 +48,8 @@ from ..models import (
     PracticePlaylist,
     PracticeTrack,
     PracticeSegment,
+    DictationSession,
+    DictationResult,
 )
 
 # =========================
@@ -4389,7 +4391,7 @@ def dictation_book_check(request, book_id):
         "minimum_required": 1,
         "can_start": dictation_count >= 1,
         "back_url": reverse("book-detail", args=[book.id]),
-        "start_url": "#",
+        "start_url": reverse("dictation-book-start", args=[book.id]),
     })
 
 
@@ -4412,8 +4414,86 @@ def dictation_lesson_check(request, lesson_id):
         "minimum_required": 1,
         "can_start": dictation_count >= 1,
         "back_url": reverse("book-detail", args=[lesson.book_id]),
-        "start_url": "#",
+        "start_url": reverse("dictation-lesson-start", args=[lesson.id]),
     })
+
+def _create_dictation_session(request, scope, obj):
+    dictation_items = list(
+        _get_scope_dictation_qs(scope, obj)
+        .select_related("question")
+        .order_by("id")
+    )
+
+    if not dictation_items:
+        return None
+
+    random.shuffle(dictation_items)
+    selected_items = dictation_items[:10]
+
+    session_kwargs = {
+        "user": request.user,
+        "scope_type": scope,
+        "total_count": len(selected_items),
+        "correct_count": 0,
+        "wrong_count": 0,
+        "status": "in_progress",
+    }
+
+    if scope == "book":
+        session_kwargs["book"] = obj
+    elif scope == "lesson":
+        session_kwargs["lesson"] = obj
+        session_kwargs["book"] = obj.book
+
+    session = DictationSession.objects.create(**session_kwargs)
+
+    results = []
+    for index, training in enumerate(selected_items, start=1):
+        results.append(
+            DictationResult(
+                session=session,
+                training_item=training,
+                question=training.question,
+                order_index=index,
+                dictation_text_snapshot=(training.dictation_text or "").strip(),
+            )
+        )
+
+    DictationResult.objects.bulk_create(results)
+
+    return session
+
+
+@login_required
+def dictation_book_start(request, book_id):
+    book = get_object_or_404(
+        Book,
+        id=book_id,
+        owner=request.user
+    )
+
+    session = _create_dictation_session(request, "book", book)
+
+    if session is None:
+        return redirect("dictation-book-check", book_id=book.id)
+
+    return redirect("dictation-book-check", book_id=book.id)
+
+
+@login_required
+def dictation_lesson_start(request, lesson_id):
+    lesson = get_object_or_404(
+        Lesson,
+        id=lesson_id,
+        book__owner=request.user
+    )
+
+    session = _create_dictation_session(request, "lesson", lesson)
+
+    if session is None:
+        return redirect("dictation-lesson-check", lesson_id=lesson.id)
+
+    return redirect("dictation-lesson-check", lesson_id=lesson.id)
 
 # =========================
 # 页面：训练页

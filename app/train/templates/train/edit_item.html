@@ -111,8 +111,8 @@
                                 <div class="field-help">必填。用于说明这道题要用户如何作答。</div>
                             </div>
 
-                            <div class="field-group full">
-                                <div class="field-label">题干</div>
+                            <div class="field-group full {% if display_qtype == 'write' %}write-legacy-field{% endif %}">
+                                <div class="field-label">题干{% if display_qtype == "write" %}（兼容字段）{% endif %}</div>
                                 <textarea
                                     id="question-display"
                                     class="textarea"
@@ -136,13 +136,13 @@
                                 <input type="hidden" name="answer_text" id="answer-hidden-2" value="">
                                 <input type="hidden" name="target_answer" id="target-answer-hidden" value="">
                             {% else %}
-                                <div class="field-group full">
-                                    <div class="field-label">回答</div>
+                                <div class="field-group full {% if display_qtype == 'write' %}write-legacy-field{% endif %}">
+                                    <div class="field-label">回答{% if display_qtype == "write" %}（兼容字段）{% endif %}</div>
                                     <textarea
                                         id="answer-display"
                                         class="textarea"
                                         placeholder="请输入目标回答"
-                                        required
+                                        {% if display_qtype != "write" %}required{% endif %}
                                     >{% firstof training.target_answer obj.answer_text obj.answer "" %}</textarea>
                                     <input type="hidden" name="answer" id="answer-hidden-1" value="{% firstof training.target_answer obj.answer_text obj.answer '' %}">
                                     <input type="hidden" name="answer_text" id="answer-hidden-2" value="{% firstof training.target_answer obj.answer_text obj.answer '' %}">
@@ -1186,8 +1186,13 @@
 
 .field-help {
     margin-top: 6px;
+    color: var(--muted);
     font-size: 12px;
-    color: var(--text-faint);
+    line-height: 1.6;
+}
+
+.write-legacy-field {
+    display: none;
 }
 
 .danger-card {
@@ -1314,10 +1319,56 @@ if (answerDisplay) {
     answerDisplay.addEventListener("input", syncQuestionAnswerFields);
 }
 
-if (form) {
-    form.addEventListener("submit", syncQuestionAnswerFields);
+function getEditWriteFieldValue(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : "";
 }
 
+function syncEditWriteFieldsToLegacyInputs() {
+    const jpKanji = getEditWriteFieldValue("write-jp-kanji-display");
+    const kana = getEditWriteFieldValue("write-kana-display");
+    const zhMeaning = getEditWriteFieldValue("write-zh-meaning-display");
+
+    const sourceValue = zhMeaning || jpKanji || kana || "";
+    const targetValue = jpKanji || kana || zhMeaning || "";
+
+    if (questionDisplay && sourceValue) {
+        questionDisplay.value = sourceValue;
+    }
+
+    if (answerDisplay && targetValue) {
+        answerDisplay.value = targetValue;
+    }
+
+    if (questionHidden1) questionHidden1.value = sourceValue;
+    if (questionHidden2) questionHidden2.value = sourceValue;
+    if (questionHidden3) questionHidden3.value = sourceValue;
+    if (sourceTextHidden) sourceTextHidden.value = sourceValue;
+
+    if (answerHidden1) answerHidden1.value = targetValue;
+    if (answerHidden2) answerHidden2.value = targetValue;
+    if (targetAnswerHidden) targetAnswerHidden.value = targetValue;
+}
+
+["write-jp-kanji-display", "write-kana-display", "write-zh-meaning-display"].forEach(function (id) {
+    const el = document.getElementById(id);
+
+    if (el) {
+        el.addEventListener("input", function () {
+            syncEditWriteFieldsToLegacyInputs();
+            syncQuestionAnswerFields();
+        });
+    }
+});
+
+if (form) {
+    form.addEventListener("submit", function () {
+        syncEditWriteFieldsToLegacyInputs();
+        syncQuestionAnswerFields();
+    });
+}
+
+syncEditWriteFieldsToLegacyInputs();
 syncQuestionAnswerFields();
 
 const qtypeSelect = document.querySelector('select[name="qtype"]');

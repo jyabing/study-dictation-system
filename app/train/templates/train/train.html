@@ -3417,8 +3417,22 @@ function startSpeechRecognition() {
 }
 
 function getWritePlaceholder(payload, instructionText) {
-    const instruction = String(instructionText || "").trim();
+    const explicitPlaceholder = String(payload?.write_placeholder || "").trim();
+    const answerType = String(payload?.write_answer_type || "").trim();
     const answerLabel = String(payload?.write_answer_label || "").trim();
+    const instruction = String(instructionText || "").trim();
+
+    if (explicitPlaceholder) {
+        return explicitPlaceholder;
+    }
+
+    if (answerType) {
+        return `请输入${answerType}`;
+    }
+
+    if (answerLabel) {
+        return answerLabel.replace(/^应写出的/, "请输入");
+    }
 
     if (instruction.includes("假名") && instruction.includes("汉字")) {
         return "请输入对应假名或对应汉字";
@@ -3440,13 +3454,23 @@ function getWritePlaceholder(payload, instructionText) {
         return "请输入日文表达";
     }
 
-    return instruction || answerLabel || "请输入对应内容，然后提交";
+    return instruction || "请输入对应内容，然后提交";
 }
 
 function getWriteTargetLabel(payload, instructionText) {
-    const instruction = String(instructionText || "").trim();
+    const directionLabel = String(payload?.write_direction_label || "").trim();
+    const answerType = String(payload?.write_answer_type || "").trim();
     const answerLabel = String(payload?.write_answer_label || "").trim();
+    const instruction = String(instructionText || "").trim();
     const combined = `${instruction} ${answerLabel}`;
+
+    if (directionLabel) {
+        return `训练方向：${directionLabel}`;
+    }
+
+    if (answerType) {
+        return `训练目标：${answerType}`;
+    }
 
     if (combined.includes("假名") && combined.includes("汉字")) {
         return "训练目标：假名 / 汉字";
@@ -3714,9 +3738,15 @@ function applyQuestionInputMode(payload) {
         answerInput.value = "";
         answerInput.placeholder = getWritePlaceholder(payload, instructionText);
 
-        if (payload.write_prompt_label) {
+        const writePromptLabel = String(payload.write_prompt_label || "").trim();
+        const writeDirectionLabel = String(payload.write_direction_label || "").trim();
+
+        if (writePromptLabel) {
             questionExtra.style.display = "block";
-            questionExtra.textContent = payload.write_prompt_label;
+            questionExtra.textContent = writePromptLabel;
+        } else if (writeDirectionLabel) {
+            questionExtra.style.display = "block";
+            questionExtra.textContent = `当前训练：${writeDirectionLabel}`;
         }
     } else {
         answerInput.value = "";

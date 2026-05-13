@@ -1324,6 +1324,79 @@ def _guess_tts_lang(meta):
     }
     return mapping.get(lang, "en")
 
+def _normalize_gtts_lang(lang, default="en"):
+    """
+    把页面/ASR 保存用语言代码统一转换成 gTTS 可用语言代码。
+    """
+    raw = (lang or "").strip()
+    if not raw:
+        return default
+
+    mapping = {
+        "ja": "ja",
+        "ja-jp": "ja",
+        "japanese": "ja",
+
+        "en": "en",
+        "en-us": "en",
+        "en-gb": "en",
+        "english": "en",
+
+        "zh": "zh-CN",
+        "zh-cn": "zh-CN",
+        "cn": "zh-CN",
+        "chinese": "zh-CN",
+
+        "ko": "ko",
+        "ko-kr": "ko",
+        "korean": "ko",
+    }
+
+    return mapping.get(raw.lower(), default)
+
+
+def _resolve_tts_lang_for_text(text, configured_lang="", fallback_lang="en"):
+    """
+    TTS 语言按“实际要朗读的文本”优先判断。
+
+    解决：
+    - 日语文本被 en 读成西洋口音
+    - 英语文本被 ja 读成日本人口音
+
+    规则：
+    1. 有假名：日语
+    2. 有韩文：韩语
+    3. 有英文字母：英语
+    4. 只有汉字：优先使用已配置的 ja / zh-CN；否则按中文
+    5. 无法判断：使用配置值，再使用 fallback
+    """
+    text = (text or "").strip()
+    configured = _normalize_gtts_lang(configured_lang, default="")
+    fallback = _normalize_gtts_lang(fallback_lang, default="en")
+
+    if not text:
+        return configured or fallback
+
+    # 日语：平假名 / 片假名 / 片假名扩展
+    if re.search(r"[\u3040-\u30ff\u31f0-\u31ff]", text):
+        return "ja"
+
+    # 韩语
+    if re.search(r"[\uac00-\ud7af]", text):
+        return "ko"
+
+    # 英语：只要出现英文字母，优先按英语处理
+    if re.search(r"[A-Za-z]", text):
+        return "en"
+
+    # 汉字：中日共用。这里只有在用户明确配置 ja / zh-CN 时才尊重配置。
+    if re.search(r"[\u4e00-\u9fff]", text):
+        if configured in {"ja", "zh-CN"}:
+            return configured
+        return "zh-CN"
+
+    return configured or fallback
+
 def _guess_choice_tts_lang(training, meta, choices):
     """
     选择题 TTS 语言推断：
@@ -1605,8 +1678,16 @@ def build_training_payload(training, memory=None, request=None):
     asr_cfg = meta.get("asr", {}) if isinstance(meta.get("asr"), dict) else {}
     asr_lang = asr_cfg.get("lang") or "en-US"
 
-    prompt_tts_lang = (asr_cfg.get("prompt_tts_lang") or "").strip() or "en"
-    answer_tts_lang = (asr_cfg.get("answer_tts_lang") or "").strip() or "en"
+    prompt_tts_lang = _resolve_tts_lang_for_text(
+        prompt_text,
+        configured_lang=asr_cfg.get("prompt_tts_lang"),
+        fallback_lang="en",
+    )
+    answer_tts_lang = _resolve_tts_lang_for_text(
+        resolved_answer_text,
+        configured_lang=asr_cfg.get("answer_tts_lang"),
+        fallback_lang=asr_lang,
+    )
 
     # =========================
     # read_cloze：根据记忆等级动态增加空格
@@ -1907,6 +1988,28 @@ def build_training_payload(training, memory=None, request=None):
         "answer_tts_lang": answer_tts_lang,
         "allow_partial_match": bool(asr_cfg.get("allow_partial_match", True)),
     }
+
+    if training.item_type == "write":
+        print("DEBUG WRITE PAYLOAD:", {
+            "training_id": training.id,
+            "question_id": training.question_id,
+            "item_type": training.item_type,
+            "display_item_type": item_type,
+            "instruction_text": payload.get("instruction_text"),
+            "prompt_text": payload.get("prompt_text"),
+            "prompt": payload.get("prompt"),
+            "answer_text": payload.get("answer_text"),
+            "target_answer": payload.get("target_answer"),
+            "write_direction": payload.get("write_direction"),
+            "write_source_text": payload.get("write_source_text"),
+            "write_target_text": payload.get("write_target_text"),
+            "write_prompt_type": payload.get("write_prompt_type"),
+            "write_answer_type": payload.get("write_answer_type"),
+            "write_direction_label": payload.get("write_direction_label"),
+            "write_prompt_label": payload.get("write_prompt_label"),
+            "write_answer_label": payload.get("write_answer_label"),
+            "write_placeholder": payload.get("write_placeholder"),
+        })
 
     return payload
 

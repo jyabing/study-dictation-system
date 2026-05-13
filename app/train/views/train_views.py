@@ -5294,7 +5294,11 @@ def _train_api_by_scope(request, scope, obj):
         )
 
         if is_empty_submission:
-            judge = judge_training_answer(training, "")
+            judge = judge_training_answer(
+                training,
+                "",
+                write_direction=write_direction,
+            )
             hint_stage = _session_next_empty_submit_stage(request, training_id)
             hint_payload = _build_segmented_hint_payload(
                 judge.get("display_answer", ""),

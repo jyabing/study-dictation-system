@@ -1861,41 +1861,74 @@ def build_training_payload(training, memory=None, request=None):
 
         write_meta = meta.get("write") if isinstance(meta.get("write"), dict) else {}
 
-        # 旧数据兼容：
-        # 当前系统里 source_text 通常是中文意思，target_answer 通常是日文表达。
-        # 后续如果新增假名字段，可以从 meta.write 里传入更精确的 source_type / target_type。
-        source_type = (
-            write_meta.get("source_type")
-            or write_meta.get("source_label")
-            or "中文意思"
-        )
+        raw_write_fields = write_meta.get("fields") or []
+        write_fields = []
 
-        target_type = (
-            write_meta.get("target_type")
-            or write_meta.get("target_label")
-            or "日文表达"
-        )
+        if isinstance(raw_write_fields, list):
+            for field in raw_write_fields:
+                if not isinstance(field, dict):
+                    continue
 
-        if write_source_text and write_target_text:
-            write_direction = random.choice([
-                "source_to_target",
-                "target_to_source",
-            ])
+                key = str(field.get("key") or "").strip()
+                label = str(field.get("label") or "").strip()
+                text = str(field.get("text") or field.get("value") or "").strip()
+
+                if not key or not label or not text:
+                    continue
+
+                write_fields.append({
+                    "key": key,
+                    "label": label,
+                    "text": text,
+                })
+
+        # 新写作三字段逻辑：
+        # 日文汉字 / 假名 / 中文意译 之间随机抽两个不同字段。
+        if len(write_fields) >= 2:
+            prompt_field, answer_field = random.sample(write_fields, 2)
+
+            write_direction = f"{prompt_field['key']}_to_{answer_field['key']}"
+            write_display_text = prompt_field["text"]
+            write_expected_answer = answer_field["text"]
+
+            write_prompt_type = prompt_field["label"]
+            write_answer_type = answer_field["label"]
+
         else:
-            write_direction = "source_to_target"
+            # 旧数据兼容：
+            # 没有 meta.write.fields 的旧题，继续 source_text ↔ target_answer。
+            source_type = (
+                write_meta.get("source_type")
+                or write_meta.get("source_label")
+                or "中文意思"
+            )
 
-        if write_direction == "target_to_source":
-            write_display_text = write_target_text
-            write_expected_answer = write_source_text
+            target_type = (
+                write_meta.get("target_type")
+                or write_meta.get("target_label")
+                or "日文表达"
+            )
 
-            write_prompt_type = target_type
-            write_answer_type = source_type
-        else:
-            write_display_text = write_source_text
-            write_expected_answer = write_target_text
+            if write_source_text and write_target_text:
+                write_direction = random.choice([
+                    "source_to_target",
+                    "target_to_source",
+                ])
+            else:
+                write_direction = "source_to_target"
 
-            write_prompt_type = source_type
-            write_answer_type = target_type
+            if write_direction == "target_to_source":
+                write_display_text = write_target_text
+                write_expected_answer = write_source_text
+
+                write_prompt_type = target_type
+                write_answer_type = source_type
+            else:
+                write_display_text = write_source_text
+                write_expected_answer = write_target_text
+
+                write_prompt_type = source_type
+                write_answer_type = target_type
 
         write_direction_label = f"{write_prompt_type} → {write_answer_type}"
         write_prompt_label = f"当前训练：{write_direction_label}"
@@ -1908,11 +1941,20 @@ def build_training_payload(training, memory=None, request=None):
         if write_expected_answer:
             resolved_answer_text = write_expected_answer
 
+    question = training.question
+    lesson = question.lesson if question else None
+    book = lesson.book if lesson else None
+
     payload = {
         "id": training.id,
         "training_id": training.id,
 
         "question_id": training.question_id,
+
+        "book_id": book.id if book else None,
+        "book_title": book.title if book else "",
+        "lesson_id": lesson.id if lesson else None,
+        "lesson_title": lesson.title if lesson else "",
 
         "item_type": training.item_type,
         "type": training.item_type,
@@ -1988,28 +2030,6 @@ def build_training_payload(training, memory=None, request=None):
         "answer_tts_lang": answer_tts_lang,
         "allow_partial_match": bool(asr_cfg.get("allow_partial_match", True)),
     }
-
-    if training.item_type == "write":
-        print("DEBUG WRITE PAYLOAD:", {
-            "training_id": training.id,
-            "question_id": training.question_id,
-            "item_type": training.item_type,
-            "display_item_type": item_type,
-            "instruction_text": payload.get("instruction_text"),
-            "prompt_text": payload.get("prompt_text"),
-            "prompt": payload.get("prompt"),
-            "answer_text": payload.get("answer_text"),
-            "target_answer": payload.get("target_answer"),
-            "write_direction": payload.get("write_direction"),
-            "write_source_text": payload.get("write_source_text"),
-            "write_target_text": payload.get("write_target_text"),
-            "write_prompt_type": payload.get("write_prompt_type"),
-            "write_answer_type": payload.get("write_answer_type"),
-            "write_direction_label": payload.get("write_direction_label"),
-            "write_prompt_label": payload.get("write_prompt_label"),
-            "write_answer_label": payload.get("write_answer_label"),
-            "write_placeholder": payload.get("write_placeholder"),
-        })
 
     return payload
 

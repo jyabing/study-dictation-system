@@ -979,16 +979,19 @@
     align-self: flex-start;
     display: inline-flex;
     align-items: center;
+    max-width: 100%;
     min-height: 26px;
-    padding: 0 10px;
+    padding: 6px 10px;
     margin-bottom: 8px;
-    border-radius: 999px;
+    border-radius: 12px;
     border: 1px solid rgba(122, 214, 163, 0.28);
     background: rgba(122, 214, 163, 0.12);
     color: #1f5f37;
     font-size: 11px;
     font-weight: 900;
-    line-height: 1;
+    line-height: 1.45;
+    white-space: normal;
+    word-break: break-word;
 }
 
 .result-impact-box {
@@ -2314,12 +2317,40 @@ function updateQuestionSource(payload) {
 
     const sourceText = resolveQuestionSourceText(payload);
 
-    if (!sourceText) {
+    const bookTitle = pickText(payload, ["book_title"], "").trim();
+    const lessonTitle = pickText(payload, ["lesson_title"], "").trim();
+    const questionId = pickText(payload, ["question_id"], "").trim();
+    const trainingId = pickText(payload, ["training_id", "id"], "").trim();
+
+    const parts = [];
+
+    if (sourceText) {
+        parts.push(`训练来源：${sourceText}`);
+    }
+
+    if (bookTitle) {
+        parts.push(`书册：${bookTitle}`);
+    }
+
+    if (lessonTitle) {
+        parts.push(`课节：${lessonTitle}`);
+    }
+
+    if (questionId) {
+        parts.push(`QID：${questionId}`);
+    }
+
+    if (trainingId) {
+        parts.push(`TID：${trainingId}`);
+    }
+
+    if (!parts.length) {
         hideElement(questionSourceBadge);
+        questionSourceBadge.textContent = "训练来源：-";
         return;
     }
 
-    questionSourceBadge.textContent = `训练来源：${sourceText}`;
+    questionSourceBadge.textContent = parts.join(" ｜ ");
     showElement(questionSourceBadge, "inline-flex");
 }
 

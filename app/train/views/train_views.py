@@ -7307,9 +7307,9 @@ def practice_track_shadow_caption_save(request, track_id):
     track.save(update_fields=["shadow_caption_source", "updated_at"])
 
     if shadow_caption_source:
-        messages.success(request, "已保存到当前曲目。")
+        messages.success(request, "已保存字词时间轴到当前曲目。")
     else:
-        messages.success(request, "已清空片段时间轴。")
+        messages.success(request, "已清空字词时间轴。")
 
     if segment_id_raw:
         segment = (

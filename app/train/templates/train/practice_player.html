@@ -256,10 +256,10 @@
 
 .practice-shadow-caption-window {
     display: grid;
-    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.3fr) minmax(0, 0.85fr);
-    gap: 10px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
     align-items: center;
-    min-height: 68px;
+    min-height: 72px;
     border: 1px solid var(--border);
     border-radius: 18px;
     background: var(--soft);
@@ -286,6 +286,11 @@
     line-height: 1.35;
     font-weight: 900;
     text-align: center;
+    transition:
+        opacity 0.18s ease,
+        color 0.18s ease,
+        transform 0.18s ease,
+        text-shadow 0.18s ease;
 }
 
 .practice-shadow-word.is-muted {
@@ -294,11 +299,27 @@
     font-size: 15px;
 }
 
+.practice-shadow-token.is-near {
+    color: var(--muted);
+    opacity: 0.62;
+    font-size: 16px;
+}
+
+.practice-shadow-token.is-far {
+    color: var(--muted);
+    opacity: 0.28;
+    font-size: 14px;
+}
+
 .practice-shadow-word.is-current {
     max-height: 72px;
     color: var(--primary);
-    font-size: 24px;
+    font-size: 28px;
     letter-spacing: -0.03em;
+    text-shadow:
+        0 0 16px rgba(110, 168, 255, 0.35),
+        0 0 28px rgba(110, 168, 255, 0.18);
+    transform: translateY(-1px);
 }
 
 .practice-shadow-word.is-pulse {
@@ -307,17 +328,17 @@
 
 @keyframes practiceShadowPulse {
     0% {
-        transform: scale(1);
-        opacity: 0.82;
+        transform: translateX(10px) translateY(-1px) scale(0.96);
+        opacity: 0.62;
     }
 
     45% {
-        transform: scale(1.08);
+        transform: translateX(0) translateY(-1px) scale(1.08);
         opacity: 1;
     }
 
     100% {
-        transform: scale(1);
+        transform: translateX(0) translateY(-1px) scale(1);
         opacity: 1;
     }
 }
@@ -1377,10 +1398,10 @@
     }
 
     .practice-shadow-caption-window {
-        grid-template-columns: 1fr;
-        gap: 8px;
-        min-height: 0;
-        padding: 12px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 6px;
+        min-height: 68px;
+        padding: 10px;
     }
 
     .practice-shadow-word {
@@ -1390,12 +1411,20 @@
     .practice-shadow-word.is-current {
         min-height: 46px;
         max-height: 96px;
-        font-size: clamp(24px, 8vw, 34px);
+        font-size: clamp(24px, 8vw, 32px);
         line-height: 1.2;
     }
 
     .practice-shadow-word.is-muted {
+        font-size: 13px;
+    }
+
+    .practice-shadow-token.is-near {
         font-size: 14px;
+    }
+
+    .practice-shadow-token.is-far {
+        font-size: 12px;
     }
 
     .practice-shadow-caption-hint {
@@ -1626,18 +1655,20 @@
 
                             <div class="practice-shadow-caption" id="shadow-caption-panel">
                                 <div class="practice-shadow-caption-head">
-                                    <span>短视野片段跟读 / Lyrics Shadowing</span>
-                                    <span id="shadow-caption-status">未读取片段</span>
+                                    <span>短视野字词跟读 / Lyrics Shadowing</span>
+                                    <span id="shadow-caption-status">未生成字词点</span>
                                 </div>
 
-                                <div class="practice-shadow-caption-window" id="shadow-caption-window">
-                                    <span class="practice-shadow-word is-muted" id="shadow-caption-prev">前一片段</span>
-                                    <span class="practice-shadow-word is-current" id="shadow-caption-current">当前片段</span>
-                                    <span class="practice-shadow-word is-muted" id="shadow-caption-next">后一片段</span>
+                                <div class="practice-shadow-caption-window practice-shadow-token-flow" id="shadow-caption-window">
+                                    <span class="practice-shadow-word practice-shadow-token is-far" id="shadow-caption-prev-far">等待</span>
+                                    <span class="practice-shadow-word practice-shadow-token is-near" id="shadow-caption-prev">生成</span>
+                                    <span class="practice-shadow-word practice-shadow-token is-current" id="shadow-caption-current">字词点</span>
+                                    <span class="practice-shadow-word practice-shadow-token is-near" id="shadow-caption-next">后续</span>
+                                    <span class="practice-shadow-word practice-shadow-token is-far" id="shadow-caption-next-far">跟随</span>
                                 </div>
 
                                 <p class="practice-shadow-caption-hint">
-                                    播放时会根据当前时间显示前一片段、当前片段和后一片段，用于看字幕/歌词的短视野跟读训练。
+                                    播放时会根据当前时间高亮当前字/词，前后字/词会以横向弱显示辅助眼跟随训练。
                                 </p>
                             </div>
 
@@ -1648,20 +1679,20 @@
                                             <span class="practice-shadow-editor-arrow" aria-hidden="true">▾</span>
                                             <span>字幕 / 歌词时间轴</span>
                                         </span>
-                                        <span>格式：秒数、分:秒 或 [分:秒]LRC · 点击可收起/展开</span>
+                                        <span>格式：每行一个开始时间，字/词之间必须用空格分开 · 点击可收起/展开</span>
                                     </div>
                                 </summary>
 
                                 <div class="practice-shadow-editor-body">
                                     <div class="practice-field">
-                                        <label for="shadow-caption-source">字幕 / 歌词片段内容</label>
+                                        <label for="shadow-caption-source">字幕 / 歌词字词时间轴</label>
                                         <textarea
                                             id="shadow-caption-source"
                                             name="shadow_caption_source"
                                             {% if selected_track %}form="shadow-caption-save-form"{% endif %}
                                             class="practice-shadow-textarea"
                                             rows="6"
-                                            placeholder="0:00|葡萄熟了&#10;1:20|一年又一年&#10;[02:10.50]我跟着字幕练习短视野跟读&#10;2:40|只看当前片段，不看整段歌词&#10;3:00|听觉和视觉一起跟上节奏"
+                                            placeholder="0:00|葡萄 熟了 一年 又 一年&#10;0:08|横向 移动 时 当前 时间 的 字/词 高亮&#10;0:16|前后 字词 会 渐变 弱显示&#10;[00:24.00]也 支持 LRC 格式 的 行时间"
                                         >{% if selected_track %}{{ selected_track.shadow_caption_source }}{% endif %}</textarea>
                                     </div>
 
@@ -1680,7 +1711,7 @@
 
                                     <div class="practice-shadow-editor-actions">
                                         <button type="button" class="practice-mini-btn" id="shadow-caption-parse-btn">
-                                            重新读取片段
+                                            重新生成字词点
                                         </button>
 
                                         {% if selected_track %}
@@ -1695,14 +1726,14 @@
                                         {% endif %}
 
                                         <button type="button" class="practice-mini-btn danger" id="shadow-caption-clear-btn">
-                                            清空片段
+                                            清空字词
                                         </button>
                                     </div>
 
                                     <p class="practice-shadow-caption-hint practice-shadow-caption-warning" id="shadow-caption-parse-hint"></p>
 
                                     <p class="practice-shadow-caption-hint">
-                                        输入或修改片段后会自动读取；也可以点击“重新读取片段”手动刷新。点击“保存到当前曲目”后，会绑定到当前曲目，之后打开该曲目或其片段时自动载入。
+                                        输入或修改字词时间轴后会自动生成字词点；同一行里请用空格分开每个字/词，例如“葡萄 熟了 一年 又 一年”。相邻两行之间会自动平均分配字/词时间。也可以点击“重新生成字词点”手动刷新。点击“保存到当前曲目”后，会绑定到当前曲目，之后打开该曲目或其片段时自动载入。
                                     </p>
                                 </div>
                             </details>
@@ -2266,9 +2297,11 @@
     const shadowCaptionStatusEl = document.getElementById("shadow-caption-status");
     const shadowCaptionParseHintEl = document.getElementById("shadow-caption-parse-hint");
     const shadowCaptionWindowEl = document.getElementById("shadow-caption-window");
+    const shadowCaptionPrevFarEl = document.getElementById("shadow-caption-prev-far");
     const shadowCaptionPrevEl = document.getElementById("shadow-caption-prev");
     const shadowCaptionCurrentEl = document.getElementById("shadow-caption-current");
     const shadowCaptionNextEl = document.getElementById("shadow-caption-next");
+    const shadowCaptionNextFarEl = document.getElementById("shadow-caption-next-far");
 
     const shadowCaptionParseBtn = document.getElementById("shadow-caption-parse-btn");
     const shadowCaptionClearBtn = document.getElementById("shadow-caption-clear-btn");
@@ -2347,11 +2380,83 @@
         return null;
     }
 
+    function splitShadowCaptionTokens(text) {
+        const normalized = String(text || "").trim();
+
+        if (!normalized) {
+            return {
+                tokens: [],
+                hasLongUnspacedText: false
+            };
+        }
+
+        const spaceTokens = normalized
+            .split(/\s+/)
+            .map(function (token) {
+                return token.trim();
+            })
+            .filter(function (token) {
+                return token;
+            });
+
+        if (spaceTokens.length > 1) {
+            return {
+                tokens: spaceTokens,
+                hasLongUnspacedText: false
+            };
+        }
+
+        return {
+            tokens: [normalized],
+            hasLongUnspacedText: normalized.length >= 6
+        };
+    }
+
+    function expandShadowCaptionRows(rows) {
+        const result = {
+            captions: [],
+            longUnspacedCount: 0
+        };
+
+        rows.forEach(function (row, rowIndex) {
+            const nextRow = rows[rowIndex + 1];
+            const splitResult = splitShadowCaptionTokens(row.text);
+            const tokens = splitResult.tokens;
+
+            if (!tokens.length) {
+                return;
+            }
+
+            if (splitResult.hasLongUnspacedText) {
+                result.longUnspacedCount += 1;
+            }
+
+            const startTime = row.time;
+            const fallbackDuration = 1.2;
+            const endTime = nextRow && nextRow.time > startTime
+                ? nextRow.time
+                : startTime + tokens.length * fallbackDuration;
+            const duration = Math.max(0.1, endTime - startTime);
+            const tokenDuration = duration / tokens.length;
+
+            tokens.forEach(function (token, tokenIndex) {
+                result.captions.push({
+                    time: startTime + tokenDuration * tokenIndex,
+                    text: token
+                });
+            });
+        });
+
+        return result;
+    }
+
     function parseShadowCaptionSource() {
         const result = {
             captions: [],
-            ignoredCount: 0
+            ignoredCount: 0,
+            longUnspacedCount: 0
         };
+        const rows = [];
 
         if (!shadowCaptionSourceInput) {
             return result;
@@ -2381,7 +2486,7 @@
                             return;
                         }
 
-                        result.captions.push({
+                        rows.push({
                             time: time,
                             text: captionText
                         });
@@ -2412,30 +2517,42 @@
                     return;
                 }
 
-                result.captions.push({
+                rows.push({
                     time: time,
                     text: captionText
                 });
             });
 
-        result.captions.sort(function (a, b) {
+        rows.sort(function (a, b) {
             return a.time - b.time;
         });
+
+        const expanded = expandShadowCaptionRows(rows);
+
+        result.captions = expanded.captions;
+        result.longUnspacedCount = expanded.longUnspacedCount;
 
         return result;
     }
 
-    function renderShadowCaptionParseHint(ignoredCount) {
+    function renderShadowCaptionParseHint(ignoredCount, longUnspacedCount) {
         if (!shadowCaptionParseHintEl) {
             return;
         }
 
-        if (!ignoredCount) {
-            shadowCaptionParseHintEl.textContent = "";
-            return;
+        const messages = [];
+
+        if (ignoredCount) {
+            messages.push("已忽略 " + ignoredCount + " 行格式不正确或内容为空的内容。");
         }
 
-        shadowCaptionParseHintEl.textContent = "已忽略 " + ignoredCount + " 行格式不正确或内容为空的内容。";
+        if (longUnspacedCount) {
+            messages.push(
+                longUnspacedCount + " 行没有空格，将作为整体字词点；建议用空格分开字/词。"
+            );
+        }
+
+        shadowCaptionParseHintEl.textContent = messages.join(" ");
     }
 
     function findShadowCaptionIndex(captions, currentTime) {
@@ -2465,10 +2582,16 @@
 
         setShadowCaptionEmptyState(false);
 
+        if (shadowCaptionPrevFarEl) {
+            shadowCaptionPrevFarEl.textContent = captions[activeIndex - 2]
+                ? captions[activeIndex - 2].text
+                : "";
+        }
+
         if (shadowCaptionPrevEl) {
             shadowCaptionPrevEl.textContent = captions[activeIndex - 1]
                 ? captions[activeIndex - 1].text
-                : "前一片段";
+                : "";
         }
 
         if (shadowCaptionCurrentEl) {
@@ -2478,21 +2601,35 @@
         if (shadowCaptionNextEl) {
             shadowCaptionNextEl.textContent = captions[activeIndex + 1]
                 ? captions[activeIndex + 1].text
-                : "后一片段";
+                : "";
+        }
+
+        if (shadowCaptionNextFarEl) {
+            shadowCaptionNextFarEl.textContent = captions[activeIndex + 2]
+                ? captions[activeIndex + 2].text
+                : "";
         }
     }
 
     function resetShadowCaptionDisplay() {
+        if (shadowCaptionPrevFarEl) {
+            shadowCaptionPrevFarEl.textContent = "等待";
+        }
+
         if (shadowCaptionPrevEl) {
-            shadowCaptionPrevEl.textContent = "前一片段";
+            shadowCaptionPrevEl.textContent = "生成";
         }
 
         if (shadowCaptionCurrentEl) {
-            shadowCaptionCurrentEl.textContent = "当前片段";
+            shadowCaptionCurrentEl.textContent = "字词点";
         }
 
         if (shadowCaptionNextEl) {
-            shadowCaptionNextEl.textContent = "后一片段";
+            shadowCaptionNextEl.textContent = "后续";
+        }
+
+        if (shadowCaptionNextFarEl) {
+            shadowCaptionNextFarEl.textContent = "跟随";
         }
 
         setShadowCaptionEmptyState(true);
@@ -2525,11 +2662,11 @@
 
         if (shadowCaptionStatusEl) {
             shadowCaptionStatusEl.textContent = captions.length
-                ? "已读取 " + captions.length + " 个片段"
-                : "未读取片段";
+                ? "已生成 " + captions.length + " 个字词点"
+                : "未生成字词点";
         }
 
-        renderShadowCaptionParseHint(parsed.ignoredCount);
+        renderShadowCaptionParseHint(parsed.ignoredCount, parsed.longUnspacedCount);
         renderShadowCaptionByIndex(captions, activeIndex);
     }
 
@@ -2562,11 +2699,11 @@
 
         if (shadowCaptionStatusEl) {
             shadowCaptionStatusEl.textContent = state.shadowCaptions.length
-                ? "已读取 " + state.shadowCaptions.length + " 个片段"
-                : "未读取片段";
+                ? "已生成 " + state.shadowCaptions.length + " 个字词点"
+                : "未生成字词点";
         }
 
-        renderShadowCaptionParseHint(parsed.ignoredCount);
+        renderShadowCaptionParseHint(parsed.ignoredCount, parsed.longUnspacedCount);
 
         if (!state.shadowCaptions.length) {
             resetShadowCaptionDisplay();
@@ -2597,10 +2734,10 @@
         state.shadowLastIndex = null;
 
         if (shadowCaptionStatusEl) {
-            shadowCaptionStatusEl.textContent = "未读取片段";
+            shadowCaptionStatusEl.textContent = "未生成字词点";
         }
 
-        renderShadowCaptionParseHint(0);
+        renderShadowCaptionParseHint(0, 0);
         resetShadowCaptionDisplay();
     }
 
@@ -2876,7 +3013,7 @@
 
     if (shadowCaptionClearBtn) {
         shadowCaptionClearBtn.addEventListener("click", function () {
-            const confirmed = window.confirm("确定清空当前片段内容吗？此操作不会影响已保存的曲目。");
+            const confirmed = window.confirm("确定清空当前字词时间轴吗？此操作不会影响已保存的曲目。");
 
             if (!confirmed) {
                 return;

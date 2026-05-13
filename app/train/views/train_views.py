@@ -10,6 +10,8 @@ from io import BytesIO
 from tempfile import NamedTemporaryFile
 import uuid
 
+from django.db.models import Q
+
 from datetime import timedelta
 from urllib.parse import quote
 from django.conf import settings
@@ -4040,25 +4042,44 @@ def _get_scope_training_qs(scope, obj):
 
     return qs.none()
 
-def _get_scope_dictation_qs(scope, obj):
+def _get_scope_dictation_qs(scope, obj, user=None):
     """
     获取当前范围内可用于听写考核的写作题。
 
-    规则：
+    第一版自动候选规则：
     - 只允许写作训练题进入听写考核
-    - 必须启用 is_dictation_enabled
-    - 必须有 dictation_text
-    - 必须是启用状态 is_active=True
+    - 必须启用状态 is_active=True
+    - 必须有 target_answer，作为默认听写文本
+    - 如果 dictation_text 存在，则优先使用 dictation_text
+    - 如果传入 user，则要求对应 QuestionMemory 已进入循环记忆
     """
-    return (
+    qs = (
         _get_scope_training_qs(scope, obj)
         .filter(
             item_type="write",
             is_active=True,
-            is_dictation_enabled=True,
         )
-        .exclude(dictation_text="")
+        .exclude(target_answer="")
     )
+
+    if user is None:
+        return qs
+
+    mature_question_ids = (
+        QuestionMemory.objects
+        .filter(
+            user=user,
+            question_id__in=qs.values_list("question_id", flat=True),
+        )
+        .filter(
+            Q(cycle_step__gte=1) |
+            Q(total_correct__gte=1) |
+            Q(correct_streak__gte=1)
+        )
+        .values_list("question_id", flat=True)
+    )
+
+    return qs.filter(question_id__in=mature_question_ids)
 
 def _training_in_scope(training, scope, obj):
     question = getattr(training, "question", None)
@@ -4380,7 +4401,7 @@ def dictation_book_check(request, book_id):
         owner=request.user
     )
 
-    dictation_items = _get_scope_dictation_qs("book", book)
+    dictation_items = _get_scope_dictation_qs("book", book, request.user)
     dictation_count = dictation_items.count()
 
     return render(request, "train/dictation_check.html", {
@@ -4403,7 +4424,7 @@ def dictation_lesson_check(request, lesson_id):
         book__owner=request.user
     )
 
-    dictation_items = _get_scope_dictation_qs("lesson", lesson)
+    dictation_items = _get_scope_dictation_qs("lesson", lesson, request.user)
     dictation_count = dictation_items.count()
 
     return render(request, "train/dictation_check.html", {
@@ -4419,7 +4440,7 @@ def dictation_lesson_check(request, lesson_id):
 
 def _create_dictation_session(request, scope, obj):
     dictation_items = list(
-        _get_scope_dictation_qs(scope, obj)
+        _get_scope_dictation_qs(scope, obj, request.user)
         .select_related("question")
         .order_by("id")
     )
@@ -4455,7 +4476,7 @@ def _create_dictation_session(request, scope, obj):
                 training_item=training,
                 question=training.question,
                 order_index=index,
-                dictation_text_snapshot=(training.dictation_text or "").strip(),
+                dictation_text_snapshot=((training.dictation_text or training.target_answer) or "").strip(),
             )
         )
 
@@ -6341,7 +6362,7 @@ def question_edit(request, question_id):
         write_jp_kanji = (request.POST.get("write_jp_kanji") or "").strip()
         write_kana = (request.POST.get("write_kana") or "").strip()
         write_zh_meaning = (request.POST.get("write_zh_meaning") or "").strip()
-        
+
         write_fields = []
         if write_jp_kanji:
             write_fields.append({

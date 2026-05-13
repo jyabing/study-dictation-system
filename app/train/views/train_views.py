@@ -1935,6 +1935,41 @@ def build_training_payload(training, memory=None, request=None):
         write_answer_label = f"应写出的{write_answer_type}"
         write_placeholder = f"请输入{write_answer_type}"
 
+        # =========================
+        # 文字作答：根据本次随机方向动态生成提示短语
+        # 例：
+        # 上一句 → 下一句：请写出诗词的下一句
+        # 下一句 → 上一句：请写出诗词的上一句
+        # 提问 → 回答：请写出这个提问的回答
+        # 回答 → 提问：请写出这个回答对应的提问
+        # 日文表达 → 中文意思：请写出这个日文表达的中文意思
+        # 中文意思 → 日文表达：请写出这个中文意思对应的日文表达
+        # =========================
+        write_instruction_text = ""
+
+        if write_prompt_type and write_answer_type:
+            if write_prompt_type == "上一句" and write_answer_type == "下一句":
+                write_instruction_text = "请写出诗词的下一句"
+            elif write_prompt_type == "下一句" and write_answer_type == "上一句":
+                write_instruction_text = "请写出诗词的上一句"
+            elif write_prompt_type in {"提问", "问题"} and write_answer_type in {"回答", "答案"}:
+                write_instruction_text = "请写出这个提问的回答"
+            elif write_prompt_type in {"回答", "答案"} and write_answer_type in {"提问", "问题"}:
+                write_instruction_text = "请写出这个回答对应的提问"
+            elif write_prompt_type in {"日文表达", "日语表达", "日文"} and write_answer_type in {"中文意思", "中文意译", "中文"}:
+                write_instruction_text = "请写出这个日文表达的中文意思"
+            elif write_prompt_type in {"中文意思", "中文意译", "中文"} and write_answer_type in {"日文表达", "日语表达", "日文"}:
+                write_instruction_text = "请写出这个中文意思对应的日文表达"
+            elif write_prompt_type in {"日文汉字", "汉字"} and write_answer_type in {"假名", "读音"}:
+                write_instruction_text = "请写出这个汉字词的假名读音"
+            elif write_prompt_type in {"假名", "读音"} and write_answer_type in {"日文汉字", "汉字"}:
+                write_instruction_text = "请根据假名写出对应的日文汉字"
+            else:
+                write_instruction_text = f"请根据{write_prompt_type}写出对应的{write_answer_type}"
+
+        if write_instruction_text:
+            instruction_text = write_instruction_text
+
         if write_display_text:
             prompt_text = write_display_text
 
@@ -2684,12 +2719,62 @@ def judge_training_answer(training, raw_answer, write_direction=""):
         or ""
     ).strip()
 
-    if item_type == "write" and write_direction == "target_to_source" and write_source_text:
-        resolved_answer_text = write_source_text
-    else:
-        resolved_answer_text = write_target_text
+    resolved_answer_text = ""
+
+    # =========================
+    # 新写作字段判定：
+    # build_training_payload() 会生成类似：
+    #   kanji_to_kana
+    #   kana_to_kanji
+    #   ja_to_cn
+    #   cn_to_ja
+    # 这里必须用同一个 write_direction 回到 meta.write.fields 中找本次答案字段。
+    # =========================
+    write_meta = meta.get("write") if isinstance(meta.get("write"), dict) else {}
+    raw_write_fields = write_meta.get("fields") or []
+
+    if item_type == "write" and write_direction and isinstance(raw_write_fields, list):
+        for prompt_field in raw_write_fields:
+            if not isinstance(prompt_field, dict):
+                continue
+
+            prompt_key = str(prompt_field.get("key") or "").strip()
+            if not prompt_key:
+                continue
+
+            for answer_field in raw_write_fields:
+                if not isinstance(answer_field, dict):
+                    continue
+
+                answer_key = str(answer_field.get("key") or "").strip()
+                answer_text = str(
+                    answer_field.get("text")
+                    or answer_field.get("value")
+                    or ""
+                ).strip()
+
+                if not answer_key or not answer_text:
+                    continue
+
+                if write_direction == f"{prompt_key}_to_{answer_key}":
+                    resolved_answer_text = answer_text
+                    break
+
+            if resolved_answer_text:
+                break
+
+    # =========================
+    # 旧写作数据兼容：
+    # 没有 meta.write.fields 的旧题，继续使用 source_text ↔ target_answer。
+    # =========================
+    if not resolved_answer_text:
+        if item_type == "write" and write_direction == "target_to_source" and write_source_text:
+            resolved_answer_text = write_source_text
+        else:
+            resolved_answer_text = write_target_text
 
     correct_text = normalize(resolved_answer_text)
+
     is_correct = check_answer(user_answer, correct_text)
     diff_payload = _build_answer_diff(user_answer, correct_text)
 

@@ -5071,6 +5071,25 @@ def _train_api_by_scope(request, scope, obj):
             "train_scope_label": scope_label,
         })
 
+        # =========================
+        # 写作题方向兜底：
+        # GET 发题时保存本次后端实际生成的 write_direction。
+        # POST 判题时优先使用这个方向，避免前端 state 旧值导致方向错乱。
+        # =========================
+        if (
+            payload.get("item_type") == "write"
+            and payload.get("training_id")
+            and payload.get("write_direction")
+        ):
+            issued_write_directions = request.session.get("issued_write_directions", {})
+
+            if not isinstance(issued_write_directions, dict):
+                issued_write_directions = {}
+
+            issued_write_directions[str(payload["training_id"])] = payload["write_direction"]
+            request.session["issued_write_directions"] = issued_write_directions
+            request.session.modified = True
+
         return JsonResponse(payload)
 
     # =========================
@@ -5292,6 +5311,21 @@ def _train_api_by_scope(request, scope, obj):
             _get_scope_training_qs(scope, obj),
             id=training_id
         )
+
+        # =========================
+        # 写作题方向兜底：
+        # 优先使用 GET 发题时保存在 session 里的方向。
+        # 前端传来的 write_direction 只作为 fallback。
+        # =========================
+        issued_write_directions = request.session.get("issued_write_directions", {})
+
+        if isinstance(issued_write_directions, dict):
+            issued_write_direction = str(
+                issued_write_directions.get(str(training.id)) or ""
+            ).strip()
+
+            if training.item_type == "write" and issued_write_direction:
+                write_direction = issued_write_direction
 
         if is_empty_submission:
             judge = judge_training_answer(

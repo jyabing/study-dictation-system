@@ -4638,7 +4638,11 @@ async function manualAdjustMemory(action) {
             action === "upgrade" ? "correct" : "warning"
         );
     } catch (error) {
-        setFeedback("手动调节失败，请检查网络或刷新页面后重试。", "wrong");
+        console.error("manualAdjustMemory error:", error);
+        setFeedback(
+            "手动调节失败：" + (error && error.message ? error.message : String(error)),
+            "wrong"
+        );
     } finally {
         setLoading(false);
     }

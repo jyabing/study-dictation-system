@@ -4617,7 +4617,28 @@ async function manualAdjustMemory(action) {
             credentials: "same-origin",
         });
 
-        const data = await response.json();
+        const responseText = await response.text();
+
+        let data = null;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error("manualAdjustMemory non-json response:", {
+                status: response.status,
+                statusText: response.statusText,
+                url: response.url,
+                body: responseText.slice(0, 500),
+            });
+
+            setFeedback(
+                "手动调节失败：接口返回非 JSON。status=" +
+                    response.status +
+                    "，内容=" +
+                    responseText.slice(0, 120),
+                "wrong"
+            );
+            return;
+        }
 
         if (!response.ok || data.ok === false) {
             setFeedback(data.error || data.result || "手动调节失败，请重试。", "wrong");

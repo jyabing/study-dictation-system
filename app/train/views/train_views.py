@@ -5615,7 +5615,7 @@ def lesson_train_manual_upgrade(request, lesson_id):
     lesson = get_object_or_404(
         Lesson,
         id=lesson_id,
-        owner=request.user
+        book__owner=request.user
     )
     return _manual_memory_action_api(request, "lesson", lesson, "upgrade")
 

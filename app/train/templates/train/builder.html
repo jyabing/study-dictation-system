@@ -578,7 +578,7 @@
                     </div>
                 </div>
 
-                <div class="card section">
+                <div id="prompt_section" class="card section">
                     <div class="section-title">题干内容</div>
                     <div class="section-sub">题干是“问题 / 引导语 / 显示给用户的内容”。</div>
 
@@ -703,12 +703,27 @@
                 </div>
 
                 <div id="write_fields_section" class="card section hidden">
-                    <div class="section-title">写作三字段训练</div>
+                    <div class="section-title">写作字段训练</div>
                     <div class="section-sub">
-                        用于「日文汉字 / 假名 / 中文意译」之间随机互换出题。填写后，写作训练会随机生成六种方向。
+                        这里是写作题的主要填写区。上方「题干 / 回答」会自动同步，用于兼容旧数据，通常不用手动填写。
+                        请选择结构后，只填写当前结构下面显示的字段。
                     </div>
 
-                    <div class="grid-3" style="margin-top:12px;">
+                    <div class="field" style="margin-top:12px;">
+                        <label for="write_structure">写作结构</label>
+                        <select id="write_structure" onchange="syncWriteStructureFields(); syncWriteFieldsToMainInputs(); updatePreview();">
+                            <option value="ja_three">日语三字段：日文汉字 / 假名 / 中文意译</option>
+                            <option value="poem_pair">诗词上下句：上一句 / 下一句</option>
+                            <option value="qa_pair">问答互换：提问 / 回答</option>
+                            <option value="en_ja_zh">英日中表达 / 原语释义</option>
+                        </select>
+                        <div class="section-sub" style="margin-top:6px; margin-bottom:0;">
+                            日语三字段适合「汉字 / 假名 / 中文」互换；诗词适合「上一句 / 下一句」互换；
+                            问答适合「提问 / 回答」互换；英日中适合「英语 / 日语 / 中文 / 原语释义」训练。
+                        </div>
+                    </div>
+
+                    <div id="write_fields_ja_three" class="write-structure-fields grid-3" style="margin-top:12px;">
                         <div class="field">
                             <label for="write_jp_kanji">日文汉字</label>
                             <textarea
@@ -737,8 +752,105 @@
                         </div>
                     </div>
 
+                    <div id="write_fields_poem_pair" class="write-structure-fields grid-2 hidden" style="margin-top:12px;">
+                        <div class="field">
+                            <label for="write_poem_previous">上一句</label>
+                            <textarea
+                                id="write_poem_previous"
+                                placeholder="例如：床前明月光"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+
+                        <div class="field">
+                            <label for="write_poem_next">下一句</label>
+                            <textarea
+                                id="write_poem_next"
+                                placeholder="例如：疑是地上霜"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <div id="write_fields_qa_pair" class="write-structure-fields grid-2 hidden" style="margin-top:12px;">
+                        <div class="field">
+                            <label for="write_question_text">提问</label>
+                            <textarea
+                                id="write_question_text"
+                                placeholder="例如：日本的首都是哪里？"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+
+                        <div class="field">
+                            <label for="write_answer_text">回答</label>
+                            <textarea
+                                id="write_answer_text"
+                                placeholder="例如：东京"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <div id="write_fields_en_ja_zh" class="write-structure-fields grid-3 hidden" style="margin-top:12px;">
+                        <div class="field" style="grid-column: 1 / -1;">
+                            <div class="section-sub" style="margin-top:0; margin-bottom:0;">
+                                <strong>推荐填法：</strong>
+                                英语表达、日语表达、中文意思是核心字段；英语释义、日语释义用于原语思维训练，可选填写。<br>
+                                <strong>例：</strong>
+                                英语表达：destination ／ 英语释义：the place where someone or something is going ／
+                                日语表达：目的地 ／ 日语释义：人や物が向かう場所 ／ 中文意思：目的地
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label for="write_english_expression">英语表达</label>
+                            <textarea
+                                id="write_english_expression"
+                                placeholder="例如：as usual"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+
+                        <div class="field">
+                            <label for="write_english_definition">英语释义</label>
+                            <textarea
+                                id="write_english_definition"
+                                placeholder="例如：in the same way as before"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+
+                        <div class="field">
+                            <label for="write_japanese_expression">日语表达</label>
+                            <textarea
+                                id="write_japanese_expression"
+                                placeholder="例如：あいかわらず"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+
+                        <div class="field">
+                            <label for="write_japanese_definition">日语释义</label>
+                            <textarea
+                                id="write_japanese_definition"
+                                placeholder="例如：今までと同じようす"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+
+                        <div class="field">
+                            <label for="write_chinese_meaning">中文意思</label>
+                            <textarea
+                                id="write_chinese_meaning"
+                                placeholder="例如：依旧，仍然，和以往一样"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+                    </div>
+
                     <div class="section-sub" style="margin-top:10px; margin-bottom:0;">
-                        保存时会优先用这里生成三字段训练数据；为了兼容旧页面，系统也会同步填充上方的「题干 / 回答」。
+                        保存时会优先用这里生成写作字段训练数据；为了兼容旧页面，系统也会同步填充上方的「题干 / 回答」。
                     </div>
                 </div>                
 
@@ -1026,6 +1138,7 @@
             const answerAudioFileWrap = document.getElementById("answer_audio_file_wrap");
             const answerUseTtsWrap = document.getElementById("answer_use_tts_wrap");
 
+            const promptSection = document.getElementById("prompt_section");
             const answerSection = document.getElementById("answer_section");
             const acceptedAnswersWrap = document.getElementById("accepted_answers_wrap");
             const clozeSection = document.getElementById("cloze_section");
@@ -1043,8 +1156,14 @@
             const isReadChoice = isChoiceItemType(itemType);
             const isWriteText = itemType === "write_text";
 
-            // 回答区：选择题隐藏，其它显示
-            answerSection.classList.toggle("hidden", isReadChoice);
+            // 文字作答使用下方“写作字段训练”作为主入口；
+            // 上方题干 / 回答只作为兼容旧数据的同步字段，避免误导用户。
+            if (promptSection) {
+                promptSection.classList.toggle("hidden", isWriteText);
+            }
+
+            // 回答区：选择题隐藏；文字作答也隐藏，改用写作字段训练区。
+            answerSection.classList.toggle("hidden", isReadChoice || isWriteText);
 
             // 克漏字区
             clozeSection.classList.toggle("hidden", itemType !== "read_cloze");
@@ -1274,23 +1393,50 @@
             });
         }
 
+        function getWriteInputValue(id) {
+            const el = document.getElementById(id);
+            return el ? el.value.trim() : "";
+        }
+
+        function getWriteStructure() {
+            const el = document.getElementById("write_structure");
+            return el ? el.value : "ja_three";
+        }
+
+        function syncWriteStructureFields() {
+            const structure = getWriteStructure();
+            const sections = document.querySelectorAll(".write-structure-fields");
+
+            sections.forEach(function (section) {
+                section.classList.add("hidden");
+            });
+
+            const activeSection = document.getElementById("write_fields_" + structure);
+
+            if (activeSection) {
+                activeSection.classList.remove("hidden");
+            }
+        }
+
         function getWriteFieldValues() {
-            const jpKanji = document.getElementById("write_jp_kanji")
-                ? document.getElementById("write_jp_kanji").value.trim()
-                : "";
-
-            const kana = document.getElementById("write_kana")
-                ? document.getElementById("write_kana").value.trim()
-                : "";
-
-            const zhMeaning = document.getElementById("write_zh_meaning")
-                ? document.getElementById("write_zh_meaning").value.trim()
-                : "";
-
             return {
-                jpKanji: jpKanji,
-                kana: kana,
-                zhMeaning: zhMeaning
+                structure: getWriteStructure(),
+
+                jpKanji: getWriteInputValue("write_jp_kanji"),
+                kana: getWriteInputValue("write_kana"),
+                zhMeaning: getWriteInputValue("write_zh_meaning"),
+
+                poemPrevious: getWriteInputValue("write_poem_previous"),
+                poemNext: getWriteInputValue("write_poem_next"),
+
+                questionText: getWriteInputValue("write_question_text"),
+                answerText: getWriteInputValue("write_answer_text"),
+
+                englishExpression: getWriteInputValue("write_english_expression"),
+                englishDefinition: getWriteInputValue("write_english_definition"),
+                japaneseExpression: getWriteInputValue("write_japanese_expression"),
+                japaneseDefinition: getWriteInputValue("write_japanese_definition"),
+                chineseMeaning: getWriteInputValue("write_chinese_meaning")
             };
         }
 
@@ -1306,16 +1452,48 @@
             const promptInput = document.getElementById("prompt_text");
             const answerInput = document.getElementById("answer_text");
 
-            // 兼容旧字段：
-            // 题干优先放中文意译，回答优先放日文汉字。
-            // 真正的三字段训练会在下一步通过 write_fields 保存。
-            if (promptInput) {
-                promptInput.value = values.zhMeaning || values.jpKanji || values.kana || "";
+            if (!promptInput || !answerInput) {
+                return;
             }
 
-            if (answerInput) {
-                answerInput.value = values.jpKanji || values.kana || values.zhMeaning || "";
+            if (values.structure === "poem_pair") {
+                promptInput.value = values.poemPrevious || values.poemNext || "";
+                answerInput.value = values.poemNext || values.poemPrevious || "";
+                return;
             }
+
+            if (values.structure === "qa_pair") {
+                promptInput.value = values.questionText || values.answerText || "";
+                answerInput.value = values.answerText || values.questionText || "";
+                return;
+            }
+
+            if (values.structure === "en_ja_zh") {
+                promptInput.value = (
+                    values.chineseMeaning
+                    || values.englishExpression
+                    || values.japaneseExpression
+                    || values.englishDefinition
+                    || values.japaneseDefinition
+                    || ""
+                );
+
+                answerInput.value = (
+                    values.englishExpression
+                    || values.japaneseExpression
+                    || values.chineseMeaning
+                    || values.englishDefinition
+                    || values.japaneseDefinition
+                    || ""
+                );
+                return;
+            }
+
+            // 默认：日语三字段。兼容旧字段：
+            // 题干优先放中文意译，回答优先放日文汉字。
+            // 真正的多字段训练会通过 write_fields 保存。
+            promptInput.value = values.zhMeaning || values.jpKanji || values.kana || "";
+            answerInput.value = values.jpKanji || values.kana || values.zhMeaning || "";
         }
 
         function buildChoices() {
@@ -1501,30 +1679,64 @@
 
             const writeFieldValues = getWriteFieldValues();
             const writeFields = [];
+            const writeAllowedDirections = [];
+
+            function pushWriteField(key, label, text) {
+                const cleanedText = (text || "").trim();
+
+                if (!cleanedText) {
+                    return;
+                }
+
+                writeFields.push({
+                    key: key,
+                    label: label,
+                    text: cleanedText
+                });
+            }
+
+            function pushWriteDirection(promptKey, answerKey) {
+                writeAllowedDirections.push({
+                    prompt_key: promptKey,
+                    answer_key: answerKey
+                });
+            }
 
             if (itemType === "write_text") {
-                if (writeFieldValues.jpKanji) {
-                    writeFields.push({
-                        key: "jp_kanji",
-                        label: "日文汉字",
-                        text: writeFieldValues.jpKanji
-                    });
-                }
+                if (writeFieldValues.structure === "poem_pair") {
+                    pushWriteField("previous_line", "上一句", writeFieldValues.poemPrevious);
+                    pushWriteField("next_line", "下一句", writeFieldValues.poemNext);
 
-                if (writeFieldValues.kana) {
-                    writeFields.push({
-                        key: "kana",
-                        label: "假名",
-                        text: writeFieldValues.kana
-                    });
-                }
+                    pushWriteDirection("previous_line", "next_line");
+                    pushWriteDirection("next_line", "previous_line");
+                } else if (writeFieldValues.structure === "qa_pair") {
+                    pushWriteField("question_text", "提问", writeFieldValues.questionText);
+                    pushWriteField("answer_text", "回答", writeFieldValues.answerText);
 
-                if (writeFieldValues.zhMeaning) {
-                    writeFields.push({
-                        key: "zh_meaning",
-                        label: "中文意译",
-                        text: writeFieldValues.zhMeaning
-                    });
+                    pushWriteDirection("question_text", "answer_text");
+                    pushWriteDirection("answer_text", "question_text");
+                } else if (writeFieldValues.structure === "en_ja_zh") {
+                    pushWriteField("english_expression", "英语表达", writeFieldValues.englishExpression);
+                    pushWriteField("english_definition", "英语释义", writeFieldValues.englishDefinition);
+                    pushWriteField("japanese_expression", "日语表达", writeFieldValues.japaneseExpression);
+                    pushWriteField("japanese_definition", "日语释义", writeFieldValues.japaneseDefinition);
+                    pushWriteField("chinese_meaning", "中文意思", writeFieldValues.chineseMeaning);
+
+                    pushWriteDirection("english_expression", "chinese_meaning");
+                    pushWriteDirection("chinese_meaning", "english_expression");
+
+                    pushWriteDirection("japanese_expression", "chinese_meaning");
+                    pushWriteDirection("chinese_meaning", "japanese_expression");
+
+                    pushWriteDirection("english_expression", "japanese_expression");
+                    pushWriteDirection("japanese_expression", "english_expression");
+
+                    pushWriteDirection("english_expression", "english_definition");
+                    pushWriteDirection("japanese_expression", "japanese_definition");
+                } else {
+                    pushWriteField("jp_kanji", "日文汉字", writeFieldValues.jpKanji);
+                    pushWriteField("kana", "假名", writeFieldValues.kana);
+                    pushWriteField("zh_meaning", "中文意译", writeFieldValues.zhMeaning);
                 }
             }
 
@@ -1655,6 +1867,7 @@
                 target_answer: answerText,
                 accepted_answers_text: acceptedAnswersText,
                 write_fields: writeFields,
+                write_allowed_directions: writeAllowedDirections,
 
                 // 旧字段：继续兼容后端旧逻辑
                 prompt_text: promptText,

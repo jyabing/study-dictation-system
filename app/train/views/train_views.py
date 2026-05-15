@@ -1989,14 +1989,24 @@ def build_training_payload(training, memory=None, request=None):
                 write_instruction_text = "请写出这个提问的回答"
             elif write_prompt_type in {"回答", "答案"} and write_answer_type in {"提问", "问题"}:
                 write_instruction_text = "请写出这个回答对应的提问"
-            elif write_prompt_type in {"日文表达", "日语表达", "日文"} and write_answer_type in {"中文意思", "中文意译", "中文"}:
+            elif write_prompt_type in {"日文表达", "日文"} and write_answer_type in {"中文意思", "中文意译", "中文"}:
                 write_instruction_text = "请写出这个日文表达的中文意思"
-            elif write_prompt_type in {"中文意思", "中文意译", "中文"} and write_answer_type in {"日文表达", "日语表达", "日文"}:
+            elif write_prompt_type in {"中文意思", "中文意译", "中文"} and write_answer_type in {"日文表达", "日文"}:
                 write_instruction_text = "请写出这个中文意思对应的日文表达"
             elif write_prompt_type in {"日文汉字", "汉字"} and write_answer_type in {"假名", "读音"}:
                 write_instruction_text = "请写出这个汉字词的假名读音"
             elif write_prompt_type in {"假名", "读音"} and write_answer_type in {"日文汉字", "汉字"}:
                 write_instruction_text = "请根据假名写出对应的日文汉字"
+            elif write_prompt_type == "英语表达" and write_answer_type == "英语释义":
+                write_instruction_text = "请用英语解释这个英语表达"
+            elif write_prompt_type == "日语表达" and write_answer_type == "日语释义":
+                write_instruction_text = "请用日语解释这个日语表达"
+            elif write_answer_type in {"英语表达", "英语"}:
+                write_instruction_text = "请写出对应的英语"
+            elif write_answer_type in {"日语表达", "日语"}:
+                write_instruction_text = "请写出对应的日语"
+            elif write_answer_type in {"中文意思", "中文意译", "中文"}:
+                write_instruction_text = "请写出对应的中文"
             else:
                 write_instruction_text = f"请根据{write_prompt_type}写出对应的{write_answer_type}"
 
@@ -6449,8 +6459,27 @@ def builder_save(request):
     # =========================
     if item_type == "write_text":
         raw_write_fields = data.get("write_fields") or data.get("fields") or []
+        raw_allowed_directions = data.get("write_allowed_directions") or data.get("allowed_directions") or []
 
         write_fields = []
+        allowed_directions = []
+
+        if isinstance(raw_allowed_directions, list):
+            for direction in raw_allowed_directions:
+                if not isinstance(direction, dict):
+                    continue
+
+                prompt_key = str(direction.get("prompt_key") or "").strip()
+                answer_key = str(direction.get("answer_key") or "").strip()
+
+                if not prompt_key or not answer_key or prompt_key == answer_key:
+                    continue
+
+                allowed_directions.append({
+                    "prompt_key": prompt_key,
+                    "answer_key": answer_key,
+                })
+
         if isinstance(raw_write_fields, list):
             for field in raw_write_fields:
                 if not isinstance(field, dict):
@@ -6500,10 +6529,12 @@ def builder_save(request):
                     "skill": skill,
                     "item_type": item_type,
                     "write": {
-                        "fields": write_fields
+                        "fields": write_fields,
+                        "allowed_directions": allowed_directions,
                     }
                 }
             }],
+
             audio_file=uploaded_audio_file,
             answer_audio_file=uploaded_answer_audio_file,
             answer_use_tts=answer_use_tts

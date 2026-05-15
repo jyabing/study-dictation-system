@@ -2768,9 +2768,13 @@ def judge_training_answer(training, raw_answer, write_direction=""):
     # 没有 meta.write.fields 的旧题，继续使用 source_text ↔ target_answer。
     # =========================
     if not resolved_answer_text:
-        if item_type == "write" and write_direction == "target_to_source" and write_source_text:
-            resolved_answer_text = write_source_text
-        else:
+        if item_type == "write" and write_direction:
+            if write_direction in {"target_to_source", "target_answer_to_source_text"} and write_source_text:
+                resolved_answer_text = write_source_text
+            elif write_direction in {"source_to_target", "source_text_to_target_answer"} and write_target_text:
+                resolved_answer_text = write_target_text
+
+        if not resolved_answer_text:
             resolved_answer_text = write_target_text
 
     correct_text = normalize(resolved_answer_text)

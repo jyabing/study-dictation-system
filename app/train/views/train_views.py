@@ -1882,10 +1882,43 @@ def build_training_payload(training, memory=None, request=None):
                     "text": text,
                 })
 
-        # 新写作三字段逻辑：
-        # 日文汉字 / 假名 / 中文意译 之间随机抽两个不同字段。
+        # 新写作字段逻辑：
+        # 1. 如果 meta.write.allowed_directions 存在，只从允许方向中随机。
+        # 2. 如果没有 allowed_directions，继续旧逻辑：任意两个字段随机互换。
+        # 这样旧的日语三字段训练不受影响，新结构可以限制方向。
         if len(write_fields) >= 2:
-            prompt_field, answer_field = random.sample(write_fields, 2)
+            field_map = {
+                field["key"]: field
+                for field in write_fields
+                if field.get("key")
+            }
+
+            raw_allowed_directions = write_meta.get("allowed_directions") or []
+            allowed_direction_pairs = []
+
+            if isinstance(raw_allowed_directions, list):
+                for direction in raw_allowed_directions:
+                    if not isinstance(direction, dict):
+                        continue
+
+                    prompt_key = str(direction.get("prompt_key") or "").strip()
+                    answer_key = str(direction.get("answer_key") or "").strip()
+
+                    if (
+                        prompt_key
+                        and answer_key
+                        and prompt_key in field_map
+                        and answer_key in field_map
+                        and prompt_key != answer_key
+                    ):
+                        allowed_direction_pairs.append((prompt_key, answer_key))
+
+            if allowed_direction_pairs:
+                prompt_key, answer_key = random.choice(allowed_direction_pairs)
+                prompt_field = field_map[prompt_key]
+                answer_field = field_map[answer_key]
+            else:
+                prompt_field, answer_field = random.sample(write_fields, 2)
 
             write_direction = f"{prompt_field['key']}_to_{answer_field['key']}"
             write_display_text = prompt_field["text"]

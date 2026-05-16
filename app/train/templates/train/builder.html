@@ -1716,23 +1716,18 @@
                     pushWriteDirection("question_text", "answer_text");
                     pushWriteDirection("answer_text", "question_text");
                 } else if (writeFieldValues.structure === "en_ja_zh") {
-                    pushWriteField("english_expression", "英语表达", writeFieldValues.englishExpression);
-                    pushWriteField("english_definition", "英语释义", writeFieldValues.englishDefinition);
-                    pushWriteField("japanese_expression", "日语表达", writeFieldValues.japaneseExpression);
-                    pushWriteField("japanese_definition", "日语释义", writeFieldValues.japaneseDefinition);
-                    pushWriteField("chinese_meaning", "中文意思", writeFieldValues.chineseMeaning);
-
-                    pushWriteDirection("english_expression", "chinese_meaning");
-                    pushWriteDirection("chinese_meaning", "english_expression");
-
-                    pushWriteDirection("japanese_expression", "chinese_meaning");
-                    pushWriteDirection("chinese_meaning", "japanese_expression");
+                    pushWriteField("english_expression", "英语", writeFieldValues.englishExpression);
+                    pushWriteField("japanese_expression", "日语", writeFieldValues.japaneseExpression);
+                    pushWriteField("chinese_meaning", "中文", writeFieldValues.chineseMeaning);
 
                     pushWriteDirection("english_expression", "japanese_expression");
-                    pushWriteDirection("japanese_expression", "english_expression");
+                    pushWriteDirection("english_expression", "chinese_meaning");
 
-                    pushWriteDirection("english_expression", "english_definition");
-                    pushWriteDirection("japanese_expression", "japanese_definition");
+                    pushWriteDirection("japanese_expression", "english_expression");
+                    pushWriteDirection("japanese_expression", "chinese_meaning");
+
+                    pushWriteDirection("chinese_meaning", "english_expression");
+                    pushWriteDirection("chinese_meaning", "japanese_expression");
                 } else {
                     pushWriteField("jp_kanji", "日文汉字", writeFieldValues.jpKanji);
                     pushWriteField("kana", "假名", writeFieldValues.kana);

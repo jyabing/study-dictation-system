@@ -250,15 +250,14 @@
                                         <div class="field-group full">
                                             <div class="field-help">
                                                 <strong>推荐填法：</strong>
-                                                英语表达、日语表达、中文意思是核心字段；英语释义、日语释义用于原语思维训练，可选填写。<br>
-                                                <strong>例：</strong>
-                                                英语表达：destination ／ 英语释义：the place where someone or something is going ／
-                                                日语表达：目的地 ／ 日语释义：人や物が向かう場所 ／ 中文意思：目的地
+                                                英语、日语、中文是核心字段。系统会在三种语言之间随机互换出题。<br>
+                                                <strong>方向：</strong>
+                                                英语 → 日语 ／ 英语 → 中文 ／ 日语 → 英语 ／ 日语 → 中文 ／ 中文 → 英语 ／ 中文 → 日语
                                             </div>
                                         </div>
 
                                         <div class="field-group">
-                                            <div class="field-label">英语表达</div>
+                                            <div class="field-label">英语</div>
                                             <textarea
                                                 name="write_english_expression"
                                                 class="textarea"
@@ -267,16 +266,7 @@
                                         </div>
 
                                         <div class="field-group">
-                                            <div class="field-label">英语释义</div>
-                                            <textarea
-                                                name="write_english_definition"
-                                                class="textarea"
-                                                placeholder="例如：in the same way as before"
-                                            >{{ write_field_values.english_definition|default:'' }}</textarea>
-                                        </div>
-
-                                        <div class="field-group">
-                                            <div class="field-label">日语表达</div>
+                                            <div class="field-label">日语</div>
                                             <textarea
                                                 name="write_japanese_expression"
                                                 class="textarea"
@@ -285,16 +275,7 @@
                                         </div>
 
                                         <div class="field-group">
-                                            <div class="field-label">日语释义</div>
-                                            <textarea
-                                                name="write_japanese_definition"
-                                                class="textarea"
-                                                placeholder="例如：今までと同じようす"
-                                            >{{ write_field_values.japanese_definition|default:'' }}</textarea>
-                                        </div>
-
-                                        <div class="field-group">
-                                            <div class="field-label">中文意思</div>
+                                            <div class="field-label">中文</div>
                                             <textarea
                                                 name="write_chinese_meaning"
                                                 class="textarea"
@@ -1488,17 +1469,13 @@ function syncEditWriteFieldsToLegacyInputs() {
         targetValue = answerText || questionText || "";
     } else if (structure === "en_ja_zh") {
         const englishExpression = getEditWriteFieldValueByName("write_english_expression");
-        const englishDefinition = getEditWriteFieldValueByName("write_english_definition");
         const japaneseExpression = getEditWriteFieldValueByName("write_japanese_expression");
-        const japaneseDefinition = getEditWriteFieldValueByName("write_japanese_definition");
         const chineseMeaning = getEditWriteFieldValueByName("write_chinese_meaning");
 
         sourceValue = (
             chineseMeaning
             || englishExpression
             || japaneseExpression
-            || englishDefinition
-            || japaneseDefinition
             || ""
         );
 
@@ -1506,8 +1483,6 @@ function syncEditWriteFieldsToLegacyInputs() {
             englishExpression
             || japaneseExpression
             || chineseMeaning
-            || englishDefinition
-            || japaneseDefinition
             || ""
         );
     } else {

@@ -6819,23 +6819,18 @@ def question_edit(request, question_id):
             _add_write_direction("answer_text", "question_text")
 
         elif write_structure == "en_ja_zh":
-            _add_write_field("english_expression", "英语表达", _post_text("write_english_expression"))
-            _add_write_field("english_definition", "英语释义", _post_text("write_english_definition"))
-            _add_write_field("japanese_expression", "日语表达", _post_text("write_japanese_expression"))
-            _add_write_field("japanese_definition", "日语释义", _post_text("write_japanese_definition"))
-            _add_write_field("chinese_meaning", "中文意思", _post_text("write_chinese_meaning"))
-
-            _add_write_direction("english_expression", "chinese_meaning")
-            _add_write_direction("chinese_meaning", "english_expression")
-
-            _add_write_direction("japanese_expression", "chinese_meaning")
-            _add_write_direction("chinese_meaning", "japanese_expression")
+            _add_write_field("english_expression", "英语", _post_text("write_english_expression"))
+            _add_write_field("japanese_expression", "日语", _post_text("write_japanese_expression"))
+            _add_write_field("chinese_meaning", "中文", _post_text("write_chinese_meaning"))
 
             _add_write_direction("english_expression", "japanese_expression")
-            _add_write_direction("japanese_expression", "english_expression")
+            _add_write_direction("english_expression", "chinese_meaning")
 
-            _add_write_direction("english_expression", "english_definition")
-            _add_write_direction("japanese_expression", "japanese_definition")
+            _add_write_direction("japanese_expression", "english_expression")
+            _add_write_direction("japanese_expression", "chinese_meaning")
+
+            _add_write_direction("chinese_meaning", "english_expression")
+            _add_write_direction("chinese_meaning", "japanese_expression")
 
         else:
             _add_write_field("jp_kanji", "日文汉字", _post_text("write_jp_kanji"))

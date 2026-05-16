@@ -5361,17 +5361,24 @@ def _train_api_by_scope(request, scope, obj):
 
         # =========================
         # 写作题方向兜底：
-        # 优先使用 GET 发题时保存在 session 里的方向。
-        # 前端传来的 write_direction 只作为 fallback。
+        # 1. POST 里带来的 write_direction 代表当前页面实际显示的方向，必须优先使用。
+        # 2. session 里的 issued_write_direction 只在前端没有提交方向时兜底。
+        # 这样可以避免同一个 TrainingItem 随机出不同方向时，session 旧方向覆盖当前页面方向。
         # =========================
+        posted_write_direction = write_direction
+
         issued_write_directions = request.session.get("issued_write_directions", {})
 
-        if isinstance(issued_write_directions, dict):
+        if (
+            training.item_type == "write"
+            and not posted_write_direction
+            and isinstance(issued_write_directions, dict)
+        ):
             issued_write_direction = str(
                 issued_write_directions.get(str(training.id)) or ""
             ).strip()
 
-            if training.item_type == "write" and issued_write_direction:
+            if issued_write_direction:
                 write_direction = issued_write_direction
 
         if is_empty_submission:
@@ -5380,6 +5387,7 @@ def _train_api_by_scope(request, scope, obj):
                 "",
                 write_direction=write_direction,
             )
+
             hint_stage = _session_next_empty_submit_stage(request, training_id)
             hint_payload = _build_segmented_hint_payload(
                 judge.get("display_answer", ""),

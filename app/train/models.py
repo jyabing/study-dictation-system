@@ -827,6 +827,18 @@ class DictationResult(models.Model):
 
     order_index = models.PositiveSmallIntegerField(default=0)
 
+    dictation_field_key = models.CharField(
+        max_length=80,
+        blank=True,
+        default=""
+    )
+
+    dictation_field_label = models.CharField(
+        max_length=80,
+        blank=True,
+        default=""
+    )
+
     dictation_text_snapshot = models.TextField(blank=True, default="")
 
     is_correct = models.BooleanField(default=False)

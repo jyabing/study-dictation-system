@@ -153,9 +153,28 @@
 
                             {% if display_qtype == "write" %}
                                 <div class="field-group full">
-                                    <div class="field-label">写作三字段训练</div>
+                                    <div class="field-label">写作字段训练</div>
 
-                                    <div class="grid-3">
+                                    <div class="field-help">
+                                        编辑写作题时，只修改当前结构下显示的字段。上方「题干 / 回答」是兼容字段，会由这里的数据同步保存。
+                                    </div>
+
+                                    <div class="field-group">
+                                        <div class="field-label">写作结构</div>
+                                        <select
+                                            name="write_structure"
+                                            id="write-structure"
+                                            class="input"
+                                            onchange="syncEditWriteStructureFields();"
+                                        >
+                                            <option value="ja_three" {% if write_structure == "ja_three" %}selected{% endif %}>日语三字段：日文汉字 / 假名 / 中文意译</option>
+                                            <option value="poem_pair" {% if write_structure == "poem_pair" %}selected{% endif %}>诗词上下句：上一句 / 下一句</option>
+                                            <option value="qa_pair" {% if write_structure == "qa_pair" %}selected{% endif %}>问答互换：提问 / 回答</option>
+                                            <option value="en_ja_zh" {% if write_structure == "en_ja_zh" %}selected{% endif %}>英日中表达 / 原语释义</option>
+                                        </select>
+                                    </div>
+
+                                    <div id="edit-write-fields-ja-three" class="edit-write-structure-fields grid-3">
                                         <div class="field-group">
                                             <div class="field-label">日文汉字</div>
                                             <textarea
@@ -187,8 +206,101 @@
                                         </div>
                                     </div>
 
-                                    <div class="field-help">
-                                        当前只用于显示和确认三字段内容。下一步再接保存逻辑。
+                                    <div id="edit-write-fields-poem-pair" class="edit-write-structure-fields grid-2">
+                                        <div class="field-group">
+                                            <div class="field-label">上一句</div>
+                                            <textarea
+                                                name="write_previous_line"
+                                                class="textarea"
+                                                placeholder="例如：床前明月光"
+                                            >{{ write_field_values.previous_line|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">下一句</div>
+                                            <textarea
+                                                name="write_next_line"
+                                                class="textarea"
+                                                placeholder="例如：疑是地上霜"
+                                            >{{ write_field_values.next_line|default:'' }}</textarea>
+                                        </div>
+                                    </div>
+
+                                    <div id="edit-write-fields-qa-pair" class="edit-write-structure-fields grid-2">
+                                        <div class="field-group">
+                                            <div class="field-label">提问</div>
+                                            <textarea
+                                                name="write_question_text"
+                                                class="textarea"
+                                                placeholder="例如：日本的首都是哪里？"
+                                            >{{ write_field_values.question_text|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">回答</div>
+                                            <textarea
+                                                name="write_answer_text"
+                                                class="textarea"
+                                                placeholder="例如：东京"
+                                            >{{ write_field_values.answer_text|default:'' }}</textarea>
+                                        </div>
+                                    </div>
+
+                                    <div id="edit-write-fields-en-ja-zh" class="edit-write-structure-fields grid-3">
+                                        <div class="field-group full">
+                                            <div class="field-help">
+                                                <strong>推荐填法：</strong>
+                                                英语表达、日语表达、中文意思是核心字段；英语释义、日语释义用于原语思维训练，可选填写。<br>
+                                                <strong>例：</strong>
+                                                英语表达：destination ／ 英语释义：the place where someone or something is going ／
+                                                日语表达：目的地 ／ 日语释义：人や物が向かう場所 ／ 中文意思：目的地
+                                            </div>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">英语表达</div>
+                                            <textarea
+                                                name="write_english_expression"
+                                                class="textarea"
+                                                placeholder="例如：as usual"
+                                            >{{ write_field_values.english_expression|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">英语释义</div>
+                                            <textarea
+                                                name="write_english_definition"
+                                                class="textarea"
+                                                placeholder="例如：in the same way as before"
+                                            >{{ write_field_values.english_definition|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">日语表达</div>
+                                            <textarea
+                                                name="write_japanese_expression"
+                                                class="textarea"
+                                                placeholder="例如：あいかわらず"
+                                            >{{ write_field_values.japanese_expression|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">日语释义</div>
+                                            <textarea
+                                                name="write_japanese_definition"
+                                                class="textarea"
+                                                placeholder="例如：今までと同じようす"
+                                            >{{ write_field_values.japanese_definition|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">中文意思</div>
+                                            <textarea
+                                                name="write_chinese_meaning"
+                                                class="textarea"
+                                                placeholder="例如：依旧，仍然，和以往一样"
+                                            >{{ write_field_values.chinese_meaning|default:'' }}</textarea>
+                                        </div>
                                     </div>
                                 </div>
                             {% endif %}
@@ -1319,18 +1431,93 @@ if (answerDisplay) {
     answerDisplay.addEventListener("input", syncQuestionAnswerFields);
 }
 
-function getEditWriteFieldValue(id) {
+function getEditWriteFieldValueById(id) {
     const el = document.getElementById(id);
     return el ? el.value.trim() : "";
 }
 
-function syncEditWriteFieldsToLegacyInputs() {
-    const jpKanji = getEditWriteFieldValue("write-jp-kanji-display");
-    const kana = getEditWriteFieldValue("write-kana-display");
-    const zhMeaning = getEditWriteFieldValue("write-zh-meaning-display");
+function getEditWriteFieldValueByName(name) {
+    const el = document.querySelector(`[name="${name}"]`);
+    return el ? el.value.trim() : "";
+}
 
-    const sourceValue = zhMeaning || jpKanji || kana || "";
-    const targetValue = jpKanji || kana || zhMeaning || "";
+function getEditWriteStructure() {
+    const el = document.getElementById("write-structure");
+    return el ? el.value : "ja_three";
+}
+
+function syncEditWriteStructureFields() {
+    const structure = getEditWriteStructure();
+    const sections = document.querySelectorAll(".edit-write-structure-fields");
+
+    sections.forEach(function (section) {
+        section.style.display = "none";
+    });
+
+    const sectionMap = {
+        ja_three: "edit-write-fields-ja-three",
+        poem_pair: "edit-write-fields-poem-pair",
+        qa_pair: "edit-write-fields-qa-pair",
+        en_ja_zh: "edit-write-fields-en-ja-zh"
+    };
+
+    const activeSection = document.getElementById(sectionMap[structure] || sectionMap.ja_three);
+
+    if (activeSection) {
+        activeSection.style.display = "";
+    }
+}
+
+function syncEditWriteFieldsToLegacyInputs() {
+    const structure = getEditWriteStructure();
+
+    let sourceValue = "";
+    let targetValue = "";
+
+    if (structure === "poem_pair") {
+        const previousLine = getEditWriteFieldValueByName("write_previous_line");
+        const nextLine = getEditWriteFieldValueByName("write_next_line");
+
+        sourceValue = previousLine || nextLine || "";
+        targetValue = nextLine || previousLine || "";
+    } else if (structure === "qa_pair") {
+        const questionText = getEditWriteFieldValueByName("write_question_text");
+        const answerText = getEditWriteFieldValueByName("write_answer_text");
+
+        sourceValue = questionText || answerText || "";
+        targetValue = answerText || questionText || "";
+    } else if (structure === "en_ja_zh") {
+        const englishExpression = getEditWriteFieldValueByName("write_english_expression");
+        const englishDefinition = getEditWriteFieldValueByName("write_english_definition");
+        const japaneseExpression = getEditWriteFieldValueByName("write_japanese_expression");
+        const japaneseDefinition = getEditWriteFieldValueByName("write_japanese_definition");
+        const chineseMeaning = getEditWriteFieldValueByName("write_chinese_meaning");
+
+        sourceValue = (
+            chineseMeaning
+            || englishExpression
+            || japaneseExpression
+            || englishDefinition
+            || japaneseDefinition
+            || ""
+        );
+
+        targetValue = (
+            englishExpression
+            || japaneseExpression
+            || chineseMeaning
+            || englishDefinition
+            || japaneseDefinition
+            || ""
+        );
+    } else {
+        const jpKanji = getEditWriteFieldValueById("write-jp-kanji-display");
+        const kana = getEditWriteFieldValueById("write-kana-display");
+        const zhMeaning = getEditWriteFieldValueById("write-zh-meaning-display");
+
+        sourceValue = zhMeaning || jpKanji || kana || "";
+        targetValue = jpKanji || kana || zhMeaning || "";
+    }
 
     if (questionDisplay && sourceValue) {
         questionDisplay.value = sourceValue;
@@ -1350,24 +1537,32 @@ function syncEditWriteFieldsToLegacyInputs() {
     if (targetAnswerHidden) targetAnswerHidden.value = targetValue;
 }
 
-["write-jp-kanji-display", "write-kana-display", "write-zh-meaning-display"].forEach(function (id) {
-    const el = document.getElementById(id);
-
-    if (el) {
-        el.addEventListener("input", function () {
-            syncEditWriteFieldsToLegacyInputs();
-            syncQuestionAnswerFields();
-        });
-    }
+document.querySelectorAll(".edit-write-structure-fields textarea").forEach(function (el) {
+    el.addEventListener("input", function () {
+        syncEditWriteFieldsToLegacyInputs();
+        syncQuestionAnswerFields();
+    });
 });
 
-if (form) {
-    form.addEventListener("submit", function () {
+const editWriteStructureSelect = document.getElementById("write-structure");
+
+if (editWriteStructureSelect) {
+    editWriteStructureSelect.addEventListener("change", function () {
+        syncEditWriteStructureFields();
         syncEditWriteFieldsToLegacyInputs();
         syncQuestionAnswerFields();
     });
 }
 
+if (form) {
+    form.addEventListener("submit", function () {
+        syncEditWriteStructureFields();
+        syncEditWriteFieldsToLegacyInputs();
+        syncQuestionAnswerFields();
+    });
+}
+
+syncEditWriteStructureFields();
 syncEditWriteFieldsToLegacyInputs();
 syncQuestionAnswerFields();
 

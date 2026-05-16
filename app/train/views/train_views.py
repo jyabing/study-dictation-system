@@ -5746,6 +5746,71 @@ def lesson_question_list(request, lesson_id):
             if training else (question.answer_text or "").strip()
         )
 
+        if training and training.item_type == "write":
+            old_choices = training.choices or []
+            write_fields = []
+            allowed_directions = []
+
+            if old_choices and isinstance(old_choices[0], dict):
+                meta = old_choices[0].get("_meta", {}) or {}
+                write_meta = meta.get("write") if isinstance(meta.get("write"), dict) else {}
+
+                raw_write_fields = write_meta.get("fields") or []
+                raw_allowed_directions = write_meta.get("allowed_directions") or []
+
+                if isinstance(raw_write_fields, list):
+                    write_fields = [
+                        field
+                        for field in raw_write_fields
+                        if isinstance(field, dict)
+                        and str(field.get("label") or "").strip()
+                        and str(field.get("text") or field.get("value") or "").strip()
+                    ]
+
+                if isinstance(raw_allowed_directions, list):
+                    allowed_directions = [
+                        direction
+                        for direction in raw_allowed_directions
+                        if isinstance(direction, dict)
+                        and str(direction.get("prompt_key") or "").strip()
+                        and str(direction.get("answer_key") or "").strip()
+                    ]
+
+            if len(write_fields) >= 2:
+                field_labels = [
+                    str(field.get("label") or "").strip()
+                    for field in write_fields
+                    if str(field.get("label") or "").strip()
+                ]
+
+                field_key_set = {
+                    str(field.get("key") or "").strip()
+                    for field in write_fields
+                    if str(field.get("key") or "").strip()
+                }
+
+                if field_key_set & {
+                    "english_expression",
+                    "english_definition",
+                    "japanese_expression",
+                    "japanese_definition",
+                    "chinese_meaning",
+                }:
+                    write_structure_label = "英日中表达 / 原语释义"
+                elif field_key_set & {"previous_line", "next_line"}:
+                    write_structure_label = "诗词上下句"
+                elif field_key_set & {"question_text", "answer_text"}:
+                    write_structure_label = "问答互换"
+                elif field_key_set & {"jp_kanji", "kana", "zh_meaning"}:
+                    write_structure_label = "日语三字段"
+                else:
+                    write_structure_label = "多字段写作"
+
+                question.display_source_text = f"写作字段训练：{write_structure_label}"
+                question.display_target_answer = (
+                    f"{len(field_labels)}字段 / {len(allowed_directions) or '随机'}方向："
+                    + " / ".join(field_labels)
+                )
         display_prompt_image_url = ""
 
         if training and training.item_type == "speak_read":
@@ -6633,10 +6698,23 @@ def question_edit(request, question_id):
                 .order_by("question_id", "id")
             )
 
+    write_structure = "ja_three"
     write_field_values = {
         "jp_kanji": "",
         "kana": "",
         "zh_meaning": "",
+
+        "previous_line": "",
+        "next_line": "",
+
+        "question_text": "",
+        "answer_text": "",
+
+        "english_expression": "",
+        "english_definition": "",
+        "japanese_expression": "",
+        "japanese_definition": "",
+        "chinese_meaning": "",
     }
 
     if training and training.item_type == "write":
@@ -6646,6 +6724,8 @@ def question_edit(request, question_id):
             meta = old_choices[0].get("_meta", {}) or {}
             write_meta = meta.get("write") if isinstance(meta.get("write"), dict) else {}
             write_fields = write_meta.get("fields") or []
+
+            write_field_keys = set()
 
             if isinstance(write_fields, list):
                 for field in write_fields:
@@ -6657,6 +6737,20 @@ def question_edit(request, question_id):
 
                     if key in write_field_values:
                         write_field_values[key] = text
+                        write_field_keys.add(key)
+
+            if write_field_keys & {
+                "english_expression",
+                "english_definition",
+                "japanese_expression",
+                "japanese_definition",
+                "chinese_meaning",
+            }:
+                write_structure = "en_ja_zh"
+            elif write_field_keys & {"previous_line", "next_line"}:
+                write_structure = "poem_pair"
+            elif write_field_keys & {"question_text", "answer_text"}:
+                write_structure = "qa_pair"
 
     if request.method == "POST":
         instruction_text = (request.POST.get("instruction_text") or "").strip()
@@ -6673,31 +6767,72 @@ def question_edit(request, question_id):
             or ""
         ).strip()
 
-        write_jp_kanji = (request.POST.get("write_jp_kanji") or "").strip()
-        write_kana = (request.POST.get("write_kana") or "").strip()
-        write_zh_meaning = (request.POST.get("write_zh_meaning") or "").strip()
+        write_structure = (request.POST.get("write_structure") or "ja_three").strip()
+
+        def _post_text(name):
+            return (request.POST.get(name) or "").strip()
 
         write_fields = []
-        if write_jp_kanji:
+        allowed_directions = []
+
+        def _add_write_field(key, label, text):
+            cleaned_text = (text or "").strip()
+
+            if not cleaned_text:
+                return
+
             write_fields.append({
-                "key": "jp_kanji",
-                "label": "日文汉字",
-                "text": write_jp_kanji,
+                "key": key,
+                "label": label,
+                "text": cleaned_text,
             })
 
-        if write_kana:
-            write_fields.append({
-                "key": "kana",
-                "label": "假名",
-                "text": write_kana,
+        def _add_write_direction(prompt_key, answer_key):
+            if not prompt_key or not answer_key or prompt_key == answer_key:
+                return
+
+            allowed_directions.append({
+                "prompt_key": prompt_key,
+                "answer_key": answer_key,
             })
 
-        if write_zh_meaning:
-            write_fields.append({
-                "key": "zh_meaning",
-                "label": "中文意译",
-                "text": write_zh_meaning,
-            })
+        if write_structure == "poem_pair":
+            _add_write_field("previous_line", "上一句", _post_text("write_previous_line"))
+            _add_write_field("next_line", "下一句", _post_text("write_next_line"))
+
+            _add_write_direction("previous_line", "next_line")
+            _add_write_direction("next_line", "previous_line")
+
+        elif write_structure == "qa_pair":
+            _add_write_field("question_text", "提问", _post_text("write_question_text"))
+            _add_write_field("answer_text", "回答", _post_text("write_answer_text"))
+
+            _add_write_direction("question_text", "answer_text")
+            _add_write_direction("answer_text", "question_text")
+
+        elif write_structure == "en_ja_zh":
+            _add_write_field("english_expression", "英语表达", _post_text("write_english_expression"))
+            _add_write_field("english_definition", "英语释义", _post_text("write_english_definition"))
+            _add_write_field("japanese_expression", "日语表达", _post_text("write_japanese_expression"))
+            _add_write_field("japanese_definition", "日语释义", _post_text("write_japanese_definition"))
+            _add_write_field("chinese_meaning", "中文意思", _post_text("write_chinese_meaning"))
+
+            _add_write_direction("english_expression", "chinese_meaning")
+            _add_write_direction("chinese_meaning", "english_expression")
+
+            _add_write_direction("japanese_expression", "chinese_meaning")
+            _add_write_direction("chinese_meaning", "japanese_expression")
+
+            _add_write_direction("english_expression", "japanese_expression")
+            _add_write_direction("japanese_expression", "english_expression")
+
+            _add_write_direction("english_expression", "english_definition")
+            _add_write_direction("japanese_expression", "japanese_definition")
+
+        else:
+            _add_write_field("jp_kanji", "日文汉字", _post_text("write_jp_kanji"))
+            _add_write_field("kana", "假名", _post_text("write_kana"))
+            _add_write_field("zh_meaning", "中文意译", _post_text("write_zh_meaning"))
 
         audio_url = (request.POST.get("audio_url") or "").strip()
         answer_audio_url = (request.POST.get("answer_audio_url") or "").strip()
@@ -6762,6 +6897,7 @@ def question_edit(request, question_id):
                     if training and training.choices and isinstance((training.choices or [])[0], dict)
                     else {}
                 ),
+                "write_structure": write_structure,
                 "write_field_values": write_field_values,
             })
 
@@ -6790,7 +6926,8 @@ def question_edit(request, question_id):
                 meta["skill"] = "write"
                 meta["item_type"] = "write_text"
                 meta["write"] = {
-                    "fields": write_fields
+                    "fields": write_fields,
+                    "allowed_directions": allowed_directions,
                 }
 
                 first_choice["_meta"] = meta
@@ -7118,6 +7255,7 @@ def question_edit(request, question_id):
             if training and training.choices and isinstance((training.choices or [])[0], dict)
             else {}
         ),
+        "write_structure": write_structure,
         "write_field_values": write_field_values,
     })
 

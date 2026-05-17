@@ -338,6 +338,7 @@
                     class="dictation-answer-input"
                     placeholder="请输入你听到的内容"
                     autocomplete="off"
+                    data-expected-answer="{{ result.dictation_text_snapshot }}"
                 >
 
                 <button
@@ -398,8 +399,16 @@
         return;
     }
 
+    function normalizeDictationAnswer(value) {
+        return String(value || "")
+            .trim()
+            .replace(/\s+/g, "")
+            .toLowerCase();
+    }
+
     function showInputValue() {
         const value = input.value.trim();
+        const expectedAnswer = String(input.dataset.expectedAnswer || "").trim();
 
         if (!value) {
             preview.textContent = "请先输入你听到的内容。";
@@ -408,7 +417,21 @@
             return;
         }
 
-        preview.textContent = `你输入的是：${value}`;
+        if (!expectedAnswer) {
+            preview.textContent = `你输入的是：${value}`;
+            preview.classList.add("is-visible");
+            return;
+        }
+
+        const normalizedValue = normalizeDictationAnswer(value);
+        const normalizedExpected = normalizeDictationAnswer(expectedAnswer);
+
+        if (normalizedValue === normalizedExpected) {
+            preview.textContent = `本地判断：正确。你输入的是：${value}`;
+        } else {
+            preview.textContent = `本地判断：不一致。你输入的是：${value}`;
+        }
+
         preview.classList.add("is-visible");
     }
 

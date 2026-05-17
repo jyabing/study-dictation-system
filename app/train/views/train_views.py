@@ -4769,16 +4769,34 @@ def _create_dictation_session(request, scope, obj):
         .order_by("id")
     )
 
-    if not dictation_items:
+    dictation_candidates = []
+
+    for training in dictation_items:
+        sources = _get_training_dictation_sources(training)
+
+        for source in sources:
+            text = (source.get("text") or "").strip()
+
+            if not text:
+                continue
+
+            dictation_candidates.append({
+                "training": training,
+                "field_key": source.get("field_key") or "",
+                "field_label": source.get("field_label") or "",
+                "text": text,
+            })
+
+    if not dictation_candidates:
         return None
 
-    random.shuffle(dictation_items)
-    selected_items = dictation_items[:10]
+    random.shuffle(dictation_candidates)
+    selected_candidates = dictation_candidates[:10]
 
     session_kwargs = {
         "user": request.user,
         "scope_type": scope,
-        "total_count": len(selected_items),
+        "total_count": len(selected_candidates),
         "correct_count": 0,
         "wrong_count": 0,
         "status": "in_progress",
@@ -4793,14 +4811,18 @@ def _create_dictation_session(request, scope, obj):
     session = DictationSession.objects.create(**session_kwargs)
 
     results = []
-    for index, training in enumerate(selected_items, start=1):
+    for index, candidate in enumerate(selected_candidates, start=1):
+        training = candidate["training"]
+
         results.append(
             DictationResult(
                 session=session,
                 training_item=training,
                 question=training.question,
                 order_index=index,
-                dictation_text_snapshot=((training.dictation_text or training.target_answer) or "").strip(),
+                dictation_field_key=candidate["field_key"],
+                dictation_field_label=candidate["field_label"],
+                dictation_text_snapshot=candidate["text"],
             )
         )
 

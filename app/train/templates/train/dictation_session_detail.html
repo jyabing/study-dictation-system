@@ -419,6 +419,28 @@
         return;
     }
 
+    function getCookie(name) {
+        const cookies = document.cookie ? document.cookie.split(";") : [];
+
+        for (const cookie of cookies) {
+            const trimmedCookie = cookie.trim();
+
+            if (trimmedCookie.startsWith(name + "=")) {
+                return decodeURIComponent(trimmedCookie.slice(name.length + 1));
+            }
+        }
+
+        return "";
+    }
+
+    function getCurrentDictationResult() {
+        if (!dictationResults.length) {
+            return null;
+        }
+
+        return dictationResults[currentResultIndex] || dictationResults[0] || null;
+    }
+
     function normalizeDictationAnswer(value) {
         return String(value || "")
             .trim()

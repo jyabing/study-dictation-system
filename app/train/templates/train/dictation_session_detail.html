@@ -301,7 +301,19 @@
                     <div>
                         <div class="dictation-answer-title">第 {{ result.order_index }} 题</div>
                         <div class="dictation-answer-subtitle">
-                            共 {{ session.total_count }} 题。本步只搭建答题界面，暂不判题、不保存答案。
+                            当前听写：
+                            {% if result.dictation_field_label %}
+                                {{ result.dictation_field_label }}
+                            {% else %}
+                                未记录
+                            {% endif %}
+                            ｜字段：
+                            {% if result.dictation_field_key %}
+                                {{ result.dictation_field_key }}
+                            {% else %}
+                                未记录
+                            {% endif %}
+                            ｜共 {{ session.total_count }} 题。
                         </div>
                     </div>
                 </div>

@@ -299,8 +299,8 @@
             <section class="dictation-answer-card">
                 <div class="dictation-answer-top">
                     <div>
-                        <div class="dictation-answer-title">第 {{ result.order_index }} 题</div>
-                        <div class="dictation-answer-subtitle">
+                        <div id="dictation-answer-title" class="dictation-answer-title">第 {{ result.order_index }} 题</div>
+                        <div id="dictation-answer-subtitle" class="dictation-answer-subtitle">
                             当前听写：
                             {% if result.dictation_field_label %}
                                 {{ result.dictation_field_label }}
@@ -347,6 +347,14 @@
                     class="dictation-submit-placeholder"
                 >
                     提交答案（只读取输入）
+                </button>
+
+                <button
+                    type="button"
+                    id="dictation-next-button"
+                    class="dictation-submit-placeholder"
+                >
+                    下一题（本地切换）
                 </button>
 
                 <div id="dictation-answer-preview" class="dictation-answer-preview"></div>
@@ -401,6 +409,11 @@
     const button = document.getElementById("dictation-submit-button");
     const preview = document.getElementById("dictation-answer-preview");
     const playButton = document.getElementById("dictation-play-button");
+    const nextButton = document.getElementById("dictation-next-button");
+    const answerTitle = document.getElementById("dictation-answer-title");
+    const answerSubtitle = document.getElementById("dictation-answer-subtitle");
+
+    let currentResultIndex = 0;
 
     if (!input || !button || !preview) {
         return;
@@ -411,6 +424,47 @@
             .trim()
             .replace(/\s+/g, "")
             .toLowerCase();
+    }
+
+    function renderCurrentDictationResult() {
+        if (!dictationResults.length) {
+            return;
+        }
+
+        const currentResult = dictationResults[currentResultIndex] || dictationResults[0];
+        const fieldLabel = currentResult.field_label || "未记录";
+        const fieldKey = currentResult.field_key || "未记录";
+        const audioUrl = currentResult.audio_url || "";
+
+        if (answerTitle) {
+            answerTitle.textContent = `第 ${currentResult.order_index} 题`;
+        }
+
+        if (answerSubtitle) {
+            answerSubtitle.textContent = `当前听写：${fieldLabel} ｜字段：${fieldKey} ｜共 ${dictationResults.length} 题。`;
+        }
+
+        input.value = "";
+        input.dataset.expectedAnswer = currentResult.expected_answer || "";
+
+        if (playButton) {
+            playButton.dataset.audioUrl = audioUrl;
+            playButton.disabled = !audioUrl;
+            playButton.textContent = audioUrl ? "▶ 播放音频" : "▶ 暂无音频";
+        }
+
+        if (nextButton) {
+            if (dictationResults.length <= 1 || currentResultIndex >= dictationResults.length - 1) {
+                nextButton.disabled = true;
+                nextButton.textContent = "已经是最后一题";
+            } else {
+                nextButton.disabled = false;
+                nextButton.textContent = "下一题（本地切换）";
+            }
+        }
+
+        preview.textContent = "";
+        preview.classList.remove("is-visible");
     }
 
     function showInputValue() {
@@ -442,6 +496,8 @@
         preview.classList.add("is-visible");
     }
 
+    renderCurrentDictationResult();
+
     button.addEventListener("click", showInputValue);
 
     if (playButton) {
@@ -459,6 +515,18 @@
                 preview.textContent = "音频播放失败，请稍后再试。";
                 preview.classList.add("is-visible");
             });
+        });
+    }
+
+    if (nextButton) {
+        nextButton.addEventListener("click", function () {
+            if (currentResultIndex >= dictationResults.length - 1) {
+                return;
+            }
+
+            currentResultIndex += 1;
+            renderCurrentDictationResult();
+            input.focus();
         });
     }
 

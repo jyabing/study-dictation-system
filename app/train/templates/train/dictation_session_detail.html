@@ -388,8 +388,15 @@
     </div>
 </div>
 
+{{ dictation_result_payloads|json_script:"dictation-results-data" }}
+
 <script>
 (function () {
+    const resultDataElement = document.getElementById("dictation-results-data");
+    const dictationResults = resultDataElement ? JSON.parse(resultDataElement.textContent || "[]") : [];
+
+    console.log("dictationResults", dictationResults);
+
     const input = document.getElementById("dictation-answer-input");
     const button = document.getElementById("dictation-submit-button");
     const preview = document.getElementById("dictation-answer-preview");

@@ -429,7 +429,7 @@
         if (normalizedValue === normalizedExpected) {
             preview.textContent = `本地判断：正确。你输入的是：${value}`;
         } else {
-            preview.textContent = `本地判断：不一致。你输入的是：${value}`;
+            preview.textContent = `本地判断：不一致。你输入的是：${value}。正确答案：${expectedAnswer}`;
         }
 
         preview.classList.add("is-visible");

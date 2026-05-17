@@ -4888,6 +4888,11 @@ def dictation_session_detail(request, session_id):
         .order_by("order_index", "id")
     )
 
+    results = list(results)
+
+    for result in results:
+        result.dictation_audio_url = _resolve_dictation_audio(result)
+
     return render(request, "train/dictation_session_detail.html", {
         "session": session,
         "results": results,

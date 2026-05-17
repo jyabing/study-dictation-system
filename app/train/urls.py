@@ -16,6 +16,7 @@ from .views.train_views import (
     dictation_book_start,
     dictation_lesson_start,
     dictation_session_detail,
+    dictation_result_submit,
     asr_transcribe_api,
     practice_player_page,
     practice_library_page,
@@ -102,6 +103,8 @@ urlpatterns = [
     path("dictation/lesson/<int:lesson_id>/check/", dictation_lesson_check, name="dictation-lesson-check"),
     path("dictation/lesson/<int:lesson_id>/start/", dictation_lesson_start, name="dictation-lesson-start"),
     path("dictation/session/<int:session_id>/", dictation_session_detail, name="dictation-session-detail"),
+    path("dictation/result/<int:result_id>/submit/", dictation_result_submit, name="dictation-result-submit"),
+
     path("api/book/<int:book_id>/train/", book_train_api, name="book-train-api"),
     path("api/book/<int:book_id>/train/manual-upgrade/", book_train_manual_upgrade, name="book-train-manual-upgrade"),
     path("api/asr/transcribe/", asr_transcribe_api, name="asr-transcribe-api"),

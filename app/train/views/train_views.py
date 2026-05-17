@@ -4915,6 +4915,79 @@ def dictation_session_detail(request, session_id):
     })
 
 @login_required
+def dictation_result_submit(request, result_id):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "POST only"}, status=405)
+
+    result = get_object_or_404(
+        DictationResult.objects.select_related("session"),
+        id=result_id,
+        session__user=request.user
+    )
+
+    try:
+        data = json.loads(request.body.decode("utf-8") or "{}")
+    except Exception:
+        data = {}
+
+    user_answer = str(data.get("user_answer") or "").strip()
+    expected_answer = (result.dictation_text_snapshot or "").strip()
+
+    if not user_answer:
+        return JsonResponse({"ok": False, "error": "答案不能为空"}, status=400)
+
+    def _normalize_dictation_answer(value):
+        return "".join(str(value or "").strip().lower().split())
+
+    normalized_user_answer = _normalize_dictation_answer(user_answer)
+    normalized_expected_answer = _normalize_dictation_answer(expected_answer)
+
+    is_correct = bool(
+        normalized_expected_answer
+        and normalized_user_answer == normalized_expected_answer
+    )
+
+    previous_answers = result.user_answers
+    if not isinstance(previous_answers, list):
+        previous_answers = []
+
+    attempt_number = result.attempt_count + 1
+
+    previous_answers.append({
+        "answer": user_answer,
+        "is_correct": is_correct,
+        "attempt_number": attempt_number,
+        "answered_at": timezone.now().isoformat(),
+    })
+
+    result.user_answers = previous_answers
+    result.attempt_count = attempt_number
+    result.answered_at = timezone.now()
+    result.timed_out = False
+
+    if is_correct:
+        result.is_correct = True
+        if result.correct_attempt_number is None:
+            result.correct_attempt_number = attempt_number
+
+    result.save(update_fields=[
+        "user_answers",
+        "attempt_count",
+        "answered_at",
+        "timed_out",
+        "is_correct",
+        "correct_attempt_number",
+    ])
+
+    return JsonResponse({
+        "ok": True,
+        "is_correct": is_correct,
+        "attempt_count": result.attempt_count,
+        "correct_attempt_number": result.correct_attempt_number,
+        "expected_answer": expected_answer,
+    })
+
+@login_required
 def dictation_book_start(request, book_id):
     book = get_object_or_404(
         Book,

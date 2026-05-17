@@ -318,8 +318,18 @@
                     </div>
                 </div>
 
-                <button type="button" class="dictation-play-placeholder" disabled>
-                    ▶ 播放音频（占位）
+                <button
+                    type="button"
+                    id="dictation-play-button"
+                    class="dictation-play-placeholder"
+                    data-audio-url="{{ result.dictation_audio_url }}"
+                    {% if not result.dictation_audio_url %}disabled{% endif %}
+                >
+                    {% if result.dictation_audio_url %}
+                        ▶ 播放音频
+                    {% else %}
+                        ▶ 暂无音频
+                    {% endif %}
                 </button>
 
                 <input
@@ -382,6 +392,7 @@
     const input = document.getElementById("dictation-answer-input");
     const button = document.getElementById("dictation-submit-button");
     const preview = document.getElementById("dictation-answer-preview");
+    const playButton = document.getElementById("dictation-play-button");
 
     if (!input || !button || !preview) {
         return;
@@ -402,6 +413,24 @@
     }
 
     button.addEventListener("click", showInputValue);
+
+    if (playButton) {
+        playButton.addEventListener("click", function () {
+            const audioUrl = String(playButton.dataset.audioUrl || "").trim();
+
+            if (!audioUrl) {
+                preview.textContent = "当前题目没有可播放音频。";
+                preview.classList.add("is-visible");
+                return;
+            }
+
+            const audio = new Audio(audioUrl);
+            audio.play().catch(function () {
+                preview.textContent = "音频播放失败，请稍后再试。";
+                preview.classList.add("is-visible");
+            });
+        });
+    }
 
     input.addEventListener("keydown", function (event) {
         if (event.key === "Enter") {

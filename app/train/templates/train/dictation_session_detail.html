@@ -344,6 +344,8 @@
                         <div class="dictation-result-meta">
                             TrainingItem ID：{{ result.training_item_id }}
                             ｜Question ID：{{ result.question_id }}
+                            ｜听写来源：{% if result.dictation_field_label %}{{ result.dictation_field_label }}{% else %}未记录{% endif %}
+                            ｜字段：{% if result.dictation_field_key %}{{ result.dictation_field_key }}{% else %}未记录{% endif %}
                             ｜尝试次数：{{ result.attempt_count }}
                             ｜结果：{% if result.is_correct %}正确{% else %}未完成 / 未正确{% endif %}
                         </div>

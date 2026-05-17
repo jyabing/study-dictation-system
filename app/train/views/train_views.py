@@ -4405,6 +4405,50 @@ def _get_training_dictation_sources(training):
 
     return sources
 
+def _resolve_dictation_audio(result):
+    """
+    解析听写题播放音频。
+
+    第一版规则：
+    - legacy 来源优先使用 TrainingItem.audio_file
+    - 其他 write_fields 来源先使用 TTS，避免一条 TrainingItem 多语言字段时播错上传音频
+    """
+    text = (getattr(result, "dictation_text_snapshot", "") or "").strip()
+
+    if not text:
+        return ""
+
+    field_key = (getattr(result, "dictation_field_key", "") or "").strip()
+    field_label = (getattr(result, "dictation_field_label", "") or "").strip()
+
+    training = getattr(result, "training_item", None)
+
+    if field_key == "legacy" and training and getattr(training, "audio_file", None):
+        try:
+            uploaded_url = training.audio_file.url or ""
+        except Exception:
+            uploaded_url = ""
+
+        if uploaded_url:
+            return uploaded_url
+
+    if field_label == "英语":
+        tts_lang = "en"
+    elif field_label == "日语":
+        tts_lang = "ja"
+    else:
+        tts_lang = _resolve_tts_lang_for_text(
+            text,
+            configured_lang=None,
+            fallback_lang="ja",
+        )
+
+    return _build_tts_audio(
+        text=text,
+        lang=tts_lang,
+        prefix=f"dictation_{field_key or 'source'}"
+    )
+
 def _training_in_scope(training, scope, obj):
     question = getattr(training, "question", None)
     lesson = getattr(question, "lesson", None)

@@ -4903,6 +4903,7 @@ def dictation_session_detail(request, session_id):
             "field_label": result.dictation_field_label or "",
             "expected_answer": result.dictation_text_snapshot or "",
             "audio_url": result.dictation_audio_url or "",
+            "submit_url": reverse("dictation-result-submit", args=[result.id]),
         }
         for result in results
     ]

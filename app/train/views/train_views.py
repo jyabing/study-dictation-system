@@ -4893,9 +4893,24 @@ def dictation_session_detail(request, session_id):
     for result in results:
         result.dictation_audio_url = _resolve_dictation_audio(result)
 
+    dictation_result_payloads = [
+        {
+            "id": result.id,
+            "order_index": result.order_index,
+            "training_item_id": result.training_item_id,
+            "question_id": result.question_id,
+            "field_key": result.dictation_field_key or "",
+            "field_label": result.dictation_field_label or "",
+            "expected_answer": result.dictation_text_snapshot or "",
+            "audio_url": result.dictation_audio_url or "",
+        }
+        for result in results
+    ]
+
     return render(request, "train/dictation_session_detail.html", {
         "session": session,
         "results": results,
+        "dictation_result_payloads": dictation_result_payloads,
         "back_url": reverse("book-detail", args=[session.book_id]) if session.book_id else reverse("dashboard"),
     })
 

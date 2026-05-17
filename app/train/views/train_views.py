@@ -4336,6 +4336,75 @@ def _get_scope_dictation_qs(scope, obj, user=None):
 
     return qs.filter(question_id__in=mature_question_ids)
 
+def _get_training_dictation_sources(training):
+    """
+    从一条写作 TrainingItem 中提取可用于听写考核的来源。
+
+    第一版规则：
+    - 英语字段可以听写
+    - 日语字段可以听写
+    - 中文字段暂不作为听写来源
+    - 旧数据没有 write.fields 时，回退到 dictation_text / target_answer
+    """
+    sources = []
+
+    choices = getattr(training, "choices", None) or []
+    first_choice = choices[0] if choices and isinstance(choices[0], dict) else {}
+    meta = first_choice.get("_meta", {}) if isinstance(first_choice, dict) else {}
+    write_meta = meta.get("write") if isinstance(meta.get("write"), dict) else {}
+
+    raw_fields = write_meta.get("fields") or []
+
+    source_keys = {
+        "english_expression": "英语",
+        "japanese_expression": "日语",
+        "jp_kanji": "日语",
+        "kana": "日语",
+    }
+
+    seen = set()
+
+    if isinstance(raw_fields, list):
+        for field in raw_fields:
+            if not isinstance(field, dict):
+                continue
+
+            key = str(field.get("key") or "").strip()
+            text = str(field.get("text") or field.get("value") or "").strip()
+
+            if not key or not text or key not in source_keys:
+                continue
+
+            dedupe_key = (key, text)
+            if dedupe_key in seen:
+                continue
+
+            seen.add(dedupe_key)
+
+            sources.append({
+                "field_key": key,
+                "field_label": source_keys[key],
+                "text": text,
+            })
+
+    if sources:
+        return sources
+
+    fallback_text = (
+        getattr(training, "dictation_text", "")
+        or getattr(training, "target_answer", "")
+        or ""
+    ).strip()
+
+    if fallback_text:
+        sources.append({
+            "field_key": "legacy",
+            "field_label": "听写文本",
+            "text": fallback_text,
+        })
+
+    return sources
+
 def _training_in_scope(training, scope, obj):
     question = getattr(training, "question", None)
     lesson = getattr(question, "lesson", None)

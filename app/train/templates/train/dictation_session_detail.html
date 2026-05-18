@@ -581,33 +581,88 @@
         playCurrentDictationAudio();
     }
 
-    function showInputValue() {
+    async function submitCurrentDictationAnswer(options) {
+        const timedOut = Boolean(options && options.timedOut);
         const value = input.value.trim();
         const expectedAnswer = String(input.dataset.expectedAnswer || "").trim();
+        const currentResult = getCurrentDictationResult();
 
-        if (!value) {
+        if (!timedOut && !value) {
             preview.textContent = "请先输入你听到的内容。";
             preview.classList.add("is-visible");
             input.focus();
             return;
         }
 
-        if (!expectedAnswer) {
-            preview.textContent = `你输入的是：${value}`;
+        if (!currentResult || !currentResult.submit_url) {
+            preview.textContent = "当前题目没有提交地址。";
             preview.classList.add("is-visible");
             return;
         }
 
-        const normalizedValue = normalizeDictationAnswer(value);
-        const normalizedExpected = normalizeDictationAnswer(expectedAnswer);
+        stopAnswerCountdown();
 
-        if (normalizedValue === normalizedExpected) {
-            preview.textContent = `本地判断：正确。你输入的是：${value}`;
-        } else {
-            preview.textContent = `本地判断：不一致。你输入的是：${value}。正确答案：${expectedAnswer}`;
+        if (examStatus) {
+            examStatus.textContent = timedOut ? "时间到，正在保存未回答结果..." : "正在保存当前答案...";
         }
 
+        preview.textContent = timedOut && !value
+            ? "时间到：未回答。正在保存..."
+            : "正在保存答案...";
         preview.classList.add("is-visible");
+
+        button.disabled = true;
+
+        try {
+            const response = await fetch(currentResult.submit_url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken"),
+                },
+                body: JSON.stringify({
+                    user_answer: value,
+                    timed_out: timedOut,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.ok) {
+                preview.textContent = `保存失败：${data.error || "未知错误"}`;
+                return;
+            }
+
+            const normalizedValue = normalizeDictationAnswer(value);
+            const normalizedExpected = normalizeDictationAnswer(expectedAnswer);
+            const localIsCorrect = Boolean(
+                normalizedExpected
+                && normalizedValue === normalizedExpected
+            );
+
+            if (data.is_correct || localIsCorrect) {
+                preview.textContent = `结果：正确。尝试次数：${data.attempt_count}`;
+            } else if (timedOut && !value) {
+                preview.textContent = `结果：未回答。正确答案：${data.expected_answer || expectedAnswer}`;
+            } else {
+                preview.textContent = `结果：不一致。你输入的是：${value}。正确答案：${data.expected_answer || expectedAnswer}`;
+            }
+
+            if (examStatus) {
+                examStatus.textContent = "当前题已保存。下一步会接入自动进入下一题。";
+            }
+
+            currentResult.attempt_count = data.attempt_count;
+            currentResult.is_correct = Boolean(data.is_correct);
+        } catch (error) {
+            preview.textContent = "保存失败：网络或服务器错误。";
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    function showInputValue() {
+        submitCurrentDictationAnswer({ timedOut: false });
     }
 
     startCurrentDictationQuestion();

@@ -492,6 +492,57 @@
         preview.classList.remove("is-visible");
     }
 
+    async function playCurrentDictationAudio() {
+        const currentResult = getCurrentDictationResult();
+        const audioUrl = currentResult ? String(currentResult.audio_url || "").trim() : "";
+
+        if (!audioUrl) {
+            if (examStatus) {
+                examStatus.textContent = "当前题目没有可播放音频，请直接作答。";
+            }
+            return;
+        }
+
+        if (examStatus) {
+            examStatus.textContent = "正在播放当前题音频...";
+        }
+
+        try {
+            const audio = new Audio(audioUrl);
+            await audio.play();
+
+            audio.addEventListener("ended", function () {
+                if (examStatus) {
+                    examStatus.textContent = "答题中。请在限制时间内输入答案。";
+                }
+
+                if (examTimer) {
+                    examTimer.textContent = "剩余时间：30 秒";
+                }
+
+                input.focus();
+            }, { once: true });
+        } catch (error) {
+            if (examStatus) {
+                examStatus.textContent = "自动播放失败。请点击“重新播放当前题”。";
+            }
+        }
+    }
+
+    function startCurrentDictationQuestion() {
+        renderCurrentDictationResult();
+
+        if (examStatus) {
+            examStatus.textContent = "准备播放当前题...";
+        }
+
+        if (examTimer) {
+            examTimer.textContent = "剩余时间：30 秒";
+        }
+
+        playCurrentDictationAudio();
+    }
+
     function showInputValue() {
         const value = input.value.trim();
         const expectedAnswer = String(input.dataset.expectedAnswer || "").trim();
@@ -521,7 +572,7 @@
         preview.classList.add("is-visible");
     }
 
-    renderCurrentDictationResult();
+    startCurrentDictationQuestion();
 
     button.addEventListener("click", showInputValue);
 

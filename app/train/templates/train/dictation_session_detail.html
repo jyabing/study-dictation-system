@@ -284,8 +284,18 @@
             </div>
 
             <div class="dictation-session-stat">
+                <div class="dictation-session-label">正确数</div>
+                <div id="dictation-session-correct-count" class="dictation-session-value">{{ session.correct_count }}</div>
+            </div>
+
+            <div class="dictation-session-stat">
+                <div class="dictation-session-label">错误数</div>
+                <div id="dictation-session-wrong-count" class="dictation-session-value">{{ session.wrong_count }}</div>
+            </div>
+
+            <div class="dictation-session-stat">
                 <div class="dictation-session-label">状态</div>
-                <div class="dictation-session-value">{{ session.status }}</div>
+                <div id="dictation-session-status" class="dictation-session-value">{{ session.status }}</div>
             </div>
         </div>
 
@@ -424,6 +434,9 @@
     const answerSubtitle = document.getElementById("dictation-answer-subtitle");
     const examStatus = document.getElementById("dictation-exam-status");
     const examTimer = document.getElementById("dictation-exam-timer");
+    const sessionStatus = document.getElementById("dictation-session-status");
+    const sessionCorrectCount = document.getElementById("dictation-session-correct-count");
+    const sessionWrongCount = document.getElementById("dictation-session-wrong-count");
 
     let currentResultIndex = 0;
     let answerCountdownTimer = null;
@@ -694,6 +707,18 @@
 
             currentResult.attempt_count = data.attempt_count;
             currentResult.is_correct = Boolean(data.is_correct);
+
+            if (sessionStatus && data.session_status) {
+                sessionStatus.textContent = data.session_status;
+            }
+
+            if (sessionCorrectCount && data.session_correct_count !== undefined) {
+                sessionCorrectCount.textContent = data.session_correct_count;
+            }
+
+            if (sessionWrongCount && data.session_wrong_count !== undefined) {
+                sessionWrongCount.textContent = data.session_wrong_count;
+            }
 
             const resultMeta = document.getElementById(`dictation-result-meta-${currentResult.id}`);
             if (resultMeta) {

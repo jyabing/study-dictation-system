@@ -4709,7 +4709,10 @@ async function submitAnswer(event) {
     formData.append("is_empty_submission", isEmptyAnswer ? "1" : "0");
     formData.append("retry_count", String(state.retryCount));
 
-    if ((qType === "write" || qType === "write_text") && state.writeDirection) {
+    // 写作题方向必须以当前页面 state 为准。
+    // 不再依赖 qType 判断，避免 qType 异常时漏传 write_direction，
+    // 导致后端 fallback 到旧方向。
+    if (state.writeDirection) {
         formData.append("write_direction", state.writeDirection);
     }
 

@@ -4933,9 +4933,7 @@ def dictation_result_submit(request, result_id):
 
     user_answer = str(data.get("user_answer") or "").strip()
     expected_answer = (result.dictation_text_snapshot or "").strip()
-
-    if not user_answer:
-        return JsonResponse({"ok": False, "error": "答案不能为空"}, status=400)
+    timed_out = bool(data.get("timed_out"))
 
     def _normalize_dictation_answer(value):
         return "".join(str(value or "").strip().lower().split())
@@ -4958,13 +4956,14 @@ def dictation_result_submit(request, result_id):
         "answer": user_answer,
         "is_correct": is_correct,
         "attempt_number": attempt_number,
+        "timed_out": timed_out,
         "answered_at": timezone.now().isoformat(),
     })
 
     result.user_answers = previous_answers
     result.attempt_count = attempt_number
     result.answered_at = timezone.now()
-    result.timed_out = False
+    result.timed_out = timed_out
 
     if is_correct:
         result.is_correct = True

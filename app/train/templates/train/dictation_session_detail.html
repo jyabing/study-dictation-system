@@ -326,7 +326,7 @@
                     {% if not result.dictation_audio_url %}disabled{% endif %}
                 >
                     {% if result.dictation_audio_url %}
-                        ▶ 播放音频
+                        ↻ 重新播放当前题
                     {% else %}
                         ▶ 暂无音频
                     {% endif %}
@@ -341,26 +341,26 @@
                     data-expected-answer="{{ result.dictation_text_snapshot }}"
                 >
 
+                <div id="dictation-exam-status" class="dictation-answer-preview is-visible">
+                    考核准备中。下一步将接入自动播放、倒计时和自动进入下一题。
+                </div>
+
+                <div id="dictation-exam-timer" class="dictation-answer-preview is-visible">
+                    剩余时间：-- 秒
+                </div>
+
                 <button
                     type="button"
                     id="dictation-submit-button"
                     class="dictation-submit-placeholder"
                 >
-                    检查答案（本地）
-                </button>
-
-                <button
-                    type="button"
-                    id="dictation-next-button"
-                    class="dictation-submit-placeholder"
-                >
-                    下一题（本地切换）
+                    提前提交
                 </button>
 
                 <div id="dictation-answer-preview" class="dictation-answer-preview"></div>
 
                 <div class="dictation-answer-note">
-                    本步只做前端本地检查，不请求后端、不保存答案、不更新听写结果。
+                    正式考核流程：自动播放当前题，限时输入；答完或超时后显示结果，并自动进入下一题。
                 </div>
             </section>
         {% endif %}
@@ -413,9 +413,10 @@
     const button = document.getElementById("dictation-submit-button");
     const preview = document.getElementById("dictation-answer-preview");
     const playButton = document.getElementById("dictation-play-button");
-    const nextButton = document.getElementById("dictation-next-button");
     const answerTitle = document.getElementById("dictation-answer-title");
     const answerSubtitle = document.getElementById("dictation-answer-subtitle");
+    const examStatus = document.getElementById("dictation-exam-status");
+    const examTimer = document.getElementById("dictation-exam-timer");
 
     let currentResultIndex = 0;
 
@@ -476,17 +477,15 @@
         if (playButton) {
             playButton.dataset.audioUrl = audioUrl;
             playButton.disabled = !audioUrl;
-            playButton.textContent = audioUrl ? "▶ 播放音频" : "▶ 暂无音频";
+            playButton.textContent = audioUrl ? "↻ 重新播放当前题" : "▶ 暂无音频";
         }
 
-        if (nextButton) {
-            if (dictationResults.length <= 1 || currentResultIndex >= dictationResults.length - 1) {
-                nextButton.disabled = true;
-                nextButton.textContent = "已经是最后一题";
-            } else {
-                nextButton.disabled = false;
-                nextButton.textContent = "下一题（本地切换）";
-            }
+        if (examStatus) {
+            examStatus.textContent = "考核准备中。当前题等待自动播放。";
+        }
+
+        if (examTimer) {
+            examTimer.textContent = "剩余时间：-- 秒";
         }
 
         preview.textContent = "";
@@ -541,18 +540,6 @@
                 preview.textContent = "音频播放失败，请稍后再试。";
                 preview.classList.add("is-visible");
             });
-        });
-    }
-
-    if (nextButton) {
-        nextButton.addEventListener("click", function () {
-            if (currentResultIndex >= dictationResults.length - 1) {
-                return;
-            }
-
-            currentResultIndex += 1;
-            renderCurrentDictationResult();
-            input.focus();
         });
     }
 

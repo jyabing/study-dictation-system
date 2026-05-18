@@ -384,7 +384,11 @@
                 </div>
 
                 <div class="dictation-snapshot">
-                    {{ result.dictation_text_snapshot }}
+                    {% if result.attempt_count > 0 %}
+                        已回答，结果已记录。
+                    {% else %}
+                        未回答。考核中不提前显示正确答案。
+                    {% endif %}
                 </div>
             </section>
         {% empty %}

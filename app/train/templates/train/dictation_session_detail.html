@@ -372,7 +372,14 @@
                 <div class="dictation-result-head">
                     <div>
                         <div class="dictation-result-title">第 {{ result.order_index }} 题</div>
-                        <div class="dictation-result-meta">
+                        <div
+                            id="dictation-result-meta-{{ result.id }}"
+                            class="dictation-result-meta"
+                            data-training-item-id="{{ result.training_item_id }}"
+                            data-question-id="{{ result.question_id }}"
+                            data-field-label="{% if result.dictation_field_label %}{{ result.dictation_field_label }}{% else %}未记录{% endif %}"
+                            data-field-key="{% if result.dictation_field_key %}{{ result.dictation_field_key }}{% else %}未记录{% endif %}"
+                        >
                             TrainingItem ID：{{ result.training_item_id }}
                             ｜Question ID：{{ result.question_id }}
                             ｜听写来源：{% if result.dictation_field_label %}{{ result.dictation_field_label }}{% else %}未记录{% endif %}
@@ -383,7 +390,7 @@
                     </div>
                 </div>
 
-                <div class="dictation-snapshot">
+                <div id="dictation-result-snapshot-{{ result.id }}" class="dictation-snapshot">
                     {% if result.attempt_count > 0 %}
                         已回答，结果已记录。
                     {% else %}
@@ -420,7 +427,8 @@
 
     let currentResultIndex = 0;
     let answerCountdownTimer = null;
-    const ANSWER_TIME_LIMIT_SECONDS = 30;
+    let nextQuestionTimer = null;
+    const ANSWER_TIME_LIMIT_SECONDS = 15;
 
     if (!input || !button || !preview) {
         return;
@@ -462,6 +470,13 @@
         }
     }
 
+    function stopNextQuestionTimer() {
+        if (nextQuestionTimer) {
+            clearTimeout(nextQuestionTimer);
+            nextQuestionTimer = null;
+        }
+    }
+
     function startAnswerCountdown() {
         stopAnswerCountdown();
 
@@ -481,9 +496,7 @@
             if (remainingSeconds <= 0) {
                 stopAnswerCountdown();
 
-                if (examStatus) {
-                    examStatus.textContent = "时间到。下一步会接入自动提交。";
-                }
+                submitCurrentDictationAnswer({ timedOut: true });
             }
         }, 1000);
     }
@@ -507,6 +520,10 @@
         }
 
         stopAnswerCountdown();
+        stopNextQuestionTimer();
+
+        input.disabled = false;
+        button.disabled = false;
 
         input.value = "";
         input.dataset.expectedAnswer = currentResult.expected_answer || "";
@@ -581,6 +598,33 @@
         playCurrentDictationAudio();
     }
 
+    function scheduleNextDictationQuestion() {
+        stopNextQuestionTimer();
+
+        if (currentResultIndex >= dictationResults.length - 1) {
+            if (examStatus) {
+                examStatus.textContent = "本次听写考核已完成。";
+            }
+
+            if (examTimer) {
+                examTimer.textContent = "剩余时间：0 秒";
+            }
+
+            input.disabled = true;
+            button.disabled = true;
+            return;
+        }
+
+        if (examStatus) {
+            examStatus.textContent = "当前题结果已保存。3 秒后自动进入下一题。";
+        }
+
+        nextQuestionTimer = setTimeout(function () {
+            currentResultIndex += 1;
+            startCurrentDictationQuestion();
+        }, 3000);
+    }
+
     async function submitCurrentDictationAnswer(options) {
         const timedOut = Boolean(options && options.timedOut);
         const value = input.value.trim();
@@ -648,12 +692,26 @@
                 preview.textContent = `结果：不一致。你输入的是：${value}。正确答案：${data.expected_answer || expectedAnswer}`;
             }
 
-            if (examStatus) {
-                examStatus.textContent = "当前题已保存。下一步会接入自动进入下一题。";
-            }
-
             currentResult.attempt_count = data.attempt_count;
             currentResult.is_correct = Boolean(data.is_correct);
+
+            const resultMeta = document.getElementById(`dictation-result-meta-${currentResult.id}`);
+            if (resultMeta) {
+                const trainingItemId = resultMeta.dataset.trainingItemId || "";
+                const questionId = resultMeta.dataset.questionId || "";
+                const fieldLabel = resultMeta.dataset.fieldLabel || "未记录";
+                const fieldKey = resultMeta.dataset.fieldKey || "未记录";
+                const resultText = data.is_correct ? "正确" : "未完成 / 未正确";
+
+                resultMeta.textContent = `TrainingItem ID：${trainingItemId} ｜Question ID：${questionId} ｜听写来源：${fieldLabel} ｜字段：${fieldKey} ｜尝试次数：${data.attempt_count} ｜结果：${resultText}`;
+            }
+
+            const resultSnapshot = document.getElementById(`dictation-result-snapshot-${currentResult.id}`);
+            if (resultSnapshot) {
+                resultSnapshot.textContent = "已回答，结果已记录。";
+            }
+
+            scheduleNextDictationQuestion();
         } catch (error) {
             preview.textContent = "保存失败：网络或服务器错误。";
         } finally {
@@ -671,19 +729,8 @@
 
     if (playButton) {
         playButton.addEventListener("click", function () {
-            const audioUrl = String(playButton.dataset.audioUrl || "").trim();
-
-            if (!audioUrl) {
-                preview.textContent = "当前题目没有可播放音频。";
-                preview.classList.add("is-visible");
-                return;
-            }
-
-            const audio = new Audio(audioUrl);
-            audio.play().catch(function () {
-                preview.textContent = "音频播放失败，请稍后再试。";
-                preview.classList.add("is-visible");
-            });
+            stopAnswerCountdown();
+            playCurrentDictationAudio();
         });
     }
 

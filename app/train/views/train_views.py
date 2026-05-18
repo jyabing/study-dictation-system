@@ -4979,12 +4979,44 @@ def dictation_result_submit(request, result_id):
         "correct_attempt_number",
     ])
 
+    session = result.session
+    session_results = list(session.results.all())
+
+    answered_count = sum(1 for item in session_results if item.attempt_count > 0)
+    correct_count = sum(1 for item in session_results if item.is_correct)
+    wrong_count = sum(
+        1
+        for item in session_results
+        if item.attempt_count > 0 and not item.is_correct
+    )
+
+    session.correct_count = correct_count
+    session.wrong_count = wrong_count
+
+    session_finished = answered_count >= session.total_count
+
+    if session_finished:
+        session.status = "finished"
+        if session.finished_at is None:
+            session.finished_at = timezone.now()
+
+    session.save(update_fields=[
+        "correct_count",
+        "wrong_count",
+        "status",
+        "finished_at",
+    ])
+
     return JsonResponse({
         "ok": True,
         "is_correct": is_correct,
         "attempt_count": result.attempt_count,
         "correct_attempt_number": result.correct_attempt_number,
         "expected_answer": expected_answer,
+        "session_status": session.status,
+        "session_finished": session_finished,
+        "session_correct_count": session.correct_count,
+        "session_wrong_count": session.wrong_count,
     })
 
 @login_required

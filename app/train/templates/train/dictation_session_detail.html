@@ -419,6 +419,8 @@
     const examTimer = document.getElementById("dictation-exam-timer");
 
     let currentResultIndex = 0;
+    let answerCountdownTimer = null;
+    const ANSWER_TIME_LIMIT_SECONDS = 30;
 
     if (!input || !button || !preview) {
         return;
@@ -453,6 +455,39 @@
             .toLowerCase();
     }
 
+    function stopAnswerCountdown() {
+        if (answerCountdownTimer) {
+            clearInterval(answerCountdownTimer);
+            answerCountdownTimer = null;
+        }
+    }
+
+    function startAnswerCountdown() {
+        stopAnswerCountdown();
+
+        let remainingSeconds = ANSWER_TIME_LIMIT_SECONDS;
+
+        if (examTimer) {
+            examTimer.textContent = `剩余时间：${remainingSeconds} 秒`;
+        }
+
+        answerCountdownTimer = setInterval(function () {
+            remainingSeconds -= 1;
+
+            if (examTimer) {
+                examTimer.textContent = `剩余时间：${remainingSeconds} 秒`;
+            }
+
+            if (remainingSeconds <= 0) {
+                stopAnswerCountdown();
+
+                if (examStatus) {
+                    examStatus.textContent = "时间到。下一步会接入自动提交。";
+                }
+            }
+        }, 1000);
+    }
+
     function renderCurrentDictationResult() {
         if (!dictationResults.length) {
             return;
@@ -470,6 +505,8 @@
         if (answerSubtitle) {
             answerSubtitle.textContent = `当前听写：${fieldLabel} ｜字段：${fieldKey} ｜共 ${dictationResults.length} 题。`;
         }
+
+        stopAnswerCountdown();
 
         input.value = "";
         input.dataset.expectedAnswer = currentResult.expected_answer || "";
@@ -500,6 +537,9 @@
             if (examStatus) {
                 examStatus.textContent = "当前题目没有可播放音频，请直接作答。";
             }
+
+            startAnswerCountdown();
+            input.focus();
             return;
         }
 
@@ -516,9 +556,7 @@
                     examStatus.textContent = "答题中。请在限制时间内输入答案。";
                 }
 
-                if (examTimer) {
-                    examTimer.textContent = "剩余时间：30 秒";
-                }
+                startAnswerCountdown();
 
                 input.focus();
             }, { once: true });
@@ -537,7 +575,7 @@
         }
 
         if (examTimer) {
-            examTimer.textContent = "剩余时间：30 秒";
+            examTimer.textContent = "剩余时间：-- 秒";
         }
 
         playCurrentDictationAudio();

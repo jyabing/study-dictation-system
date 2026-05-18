@@ -719,7 +719,7 @@
                         </select>
                         <div class="section-sub" style="margin-top:6px; margin-bottom:0;">
                             日语三字段适合「汉字 / 假名 / 中文」互换；诗词适合「上一句 / 下一句」互换；
-                            问答适合「提问 / 回答」互换；英日中适合「英语 / 日语 / 中文 / 原语释义」训练。
+                            问答适合「提问 / 回答」互换；英日中适合「英语表达 / 英语发音 / 英语原语释义 / 日语表达 / 日语原语释义 / 中文意思」训练。
                         </div>
                     </div>
 
@@ -792,13 +792,13 @@
                         </div>
                     </div>
 
-                    <div id="write_fields_en_ja_zh" class="write-structure-fields grid-3 hidden" style="margin-top:12px;">
+                    <div id="write_fields_en_ja_zh" class="write-structure-fields grid-2 hidden" style="margin-top:12px;">
                         <div class="field" style="grid-column: 1 / -1;">
                             <div class="section-sub" style="margin-top:0; margin-bottom:0;">
                                 <strong>推荐填法：</strong>
                                 英语、日语、中文是核心字段。系统会在三种语言之间随机互换出题。<br>
                                 <strong>方向：</strong>
-                                英语 → 日语 ／ 英语 → 中文 ／ 日语 → 英语 ／ 日语 → 中文 ／ 中文 → 英语 ／ 中文 → 日语
+                                英语 → 日语 ／ 英语 → 中文 ／ 日语 → 英语 ／ 日语 → 中文 ／ 中文 → 英语 ／ 中文 → 日语 ／ 英语+日语 → 中文 ／ 中文 → 英语+日语
                             </div>
                         </div>
 
@@ -812,10 +812,37 @@
                         </div>
 
                         <div class="field">
+                            <label for="write_english_pronunciation">英语发音注释</label>
+                            <textarea
+                                id="write_english_pronunciation"
+                                placeholder="例如：/ˈfrʌstreɪtɪŋ/ 或 frustrate + ing"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+
+                        <div class="field">
+                            <label for="write_english_definition">英语原语释义</label>
+                            <textarea
+                                id="write_english_definition"
+                                placeholder="例如：in the same way as before"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+
+                        <div class="field">
                             <label for="write_japanese_expression">日语</label>
                             <textarea
                                 id="write_japanese_expression"
                                 placeholder="例如：あいかわらず"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+
+                        <div class="field">
+                            <label for="write_japanese_definition">日语原语释义</label>
+                            <textarea
+                                id="write_japanese_definition"
+                                placeholder="例如：前と同じ状態で"
                                 oninput="syncWriteFieldsToMainInputs(); updatePreview();"
                             ></textarea>
                         </div>
@@ -972,8 +999,11 @@
                     <div class="preview-title">预览</div>
 
                     <div class="preview-panel">
-                        <div class="preview-label">提示短语 / 题干</div>
-                        <div id="previewQuestion" class="preview-question">请先输入提示短语和题干</div>
+                        <div class="preview-label">提示短语</div>
+                        <div id="previewInstruction" class="preview-answer">尚未填写</div>
+
+                        <div class="preview-label" style="margin-top:12px;">题干</div>
+                        <div id="previewQuestion" class="preview-question">请先输入题干</div>
 
                         <div id="previewPromptImageWrap" class="hidden" style="margin-top:12px;">
                             <div class="preview-label">题干图片</div>
@@ -1120,6 +1150,8 @@
             const answerUseTtsWrap = document.getElementById("answer_use_tts_wrap");
 
             const promptSection = document.getElementById("prompt_section");
+            const promptTextInput = document.getElementById("prompt_text");
+            const promptTextRuleHelp = document.getElementById("prompt_text_rule_help");
             const answerSection = document.getElementById("answer_section");
             const acceptedAnswersWrap = document.getElementById("accepted_answers_wrap");
             const clozeSection = document.getElementById("cloze_section");
@@ -1140,7 +1172,20 @@
             // 文字作答使用下方“写作字段训练”作为主入口；
             // 上方题干 / 回答只作为兼容旧数据的同步字段，避免误导用户。
             if (promptSection) {
-                promptSection.classList.toggle("hidden", isWriteText);
+                promptSection.classList.remove("hidden");
+            }
+
+            if (promptTextInput) {
+                promptTextInput.readOnly = isWriteText;
+                promptTextInput.placeholder = isWriteText
+                    ? "写作模式下题干会根据下方字段自动同步，不需要手动填写"
+                    : "例如：佐藤です。 / ask me if i am David / 时光流逝";
+            }
+
+            if (promptTextRuleHelp) {
+                promptTextRuleHelp.innerHTML = isWriteText
+                    ? "写作模式下，这里会根据下方字段自动生成题干，用于兼容旧数据；请主要填写下方「写作字段训练」。"
+                    : '普通题型需要填写文字题干；说 / 看字朗读可以只上传题干图片，但文字题干和题干图片至少要有一个。<br><strong>高亮提示：</strong>需要标红的词语可用 <code>[[词语]]</code> 包起来。例如：<code>[[すみやかに]]片づけてください。</code>';
             }
 
             // 回答区：选择题隐藏；文字作答也隐藏，改用写作字段训练区。
@@ -1414,6 +1459,7 @@
                 answerText: getWriteInputValue("write_answer_text"),
 
                 englishExpression: getWriteInputValue("write_english_expression"),
+                englishPronunciation: getWriteInputValue("write_english_pronunciation"),
                 englishDefinition: getWriteInputValue("write_english_definition"),
                 japaneseExpression: getWriteInputValue("write_japanese_expression"),
                 japaneseDefinition: getWriteInputValue("write_japanese_definition"),
@@ -1451,20 +1497,20 @@
 
             if (values.structure === "en_ja_zh") {
                 promptInput.value = (
-                    values.chineseMeaning
-                    || values.englishExpression
+                    values.englishExpression
                     || values.japaneseExpression
                     || values.englishDefinition
                     || values.japaneseDefinition
+                    || values.chineseMeaning
                     || ""
                 );
 
                 answerInput.value = (
-                    values.englishExpression
-                    || values.japaneseExpression
-                    || values.chineseMeaning
-                    || values.englishDefinition
+                    values.japaneseExpression
+                    || values.englishExpression
                     || values.japaneseDefinition
+                    || values.englishDefinition
+                    || values.chineseMeaning
                     || ""
                 );
                 return;
@@ -1504,6 +1550,7 @@
             const promptText = document.getElementById("prompt_text").value.trim();
             const answerText = document.getElementById("answer_text").value.trim();
 
+            const previewInstruction = document.getElementById("previewInstruction");
             const previewQuestion = document.getElementById("previewQuestion");
             const previewType = document.getElementById("previewType");
             const previewAnswer = document.getElementById("previewAnswer");
@@ -1519,16 +1566,11 @@
             const promptImageUrlInput = document.getElementById("prompt_image_url");
             const promptImageFileInput = document.getElementById("prompt_image_file");
 
-            let previewQuestionText = "";
-            if (instructionText && promptText) {
-                previewQuestionText = `${instructionText}\n${promptText}`;
-            } else if (instructionText) {
-                previewQuestionText = instructionText;
-            } else if (promptText) {
-                previewQuestionText = promptText;
+            if (previewInstruction) {
+                previewInstruction.innerText = instructionText || "尚未填写";
             }
 
-            previewQuestion.innerText = previewQuestionText || "请先输入提示短语和题干";
+            previewQuestion.innerText = promptText || "请先输入题干";
             previewType.innerText = document.getElementById("item_type").selectedOptions[0]?.textContent || "";
             previewAnswer.innerText = answerText || "尚未填写";
 
@@ -1677,10 +1719,9 @@
             }
 
             function pushWriteDirection(promptKey, answerKey) {
-                writeAllowedDirections.push({
-                    prompt_key: promptKey,
-                    answer_key: answerKey
-                });
+                writeAllowedDirections.push(
+                    `${promptKey}_to_${answerKey}`
+                );
             }
 
             if (itemType === "write_text") {
@@ -1697,9 +1738,14 @@
                     pushWriteDirection("question_text", "answer_text");
                     pushWriteDirection("answer_text", "question_text");
                 } else if (writeFieldValues.structure === "en_ja_zh") {
-                    pushWriteField("english_expression", "英语", writeFieldValues.englishExpression);
-                    pushWriteField("japanese_expression", "日语", writeFieldValues.japaneseExpression);
-                    pushWriteField("chinese_meaning", "中文", writeFieldValues.chineseMeaning);
+                    pushWriteField("english_expression", "英语表达", writeFieldValues.englishExpression);
+                    pushWriteField("english_pronunciation", "英语发音注释", writeFieldValues.englishPronunciation);
+                    pushWriteField("english_definition", "英语原语释义", writeFieldValues.englishDefinition);
+
+                    pushWriteField("japanese_expression", "日语表达", writeFieldValues.japaneseExpression);
+                    pushWriteField("japanese_definition", "日语原语释义", writeFieldValues.japaneseDefinition);
+
+                    pushWriteField("chinese_meaning", "中文意思", writeFieldValues.chineseMeaning);
 
                     pushWriteDirection("english_expression", "japanese_expression");
                     pushWriteDirection("english_expression", "chinese_meaning");
@@ -1709,6 +1755,9 @@
 
                     pushWriteDirection("chinese_meaning", "english_expression");
                     pushWriteDirection("chinese_meaning", "japanese_expression");
+
+                    pushWriteDirection("english_expression+japanese_expression", "chinese_meaning");
+                    pushWriteDirection("chinese_meaning", "english_expression+japanese_expression");
                 } else {
                     pushWriteField("jp_kanji", "日文汉字", writeFieldValues.jpKanji);
                     pushWriteField("kana", "假名", writeFieldValues.kana);

@@ -1896,36 +1896,83 @@ def build_training_payload(training, memory=None, request=None):
             raw_allowed_directions = write_meta.get("allowed_directions") or []
             allowed_direction_pairs = []
 
-            if isinstance(raw_allowed_directions, list):
-                for direction in raw_allowed_directions:
-                    if not isinstance(direction, dict):
-                        continue
+            for direction in raw_allowed_directions:
+                if not isinstance(direction, str):
+                    continue
 
-                    prompt_key = str(direction.get("prompt_key") or "").strip()
-                    answer_key = str(direction.get("answer_key") or "").strip()
+                if "_to_" not in direction:
+                    continue
 
-                    if (
-                        prompt_key
-                        and answer_key
-                        and prompt_key in field_map
-                        and answer_key in field_map
-                        and prompt_key != answer_key
-                    ):
-                        allowed_direction_pairs.append((prompt_key, answer_key))
+                prompt_key, answer_key = direction.split("_to_", 1)
+
+                prompt_keys = [
+                    key.strip()
+                    for key in prompt_key.split("+")
+                    if key.strip()
+                ]
+
+                answer_keys = [
+                    key.strip()
+                    for key in answer_key.split("+")
+                    if key.strip()
+                ]
+
+                if (
+                    prompt_keys
+                    and answer_keys
+                    and all(k in field_map for k in prompt_keys)
+                    and all(k in field_map for k in answer_keys)
+                ):
+                    allowed_direction_pairs.append((
+                        prompt_keys,
+                        answer_keys,
+                    ))
 
             if allowed_direction_pairs:
-                prompt_key, answer_key = random.choice(allowed_direction_pairs)
-                prompt_field = field_map[prompt_key]
-                answer_field = field_map[answer_key]
+                prompt_keys, answer_keys = random.choice(allowed_direction_pairs)
+
+                prompt_texts = [
+                    field_map[key]["text"]
+                    for key in prompt_keys
+                ]
+
+                answer_texts = [
+                    field_map[key]["text"]
+                    for key in answer_keys
+                ]
+
+                prompt_labels = [
+                    field_map[key]["label"]
+                    for key in prompt_keys
+                ]
+
+                answer_labels = [
+                    field_map[key]["label"]
+                    for key in answer_keys
+                ]
+
+                write_display_text = "\n".join(prompt_texts)
+                write_expected_answer = " / ".join(answer_texts)
+
+                write_prompt_type = " + ".join(prompt_labels)
+                write_answer_type = " + ".join(answer_labels)
+
+                write_direction = (
+                    f"{'+'.join(prompt_keys)}_to_{'+'.join(answer_keys)}"
+                )
+
             else:
                 prompt_field, answer_field = random.sample(write_fields, 2)
 
-            write_direction = f"{prompt_field['key']}_to_{answer_field['key']}"
-            write_display_text = prompt_field["text"]
-            write_expected_answer = answer_field["text"]
+                write_direction = (
+                    f"{prompt_field['key']}_to_{answer_field['key']}"
+                )
 
-            write_prompt_type = prompt_field["label"]
-            write_answer_type = answer_field["label"]
+                write_display_text = prompt_field["text"]
+                write_expected_answer = answer_field["text"]
+
+                write_prompt_type = prompt_field["label"]
+                write_answer_type = answer_field["label"]
 
         else:
             # 旧数据兼容：
@@ -6074,10 +6121,31 @@ def lesson_question_list(request, lesson_id):
                 else:
                     write_structure_label = "多字段写作"
 
-                question.display_source_text = f"写作字段训练：{write_structure_label}"
+                question.display_source_text = question.prompt_text or f"写作字段训练：{write_structure_label}"
+
+                display_field_labels = field_labels
+                display_field_count = len(field_labels)
+                display_direction_count = len(allowed_directions) or "随机"
+
+                if field_key_set & {
+                    "english_expression",
+                    "english_definition",
+                    "japanese_expression",
+                    "japanese_definition",
+                    "chinese_meaning",
+                }:
+                    display_field_labels = [
+                        "英语表达",
+                        "英语原语释义",
+                        "日语表达",
+                        "日语原语释义",
+                        "中文意思",
+                    ]
+                    display_field_count = 5
+
                 question.display_target_answer = (
-                    f"{len(field_labels)}字段 / {len(allowed_directions) or '随机'}方向："
-                    + " / ".join(field_labels)
+                    f"{display_field_count}字段 / {display_direction_count}方向："
+                    + " / ".join(display_field_labels)
                 )
         display_prompt_image_url = ""
 
@@ -6571,6 +6639,47 @@ def builder_save(request):
 
     prompt_text = source_text
     answer_text = target_answer
+
+    # 写作英日中结构：不要让旧 prompt_text/source_text 把提示短语固定成中文。
+    # 真正训练时会从 write.fields + allowed_directions 动态抽方向。
+    if item_type == "write_text":
+        raw_write_fields_for_source = data.get("write_fields") or data.get("fields") or []
+
+        if isinstance(raw_write_fields_for_source, list):
+            write_field_map_for_source = {}
+
+            for field in raw_write_fields_for_source:
+                if not isinstance(field, dict):
+                    continue
+
+                key = str(field.get("key") or "").strip()
+                text = str(field.get("text") or field.get("value") or "").strip()
+
+                if key and text:
+                    write_field_map_for_source[key] = text
+
+            if {
+                "english_expression",
+                "japanese_expression",
+                "chinese_meaning",
+            }.issubset(set(write_field_map_for_source.keys())):
+                source_text = (
+                    write_field_map_for_source.get("english_expression")
+                    or write_field_map_for_source.get("japanese_expression")
+                    or write_field_map_for_source.get("chinese_meaning")
+                    or source_text
+                )
+
+                target_answer = (
+                    write_field_map_for_source.get("japanese_expression")
+                    or write_field_map_for_source.get("english_expression")
+                    or write_field_map_for_source.get("chinese_meaning")
+                    or target_answer
+                )
+
+                prompt_text = source_text
+                answer_text = target_answer
+
     prompt_audio = (data.get("prompt_audio") or data.get("audio_url") or "").strip()
     prompt_image_url = (data.get("prompt_image_url") or "").strip()
     answer_audio = (data.get("answer_audio") or "").strip()
@@ -7059,10 +7168,7 @@ def question_edit(request, question_id):
             if not prompt_key or not answer_key or prompt_key == answer_key:
                 return
 
-            allowed_directions.append({
-                "prompt_key": prompt_key,
-                "answer_key": answer_key,
-            })
+            allowed_directions.append(f"{prompt_key}_to_{answer_key}")
 
         if write_structure == "poem_pair":
             _add_write_field("previous_line", "上一句", _post_text("write_previous_line"))
@@ -7079,9 +7185,14 @@ def question_edit(request, question_id):
             _add_write_direction("answer_text", "question_text")
 
         elif write_structure == "en_ja_zh":
-            _add_write_field("english_expression", "英语", _post_text("write_english_expression"))
-            _add_write_field("japanese_expression", "日语", _post_text("write_japanese_expression"))
-            _add_write_field("chinese_meaning", "中文", _post_text("write_chinese_meaning"))
+            _add_write_field("english_expression", "英语表达", _post_text("write_english_expression"))
+            _add_write_field("english_pronunciation", "英语发音注释", _post_text("write_english_pronunciation"))
+            _add_write_field("english_definition", "英语原语释义", _post_text("write_english_definition"))
+
+            _add_write_field("japanese_expression", "日语表达", _post_text("write_japanese_expression"))
+            _add_write_field("japanese_definition", "日语原语释义", _post_text("write_japanese_definition"))
+
+            _add_write_field("chinese_meaning", "中文意思", _post_text("write_chinese_meaning"))
 
             _add_write_direction("english_expression", "japanese_expression")
             _add_write_direction("english_expression", "chinese_meaning")
@@ -7091,6 +7202,9 @@ def question_edit(request, question_id):
 
             _add_write_direction("chinese_meaning", "english_expression")
             _add_write_direction("chinese_meaning", "japanese_expression")
+
+            _add_write_direction("english_expression+japanese_expression", "chinese_meaning")
+            _add_write_direction("chinese_meaning", "english_expression+japanese_expression")
 
         else:
             _add_write_field("jp_kanji", "日文汉字", _post_text("write_jp_kanji"))

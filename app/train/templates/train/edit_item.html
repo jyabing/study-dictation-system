@@ -246,40 +246,67 @@
                                         </div>
                                     </div>
 
-                                    <div id="edit-write-fields-en-ja-zh" class="edit-write-structure-fields grid-3">
+                                    <div id="edit-write-fields-en-ja-zh" class="edit-write-structure-fields grid-2">
                                         <div class="field-group full">
                                             <div class="field-help">
                                                 <strong>推荐填法：</strong>
-                                                英语、日语、中文是核心字段。系统会在三种语言之间随机互换出题。<br>
+                                                英语表达、英语发音、英语原语释义、日语表达、日语原语释义、中文意思。<br>
                                                 <strong>方向：</strong>
-                                                英语 → 日语 ／ 英语 → 中文 ／ 日语 → 英语 ／ 日语 → 中文 ／ 中文 → 英语 ／ 中文 → 日语
+                                                英语表达 → 日语表达 ／ 英语表达 → 中文意思 ／ 日语表达 → 英语表达 ／ 日语表达 → 中文意思 ／ 中文意思 → 英语表达 ／ 中文意思 → 日语表达 ／ 英语表达+日语表达 → 中文意思 ／ 中文意思 → 英语表达+日语表达
                                             </div>
                                         </div>
 
                                         <div class="field-group">
-                                            <div class="field-label">英语</div>
+                                            <div class="field-label">英语表达</div>
                                             <textarea
                                                 name="write_english_expression"
                                                 class="textarea"
-                                                placeholder="例如：as usual"
+                                                placeholder="例如：frustrating"
                                             >{{ write_field_values.english_expression|default:'' }}</textarea>
                                         </div>
 
                                         <div class="field-group">
-                                            <div class="field-label">日语</div>
+                                            <div class="field-label">英语发音注释</div>
+                                            <textarea
+                                                name="write_english_pronunciation"
+                                                class="textarea"
+                                                placeholder="例如：/ˈfrʌstreɪtɪŋ/ 或 frustrate + ing"
+                                            >{{ write_field_values.english_pronunciation|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">英语原语释义</div>
+                                            <textarea
+                                                name="write_english_definition"
+                                                class="textarea"
+                                                placeholder="例如：making you feel annoyed because something keeps failing"
+                                            >{{ write_field_values.english_definition|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">日语表达</div>
                                             <textarea
                                                 name="write_japanese_expression"
                                                 class="textarea"
-                                                placeholder="例如：あいかわらず"
+                                                placeholder="例如：イライラする、もどかしい"
                                             >{{ write_field_values.japanese_expression|default:'' }}</textarea>
                                         </div>
 
                                         <div class="field-group">
-                                            <div class="field-label">中文</div>
+                                            <div class="field-label">日语原语释义</div>
+                                            <textarea
+                                                name="write_japanese_definition"
+                                                class="textarea"
+                                                placeholder="例如：思い通りにいかず、いらだつ感じ"
+                                            >{{ write_field_values.japanese_definition|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">中文意思</div>
                                             <textarea
                                                 name="write_chinese_meaning"
                                                 class="textarea"
-                                                placeholder="例如：依旧，仍然，和以往一样"
+                                                placeholder="例如：令人沮丧的、让人烦躁的"
                                             >{{ write_field_values.chinese_meaning|default:'' }}</textarea>
                                         </div>
                                     </div>
@@ -1469,19 +1496,25 @@ function syncEditWriteFieldsToLegacyInputs() {
         targetValue = answerText || questionText || "";
     } else if (structure === "en_ja_zh") {
         const englishExpression = getEditWriteFieldValueByName("write_english_expression");
+        const englishDefinition = getEditWriteFieldValueByName("write_english_definition");
         const japaneseExpression = getEditWriteFieldValueByName("write_japanese_expression");
+        const japaneseDefinition = getEditWriteFieldValueByName("write_japanese_definition");
         const chineseMeaning = getEditWriteFieldValueByName("write_chinese_meaning");
 
         sourceValue = (
-            chineseMeaning
-            || englishExpression
+            englishExpression
             || japaneseExpression
+            || englishDefinition
+            || japaneseDefinition
+            || chineseMeaning
             || ""
         );
 
         targetValue = (
-            englishExpression
-            || japaneseExpression
+            japaneseExpression
+            || englishExpression
+            || japaneseDefinition
+            || englishDefinition
             || chineseMeaning
             || ""
         );

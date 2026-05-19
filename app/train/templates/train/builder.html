@@ -1517,9 +1517,9 @@
             }
 
             // 默认：日语三字段。兼容旧字段：
-            // 题干优先放中文意译，回答优先放日文汉字。
-            // 真正的多字段训练会通过 write_fields 保存。
-            promptInput.value = values.zhMeaning || values.jpKanji || values.kana || "";
+            // 题干优先放日文汉字；假名、中文意译只作为兜底。
+            // 回答也优先放日文汉字；真正的多字段训练会通过 write_fields 保存。
+            promptInput.value = values.jpKanji || values.kana || values.zhMeaning || "";
             answerInput.value = values.jpKanji || values.kana || values.zhMeaning || "";
         }
 

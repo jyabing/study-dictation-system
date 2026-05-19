@@ -5667,26 +5667,19 @@ def _train_api_by_scope(request, scope, obj):
         )
 
         # =========================
-        # 写作题方向兜底：
-        # 1. POST 里带来的 write_direction 代表当前页面实际显示的方向，必须优先使用。
-        # 2. session 里的 issued_write_direction 只在前端没有提交方向时兜底。
-        # 这样可以避免同一个 TrainingItem 随机出不同方向时，session 旧方向覆盖当前页面方向。
+        # 写作题方向必须来自当前 POST。
+        # 多方向写作题同一个 training_id 会随机生成不同方向，
+        # 因此不能再使用 session 旧方向兜底。
+        # 如果前端没有提交方向，宁可要求刷新，也不能用错误方向判题。
         # =========================
-        posted_write_direction = write_direction
-
-        issued_write_directions = request.session.get("issued_write_directions", {})
-
-        if (
-            training.item_type == "write"
-            and not posted_write_direction
-            and isinstance(issued_write_directions, dict)
-        ):
-            issued_write_direction = str(
-                issued_write_directions.get(str(training.id)) or ""
-            ).strip()
-
-            if issued_write_direction:
-                write_direction = issued_write_direction
+        if training.item_type == "write" and not write_direction:
+            return JsonResponse({
+                "ok": False,
+                "result": "❌ 当前写作题方向丢失，请重新加载当前题后再提交。",
+                "result_level": "warning",
+                "training_id": training_id,
+                "type": training.item_type,
+            }, status=400)
 
         if is_empty_submission:
             judge = judge_training_answer(

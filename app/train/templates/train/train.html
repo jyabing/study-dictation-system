@@ -4709,11 +4709,17 @@ async function submitAnswer(event) {
     formData.append("is_empty_submission", isEmptyAnswer ? "1" : "0");
     formData.append("retry_count", String(state.retryCount));
 
-    // 写作题方向必须以当前页面 state 为准。
-    // 不再依赖 qType 判断，避免 qType 异常时漏传 write_direction，
-    // 导致后端 fallback 到旧方向。
-    if (state.writeDirection) {
-        formData.append("write_direction", state.writeDirection);
+    // 写作题方向必须以当前题 payload 为准。
+    // 优先使用 state.current.write_direction，避免 state.writeDirection 残留旧题方向。
+    // state.writeDirection 只作为兼容兜底。
+    const currentWriteDirection = String(
+        state.current?.write_direction
+        || state.writeDirection
+        || ""
+    ).trim();
+
+    if (currentWriteDirection) {
+        formData.append("write_direction", currentWriteDirection);
     }
 
     try {

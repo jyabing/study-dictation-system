@@ -1896,37 +1896,44 @@ def build_training_payload(training, memory=None, request=None):
             raw_allowed_directions = write_meta.get("allowed_directions") or []
             allowed_direction_pairs = []
 
-            for direction in raw_allowed_directions:
-                if not isinstance(direction, str):
-                    continue
+            if isinstance(raw_allowed_directions, list):
+                for direction in raw_allowed_directions:
+                    prompt_key = ""
+                    answer_key = ""
 
-                if "_to_" not in direction:
-                    continue
+                    if isinstance(direction, dict):
+                        prompt_key = str(direction.get("prompt_key") or "").strip()
+                        answer_key = str(direction.get("answer_key") or "").strip()
+                    elif isinstance(direction, str) and "_to_" in direction:
+                        prompt_key, answer_key = direction.split("_to_", 1)
+                        prompt_key = prompt_key.strip()
+                        answer_key = answer_key.strip()
+                    else:
+                        continue
 
-                prompt_key, answer_key = direction.split("_to_", 1)
+                    prompt_keys = [
+                        key.strip()
+                        for key in prompt_key.split("+")
+                        if key.strip()
+                    ]
 
-                prompt_keys = [
-                    key.strip()
-                    for key in prompt_key.split("+")
-                    if key.strip()
-                ]
+                    answer_keys = [
+                        key.strip()
+                        for key in answer_key.split("+")
+                        if key.strip()
+                    ]
 
-                answer_keys = [
-                    key.strip()
-                    for key in answer_key.split("+")
-                    if key.strip()
-                ]
-
-                if (
-                    prompt_keys
-                    and answer_keys
-                    and all(k in field_map for k in prompt_keys)
-                    and all(k in field_map for k in answer_keys)
-                ):
-                    allowed_direction_pairs.append((
-                        prompt_keys,
-                        answer_keys,
-                    ))
+                    if (
+                        prompt_keys
+                        and answer_keys
+                        and all(k in field_map for k in prompt_keys)
+                        and all(k in field_map for k in answer_keys)
+                        and set(prompt_keys) != set(answer_keys)
+                    ):
+                        allowed_direction_pairs.append((
+                            prompt_keys,
+                            answer_keys,
+                        ))
 
             if allowed_direction_pairs:
                 prompt_keys, answer_keys = random.choice(allowed_direction_pairs)

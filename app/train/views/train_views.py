@@ -4470,7 +4470,7 @@ def _resolve_write_field_tts_text(training, field_key, text):
     if field_key != "jp_kanji" or not training:
         return cleaned_text
 
-    meta = getattr(training, "meta", None)
+    meta = _get_training_meta_dict(training)
 
     if not isinstance(meta, dict):
         return cleaned_text

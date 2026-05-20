@@ -4722,6 +4722,15 @@ async function submitAnswer(event) {
         formData.append("write_direction", currentWriteDirection);
     }
 
+    const currentWriteIssueId = String(
+        state.current?.write_issue_id
+        || ""
+    ).trim();
+
+    if (currentWriteIssueId) {
+        formData.append("write_issue_id", currentWriteIssueId);
+    }
+
     try {
         const response = await fetch(API_URL, {
             method: "POST",

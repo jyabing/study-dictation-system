@@ -5476,23 +5476,39 @@ def _train_api_by_scope(request, scope, obj):
         })
 
         # =========================
-        # 写作题方向兜底：
-        # GET 发题时保存本次后端实际生成的 write_direction。
-        # POST 判题时优先使用这个方向，避免前端 state 旧值导致方向错乱。
+        # 写作题出题实例锁：
+        # 同一个 TrainingItem 可能随机生成不同写作方向。
+        # GET 出题时必须把“本次方向”锁定为 write_issue_id，
+        # POST 判题时只允许使用这个 issue 对应的方向。
         # =========================
         if (
             payload.get("item_type") == "write"
             and payload.get("training_id")
             and payload.get("write_direction")
         ):
-            issued_write_directions = request.session.get("issued_write_directions", {})
+            write_issue_id = uuid.uuid4().hex
 
-            if not isinstance(issued_write_directions, dict):
-                issued_write_directions = {}
+            issued_write_issues = request.session.get("issued_write_issues", {})
 
-            issued_write_directions[str(payload["training_id"])] = payload["write_direction"]
-            request.session["issued_write_directions"] = issued_write_directions
+            if not isinstance(issued_write_issues, dict):
+                issued_write_issues = {}
+
+            issued_write_issues[write_issue_id] = {
+                "training_id": str(payload["training_id"]),
+                "write_direction": str(payload.get("write_direction") or ""),
+                "write_direction_label": str(payload.get("write_direction_label") or ""),
+                "prompt_text": str(payload.get("prompt_text") or ""),
+                "answer_text": str(payload.get("answer_text") or ""),
+            }
+
+            # 最多保留最近 30 个写作出题实例，避免 session 无限变大。
+            if len(issued_write_issues) > 30:
+                issued_write_issues = dict(list(issued_write_issues.items())[-30:])
+
+            request.session["issued_write_issues"] = issued_write_issues
             request.session.modified = True
+
+            payload["write_issue_id"] = write_issue_id
 
         return JsonResponse(payload)
 
@@ -5504,6 +5520,7 @@ def _train_api_by_scope(request, scope, obj):
         training_id = request.POST.get("training_id")
         raw_answer = request.POST.get("answer", "")
         write_direction = (request.POST.get("write_direction") or "").strip()
+        write_issue_id = (request.POST.get("write_issue_id") or "").strip()
         duration = int(request.POST.get("duration", 0) or 0) / 1000
         used_hint = request.POST.get("used_hint") == "1"
         retry_count = int(request.POST.get("retry_count", 0) or 0)
@@ -5717,19 +5734,54 @@ def _train_api_by_scope(request, scope, obj):
         )
 
         # =========================
-        # 写作题方向必须来自当前 POST。
-        # 多方向写作题同一个 training_id 会随机生成不同方向，
-        # 因此不能再使用 session 旧方向兜底。
-        # 如果前端没有提交方向，宁可要求刷新，也不能用错误方向判题。
+        # 写作题判题必须使用 GET 出题时生成的 write_issue_id。
+        # 同一个 TrainingItem 会随机生成不同方向，不能只凭 training_id 或前端方向判题。
         # =========================
-        if training.item_type == "write" and not write_direction:
-            return JsonResponse({
-                "ok": False,
-                "result": "❌ 当前写作题方向丢失，请重新加载当前题后再提交。",
-                "result_level": "warning",
-                "training_id": training_id,
-                "type": training.item_type,
-            }, status=400)
+        if training.item_type == "write":
+            issued_write_issues = request.session.get("issued_write_issues", {})
+
+            if not write_issue_id or not isinstance(issued_write_issues, dict):
+                return JsonResponse({
+                    "ok": False,
+                    "result": "❌ 当前写作题出题实例已失效，请重新加载当前题后再提交。",
+                    "result_level": "warning",
+                    "training_id": training_id,
+                    "type": training.item_type,
+                }, status=400)
+
+            issued_write_issue = issued_write_issues.get(write_issue_id)
+
+            if not isinstance(issued_write_issue, dict):
+                return JsonResponse({
+                    "ok": False,
+                    "result": "❌ 当前写作题出题实例不存在，请重新加载当前题后再提交。",
+                    "result_level": "warning",
+                    "training_id": training_id,
+                    "type": training.item_type,
+                }, status=400)
+
+            issued_training_id = str(issued_write_issue.get("training_id") or "").strip()
+            issued_write_direction = str(issued_write_issue.get("write_direction") or "").strip()
+
+            if issued_training_id != str(training.id):
+                return JsonResponse({
+                    "ok": False,
+                    "result": "❌ 当前写作题出题实例与题目不一致，请重新加载当前题后再提交。",
+                    "result_level": "warning",
+                    "training_id": training_id,
+                    "type": training.item_type,
+                }, status=400)
+
+            if not issued_write_direction:
+                return JsonResponse({
+                    "ok": False,
+                    "result": "❌ 当前写作题方向无效，请重新加载当前题后再提交。",
+                    "result_level": "warning",
+                    "training_id": training_id,
+                    "type": training.item_type,
+                }, status=400)
+
+            write_direction = issued_write_direction
 
         if is_empty_submission:
             judge = judge_training_answer(

@@ -7055,10 +7055,18 @@ def builder_save(request):
     # 下一步再补训练页渲染与判题
     # =========================
     if item_type in {"listen_asr", "speak_read"}:
+        listen_speak_instruction_text = instruction_text
+
+        if not listen_speak_instruction_text and item_type == "listen_asr":
+            listen_speak_instruction_text = "根据听到的题干做出相应回答"
+
+        if not listen_speak_instruction_text:
+            listen_speak_instruction_text = prompt_text
+
         training = TrainingItem.objects.create(
             question=question,
             item_type=item_type,
-            instruction_text=instruction_text or prompt_text,
+            instruction_text=listen_speak_instruction_text,
             source_text=source_text,
             target_answer=target_answer or answer_text,
             accepted_answers=accepted_answers,

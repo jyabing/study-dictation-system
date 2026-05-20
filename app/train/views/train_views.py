@@ -6164,7 +6164,23 @@ def lesson_question_list(request, lesson_id):
                 else:
                     write_structure_label = "多字段写作"
 
-                question.display_source_text = question.prompt_text or f"写作字段训练：{write_structure_label}"
+                jp_kanji_text = ""
+
+                for field in write_fields:
+                    if str(field.get("key") or "").strip() != "jp_kanji":
+                        continue
+
+                    jp_kanji_text = str(field.get("text") or field.get("value") or "").strip()
+
+                    if jp_kanji_text:
+                        break
+
+                question.display_source_text = (
+                    jp_kanji_text
+                    or question.display_source_text
+                    or question.prompt_text
+                    or f"写作字段训练：{write_structure_label}"
+                )
 
                 display_field_labels = field_labels
                 display_field_count = len(field_labels)

@@ -2580,7 +2580,23 @@ def judge_training_answer(training, raw_answer, write_direction=""):
             if text:
                 correct_texts.append(text)
 
-        user_answers = _normalize_choice_answers(raw_answer)
+        # 单选题：前端可能提交选项 key，也可能提交完整选项文本。
+        # 选项文本本身可能包含「、」「，」「,」等标点，不能用分隔符拆开。
+        # 多选题才允许按分隔符解析多个答案。
+        if selection_mode == "multi":
+            user_answers = _normalize_choice_answers(raw_answer)
+        else:
+            parsed_answer = _normalize_raw_answer(raw_answer)
+
+            if isinstance(parsed_answer, list):
+                user_answers = [
+                    str(x).strip()
+                    for x in parsed_answer
+                    if str(x or "").strip()
+                ]
+            else:
+                single_answer = str(parsed_answer or "").strip()
+                user_answers = [single_answer] if single_answer else []
 
         def _norm(v):
             return normalize(str(v or ""))

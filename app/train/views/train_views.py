@@ -4459,6 +4459,48 @@ def _get_training_dictation_sources(training):
 
     return sources
 
+def _resolve_write_field_tts_text(training, field_key, text):
+    """
+    写作字段 TTS 文本修正：
+    - 画面显示 jp_kanji（日文汉字）时，如果同一题存在 kana，则朗读 kana。
+    - 例如：显示「間」，朗读「あいだ」，避免 TTS 误读成「ま」。
+    """
+    cleaned_text = (text or "").strip()
+
+    if field_key != "jp_kanji" or not training:
+        return cleaned_text
+
+    meta = getattr(training, "meta", None)
+
+    if not isinstance(meta, dict):
+        return cleaned_text
+
+    write_meta = meta.get("write")
+
+    if not isinstance(write_meta, dict):
+        return cleaned_text
+
+    raw_fields = write_meta.get("fields") or []
+
+    if not isinstance(raw_fields, list):
+        return cleaned_text
+
+    for field in raw_fields:
+        if not isinstance(field, dict):
+            continue
+
+        key = str(field.get("key") or "").strip()
+
+        if key != "kana":
+            continue
+
+        kana_text = str(field.get("text") or field.get("value") or "").strip()
+
+        if kana_text:
+            return kana_text
+
+    return cleaned_text
+
 def _resolve_dictation_audio(result):
     """
     解析听写题播放音频。
@@ -4476,6 +4518,7 @@ def _resolve_dictation_audio(result):
     field_label = (getattr(result, "dictation_field_label", "") or "").strip()
 
     training = getattr(result, "training_item", None)
+    tts_text = _resolve_write_field_tts_text(training, field_key, text)
 
     if field_key == "legacy" and training and getattr(training, "audio_file", None):
         try:
@@ -4492,13 +4535,13 @@ def _resolve_dictation_audio(result):
         tts_lang = "ja"
     else:
         tts_lang = _resolve_tts_lang_for_text(
-            text,
+            tts_text,
             configured_lang=None,
             fallback_lang="ja",
         )
 
     return _build_tts_audio(
-        text=text,
+        text=tts_text,
         lang=tts_lang,
         prefix=f"dictation_{field_key or 'source'}"
     )

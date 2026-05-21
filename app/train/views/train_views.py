@@ -5537,6 +5537,14 @@ def _train_api_by_scope(request, scope, obj):
         raw_answer = request.POST.get("answer", "")
         write_direction = (request.POST.get("write_direction") or "").strip()
         write_issue_id = (request.POST.get("write_issue_id") or "").strip()
+        print("DEBUG WRITE POST INPUT:", {
+            "path": request.path,
+            "training_id": training_id,
+            "raw_answer": raw_answer,
+            "write_direction": write_direction,
+            "write_issue_id": write_issue_id,
+            "post_keys": list(request.POST.keys()),
+        })
         duration = int(request.POST.get("duration", 0) or 0) / 1000
         used_hint = request.POST.get("used_hint") == "1"
         retry_count = int(request.POST.get("retry_count", 0) or 0)

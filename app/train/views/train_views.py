@@ -5544,7 +5544,7 @@ def _train_api_by_scope(request, scope, obj):
             "write_direction": write_direction,
             "write_issue_id": write_issue_id,
             "post_keys": list(request.POST.keys()),
-        })
+        }, flush=True)
         duration = int(request.POST.get("duration", 0) or 0) / 1000
         used_hint = request.POST.get("used_hint") == "1"
         retry_count = int(request.POST.get("retry_count", 0) or 0)
@@ -5806,6 +5806,12 @@ def _train_api_by_scope(request, scope, obj):
                 }, status=400)
 
             write_direction = issued_write_direction
+            print("DEBUG WRITE ISSUE RESOLVED:", {
+                "training_id": training_id,
+                "write_issue_id": write_issue_id,
+                "issued_write_issue": issued_write_issue,
+                "final_write_direction": write_direction,
+            }, flush=True)
 
         if is_empty_submission:
             judge = judge_training_answer(
@@ -5847,6 +5853,13 @@ def _train_api_by_scope(request, scope, obj):
             raw_answer,
             write_direction=write_direction,
         )
+
+        print("DEBUG WRITE FINAL JUDGE:", {
+            "training_id": training_id,
+            "raw_answer": raw_answer,
+            "final_write_direction": write_direction,
+            "judge": judge,
+        }, flush=True)
 
         is_correct = judge["is_correct"]
 

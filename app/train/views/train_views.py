@@ -1911,17 +1911,17 @@ def build_training_payload(training, memory=None, request=None):
                     else:
                         continue
 
-                    prompt_keys = [
-                        key.strip()
-                        for key in prompt_key.split("+")
-                        if key.strip()
-                    ]
+                    # 当前训练页只有一个输入框，暂不支持复合提示 / 复合答案方向。
+                    # 例如：
+                    # english_expression+japanese_expression -> chinese_meaning
+                    # chinese_meaning -> english_expression+japanese_expression
+                    # 这类方向会导致“显示正确答案”和“判题比较答案”错位。
+                    # 先跳过，保留单字段方向正常训练。
+                    if "+" in prompt_key or "+" in answer_key:
+                        continue
 
-                    answer_keys = [
-                        key.strip()
-                        for key in answer_key.split("+")
-                        if key.strip()
-                    ]
+                    prompt_keys = [prompt_key]
+                    answer_keys = [answer_key]
 
                     if (
                         prompt_keys

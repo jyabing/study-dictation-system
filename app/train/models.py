@@ -233,6 +233,11 @@ class TrainingItem(models.Model):
         default=list
     )
 
+    sequence_chunks = models.JSONField(
+        blank=True,
+        default=list
+    )
+
     difficulty = models.PositiveSmallIntegerField(
         default=1
     )

@@ -702,6 +702,22 @@
                     </div>
                 </div>
 
+                <div id="sequence_chunks_section" class="card section hidden">
+                    <div class="section-title">顺序语块训练</div>
+                    <div class="section-sub">
+                        用于顺序跟读 / 累积跟读。每行填写一个语块，系统会按顺序组成：第1块 → 第1+2块 → 第1+2+3块 → 完整句。
+                    </div>
+
+                    <div class="field">
+                        <label for="sequence_chunks_text">语块列表</label>
+                        <textarea
+                            id="sequence_chunks_text"
+                            placeholder="每行一个语块，例如：&#10;and saw&#10;a picture of you&#10;with your kitty cat"
+                            oninput="updatePreview();"
+                        ></textarea>
+                    </div>
+                </div>
+
                 <div id="write_fields_section" class="card section hidden">
                     <div class="section-title">写作字段训练</div>
                     <div class="section-sub">
@@ -1211,11 +1227,13 @@
             const choiceSection = document.getElementById("choice_section");
             const asrSection = document.getElementById("asr_section");
             const writeFieldsSection = document.getElementById("write_fields_section");
+            const sequenceChunksSection = document.getElementById("sequence_chunks_section");
 
             const isListenChoice = isListenChoiceItemType(itemType);
             const isListenAudioMode = itemType === "listen_asr" || isListenChoice;
             const isListenOrSpeak = itemType === "listen_asr" || itemType === "speak_read";
             const isSpeakRead = itemType === "speak_read";
+            const isSpeakSequence = itemType === "speak_sequence";
             const isReadChoice = isChoiceItemType(itemType);
             const isWriteText = itemType === "write_text";
 
@@ -1264,6 +1282,11 @@
             // 写作三字段区：只在写作题显示
             if (writeFieldsSection) {
                 writeFieldsSection.classList.toggle("hidden", !isWriteText);
+            }
+
+            // 顺序语块区：只在顺序跟读题显示
+            if (sequenceChunksSection) {
+                sequenceChunksSection.classList.toggle("hidden", !isSpeakSequence);
             }
 
             // 听说识别配置区

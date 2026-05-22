@@ -2018,7 +2018,10 @@ def build_training_payload(training, memory=None, request=None):
                 write_answer_type = target_type
 
         write_direction_label = f"{write_prompt_type} → {write_answer_type}"
-        write_prompt_label = f"当前训练：{write_direction_label}"
+        if write_prompt_type and write_answer_type:
+            write_prompt_label = f"当前训练：根据{write_prompt_type}写出{write_answer_type}"
+        else:
+            write_prompt_label = f"当前训练：{write_direction_label}"
         write_answer_label = f"应写出的{write_answer_type}"
         write_placeholder = f"请输入{write_answer_type}"
 

@@ -7251,6 +7251,14 @@ def question_edit(request, question_id):
         "japanese_expression": "",
         "japanese_definition": "",
         "chinese_meaning": "",
+
+        "chunk_1": "",
+        "chunk_2": "",
+        "chunk_3": "",
+
+        "chunk_label_1": "语言块 1",
+        "chunk_label_2": "语言块 2",
+        "chunk_label_3": "语言块 3",
     }
 
     if training and training.item_type == "write":
@@ -7270,10 +7278,15 @@ def question_edit(request, question_id):
 
                     key = str(field.get("key") or "").strip()
                     text = str(field.get("text") or field.get("value") or "").strip()
+                    label = str(field.get("label") or "").strip()
 
                     if key in write_field_values:
                         write_field_values[key] = text
                         write_field_keys.add(key)
+
+                        if key in {"chunk_1", "chunk_2", "chunk_3"}:
+                            chunk_index = key.rsplit("_", 1)[-1]
+                            write_field_values[f"chunk_label_{chunk_index}"] = label or f"语言块 {chunk_index}"
 
             if write_field_keys & {
                 "english_expression",
@@ -7370,9 +7383,13 @@ def question_edit(request, question_id):
             _add_write_field("kana", "假名", _post_text("write_kana"))
             _add_write_field("zh_meaning", "中文意译", _post_text("write_zh_meaning"))
 
-        _add_write_field("chunk_1", "chunk｜语言块 1", _post_text("write_chunk_1"))
-        _add_write_field("chunk_2", "chunk｜语言块 2", _post_text("write_chunk_2"))
-        _add_write_field("chunk_3", "chunk｜语言块 3", _post_text("write_chunk_3"))
+        chunk_label_1 = _post_text("write_chunk_label_1") or "语言块 1"
+        chunk_label_2 = _post_text("write_chunk_label_2") or "语言块 2"
+        chunk_label_3 = _post_text("write_chunk_label_3") or "语言块 3"
+
+        _add_write_field("chunk_1", chunk_label_1, _post_text("write_chunk_1"))
+        _add_write_field("chunk_2", chunk_label_2, _post_text("write_chunk_2"))
+        _add_write_field("chunk_3", chunk_label_3, _post_text("write_chunk_3"))
 
         audio_url = (request.POST.get("audio_url") or "").strip()
         answer_audio_url = (request.POST.get("answer_audio_url") or "").strip()

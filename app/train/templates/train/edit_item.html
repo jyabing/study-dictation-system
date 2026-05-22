@@ -314,6 +314,13 @@
                                     <div id="edit-write-chunk-fields" class="edit-write-structure-fields grid-3">
                                         <div class="field-group">
                                             <div class="field-label">chunk 1</div>
+                                            <input
+                                                type="text"
+                                                name="write_chunk_label_1"
+                                                class="input"
+                                                placeholder="例如：动词变化块"
+                                                value="{{ write_field_values.chunk_label_1|default:'语言块 1' }}"
+                                            >
                                             <textarea
                                                 name="write_chunk_1"
                                                 class="textarea"
@@ -323,6 +330,13 @@
 
                                         <div class="field-group">
                                             <div class="field-label">chunk 2</div>
+                                            <input
+                                                type="text"
+                                                name="write_chunk_label_2"
+                                                class="input"
+                                                placeholder="例如：助动词变化块"
+                                                value="{{ write_field_values.chunk_label_2|default:'语言块 2' }}"
+                                            >
                                             <textarea
                                                 name="write_chunk_2"
                                                 class="textarea"
@@ -332,6 +346,13 @@
 
                                         <div class="field-group">
                                             <div class="field-label">chunk 3</div>
+                                            <input
+                                                type="text"
+                                                name="write_chunk_label_3"
+                                                class="input"
+                                                placeholder="例如：复合语言块"
+                                                value="{{ write_field_values.chunk_label_3|default:'语言块 3' }}"
+                                            >
                                             <textarea
                                                 name="write_chunk_3"
                                                 class="textarea"

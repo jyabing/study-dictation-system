@@ -1873,6 +1873,11 @@ def build_training_payload(training, memory=None, request=None):
                 label = str(field.get("label") or "").strip()
                 text = str(field.get("text") or field.get("value") or "").strip()
 
+                # chunk 字段不再参与写作随机训练。
+                # chunk 更适合以后做听说顺序跟读 / 累积跟读训练。
+                if key.startswith("chunk_"):
+                    continue
+
                 if not key or not label or not text:
                     continue
 
@@ -1909,6 +1914,10 @@ def build_training_payload(training, memory=None, request=None):
                         prompt_key = prompt_key.strip()
                         answer_key = answer_key.strip()
                     else:
+                        continue
+
+                    # 跳过旧数据里残留的 chunk 写作方向。
+                    if prompt_key.startswith("chunk_") or answer_key.startswith("chunk_"):
                         continue
 
                     # 当前训练页只有一个输入框，暂不支持复合提示 / 复合答案方向。
@@ -7385,14 +7394,6 @@ def question_edit(request, question_id):
             _add_write_field("jp_kanji", "日文汉字", _post_text("write_jp_kanji"))
             _add_write_field("kana", "假名", _post_text("write_kana"))
             _add_write_field("zh_meaning", "中文意译", _post_text("write_zh_meaning"))
-
-        chunk_label_1 = _post_text("write_chunk_label_1") or "语言块 1"
-        chunk_label_2 = _post_text("write_chunk_label_2") or "语言块 2"
-        chunk_label_3 = _post_text("write_chunk_label_3") or "语言块 3"
-
-        _add_write_field("chunk_1", chunk_label_1, _post_text("write_chunk_1"))
-        _add_write_field("chunk_2", chunk_label_2, _post_text("write_chunk_2"))
-        _add_write_field("chunk_3", chunk_label_3, _post_text("write_chunk_3"))
 
         audio_url = (request.POST.get("audio_url") or "").strip()
         answer_audio_url = (request.POST.get("answer_audio_url") or "").strip()

@@ -4430,6 +4430,9 @@ def _get_training_dictation_sources(training):
         "japanese_expression": "日语",
         "jp_kanji": "日语",
         "kana": "日语",
+        "chunk_1": "语言块",
+        "chunk_2": "语言块",
+        "chunk_3": "语言块",
     }
 
     seen = set()

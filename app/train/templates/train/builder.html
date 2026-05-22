@@ -857,6 +857,39 @@
                         </div>
                     </div>
 
+                    <div id="write_chunk_fields" class="write-chunk-fields" style="margin-top:12px;">
+                        <div class="section-sub" style="margin-top:0; margin-bottom:8px;">
+                            <strong>语言块 / chunk 训练：</strong>
+                            用于单独训练句子里的真实语言块，例如「味わえ」「ちゃった」「味わえちゃった」或英语里的 should've / gonna。
+                        </div>
+
+                        <div class="grid-3">
+                            <div class="field">
+                                <label for="write_chunk_1">chunk 1</label>
+                                <textarea
+                                    id="write_chunk_1"
+                                    placeholder="例如：味わえ"
+                                ></textarea>
+                            </div>
+
+                            <div class="field">
+                                <label for="write_chunk_2">chunk 2</label>
+                                <textarea
+                                    id="write_chunk_2"
+                                    placeholder="例如：ちゃった"
+                                ></textarea>
+                            </div>
+
+                            <div class="field">
+                                <label for="write_chunk_3">chunk 3</label>
+                                <textarea
+                                    id="write_chunk_3"
+                                    placeholder="例如：味わえちゃった"
+                                ></textarea>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="section-sub" style="margin-top:10px; margin-bottom:0;">
                         保存时会优先用这里生成写作字段训练数据；为了兼容旧页面，系统也会同步填充上方的「题干 / 回答」。
                     </div>
@@ -1764,6 +1797,14 @@
                     pushWriteField("zh_meaning", "中文意译", writeFieldValues.zhMeaning);
                 }
             }
+
+            const writeChunk1 = getWriteInputValue("write_chunk_1");
+            const writeChunk2 = getWriteInputValue("write_chunk_2");
+            const writeChunk3 = getWriteInputValue("write_chunk_3");
+
+            pushWriteField("chunk_1", "chunk｜语言块 1", writeChunk1);
+            pushWriteField("chunk_2", "chunk｜语言块 2", writeChunk2);
+            pushWriteField("chunk_3", "chunk｜语言块 3", writeChunk3);
 
             const isReadChoice = isChoiceItemType(itemType);
 

@@ -310,6 +310,35 @@
                                             >{{ write_field_values.chinese_meaning|default:'' }}</textarea>
                                         </div>
                                     </div>
+
+                                    <div id="edit-write-chunk-fields" class="edit-write-structure-fields grid-3">
+                                        <div class="field-group">
+                                            <div class="field-label">chunk 1</div>
+                                            <textarea
+                                                name="write_chunk_1"
+                                                class="textarea"
+                                                placeholder="例如：味わえ"
+                                            >{{ write_field_values.chunk_1|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">chunk 2</div>
+                                            <textarea
+                                                name="write_chunk_2"
+                                                class="textarea"
+                                                placeholder="例如：ちゃった"
+                                            >{{ write_field_values.chunk_2|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">chunk 3</div>
+                                            <textarea
+                                                name="write_chunk_3"
+                                                class="textarea"
+                                                placeholder="例如：味わえちゃった"
+                                            >{{ write_field_values.chunk_3|default:'' }}</textarea>
+                                        </div>
+                                    </div>
                                 </div>
                             {% endif %}
 

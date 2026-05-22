@@ -7367,6 +7367,10 @@ def question_edit(request, question_id):
             _add_write_field("kana", "假名", _post_text("write_kana"))
             _add_write_field("zh_meaning", "中文意译", _post_text("write_zh_meaning"))
 
+        _add_write_field("chunk_1", "chunk｜语言块 1", _post_text("write_chunk_1"))
+        _add_write_field("chunk_2", "chunk｜语言块 2", _post_text("write_chunk_2"))
+        _add_write_field("chunk_3", "chunk｜语言块 3", _post_text("write_chunk_3"))
+
         audio_url = (request.POST.get("audio_url") or "").strip()
         answer_audio_url = (request.POST.get("answer_audio_url") or "").strip()
         prompt_image_url = (request.POST.get("prompt_image_url") or "").strip()

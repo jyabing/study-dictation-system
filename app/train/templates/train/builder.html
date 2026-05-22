@@ -860,7 +860,8 @@
                     <div id="write_chunk_fields" class="write-chunk-fields" style="margin-top:12px;">
                         <div class="section-sub" style="margin-top:0; margin-bottom:8px;">
                             <strong>语言块 / chunk 训练：</strong>
-                            用于单独训练句子里的真实语言块，例如「味わえ」「ちゃった」「味わえちゃった」或英语里的 should've / gonna。
+                            用于单独训练句子里的真实语言块。左侧输入“功能标签”，右侧输入“实际答案片段”。
+                            例如：对象块「気分を」、动作核心「味わえ」、语气结果块「ちゃった」；英语也可用，例如结果语气块「ended up」。
                         </div>
 
                         <div class="grid-3">
@@ -869,11 +870,11 @@
                                 <input
                                     id="write_chunk_label_1"
                                     type="text"
-                                    placeholder="例如：动词变化块"
+                                    placeholder="功能标签：例如 对象块 / 主语块 / 时间条件块"
                                 >
                                 <textarea
                                     id="write_chunk_1"
-                                    placeholder="例如：味わえ"
+                                    placeholder="实际答案片段：例如 気分を / I / when I arrived"
                                 ></textarea>
                             </div>
 
@@ -882,11 +883,11 @@
                                 <input
                                     id="write_chunk_label_2"
                                     type="text"
-                                    placeholder="例如：助动词变化块"
+                                    placeholder="功能标签：例如 动作核心 / 结果语气块 / 连接块"
                                 >
                                 <textarea
                                     id="write_chunk_2"
-                                    placeholder="例如：ちゃった"
+                                    placeholder="实际答案片段：例如 味わえ / ended up / because of"
                                 ></textarea>
                             </div>
 
@@ -895,11 +896,11 @@
                                 <input
                                     id="write_chunk_label_3"
                                     type="text"
-                                    placeholder="例如：复合语言块"
+                                    placeholder="功能标签：例如 语气结果块 / 对象块 / 修饰块"
                                 >
                                 <textarea
                                     id="write_chunk_3"
-                                    placeholder="例如：味わえちゃった"
+                                    placeholder="实际答案片段：例如 ちゃった / the atmosphere / that I bought"
                                 ></textarea>
                             </div>
                         </div>

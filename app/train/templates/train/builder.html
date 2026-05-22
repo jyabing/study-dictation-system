@@ -866,6 +866,11 @@
                         <div class="grid-3">
                             <div class="field">
                                 <label for="write_chunk_1">chunk 1</label>
+                                <input
+                                    id="write_chunk_label_1"
+                                    type="text"
+                                    placeholder="例如：动词变化块"
+                                >
                                 <textarea
                                     id="write_chunk_1"
                                     placeholder="例如：味わえ"
@@ -874,6 +879,11 @@
 
                             <div class="field">
                                 <label for="write_chunk_2">chunk 2</label>
+                                <input
+                                    id="write_chunk_label_2"
+                                    type="text"
+                                    placeholder="例如：助动词变化块"
+                                >
                                 <textarea
                                     id="write_chunk_2"
                                     placeholder="例如：ちゃった"
@@ -882,6 +892,11 @@
 
                             <div class="field">
                                 <label for="write_chunk_3">chunk 3</label>
+                                <input
+                                    id="write_chunk_label_3"
+                                    type="text"
+                                    placeholder="例如：复合语言块"
+                                >
                                 <textarea
                                     id="write_chunk_3"
                                     placeholder="例如：味わえちゃった"
@@ -1798,13 +1813,17 @@
                 }
             }
 
+            const writeChunkLabel1 = getWriteInputValue("write_chunk_label_1") || "语言块 1";
+            const writeChunkLabel2 = getWriteInputValue("write_chunk_label_2") || "语言块 2";
+            const writeChunkLabel3 = getWriteInputValue("write_chunk_label_3") || "语言块 3";
+
             const writeChunk1 = getWriteInputValue("write_chunk_1");
             const writeChunk2 = getWriteInputValue("write_chunk_2");
             const writeChunk3 = getWriteInputValue("write_chunk_3");
 
-            pushWriteField("chunk_1", "chunk｜语言块 1", writeChunk1);
-            pushWriteField("chunk_2", "chunk｜语言块 2", writeChunk2);
-            pushWriteField("chunk_3", "chunk｜语言块 3", writeChunk3);
+            pushWriteField("chunk_1", writeChunkLabel1, writeChunk1);
+            pushWriteField("chunk_2", writeChunkLabel2, writeChunk2);
+            pushWriteField("chunk_3", writeChunkLabel3, writeChunk3);
 
             const isReadChoice = isChoiceItemType(itemType);
 

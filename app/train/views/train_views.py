@@ -6167,6 +6167,7 @@ def lesson_question_list(request, lesson_id):
     qtype_to_skill = {
         "listen_asr": "listen",
         "speak_read": "speak",
+        "speak_sequence": "speak",
         "read_cloze": "read",
         "read_choice": "read",
         "read_choice_single": "read",
@@ -6353,6 +6354,7 @@ def lesson_question_list(request, lesson_id):
             {"value": "", "label": "全部"},
             {"value": "read_cloze", "label": "read_cloze"},
             {"value": "speak_read", "label": "speak_read"},
+            {"value": "speak_sequence", "label": "speak_sequence"},
             {"value": "listen_asr", "label": "listen_asr"},
             {"value": "read_choice", "label": "read_choice"},
             {"value": "write", "label": "write"},

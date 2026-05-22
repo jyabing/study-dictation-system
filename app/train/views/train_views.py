@@ -6869,6 +6869,28 @@ def builder_save(request):
     cloze_cfg = data.get("cloze") or {}
     asr_cfg = data.get("asr") or {}
 
+    raw_sequence_chunks = data.get("sequence_chunks") or []
+    sequence_chunks = []
+
+    if isinstance(raw_sequence_chunks, list):
+        for index, chunk in enumerate(raw_sequence_chunks):
+            if not isinstance(chunk, dict):
+                continue
+
+            text = str(chunk.get("text") or "").strip()
+            if not text:
+                continue
+
+            try:
+                order = int(chunk.get("order") or index + 1)
+            except (TypeError, ValueError):
+                order = index + 1
+
+            sequence_chunks.append({
+                "order": order,
+                "text": text,
+            })
+
     if not lesson_id:
         return JsonResponse({"ok": False, "error": "lesson_id 不能为空"}, status=400)
 
@@ -6884,6 +6906,11 @@ def builder_save(request):
                 "ok": False,
                 "error": "说-看字朗读题需要填写文字题干或上传题干图片"
             }, status=400)
+    elif item_type == "speak_sequence":
+        if not has_prompt_text:
+            return JsonResponse({"ok": False, "error": "顺序跟读题需要填写完整句"}, status=400)
+        if not sequence_chunks:
+            return JsonResponse({"ok": False, "error": "顺序跟读题至少需要填写一个语块"}, status=400)
     elif not has_prompt_text:
         return JsonResponse({"ok": False, "error": "题干不能为空"}, status=400)
 
@@ -6895,7 +6922,7 @@ def builder_save(request):
     )
 
     # 听 / 说：如果没单独填 answer_text，默认用 prompt_text 当识别比对文本
-    if item_type in {"listen_asr", "speak_read"} and not answer_text:
+    if item_type in {"listen_asr", "speak_read", "speak_sequence"} and not answer_text:
         answer_text = prompt_text
 
     # 先创建 question，供后续各题型分支统一使用
@@ -7160,7 +7187,7 @@ def builder_save(request):
     # 这一步先保存素材和配置
     # 下一步再补训练页渲染与判题
     # =========================
-    if item_type in {"listen_asr", "speak_read"}:
+    if item_type in {"listen_asr", "speak_read", "speak_sequence"}:
         listen_speak_instruction_text = instruction_text
 
         if not listen_speak_instruction_text and item_type == "listen_asr":
@@ -7189,7 +7216,8 @@ def builder_save(request):
             prompt_image_file=uploaded_prompt_image_file if item_type == "speak_read" else None,
             prompt_image_url=prompt_image_url if item_type == "speak_read" else "",
             answer_audio_file=uploaded_answer_audio_file,
-            answer_use_tts=answer_use_tts
+            answer_use_tts=answer_use_tts,
+            sequence_chunks=sequence_chunks if item_type == "speak_sequence" else []
         )
         created_items.append(training.id)
 

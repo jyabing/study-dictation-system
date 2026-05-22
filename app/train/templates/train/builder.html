@@ -1954,6 +1954,22 @@
                 }
             }
 
+            const sequenceChunksText = document.getElementById("sequence_chunks_text")
+                ? document.getElementById("sequence_chunks_text").value
+                : "";
+
+            const sequenceChunks = sequenceChunksText
+                .split(/\r?\n/)
+                .map(function (line, index) {
+                    return {
+                        order: index + 1,
+                        text: line.trim()
+                    };
+                })
+                .filter(function (chunk) {
+                    return chunk.text;
+                });
+
             const payload = {
                 lesson_id: document.getElementById("lesson").value,
                 skill: skill,
@@ -1966,6 +1982,7 @@
                 accepted_answers_text: acceptedAnswersText,
                 write_fields: writeFields,
                 write_allowed_directions: writeAllowedDirections,
+                sequence_chunks: sequenceChunks,
 
                 // 旧字段：继续兼容后端旧逻辑
                 prompt_text: promptText,

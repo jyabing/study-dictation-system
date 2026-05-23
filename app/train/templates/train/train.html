@@ -59,6 +59,19 @@
                             <form class="answer-form" id="answer-form">
                                 <input type="hidden" id="training-id" value="">
 
+                                <div class="sequence-training-panel" id="sequence-training-panel" style="display:none;">
+                                    <div class="speech-mode-bar">
+                                        <div class="speech-mode-badge">顺序语块训练</div>
+                                        <div class="speech-status" id="sequence-training-status">等待开始</div>
+                                    </div>
+
+                                    <div class="speech-hint">
+                                        这里会根据基础语块生成正向累积、下一块反应、桥接、拆块等衔接练习。当前步骤先显示语块，不做判题。
+                                    </div>
+
+                                    <div class="sequence-chunk-list" id="sequence-chunk-list"></div>
+                                </div>
+
                                 <div class="speech-workspace" id="speech-workspace" style="display:none;">
                                     <div class="speech-mode-bar">
                                         <div class="speech-mode-badge" id="speech-mode-badge">语音训练</div>
@@ -1847,6 +1860,10 @@ const answerForm = document.getElementById("answer-form");
 const trainingIdInput = document.getElementById("training-id");
 const answerInput = document.getElementById("answer-input");
 
+const sequenceTrainingPanel = document.getElementById("sequence-training-panel");
+const sequenceTrainingStatus = document.getElementById("sequence-training-status");
+const sequenceChunkList = document.getElementById("sequence-chunk-list");
+
 const clozeTagBox = document.getElementById("cloze-tag-box");
 const clozeTags = document.getElementById("cloze-tags");
 const clozeTagInput = document.getElementById("cloze-tag-input");
@@ -2712,6 +2729,10 @@ function resetSpeechRecognitionState() {
 function showTextWorkspace() {
     state.inputMode = "text";
 
+    if (sequenceTrainingPanel) {
+        sequenceTrainingPanel.style.display = "none";
+    }
+
     if (textAnswerWorkspace) {
         textAnswerWorkspace.style.display = "flex";
     }
@@ -2719,10 +2740,23 @@ function showTextWorkspace() {
     if (speechWorkspace) {
         speechWorkspace.style.display = "none";
     }
+
+    if (answerInput) {
+        answerInput.style.display = "";
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.display = "inline-flex";
+    }
 }
 
 function showSpeechWorkspace(modeLabel, hintText) {
     state.inputMode = "speech";
+
+    if (sequenceTrainingPanel) {
+        sequenceTrainingPanel.style.display = "none";
+    }
 
     if (speechWorkspace) {
         speechWorkspace.style.display = "flex";
@@ -2730,6 +2764,11 @@ function showSpeechWorkspace(modeLabel, hintText) {
 
     if (textAnswerWorkspace) {
         textAnswerWorkspace.style.display = "none";
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.display = "inline-flex";
     }
 
     if (speechModeBadge) {
@@ -2741,6 +2780,56 @@ function showSpeechWorkspace(modeLabel, hintText) {
     }
 
     resetSpeechUi();
+}
+
+function showSequenceWorkspace(payload) {
+    state.inputMode = "sequence";
+
+    if (sequenceTrainingPanel) {
+        sequenceTrainingPanel.style.display = "block";
+    }
+
+    if (speechWorkspace) {
+        speechWorkspace.style.display = "none";
+    }
+
+    if (textAnswerWorkspace) {
+        textAnswerWorkspace.style.display = "none";
+    }
+
+    if (sequenceTrainingStatus) {
+        sequenceTrainingStatus.textContent = "语块预览";
+    }
+
+    if (sequenceChunkList) {
+        const chunks = Array.isArray(payload.sequence_chunks)
+            ? payload.sequence_chunks
+            : [];
+
+        if (!chunks.length) {
+            sequenceChunkList.innerHTML = '<div class="muted-text">当前题目没有语块数据。</div>';
+        } else {
+            sequenceChunkList.innerHTML = chunks.map(function (chunk, index) {
+                const order = chunk.order || index + 1;
+                const text = escapeHtml(chunk.text || "");
+                return `<div class="sequence-chunk-item"><strong>${order}.</strong> ${text}</div>`;
+            }).join("");
+        }
+    }
+
+    if (answerInput) {
+        answerInput.value = "";
+        answerInput.style.display = "none";
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.style.display = "none";
+    }
+
+    if (nextBtn) {
+        nextBtn.style.display = "inline-flex";
+    }
 }
 
 function enableSpeechTextFallback() {
@@ -3651,6 +3740,26 @@ function applyQuestionInputMode(payload) {
             answerInput.placeholder = "当前没有音频，请根据提示短语和题干直接输入你的回答";
         }
 
+        return;
+    }
+
+    if (qType === "speak_sequence") {
+        questionTypeBadge.textContent = "类型：speak_sequence";
+        renderQuestionMarkedText(questionPrompt, questionText);
+
+        if (extra) {
+            questionExtra.style.display = "block";
+            questionExtra.textContent = extra;
+        } else {
+            questionExtra.style.display = "none";
+            questionExtra.textContent = "";
+        }
+
+        audioWrap.style.display = "none";
+        questionAudio.removeAttribute("src");
+        questionAudio.load();
+
+        showSequenceWorkspace(payload);
         return;
     }
 

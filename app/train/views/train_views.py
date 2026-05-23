@@ -2118,6 +2118,7 @@ def build_training_payload(training, memory=None, request=None):
         "answer_text": resolved_answer_text,
         "target_answer": resolved_answer_text,
         "correct_answers": resolved_cloze_answers or ([resolved_answer_text] if resolved_answer_text else []),
+        "sequence_chunks": training.sequence_chunks or [],
 
         "write_direction": write_direction,
         "write_source_text": write_source_text,

@@ -1954,6 +1954,9 @@
                 }
             }
 
+            // sequence_chunks 只保存“基础语块”，不保存手动累计块。
+            // 例如只填 A / B / C，不填 A+B / A+B+C。
+            // 训练页将根据基础语块自动生成正向累积、下一块反应、桥接、拆块等衔接练习。
             const sequenceChunksText = document.getElementById("sequence_chunks_text")
                 ? document.getElementById("sequence_chunks_text").value
                 : "";

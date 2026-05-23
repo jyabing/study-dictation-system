@@ -6869,6 +6869,9 @@ def builder_save(request):
     cloze_cfg = data.get("cloze") or {}
     asr_cfg = data.get("asr") or {}
 
+    # sequence_chunks 只保存“基础语块”，不保存手动累计块。
+    # 例如只保存 A / B / C，不保存 A+B / A+B+C。
+    # 训练页会根据基础语块自动生成正向累积、下一块反应、桥接、拆块等衔接练习。
     raw_sequence_chunks = data.get("sequence_chunks") or []
     sequence_chunks = []
 

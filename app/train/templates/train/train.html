@@ -2802,16 +2802,12 @@ function renderSequenceStep() {
     const safeIndex = Math.max(0, Math.min(state.sequenceIndex, items.length - 1));
     const currentText = escapeHtml(items[safeIndex] || "");
 
-    const listHtml = items.map(function (text, index) {
-        const activeClass = index === safeIndex ? " is-active" : "";
-        return `<div class="sequence-chunk-item${activeClass}"><strong>${index + 1}.</strong> ${escapeHtml(text)}</div>`;
-    }).join("");
-
     sequenceChunkList.innerHTML = `
-        <div class="sequence-section-title">当前步骤</div>
+        <div class="sequence-section-title">请跟读当前语块组合</div>
         <div class="sequence-current-item">${currentText}</div>
-        <div class="sequence-section-title" style="margin-top:12px;">正向累积练习</div>
-        ${listHtml}
+        <div class="muted-text" style="margin-top:8px;">
+            当前只显示本步骤。请先看着读顺，再点下一步进入更长的连接。
+        </div>
     `;
 
     if (sequenceTrainingStatus) {
@@ -2819,7 +2815,7 @@ function renderSequenceStep() {
     }
 
     if (nextBtn) {
-        nextBtn.textContent = safeIndex >= items.length - 1 ? "下一题" : "下一步";
+        nextBtn.textContent = safeIndex >= items.length - 1 ? "完成，下一题" : "我已跟读，下一步";
     }
 }
 

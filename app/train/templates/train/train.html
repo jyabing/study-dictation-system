@@ -2806,14 +2806,56 @@ function showSequenceWorkspace(payload) {
             ? payload.sequence_chunks
             : [];
 
-        if (!chunks.length) {
+        const cleanChunks = chunks
+            .map(function (chunk, index) {
+                return {
+                    order: chunk.order || index + 1,
+                    text: String(chunk.text || "").trim()
+                };
+            })
+            .filter(function (chunk) {
+                return chunk.text;
+            });
+
+        if (!cleanChunks.length) {
             sequenceChunkList.innerHTML = '<div class="muted-text">当前题目没有语块数据。</div>';
         } else {
-            sequenceChunkList.innerHTML = chunks.map(function (chunk, index) {
-                const order = chunk.order || index + 1;
-                const text = escapeHtml(chunk.text || "");
+            const baseHtml = cleanChunks.map(function (chunk) {
+                const order = escapeHtml(String(chunk.order));
+                const text = escapeHtml(chunk.text);
                 return `<div class="sequence-chunk-item"><strong>${order}.</strong> ${text}</div>`;
             }).join("");
+
+            function joinSequenceChunks(parts) {
+                const hasAsciiWord = parts.some(function (part) {
+                    return /[A-Za-z]/.test(part);
+                });
+
+                return parts.join(hasAsciiWord ? " " : "");
+            }
+
+            const forwardChain = [];
+
+            cleanChunks.forEach(function (chunk, index) {
+                const parts = cleanChunks
+                    .slice(0, index + 1)
+                    .map(function (item) {
+                        return item.text;
+                    });
+
+                forwardChain.push(joinSequenceChunks(parts));
+            });
+
+            const forwardHtml = forwardChain.map(function (text, index) {
+                return `<div class="sequence-chunk-item"><strong>${index + 1}.</strong> ${escapeHtml(text)}</div>`;
+            }).join("");
+
+            sequenceChunkList.innerHTML = `
+                <div class="sequence-section-title">基础语块</div>
+                ${baseHtml}
+                <div class="sequence-section-title" style="margin-top:12px;">正向累积练习</div>
+                ${forwardHtml}
+            `;
         }
     }
 

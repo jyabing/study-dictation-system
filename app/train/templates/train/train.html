@@ -3148,7 +3148,11 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
             }
         }
 
-        setSpeechDebugStatus(`后端 ASR 识别完成：${transcript}`);
+        if (state.inputMode === "sequence" && state.sequenceIndex === 0) {
+            setSpeechDebugStatus("短语块过短，ASR 结果已隐藏。");
+        } else {
+            setSpeechDebugStatus(`后端 ASR 识别完成：${transcript}`);
+        }
 
     } catch (error) {
         console.error("backend ASR failed:", error);

@@ -3131,7 +3131,7 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
             if (speechStatus) {
                 speechStatus.textContent = `本步录音已完成${returnedAsrLang ? "：" + returnedAsrLang : ""}。当前语块较短，ASR 结果不显示、不判题；请确认自己已跟读后进入下一步。`;
             }
-            setSpeechDebugStatus(`短语块过短，已隐藏 ASR 结果：${transcript}`);
+            setSpeechDebugStatus("短语块过短，ASR 结果已隐藏。");
         } else {
             updateSpeechResult(transcript, "");
         }

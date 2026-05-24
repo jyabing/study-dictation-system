@@ -144,6 +144,7 @@ def asr_transcribe_api(request):
         }, status=500)
 
     asr_lang = _normalize_openai_asr_language(request.POST.get("asr_lang") or "")
+    asr_prompt = (request.POST.get("asr_prompt") or "").strip()
     suffix = os.path.splitext(audio_file.name or "")[1] or ".webm"
 
     tmp_path = ""
@@ -166,6 +167,9 @@ def asr_transcribe_api(request):
             if asr_lang:
                 kwargs["language"] = asr_lang
 
+            if asr_prompt:
+                kwargs["prompt"] = asr_prompt[:500]
+
             transcript = client.audio.transcriptions.create(**kwargs)
 
         text = str(getattr(transcript, "text", "") or "").strip()
@@ -174,6 +178,7 @@ def asr_transcribe_api(request):
             "ok": True,
             "text": text,
             "asr_lang": asr_lang,
+            "asr_prompt": asr_prompt[:500],
         })
 
     except Exception as exc:

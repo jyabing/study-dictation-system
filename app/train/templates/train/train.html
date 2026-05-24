@@ -3088,6 +3088,16 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
     );
     formData.append("asr_lang", state.recognitionLang || "en-US");
 
+    if (state.inputMode === "sequence") {
+        const currentSequenceText = String(state.sequenceItems[state.sequenceIndex] || "").trim();
+        if (currentSequenceText) {
+            formData.append(
+                "asr_prompt",
+                `これは日本語の発話です。次の語句を読み上げています：${currentSequenceText}`
+            );
+        }
+    }
+
     try {
         const response = await fetch(ASR_TRANSCRIBE_URL, {
             method: "POST",

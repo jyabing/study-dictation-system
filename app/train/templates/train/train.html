@@ -2084,6 +2084,7 @@ const state = {
     sequenceItems: [],
     sequenceIndex: 0,
     sequenceStepStarted: false,
+    sequenceStepRecorded: false,
 
     recognition: null,
     recognitionLang: "en-US",
@@ -2802,28 +2803,26 @@ function renderSequenceStep() {
 
     const safeIndex = Math.max(0, Math.min(state.sequenceIndex, items.length - 1));
     const currentText = escapeHtml(items[safeIndex] || "");
-    const shouldUseAsr = safeIndex > 0;
+    const shouldShowAsrText = safeIndex > 0;
 
     if (speechWorkspace) {
-        speechWorkspace.style.display = shouldUseAsr ? "flex" : "none";
+        speechWorkspace.style.display = "flex";
     }
 
-    if (shouldUseAsr && speechHint) {
-        speechHint.textContent = `请点击开始录音，跟读当前步骤。当前识别语言：${state.recognitionLang || "未设置"}。识别结果只用于确认发音，不会自动判题。`;
+    if (speechHint) {
+        speechHint.textContent = shouldShowAsrText
+            ? `请点击开始录音，跟读当前步骤。当前识别语言：${state.recognitionLang || "未设置"}。识别结果只用于确认发音，不会自动判题。`
+            : `请点击开始录音，跟读当前短语块。当前识别语言：${state.recognitionLang || "未设置"}。本步太短，录音完成后不显示 ASR 文本。`;
     }
 
-    if (!shouldUseAsr) {
+    if (!shouldShowAsrText) {
         clearSpeechError();
         updateSpeechResult("", "");
     }
 
-    const actionHint = shouldUseAsr
-        ? "本步骤较长，可以使用录音识别辅助确认。读完后点击按钮进入下一步。"
-        : (
-            state.sequenceStepStarted
-                ? "请直接开口跟读当前短语块。读完后点击按钮进入下一步。"
-                : "当前短语块过短，不使用 ASR。先看清内容，准备好后点击“开始跟读”。"
-        );
+    const actionHint = state.sequenceStepRecorded
+        ? "本步录音已完成。确认后可以进入下一步。"
+        : "请先点击下方“开始录音”，完成一次真实跟读。录音完成前不能进入下一步。";
 
     sequenceChunkList.innerHTML = `
         <div class="sequence-section-title">请跟读当前语块组合</div>
@@ -2838,13 +2837,10 @@ function renderSequenceStep() {
     }
 
     if (nextBtn) {
-        if (!state.sequenceStepStarted) {
-            nextBtn.textContent = "开始跟读";
-        } else {
-            nextBtn.textContent = safeIndex >= items.length - 1
-                ? "我已跟读，完成并进入下一题"
-                : "我已跟读，下一步";
-        }
+        nextBtn.disabled = !state.sequenceStepRecorded;
+        nextBtn.textContent = safeIndex >= items.length - 1
+            ? "录音完成，进入下一题"
+            : "录音完成，进入下一步";
     }
 }
 
@@ -2861,15 +2857,18 @@ function advanceSequenceStep() {
         return false;
     }
 
-    if (!state.sequenceStepStarted) {
-        state.sequenceStepStarted = true;
-        renderSequenceStep();
+    if (!state.sequenceStepRecorded) {
+        if (speechStatus) {
+            speechStatus.textContent = "请先完成本步录音，再进入下一步。";
+        }
         return true;
     }
 
     if (state.sequenceIndex < items.length - 1) {
         state.sequenceIndex += 1;
         state.sequenceStepStarted = false;
+        state.sequenceStepRecorded = false;
+        resetSpeechRecognitionState();
         renderSequenceStep();
         return true;
     }
@@ -2927,6 +2926,7 @@ function showSequenceWorkspace(payload) {
     });
     state.sequenceIndex = 0;
     state.sequenceStepStarted = false;
+    state.sequenceStepRecorded = false;
 
     renderSequenceStep();
 
@@ -3140,6 +3140,10 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
         state.recognitionInterimText = "";
         state.recognizedText = transcript;
 
+        if (state.inputMode === "sequence") {
+            state.sequenceStepRecorded = true;
+        }
+
         if (state.inputMode === "sequence" && state.sequenceIndex === 0) {
             updateSpeechResult("", "");
             if (speechStatus) {
@@ -3166,6 +3170,10 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
             setSpeechDebugStatus("短语块过短，ASR 结果已隐藏。");
         } else {
             setSpeechDebugStatus(`后端 ASR 识别完成：${transcript}`);
+        }
+
+        if (state.inputMode === "sequence") {
+            renderSequenceStep();
         }
 
     } catch (error) {

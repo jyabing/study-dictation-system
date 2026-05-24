@@ -3126,10 +3126,18 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
         state.recognitionInterimText = "";
         state.recognizedText = transcript;
 
-        updateSpeechResult(transcript, "");
+        if (state.inputMode === "sequence" && state.sequenceIndex === 0) {
+            updateSpeechResult("", "");
+            if (speechStatus) {
+                speechStatus.textContent = `本步录音已完成${returnedAsrLang ? "：" + returnedAsrLang : ""}。当前语块较短，ASR 结果不显示、不判题；请确认自己已跟读后进入下一步。`;
+            }
+            setSpeechDebugStatus(`短语块过短，已隐藏 ASR 结果：${transcript}`);
+        } else {
+            updateSpeechResult(transcript, "");
+        }
 
         if (state.inputMode === "sequence") {
-            if (speechStatus) {
+            if (speechStatus && state.sequenceIndex !== 0) {
                 speechStatus.textContent = `后端识别完成${returnedAsrLang ? "：" + returnedAsrLang : ""}。请对照当前步骤，确认读顺后再点下一步。`;
             }
         } else {

@@ -3721,6 +3721,36 @@ function getWriteTargetLabel(payload, instructionText) {
     return "";
 }
 
+function inferSequenceAsrLang(payload, fallbackLang) {
+    const parts = [];
+
+    parts.push(getQuestionText(payload));
+
+    const chunks = Array.isArray(payload.sequence_chunks)
+        ? payload.sequence_chunks
+        : [];
+
+    chunks.forEach(function (chunk) {
+        parts.push(String(chunk.text || ""));
+    });
+
+    const combined = parts.join(" ");
+
+    if (/[\u3040-\u30ff]/.test(combined)) {
+        return "ja-JP";
+    }
+
+    if (/[\uac00-\ud7af]/.test(combined)) {
+        return "ko-KR";
+    }
+
+    if (/[A-Za-z]/.test(combined)) {
+        return "en-US";
+    }
+
+    return fallbackLang || "en-US";
+}
+
 function applyQuestionInputMode(payload) {
     const qType = getQuestionType(payload);
     const instructionText = getInstructionText(payload);
@@ -3757,6 +3787,10 @@ function applyQuestionInputMode(payload) {
         ),
         "en-US"
     );
+
+    if (qType === "speak_sequence") {
+        state.recognitionLang = inferSequenceAsrLang(payload, state.recognitionLang);
+    }
 
     stopSpeechRecognition(true);
     renderChoices(payload.choices || []);

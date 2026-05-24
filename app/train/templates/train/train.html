@@ -3136,6 +3136,34 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
             return;
         }
 
+        const currentSequenceTarget = state.inputMode === "sequence"
+            ? String(state.sequenceItems[state.sequenceIndex] || "").trim()
+            : "";
+        const sequenceTargetLooksJapanese = /[\u3040-\u30ff]/.test(currentSequenceTarget);
+        const transcriptLooksHangul = /[\uac00-\ud7af]/.test(transcript);
+        const sequenceAsrScriptMismatch = (
+            state.inputMode === "sequence"
+            && sequenceTargetLooksJapanese
+            && transcriptLooksHangul
+        );
+
+        if (sequenceAsrScriptMismatch) {
+            state.sequenceStepRecorded = true;
+            state.recognitionFinalText = "";
+            state.recognitionInterimText = "";
+            state.recognizedText = "";
+
+            updateSpeechResult("", "");
+
+            if (speechStatus) {
+                speechStatus.textContent = `本步录音已完成${returnedAsrLang ? "：" + returnedAsrLang : ""}。ASR 输出脚本与日语目标不匹配，结果已隐藏；请根据目标文本自行确认。`;
+            }
+
+            setSpeechDebugStatus("ASR 输出脚本与日语目标不匹配，结果已隐藏。");
+            renderSequenceStep();
+            return;
+        }
+
         state.recognitionFinalText = transcript;
         state.recognitionInterimText = "";
         state.recognizedText = transcript;

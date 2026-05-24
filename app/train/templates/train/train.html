@@ -2649,7 +2649,7 @@ function getQuestionType(payload) {
 }
 
 function isSpeechQuestionType(qType) {
-    return qType === "listen_asr" || qType === "speak_read";
+    return qType === "listen_asr" || qType === "speak_read" || qType === "speak_sequence";
 }
 
 function resetSpeechUi() {
@@ -2867,12 +2867,22 @@ function showSequenceWorkspace(payload) {
     }
 
     if (speechWorkspace) {
-        speechWorkspace.style.display = "none";
+        speechWorkspace.style.display = "flex";
     }
 
     if (textAnswerWorkspace) {
         textAnswerWorkspace.style.display = "none";
     }
+
+    if (speechModeBadge) {
+        speechModeBadge.textContent = "顺序跟读录音";
+    }
+
+    if (speechHint) {
+        speechHint.textContent = "请点击开始录音，跟读当前步骤。识别结果只用于确认发音，不会自动判题。";
+    }
+
+    resetSpeechUi();
 
     if (sequenceTrainingStatus) {
         sequenceTrainingStatus.textContent = "语块预览";
@@ -3106,10 +3116,17 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
         state.recognizedText = transcript;
 
         updateSpeechResult(transcript, "");
-        submitRecognizedAnswer();
 
-        if (speechStatus) {
-            speechStatus.textContent = "后端识别完成，请确认后手动提交。";
+        if (state.inputMode === "sequence") {
+            if (speechStatus) {
+                speechStatus.textContent = "后端识别完成。请对照当前步骤，确认读顺后再点下一步。";
+            }
+        } else {
+            submitRecognizedAnswer();
+
+            if (speechStatus) {
+                speechStatus.textContent = "后端识别完成，请确认后手动提交。";
+            }
         }
 
         setSpeechDebugStatus(`后端 ASR 识别完成：${transcript}`);

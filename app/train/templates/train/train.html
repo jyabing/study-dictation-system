@@ -94,6 +94,11 @@
                                         <div class="speech-result-box" id="speech-result-box">暂无识别结果</div>
                                     </div>
 
+                                    <div class="speech-result-panel" id="sequence-playback-panel" style="display:none;">
+                                        <div class="speech-result-label">我的录音</div>
+                                        <audio id="sequence-playback-audio" class="audio-player" controls></audio>
+                                    </div>
+
                                     <div class="speech-error" id="speech-error" style="display:none;"></div>
                                 </div>
 
@@ -1863,6 +1868,8 @@ const answerInput = document.getElementById("answer-input");
 const sequenceTrainingPanel = document.getElementById("sequence-training-panel");
 const sequenceTrainingStatus = document.getElementById("sequence-training-status");
 const sequenceChunkList = document.getElementById("sequence-chunk-list");
+const sequencePlaybackPanel = document.getElementById("sequence-playback-panel");
+const sequencePlaybackAudio = document.getElementById("sequence-playback-audio");
 
 const clozeTagBox = document.getElementById("cloze-tag-box");
 const clozeTags = document.getElementById("cloze-tags");
@@ -2085,6 +2092,7 @@ const state = {
     sequenceIndex: 0,
     sequenceStepStarted: false,
     sequenceStepRecorded: false,
+    sequencePlaybackUrl: "",
 
     recognition: null,
     recognitionLang: "en-US",
@@ -2787,6 +2795,35 @@ function showSpeechWorkspace(modeLabel, hintText) {
     resetSpeechUi();
 }
 
+function clearSequencePlayback() {
+    if (state.sequencePlaybackUrl) {
+        URL.revokeObjectURL(state.sequencePlaybackUrl);
+    }
+
+    state.sequencePlaybackUrl = "";
+
+    if (sequencePlaybackAudio) {
+        sequencePlaybackAudio.removeAttribute("src");
+        sequencePlaybackAudio.load();
+    }
+
+    if (sequencePlaybackPanel) {
+        sequencePlaybackPanel.style.display = "none";
+    }
+}
+
+function showSequencePlayback(audioBlob) {
+    if (!sequencePlaybackPanel || !sequencePlaybackAudio || !audioBlob) {
+        return;
+    }
+
+    clearSequencePlayback();
+
+    state.sequencePlaybackUrl = URL.createObjectURL(audioBlob);
+    sequencePlaybackAudio.src = state.sequencePlaybackUrl;
+    sequencePlaybackPanel.style.display = "flex";
+}
+
 function renderSequenceStep() {
     if (!sequenceChunkList) {
         return;
@@ -2868,6 +2905,7 @@ function advanceSequenceStep() {
         state.sequenceIndex += 1;
         state.sequenceStepStarted = false;
         state.sequenceStepRecorded = false;
+        clearSequencePlayback();
         resetSpeechRecognitionState();
         renderSequenceStep();
         return true;
@@ -2927,6 +2965,7 @@ function showSequenceWorkspace(payload) {
     state.sequenceIndex = 0;
     state.sequenceStepStarted = false;
     state.sequenceStepRecorded = false;
+    clearSequencePlayback();
 
     renderSequenceStep();
 
@@ -3093,6 +3132,11 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
 
     const resolvedMimeType = mimeType || chunks[0]?.type || "audio/webm";
     const audioBlob = new Blob(chunks, { type: resolvedMimeType });
+
+    if (state.inputMode === "sequence") {
+        showSequencePlayback(audioBlob);
+    }
+
     const formData = new FormData();
 
     formData.append(

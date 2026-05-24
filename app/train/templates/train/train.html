@@ -2879,7 +2879,7 @@ function showSequenceWorkspace(payload) {
     }
 
     if (speechHint) {
-        speechHint.textContent = "请点击开始录音，跟读当前步骤。识别结果只用于确认发音，不会自动判题。";
+        speechHint.textContent = `请点击开始录音，跟读当前步骤。当前识别语言：${state.recognitionLang || "未设置"}。识别结果只用于确认发音，不会自动判题。`;
     }
 
     resetSpeechUi();
@@ -3104,6 +3104,7 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
         }
 
         const transcript = String(data.text || "").trim();
+        const returnedAsrLang = String(data.asr_lang || "").trim();
 
         if (!transcript) {
             showSpeechError("后端识别完成，但没有得到可用文本。请重新录音或改用文本输入。");
@@ -3119,7 +3120,7 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
 
         if (state.inputMode === "sequence") {
             if (speechStatus) {
-                speechStatus.textContent = "后端识别完成。请对照当前步骤，确认读顺后再点下一步。";
+                speechStatus.textContent = `后端识别完成${returnedAsrLang ? "：" + returnedAsrLang : ""}。请对照当前步骤，确认读顺后再点下一步。`;
             }
         } else {
             submitRecognizedAnswer();

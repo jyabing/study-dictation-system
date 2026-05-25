@@ -5784,14 +5784,6 @@ def _train_api_by_scope(request, scope, obj):
             and sequence_completed
         )
 
-        print("DEBUG SEQUENCE COMPLETION:", {
-            "training_id": training_id,
-            "item_type": training.item_type,
-            "sequence_completed": sequence_completed,
-            "sequence_completion_requested": sequence_completion_requested,
-            "raw_answer": raw_answer,
-        }, flush=True)
-
         # =========================
         # 写作题判题必须使用 GET 出题时生成的 write_issue_id。
         # 同一个 TrainingItem 会随机生成不同方向，不能只凭 training_id 或前端方向判题。

@@ -4678,6 +4678,7 @@ function renderPayload(payload) {
     console.log("renderPayload:start", payload);
 
     state.current = payload;
+    state.startedAt = Date.now();
     console.log("renderPayload:state.current done");
 
     hideEmptyMode();

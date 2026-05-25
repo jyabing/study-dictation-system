@@ -1112,6 +1112,7 @@
         const TYPE_MAP = {
             listen: [
                 ["listen_asr", "听音识别"],
+                ["listen_sequence", "顺序听说"],
                 ["listen_choice_single", "听力单选"],
                 ["listen_choice_multi", "听力多选"],
             ],
@@ -1234,6 +1235,7 @@
             const isListenOrSpeak = itemType === "listen_asr" || itemType === "speak_read";
             const isSpeakRead = itemType === "speak_read";
             const isSpeakSequence = itemType === "speak_sequence";
+            const isSequenceItem = itemType === "speak_sequence" || itemType === "listen_sequence";
             const isReadChoice = isChoiceItemType(itemType);
             const isWriteText = itemType === "write_text";
 
@@ -1286,7 +1288,7 @@
 
             // 顺序语块区：只在顺序跟读题显示
             if (sequenceChunksSection) {
-                sequenceChunksSection.classList.toggle("hidden", !isSpeakSequence);
+                sequenceChunksSection.classList.toggle("hidden", !isSequenceItem);
             }
 
             // 听说识别配置区

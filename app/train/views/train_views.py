@@ -6196,6 +6196,7 @@ def lesson_question_list(request, lesson_id):
 
     qtype_to_skill = {
         "listen_asr": "listen",
+        "listen_sequence": "listen",
         "speak_read": "speak",
         "speak_sequence": "speak",
         "read_cloze": "read",
@@ -6386,6 +6387,7 @@ def lesson_question_list(request, lesson_id):
             {"value": "speak_read", "label": "speak_read"},
             {"value": "speak_sequence", "label": "speak_sequence"},
             {"value": "listen_asr", "label": "listen_asr"},
+            {"value": "listen_sequence", "label": "listen_sequence"},
             {"value": "read_choice", "label": "read_choice"},
             {"value": "write", "label": "write"},
         ],
@@ -6939,11 +6941,11 @@ def builder_save(request):
                 "ok": False,
                 "error": "说-看字朗读题需要填写文字题干或上传题干图片"
             }, status=400)
-    elif item_type == "speak_sequence":
+    elif item_type in {"speak_sequence", "listen_sequence"}:
         if not has_prompt_text:
-            return JsonResponse({"ok": False, "error": "顺序跟读题需要填写完整句"}, status=400)
+            return JsonResponse({"ok": False, "error": "顺序语块题需要填写完整句"}, status=400)
         if not sequence_chunks:
-            return JsonResponse({"ok": False, "error": "顺序跟读题至少需要填写一个语块"}, status=400)
+            return JsonResponse({"ok": False, "error": "顺序语块题至少需要填写一个语块"}, status=400)
     elif not has_prompt_text:
         return JsonResponse({"ok": False, "error": "题干不能为空"}, status=400)
 
@@ -6955,7 +6957,7 @@ def builder_save(request):
     )
 
     # 听 / 说：如果没单独填 answer_text，默认用 prompt_text 当识别比对文本
-    if item_type in {"listen_asr", "speak_read", "speak_sequence"} and not answer_text:
+    if item_type in {"listen_asr", "listen_sequence", "speak_read", "speak_sequence"} and not answer_text:
         answer_text = prompt_text
 
     # 先创建 question，供后续各题型分支统一使用
@@ -7220,7 +7222,7 @@ def builder_save(request):
     # 这一步先保存素材和配置
     # 下一步再补训练页渲染与判题
     # =========================
-    if item_type in {"listen_asr", "speak_read", "speak_sequence"}:
+    if item_type in {"listen_asr", "listen_sequence", "speak_read", "speak_sequence"}:
         listen_speak_instruction_text = instruction_text
 
         if not listen_speak_instruction_text and item_type == "listen_asr":
@@ -7250,7 +7252,7 @@ def builder_save(request):
             prompt_image_url=prompt_image_url if item_type == "speak_read" else "",
             answer_audio_file=uploaded_answer_audio_file,
             answer_use_tts=answer_use_tts,
-            sequence_chunks=sequence_chunks if item_type == "speak_sequence" else []
+            sequence_chunks=sequence_chunks if item_type in {"speak_sequence", "listen_sequence"} else []
         )
         created_items.append(training.id)
 

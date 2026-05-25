@@ -2881,7 +2881,7 @@ function renderSequenceStep() {
     }
 }
 
-function advanceSequenceStep() {
+async function advanceSequenceStep() {
     if (state.inputMode !== "sequence") {
         return false;
     }
@@ -2911,7 +2911,8 @@ function advanceSequenceStep() {
         return true;
     }
 
-    return false;
+    await submitSequenceCompletion();
+    return true;
 }
 
 function showSequenceWorkspace(payload) {
@@ -5035,6 +5036,84 @@ async function manualAdjustMemory(action) {
     }
 }
 
+async function submitSequenceCompletion() {
+    if (state.loading) {
+        return;
+    }
+
+    const trainingId = trainingIdInput.value.trim();
+
+    if (!trainingId) {
+        setFeedback("当前顺序跟读题还没有准备好，请重新加载。", "warning");
+        return;
+    }
+
+    setLoading(true);
+    clearFeedback();
+
+    const duration = Math.max(0, Date.now() - state.startedAt);
+    const formData = new URLSearchParams();
+
+    formData.append("training_id", trainingId);
+    formData.append("answer", "__sequence_recording_completed__");
+    formData.append("duration", String(duration));
+    formData.append("used_hint", state.usedHint ? "1" : "0");
+    formData.append("is_empty_submission", "0");
+    formData.append("retry_count", String(state.retryCount));
+    formData.append("sequence_completed", "1");
+
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                "X-CSRFToken": getCookie("csrftoken"),
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            body: formData.toString(),
+            credentials: "same-origin",
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.ok === false) {
+            setFeedback(data.result || data.error || "顺序跟读完成记录失败，请重试。", "wrong");
+            return;
+        }
+
+        setFeedback(data.result || "顺序跟读完成，已记录本轮训练。", "correct");
+
+        applyCyclePanel({
+            ...data,
+            ...(data.cycle_after || {})
+        });
+
+        updateResultImpact(data);
+        updateMemoryStepTrack({
+            ...data,
+            ...(data.cycle_after || {})
+        });
+        updateSessionProgress(data);
+
+        clearSequencePlayback();
+        resetSpeechRecognitionState();
+
+        if (nextBtn) {
+            nextBtn.disabled = true;
+            nextBtn.textContent = "正在进入下一题...";
+        }
+
+        window.setTimeout(function () {
+            loadCurrentQuestion();
+        }, 600);
+    } catch (error) {
+        console.error("submitSequenceCompletion failed:", error);
+        setFeedback("顺序跟读完成记录失败，请检查网络或刷新页面后重试。", "wrong");
+    } finally {
+        setLoading(false);
+    }
+}
+
 async function submitAnswer(event) {
     event.preventDefault();
 
@@ -5313,8 +5392,8 @@ if (speechStopBtn) {
     });
 }
 
-nextBtn.addEventListener("click", () => {
-    if (state.inputMode === "sequence" && advanceSequenceStep()) {
+nextBtn.addEventListener("click", async () => {
+    if (state.inputMode === "sequence" && await advanceSequenceStep()) {
         return;
     }
 

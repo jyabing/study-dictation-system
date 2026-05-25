@@ -5570,6 +5570,7 @@ def _train_api_by_scope(request, scope, obj):
         used_hint = request.POST.get("used_hint") == "1"
         retry_count = int(request.POST.get("retry_count", 0) or 0)
         is_empty_submission = request.POST.get("is_empty_submission") == "1"
+        sequence_completed = request.POST.get("sequence_completed") == "1"
 
         # -------------------------
         # 错词复盘题
@@ -5778,6 +5779,11 @@ def _train_api_by_scope(request, scope, obj):
             id=training_id
         )
 
+        sequence_completion_requested = (
+            training.item_type == "speak_sequence"
+            and sequence_completed
+        )
+
         # =========================
         # 写作题判题必须使用 GET 出题时生成的 write_issue_id。
         # 同一个 TrainingItem 会随机生成不同方向，不能只凭 training_id 或前端方向判题。
@@ -5834,7 +5840,7 @@ def _train_api_by_scope(request, scope, obj):
                 "final_write_direction": write_direction,
             }, flush=True)
 
-        if is_empty_submission:
+        if is_empty_submission and not sequence_completion_requested:
             judge = judge_training_answer(
                 training,
                 "",
@@ -5869,18 +5875,36 @@ def _train_api_by_scope(request, scope, obj):
 
         _session_clear_empty_submit_stage(request)
 
-        judge = judge_training_answer(
-            training,
-            raw_answer,
-            write_direction=write_direction,
-        )
+        if sequence_completion_requested:
+            raw_answer = raw_answer or "__sequence_recording_completed__"
 
-        print("DEBUG WRITE FINAL JUDGE:", {
-            "training_id": training_id,
-            "raw_answer": raw_answer,
-            "final_write_direction": write_direction,
-            "judge": judge,
-        }, flush=True)
+            display_answer = (
+                (getattr(training, "target_answer", "") or "").strip()
+                or (getattr(training, "source_text", "") or "").strip()
+                or (getattr(training.question, "answer_text", "") or "").strip()
+                or "__sequence_recording_completed__"
+            )
+
+            judge = {
+                "is_correct": True,
+                "display_answer": display_answer,
+                "correct_answers": [display_answer] if display_answer else [],
+                "error_tip": "",
+                "diff_segments": [],
+            }
+        else:
+            judge = judge_training_answer(
+                training,
+                raw_answer,
+                write_direction=write_direction,
+            )
+
+            print("DEBUG WRITE FINAL JUDGE:", {
+                "training_id": training_id,
+                "raw_answer": raw_answer,
+                "final_write_direction": write_direction,
+                "judge": judge,
+            }, flush=True)
 
         is_correct = judge["is_correct"]
 

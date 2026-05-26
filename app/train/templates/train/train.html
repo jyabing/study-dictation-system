@@ -2658,7 +2658,7 @@ function getQuestionType(payload) {
 }
 
 function isSpeechQuestionType(qType) {
-    return qType === "listen_asr" || qType === "speak_read" || qType === "speak_sequence";
+    return qType === "listen_asr" || qType === "speak_read" || qType === "speak_sequence" || qType === "listen_sequence";
 }
 
 function resetSpeechUi() {
@@ -3906,7 +3906,7 @@ function applyQuestionInputMode(payload) {
         "en-US"
     );
 
-    if (qType === "speak_sequence") {
+    if (qType === "speak_sequence" || qType === "listen_sequence") {
         state.recognitionLang = inferSequenceAsrLang(payload, state.recognitionLang);
     }
 
@@ -4001,8 +4001,8 @@ function applyQuestionInputMode(payload) {
         return;
     }
 
-    if (qType === "speak_sequence") {
-        questionTypeBadge.textContent = "类型：speak_sequence";
+    if (qType === "speak_sequence" || qType === "listen_sequence") {
+        questionTypeBadge.textContent = qType === "listen_sequence" ? "类型：listen_sequence" : "类型：speak_sequence";
         renderQuestionMarkedText(questionPrompt, questionText);
 
         if (extra) {

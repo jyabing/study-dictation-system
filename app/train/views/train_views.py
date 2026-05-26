@@ -5780,7 +5780,7 @@ def _train_api_by_scope(request, scope, obj):
         )
 
         sequence_completion_requested = (
-            training.item_type == "speak_sequence"
+            training.item_type in {"speak_sequence", "listen_sequence"}
             and sequence_completed
         )
 

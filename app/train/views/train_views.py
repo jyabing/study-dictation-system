@@ -1817,6 +1817,47 @@ def build_training_payload(training, memory=None, request=None):
     })
 
     # =========================
+    # 顺序听说：为每一步累计语块生成 TTS 音频
+    # =========================
+    sequence_steps = []
+
+    if training.item_type == "listen_sequence":
+        raw_sequence_chunks = training.sequence_chunks or []
+
+        clean_sequence_chunks = []
+        if isinstance(raw_sequence_chunks, list):
+            for chunk in raw_sequence_chunks:
+                if isinstance(chunk, dict):
+                    text = str(chunk.get("text") or "").strip()
+                else:
+                    text = str(chunk or "").strip()
+
+                if text:
+                    clean_sequence_chunks.append(text)
+
+        def _join_sequence_parts(parts):
+            has_ascii_word = any(re.search(r"[A-Za-z]", part or "") for part in parts)
+            return (" " if has_ascii_word else "").join(parts)
+
+        for index in range(len(clean_sequence_chunks)):
+            step_text = _join_sequence_parts(clean_sequence_chunks[:index + 1]).strip()
+
+            if not step_text:
+                continue
+
+            step_audio_url = _build_tts_audio(
+                text=step_text,
+                lang=answer_tts_lang,
+                prefix=f"listen_sequence_q{training.question_id}_s{index + 1}"
+            )
+
+            sequence_steps.append({
+                "index": index,
+                "text": step_text,
+                "audio_url": step_audio_url or "",
+            })
+
+    # =========================
     # 说 / 看字朗读：题干图片
     # 优先级：
     # 1. TrainingItem.prompt_image_file（人工上传）
@@ -2179,6 +2220,7 @@ def build_training_payload(training, memory=None, request=None):
         "prompt_tts_lang": prompt_tts_lang,
         "answer_tts_lang": answer_tts_lang,
         "allow_partial_match": bool(asr_cfg.get("allow_partial_match", True)),
+        "sequence_steps": sequence_steps,
     }
 
     return payload

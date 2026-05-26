@@ -6963,9 +6963,12 @@ def builder_save(request):
             except (TypeError, ValueError):
                 order = index + 1
 
+            image_url = str(chunk.get("image_url") or "").strip()
+
             sequence_chunks.append({
                 "order": order,
                 "text": text,
+                "image_url": image_url,
             })
 
     if not lesson_id:

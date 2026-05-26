@@ -712,7 +712,7 @@
                         <label for="sequence_chunks_text">语块列表</label>
                         <textarea
                             id="sequence_chunks_text"
-                            placeholder="每行一个语块，例如：&#10;and saw&#10;a picture of you&#10;with your kitty cat"
+                            placeholder="每行一个基础语块；可选图片 URL 用 | 分隔，例如：&#10;気分を | https://example.com/kibun.png&#10;味わえ | https://example.com/ajiwae.png&#10;ちゃった"
                             oninput="updatePreview();"
                         ></textarea>
                     </div>
@@ -1966,9 +1966,15 @@
             const sequenceChunks = sequenceChunksText
                 .split(/\r?\n/)
                 .map(function (line, index) {
+                    const rawLine = line.trim();
+                    const parts = rawLine.split("|");
+                    const text = String(parts[0] || "").trim();
+                    const imageUrl = String(parts.slice(1).join("|") || "").trim();
+
                     return {
                         order: index + 1,
-                        text: line.trim()
+                        text: text,
+                        image_url: imageUrl
                     };
                 })
                 .filter(function (chunk) {

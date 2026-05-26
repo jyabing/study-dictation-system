@@ -2089,6 +2089,7 @@ const state = {
     recognizedText: "",
 
     sequenceItems: [],
+    sequenceSteps: [],
     sequenceIndex: 0,
     sequenceStepStarted: false,
     sequenceStepRecorded: false,
@@ -2839,17 +2840,29 @@ function renderSequenceStep() {
     }
 
     const safeIndex = Math.max(0, Math.min(state.sequenceIndex, items.length - 1));
+    const qType = getQuestionType(state.current || {});
+    const isListenSequence = qType === "listen_sequence";
     const currentText = escapeHtml(items[safeIndex] || "");
     const shouldShowAsrText = safeIndex > 0;
+
+    const steps = Array.isArray(state.sequenceSteps)
+        ? state.sequenceSteps
+        : [];
+    const currentStep = steps[safeIndex] || {};
+    const currentAudioUrl = String(currentStep.audio_url || "").trim();
 
     if (speechWorkspace) {
         speechWorkspace.style.display = "flex";
     }
 
     if (speechHint) {
-        speechHint.textContent = shouldShowAsrText
-            ? `请点击开始录音，跟读当前步骤。当前识别语言：${state.recognitionLang || "未设置"}。识别结果只用于确认发音，不会自动判题。`
-            : `请点击开始录音，跟读当前短语块。当前识别语言：${state.recognitionLang || "未设置"}。本步太短，录音完成后不显示 ASR 文本。`;
+        if (isListenSequence) {
+            speechHint.textContent = "请先播放当前步骤音频，听完后模仿录音。识别结果只作弱参考，主要以回听为准。";
+        } else {
+            speechHint.textContent = shouldShowAsrText
+                ? `请点击开始录音，跟读当前步骤。当前识别语言：${state.recognitionLang || "未设置"}。识别结果只用于确认发音，不会自动判题。`
+                : `请点击开始录音，跟读当前短语块。当前识别语言：${state.recognitionLang || "未设置"}。本步太短，录音完成后不显示 ASR 文本。`;
+        }
     }
 
     if (!shouldShowAsrText) {
@@ -2861,9 +2874,25 @@ function renderSequenceStep() {
         ? "本步录音已完成。确认后可以进入下一步。"
         : "请先点击下方“开始录音”，完成一次真实跟读。录音完成前不能进入下一步。";
 
+    const sequenceStepBody = isListenSequence
+        ? `
+            <div class="sequence-section-title">请听当前语块音频后模仿</div>
+            <div class="sequence-current-item">
+                <div class="muted-text">当前内容已隐藏，请根据音频模仿说出。</div>
+                ${
+                    currentAudioUrl
+                        ? `<audio class="audio-player" controls src="${escapeHtml(currentAudioUrl)}"></audio>`
+                        : `<div class="speech-error" style="display:block;">当前步骤没有可播放音频。</div>`
+                }
+            </div>
+        `
+        : `
+            <div class="sequence-section-title">请跟读当前语块组合</div>
+            <div class="sequence-current-item">${currentText}</div>
+        `;
+
     sequenceChunkList.innerHTML = `
-        <div class="sequence-section-title">请跟读当前语块组合</div>
-        <div class="sequence-current-item">${currentText}</div>
+        ${sequenceStepBody}
         <div class="muted-text" style="margin-top:8px;">
             ${actionHint}
         </div>
@@ -2960,9 +2989,24 @@ function showSequenceWorkspace(payload) {
         return parts.join(hasAsciiWord ? " " : "");
     }
 
-    state.sequenceItems = cleanChunks.map(function (_chunk, index) {
-        return joinSequenceChunks(cleanChunks.slice(0, index + 1));
-    });
+    const sequenceSteps = Array.isArray(payload.sequence_steps)
+        ? payload.sequence_steps
+        : [];
+
+    state.sequenceSteps = sequenceSteps;
+
+    if (getQuestionType(payload) === "listen_sequence" && sequenceSteps.length) {
+        state.sequenceItems = sequenceSteps.map(function (step) {
+            return String(step.text || "").trim();
+        }).filter(function (text) {
+            return text;
+        });
+    } else {
+        state.sequenceItems = cleanChunks.map(function (_chunk, index) {
+            return joinSequenceChunks(cleanChunks.slice(0, index + 1));
+        });
+    }
+
     state.sequenceIndex = 0;
     state.sequenceStepStarted = false;
     state.sequenceStepRecorded = false;

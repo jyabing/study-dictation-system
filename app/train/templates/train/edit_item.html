@@ -1703,6 +1703,9 @@ function renderEditSequenceChunkImageInputs() {
         const text = String(parts[0] || "").trim();
         const imageUrl = String(parts.slice(1).join("|") || "").trim();
 
+        const inputName = `sequence_chunk_image_file_${index}`;
+        const previewId = `edit_sequence_chunk_image_preview_${index}`;
+
         const row = document.createElement("div");
         row.className = "field-group full";
         row.style.marginTop = "10px";
@@ -1716,13 +1719,51 @@ function renderEditSequenceChunkImageInputs() {
             }
             <input
                 type="file"
-                name="sequence_chunk_image_file_${index}"
+                name="${inputName}"
                 accept="image/*"
                 class="input"
+                onchange="updateEditSequenceChunkImagePreview(${index});"
             >
+            <div id="${previewId}" class="field-help" style="margin-top:8px;"></div>
         `;
         wrap.appendChild(row);
+
+        if (imageUrl) {
+            showEditSequenceChunkImagePreview(index, imageUrl);
+        }
     });
+}
+
+function showEditSequenceChunkImagePreview(index, imageUrl) {
+    const preview = document.getElementById("edit_sequence_chunk_image_preview_" + index);
+
+    if (!preview) {
+        return;
+    }
+
+    if (!imageUrl) {
+        preview.innerHTML = "";
+        return;
+    }
+
+    preview.innerHTML = `
+        <img
+            src="${escapeHtml(imageUrl)}"
+            alt="语块图片预览"
+            style="display:block; max-width:180px; max-height:140px; border:1px solid #dbeafe; border-radius:12px; background:#fff; object-fit:contain;"
+        >
+    `;
+}
+
+function updateEditSequenceChunkImagePreview(index) {
+    const input = document.querySelector(`input[name="sequence_chunk_image_file_${index}"]`);
+
+    if (!input || !input.files || !input.files.length) {
+        return;
+    }
+
+    const previewUrl = URL.createObjectURL(input.files[0]);
+    showEditSequenceChunkImagePreview(index, previewUrl);
 }
 
 function refreshListenSpeakOnlyBlocks() {

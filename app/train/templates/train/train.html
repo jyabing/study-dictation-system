@@ -2850,6 +2850,7 @@ function renderSequenceStep() {
         : [];
     const currentStep = steps[safeIndex] || {};
     const currentAudioUrl = String(currentStep.audio_url || "").trim();
+    const currentImageUrl = String(currentStep.image_url || "").trim();
 
     if (speechWorkspace) {
         speechWorkspace.style.display = "flex";
@@ -2888,7 +2889,14 @@ function renderSequenceStep() {
         `
         : `
             <div class="sequence-section-title">请跟读当前语块组合</div>
-            <div class="sequence-current-item">${currentText}</div>
+            <div class="sequence-current-item">
+                <div>${currentText}</div>
+                ${
+                    currentImageUrl
+                        ? `<img src="${escapeHtml(currentImageUrl)}" alt="语块提示图片" style="display:block; max-width:100%; margin-top:12px; border-radius:12px;">`
+                        : ""
+                }
+            </div>
         `;
 
     sequenceChunkList.innerHTML = `
@@ -2993,7 +3001,15 @@ function showSequenceWorkspace(payload) {
         ? payload.sequence_steps
         : [];
 
-    state.sequenceSteps = sequenceSteps;
+    state.sequenceSteps = sequenceSteps.length
+        ? sequenceSteps
+        : cleanChunks.map(function (text, index) {
+            const rawChunk = chunks[index] || {};
+            return {
+                text: joinSequenceChunks(cleanChunks.slice(0, index + 1)),
+                image_url: String(rawChunk.image_url || "").trim()
+            };
+        });
 
     if (getQuestionType(payload) === "listen_sequence" && sequenceSteps.length) {
         state.sequenceItems = sequenceSteps.map(function (step) {

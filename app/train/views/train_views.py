@@ -6964,6 +6964,18 @@ def builder_save(request):
                 order = index + 1
 
             image_url = str(chunk.get("image_url") or "").strip()
+            image_upload_key = str(chunk.get("image_upload_key") or "").strip()
+
+            if image_upload_key:
+                uploaded_sequence_image = request.FILES.get(image_upload_key)
+
+                if uploaded_sequence_image:
+                    safe_name = get_valid_filename(uploaded_sequence_image.name or "sequence_chunk_image")
+                    saved_path = default_storage.save(
+                        f"images/sequence/{uuid.uuid4().hex}_{safe_name}",
+                        uploaded_sequence_image
+                    )
+                    image_url = default_storage.url(saved_path)
 
             sequence_chunks.append({
                 "order": order,

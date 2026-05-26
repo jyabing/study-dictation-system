@@ -713,8 +713,16 @@
                         <textarea
                             id="sequence_chunks_text"
                             placeholder="每行一个基础语块；可选图片 URL 用 | 分隔，例如：&#10;気分を | https://example.com/kibun.png&#10;味わえ | https://example.com/ajiwae.png&#10;ちゃった"
-                            oninput="updatePreview();"
+                            oninput="renderSequenceChunkImageInputs(); updatePreview();"
                         ></textarea>
+                    </div>
+
+                    <div class="field" style="margin-top:12px;">
+                        <label>语块图片上传（仅 speak_sequence 使用）</label>
+                        <div id="sequence_chunk_image_inputs" class="choice-list"></div>
+                        <div class="section-sub" style="margin-top:6px; margin-bottom:0;">
+                            每行语块对应一个图片上传框。上传图片会优先使用上传文件；没有上传时才使用“语块 | 图片URL”里的 URL。
+                        </div>
                     </div>
                 </div>
 
@@ -1286,6 +1294,8 @@
                 writeFieldsSection.classList.toggle("hidden", !isWriteText);
             }
 
+            renderSequenceChunkImageInputs();
+
             // 顺序语块区：只在顺序跟读题显示
             if (sequenceChunksSection) {
                 sequenceChunksSection.classList.toggle("hidden", !isSequenceItem);
@@ -1321,6 +1331,61 @@
             answerUseTtsWrap.classList.toggle("hidden", !isListenOrSpeak);
 
             updatePreview();
+        }
+
+        function renderSequenceChunkImageInputs() {
+            const wrap = document.getElementById("sequence_chunk_image_inputs");
+            const textarea = document.getElementById("sequence_chunks_text");
+            const itemType = document.getElementById("item_type")
+                ? document.getElementById("item_type").value
+                : "";
+
+            if (!wrap || !textarea) {
+                return;
+            }
+
+            wrap.innerHTML = "";
+
+            if (itemType !== "speak_sequence") {
+                wrap.innerHTML = '<div class="section-sub">当前题型不是 speak_sequence，不使用语块图片上传。</div>';
+                return;
+            }
+
+            const lines = textarea.value
+                .split(/\r?\n/)
+                .map(function (line) {
+                    return line.trim();
+                })
+                .filter(function (line) {
+                    return line;
+                });
+
+            if (!lines.length) {
+                wrap.innerHTML = '<div class="section-sub">请先填写语块列表。</div>';
+                return;
+            }
+
+            lines.forEach(function (line, index) {
+                const text = String(line.split("|")[0] || "").trim();
+                const row = document.createElement("div");
+                row.className = "choice-row";
+                row.innerHTML = `
+                    <div>
+                        <label>语块 ${index + 1}</label>
+                        <div class="section-sub">${escapeHtml(text || "未填写文本")}</div>
+                    </div>
+                    <div>
+                        <label>图片文件上传</label>
+                        <input
+                            id="sequence_chunk_image_file_${index}"
+                            type="file"
+                            accept="image/*"
+                            onchange="updatePreview();"
+                        >
+                    </div>
+                `;
+                wrap.appendChild(row);
+            });
         }
 
         function addChoice() {
@@ -1981,6 +2046,14 @@
                     return chunk.text;
                 });
 
+            sequenceChunks.forEach(function (chunk, index) {
+                const imageFileInput = document.getElementById("sequence_chunk_image_file_" + index);
+
+                if (imageFileInput && imageFileInput.files && imageFileInput.files.length) {
+                    chunk.image_upload_key = "sequence_chunk_image_file_" + index;
+                }
+            });
+
             const payload = {
                 lesson_id: document.getElementById("lesson").value,
                 skill: skill,
@@ -2045,6 +2118,16 @@
                 formData.append("answer_audio_file", selectedAnswerAudioFile);
             }
 
+            sequenceChunks.forEach(function (chunk) {
+                if (chunk.image_upload_key) {
+                    const imageFileInput = document.getElementById(chunk.image_upload_key);
+
+                    if (imageFileInput && imageFileInput.files && imageFileInput.files.length) {
+                        formData.append(chunk.image_upload_key, imageFileInput.files[0]);
+                    }
+                }
+            });
+
             choicesPayload.forEach(function (choice) {
                 if (choice.image_upload_key) {
                     const imageFileInput = document.getElementById(choice.image_upload_key);
@@ -2101,6 +2184,7 @@
         syncTypeOptions();
         toggleSections();
         renderChoices();
+        renderSequenceChunkImageInputs();
         updatePreview();
     </script>
 </body>

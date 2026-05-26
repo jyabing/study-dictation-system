@@ -7452,7 +7452,14 @@ def question_edit(request, question_id):
                 text = str(chunk or "").strip()
 
             if text:
-                lines.append(text)
+                image_url = ""
+                if isinstance(chunk, dict):
+                    image_url = str(chunk.get("image_url") or "").strip()
+
+                if image_url:
+                    lines.append(f"{text} | {image_url}")
+                else:
+                    lines.append(text)
 
         return "\n".join(lines)
 
@@ -7626,13 +7633,37 @@ def question_edit(request, question_id):
                     if line.strip()
                 ]
 
-                training.sequence_chunks = [
-                    {
+                sequence_chunks = []
+
+                for index, line in enumerate(sequence_lines):
+                    parts = line.split("|")
+                    text = str(parts[0] or "").strip()
+                    image_url = str("|".join(parts[1:]) or "").strip()
+
+                    if not text:
+                        continue
+
+                    uploaded_sequence_image = request.FILES.get(
+                        f"sequence_chunk_image_file_{index}"
+                    )
+
+                    if uploaded_sequence_image:
+                        safe_name = get_valid_filename(
+                            uploaded_sequence_image.name or "sequence_chunk_image"
+                        )
+                        saved_path = default_storage.save(
+                            f"images/sequence/{uuid.uuid4().hex}_{safe_name}",
+                            uploaded_sequence_image
+                        )
+                        image_url = default_storage.url(saved_path)
+
+                    sequence_chunks.append({
                         "order": index + 1,
                         "text": text,
-                    }
-                    for index, text in enumerate(sequence_lines)
-                ]
+                        "image_url": image_url,
+                    })
+
+                training.sequence_chunks = sequence_chunks
 
             if training.item_type == "write" and len(write_fields) >= 2:
                 old_choices = training.choices or []

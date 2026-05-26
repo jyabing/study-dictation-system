@@ -374,10 +374,19 @@
                                 <textarea
                                     name="sequence_chunks_text"
                                     class="textarea"
-                                    placeholder="每行一个基础语块，例如：&#10;気分を&#10;味わえ&#10;ちゃった"
+                                    placeholder="每行一个基础语块；可选图片 URL 用 | 分隔，例如：&#10;気分を | /media/images/sequence/xxx.png&#10;味わえ&#10;ちゃった"
+                                    oninput="renderEditSequenceChunkImageInputs();"
                                 >{{ sequence_chunks_text|default:'' }}</textarea>
                                 <div class="field-help">
-                                    这里只填写基础语块，不要填写累计块。系统会自动生成：第 1 块、第 1+2 块、第 1+2+3 块。
+                                    这里只填写基础语块，不要填写累计块。系统会自动生成：第 1 块、第 1+2 块、第 1+2+3 块。图片 URL 可写在 | 后面。
+                                </div>
+
+                                <div style="margin-top:12px;">
+                                    <div class="field-label">语块图片重新上传（仅 speak_sequence 使用）</div>
+                                    <div id="edit-sequence-chunk-image-inputs"></div>
+                                    <div class="field-help">
+                                        上传新图片后，会覆盖该语块当前的图片 URL；不上传则保留文本框里 | 后面的 URL。
+                                    </div>
                                 </div>
                             </div>
 
@@ -1659,6 +1668,63 @@ function isSequenceQtype(value) {
     return value === "speak_sequence" || value === "listen_sequence";
 }
 
+function renderEditSequenceChunkImageInputs() {
+    const wrap = document.getElementById("edit-sequence-chunk-image-inputs");
+    const textarea = document.querySelector('textarea[name="sequence_chunks_text"]');
+    const qtypeSelect = document.querySelector('select[name="qtype"]');
+
+    if (!wrap || !textarea || !qtypeSelect) {
+        return;
+    }
+
+    wrap.innerHTML = "";
+
+    if (qtypeSelect.value !== "speak_sequence") {
+        wrap.innerHTML = '<div class="field-help">当前题型不是 speak_sequence，不使用语块图片上传。</div>';
+        return;
+    }
+
+    const lines = textarea.value
+        .split(/\r?\n/)
+        .map(function (line) {
+            return line.trim();
+        })
+        .filter(function (line) {
+            return line;
+        });
+
+    if (!lines.length) {
+        wrap.innerHTML = '<div class="field-help">请先填写顺序语块。</div>';
+        return;
+    }
+
+    lines.forEach(function (line, index) {
+        const parts = line.split("|");
+        const text = String(parts[0] || "").trim();
+        const imageUrl = String(parts.slice(1).join("|") || "").trim();
+
+        const row = document.createElement("div");
+        row.className = "field-group full";
+        row.style.marginTop = "10px";
+        row.innerHTML = `
+            <div class="field-label">语块 ${index + 1}</div>
+            <div class="field-help">${escapeHtml(text || "未填写文本")}</div>
+            ${
+                imageUrl
+                    ? `<div class="field-help">当前图片：${escapeHtml(imageUrl)}</div>`
+                    : `<div class="field-help">当前没有图片 URL。</div>`
+            }
+            <input
+                type="file"
+                name="sequence_chunk_image_file_${index}"
+                accept="image/*"
+                class="input"
+            >
+        `;
+        wrap.appendChild(row);
+    });
+}
+
 function refreshListenSpeakOnlyBlocks() {
     if (!qtypeSelect) {
         return;
@@ -1682,6 +1748,8 @@ function refreshListenSpeakOnlyBlocks() {
             field.disabled = !shouldShowSequence;
         });
     });
+
+    renderEditSequenceChunkImageInputs();
 }
 
 if (qtypeSelect) {
@@ -1689,6 +1757,7 @@ if (qtypeSelect) {
 }
 
 refreshListenSpeakOnlyBlocks();
+renderEditSequenceChunkImageInputs();
 
 </script>
 {% endblock %}

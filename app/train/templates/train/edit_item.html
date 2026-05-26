@@ -89,6 +89,7 @@
                                     <option value="read_cloze" {% if display_qtype == "read_cloze" %}selected{% endif %}>read_cloze</option>
                                     <option value="read_choice" {% if display_qtype == "read_choice" %}selected{% endif %}>read_choice</option>
                                     <option value="listen_asr" {% if display_qtype == "listen_asr" %}selected{% endif %}>listen_asr</option>
+                                    <option value="listen_sequence" {% if display_qtype == "listen_sequence" %}selected{% endif %}>listen_sequence</option>
                                     <option value="speak_read" {% if display_qtype == "speak_read" %}selected{% endif %}>speak_read</option>
                                     <option value="speak_sequence" {% if display_qtype == "speak_sequence" %}selected{% endif %}>speak_sequence</option>
                                     <option value="write" {% if display_qtype == "write" %}selected{% endif %}>write</option>
@@ -1629,7 +1630,12 @@ const qtypeSelect = document.querySelector('select[name="qtype"]');
 const listenSpeakOnlyBlocks = document.querySelectorAll(".listen-speak-only");
 
 function isListenOrSpeakQtype(value) {
-    return value === "listen_asr" || value === "speak_read";
+    return (
+        value === "listen_asr"
+        || value === "listen_sequence"
+        || value === "speak_read"
+        || value === "speak_sequence"
+    );
 }
 
 function refreshListenSpeakOnlyBlocks() {

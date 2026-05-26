@@ -366,6 +366,22 @@
                             {% endif %}
 
                             <div
+                                id="sequence-chunks-edit-block"
+                                class="field-group full sequence-only"
+                                {% if display_qtype != "speak_sequence" and display_qtype != "listen_sequence" %}style="display:none;"{% endif %}
+                            >
+                                <div class="field-label">顺序语块</div>
+                                <textarea
+                                    name="sequence_chunks_text"
+                                    class="textarea"
+                                    placeholder="每行一个基础语块，例如：&#10;気分を&#10;味わえ&#10;ちゃった"
+                                >{{ sequence_chunks_text|default:'' }}</textarea>
+                                <div class="field-help">
+                                    这里只填写基础语块，不要填写累计块。系统会自动生成：第 1 块、第 1+2 块、第 1+2+3 块。
+                                </div>
+                            </div>
+
+                            <div
                                 id="accepted-answers-block"
                                 class="field-group full listen-speak-only"
                                 {% if display_qtype != "listen_asr" and display_qtype != "speak_read" %}style="display:none;"{% endif %}
@@ -1628,6 +1644,7 @@ syncQuestionAnswerFields();
 
 const qtypeSelect = document.querySelector('select[name="qtype"]');
 const listenSpeakOnlyBlocks = document.querySelectorAll(".listen-speak-only");
+const sequenceOnlyBlocks = document.querySelectorAll(".sequence-only");
 
 function isListenOrSpeakQtype(value) {
     return (
@@ -1638,18 +1655,31 @@ function isListenOrSpeakQtype(value) {
     );
 }
 
+function isSequenceQtype(value) {
+    return value === "speak_sequence" || value === "listen_sequence";
+}
+
 function refreshListenSpeakOnlyBlocks() {
     if (!qtypeSelect) {
         return;
     }
 
     const shouldShow = isListenOrSpeakQtype(qtypeSelect.value);
+    const shouldShowSequence = isSequenceQtype(qtypeSelect.value);
 
     listenSpeakOnlyBlocks.forEach(function (block) {
         block.style.display = shouldShow ? "" : "none";
 
         block.querySelectorAll("input, textarea, select").forEach(function (field) {
             field.disabled = !shouldShow;
+        });
+    });
+
+    sequenceOnlyBlocks.forEach(function (block) {
+        block.style.display = shouldShowSequence ? "" : "none";
+
+        block.querySelectorAll("input, textarea, select").forEach(function (field) {
+            field.disabled = !shouldShowSequence;
         });
     });
 }

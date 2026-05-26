@@ -7420,6 +7420,27 @@ def question_edit(request, question_id):
             elif write_field_keys & {"question_text", "answer_text"}:
                 write_structure = "qa_pair"
 
+    def _sequence_chunks_to_text(current_training):
+        if not current_training:
+            return ""
+
+        raw_chunks = current_training.sequence_chunks or []
+
+        if not isinstance(raw_chunks, list):
+            return ""
+
+        lines = []
+        for chunk in raw_chunks:
+            if isinstance(chunk, dict):
+                text = str(chunk.get("text") or "").strip()
+            else:
+                text = str(chunk or "").strip()
+
+            if text:
+                lines.append(text)
+
+        return "\n".join(lines)
+
     if request.method == "POST":
         instruction_text = (request.POST.get("instruction_text") or "").strip()
 
@@ -7507,6 +7528,7 @@ def question_edit(request, question_id):
         prompt_image_url = (request.POST.get("prompt_image_url") or "").strip()
 
         accepted_answers_text = (request.POST.get("accepted_answers_text") or "").strip()
+        sequence_chunks_text = (request.POST.get("sequence_chunks_text") or "").strip()
 
         accepted_answers = [
             line.strip()
@@ -7560,6 +7582,7 @@ def question_edit(request, question_id):
                 "choices_json": json.dumps(training.choices or [], ensure_ascii=False) if training else "[]",
                 "cloze_answers_text": "\n".join(training.cloze_answers or []) if training and training.cloze_answers else "",
                 "accepted_answers_text": "\n".join(training.accepted_answers or []) if training and training.accepted_answers else "",
+                "sequence_chunks_text": sequence_chunks_text or _sequence_chunks_to_text(training),
                 "listen_meta": (
                     ((training.choices or [])[0].get("_meta", {}))
                     if training and training.choices and isinstance((training.choices or [])[0], dict)
@@ -7580,6 +7603,21 @@ def question_edit(request, question_id):
             training.instruction_text = instruction_text
             training.source_text = source_text
             training.target_answer = target_answer
+
+            if training.item_type in {"speak_sequence", "listen_sequence"}:
+                sequence_lines = [
+                    line.strip()
+                    for line in sequence_chunks_text.splitlines()
+                    if line.strip()
+                ]
+
+                training.sequence_chunks = [
+                    {
+                        "order": index + 1,
+                        "text": text,
+                    }
+                    for index, text in enumerate(sequence_lines)
+                ]
 
             if training.item_type == "write" and len(write_fields) >= 2:
                 old_choices = training.choices or []
@@ -7619,6 +7657,9 @@ def question_edit(request, question_id):
                 "accepted_answers",
                 "prompt_image_url",
             ]
+
+            if training.item_type in {"speak_sequence", "listen_sequence"}:
+                update_fields.append("sequence_chunks")
 
             if training.item_type == "write" and len(write_fields) >= 2:
                 update_fields.append("choices")

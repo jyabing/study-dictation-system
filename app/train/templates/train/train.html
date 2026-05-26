@@ -4047,7 +4047,12 @@ function applyQuestionInputMode(payload) {
 
     if (qType === "speak_sequence" || qType === "listen_sequence") {
         questionTypeBadge.textContent = qType === "listen_sequence" ? "类型：listen_sequence" : "类型：speak_sequence";
-        renderQuestionMarkedText(questionPrompt, questionText);
+
+        if (qType === "listen_sequence") {
+            questionPrompt.textContent = "听力顺序语块训练：题干已隐藏，请根据音频模仿说出。";
+        } else {
+            renderQuestionMarkedText(questionPrompt, questionText);
+        }
 
         if (extra) {
             questionExtra.style.display = "block";

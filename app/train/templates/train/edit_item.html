@@ -403,11 +403,18 @@
                                                         <div class="field-help">当前没有图片 URL。</div>
                                                     {% endif %}
 
+                                                    <div
+                                                        class="field-help"
+                                                        style="margin-top:10px; font-weight:700; color:#1d4ed8;"
+                                                    >
+                                                        请选择 / 重新上传此语块图片
+                                                    </div>
                                                     <input
                                                         type="file"
                                                         name="sequence_chunk_image_file_{{ chunk.index }}"
                                                         accept="image/*"
                                                         class="input"
+                                                        style="display:block; width:100%; margin-top:6px; padding:10px; border:2px dashed #60a5fa; border-radius:12px; background:#eff6ff;"
                                                         onchange="updateEditSequenceChunkImagePreview({{ chunk.index }});"
                                                     >
                                                     <div

@@ -2851,6 +2851,15 @@ function renderSequenceStep() {
     const currentStep = steps[safeIndex] || {};
     const currentAudioUrl = String(currentStep.audio_url || "").trim();
     const currentImageUrl = String(currentStep.image_url || "").trim();
+    const currentImageUrls = Array.isArray(currentStep.image_urls)
+        ? currentStep.image_urls
+            .map(function (url) {
+                return String(url || "").trim();
+            })
+            .filter(function (url) {
+                return url;
+            })
+        : (currentImageUrl ? [currentImageUrl] : []);
 
     if (speechWorkspace) {
         speechWorkspace.style.display = "flex";
@@ -2892,8 +2901,14 @@ function renderSequenceStep() {
             <div class="sequence-current-item">
                 <div>${currentText}</div>
                 ${
-                    currentImageUrl
-                        ? `<img src="${escapeHtml(currentImageUrl)}" alt="语块提示图片" style="display:block; max-width:100%; margin-top:12px; border-radius:12px;">`
+                    currentImageUrls.length
+                        ? `
+                            <div style="display:grid; gap:10px; margin-top:12px;">
+                                ${currentImageUrls.map(function (url, imageIndex) {
+                                    return `<img src="${escapeHtml(url)}" alt="语块提示图片 ${imageIndex + 1}" style="display:block; max-width:100%; border-radius:12px;">`;
+                                }).join("")}
+                            </div>
+                        `
                         : ""
                 }
             </div>
@@ -3004,10 +3019,19 @@ function showSequenceWorkspace(payload) {
     state.sequenceSteps = sequenceSteps.length
         ? sequenceSteps
         : cleanChunks.map(function (text, index) {
-            const rawChunk = chunks[index] || {};
+            const rawChunks = chunks.slice(0, index + 1);
+            const imageUrls = rawChunks
+                .map(function (chunk) {
+                    return String((chunk && chunk.image_url) || "").trim();
+                })
+                .filter(function (url) {
+                    return url;
+                });
+
             return {
                 text: joinSequenceChunks(cleanChunks.slice(0, index + 1)),
-                image_url: String(rawChunk.image_url || "").trim()
+                image_url: imageUrls.length ? imageUrls[imageUrls.length - 1] : "",
+                image_urls: imageUrls
             };
         });
 

@@ -2903,9 +2903,9 @@ function renderSequenceStep() {
                 ${
                     currentImageUrls.length
                         ? `
-                            <div style="display:grid; gap:10px; margin-top:12px;">
+                            <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; align-items:flex-start;">
                                 ${currentImageUrls.map(function (url, imageIndex) {
-                                    return `<img src="${escapeHtml(url)}" alt="语块提示图片 ${imageIndex + 1}" style="display:block; max-width:100%; border-radius:12px;">`;
+                                    return `<img src="${escapeHtml(url)}" alt="语块提示图片 ${imageIndex + 1}" style="display:block; flex:1 1 140px; min-width:140px; max-width:220px; width:100%; border-radius:12px;">`;
                                 }).join("")}
                             </div>
                         `

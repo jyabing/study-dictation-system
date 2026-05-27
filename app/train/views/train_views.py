@@ -7463,6 +7463,35 @@ def question_edit(request, question_id):
 
         return "\n".join(lines)
 
+    def _sequence_chunks_for_upload_from_text(text):
+        rows = []
+
+        for index, line in enumerate((text or "").splitlines()):
+            line = line.strip()
+
+            if not line:
+                continue
+
+            parts = line.split("|")
+            chunk_text = str(parts[0] or "").strip()
+            image_url = str("|".join(parts[1:]) or "").strip()
+
+            if not chunk_text:
+                continue
+
+            rows.append({
+                "index": index,
+                "text": chunk_text,
+                "image_url": image_url,
+            })
+
+        return rows
+
+    def _sequence_chunks_for_upload(current_training):
+        return _sequence_chunks_for_upload_from_text(
+            _sequence_chunks_to_text(current_training)
+        )
+
     if request.method == "POST":
         instruction_text = (request.POST.get("instruction_text") or "").strip()
 
@@ -7605,6 +7634,9 @@ def question_edit(request, question_id):
                 "cloze_answers_text": "\n".join(training.cloze_answers or []) if training and training.cloze_answers else "",
                 "accepted_answers_text": "\n".join(training.accepted_answers or []) if training and training.accepted_answers else "",
                 "sequence_chunks_text": sequence_chunks_text or _sequence_chunks_to_text(training),
+                "sequence_chunks_for_upload": _sequence_chunks_for_upload_from_text(
+                    sequence_chunks_text or _sequence_chunks_to_text(training)
+                ),
                 "listen_meta": (
                     ((training.choices or [])[0].get("_meta", {}))
                     if training and training.choices and isinstance((training.choices or [])[0], dict)
@@ -8005,6 +8037,8 @@ def question_edit(request, question_id):
         "choices_json": json.dumps(training.choices or [], ensure_ascii=False) if training else "[]",
         "cloze_answers_text": "\n".join(training.cloze_answers or []) if training and training.cloze_answers else "",
         "accepted_answers_text": "\n".join(training.accepted_answers or []) if training and training.accepted_answers else "",
+        "sequence_chunks_text": _sequence_chunks_to_text(training),
+        "sequence_chunks_for_upload": _sequence_chunks_for_upload(training),
         "listen_meta": (
             ((training.choices or [])[0].get("_meta", {}))
             if training and training.choices and isinstance((training.choices or [])[0], dict)

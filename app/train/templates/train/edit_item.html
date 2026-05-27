@@ -383,7 +383,46 @@
 
                                 <div style="margin-top:12px;">
                                     <div class="field-label">语块图片重新上传（仅 speak_sequence 使用）</div>
-                                    <div id="edit-sequence-chunk-image-inputs"></div>
+                                    <div id="edit-sequence-chunk-image-inputs">
+                                        {% if display_qtype == "speak_sequence" %}
+                                            {% for chunk in sequence_chunks_for_upload %}
+                                                <div class="field-group full" style="margin-top:10px;">
+                                                    <div class="field-label">语块 {{ forloop.counter }}</div>
+                                                    <div class="field-help">{{ chunk.text }}</div>
+
+                                                    {% if chunk.image_url %}
+                                                        <div class="field-help">当前图片：{{ chunk.image_url }}</div>
+                                                        <div class="field-help" style="margin-top:8px;">
+                                                            <img
+                                                                src="{{ chunk.image_url }}"
+                                                                alt="语块图片预览"
+                                                                style="display:block; max-width:180px; max-height:140px; border:1px solid #dbeafe; border-radius:12px; background:#fff; object-fit:contain;"
+                                                            >
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="field-help">当前没有图片 URL。</div>
+                                                    {% endif %}
+
+                                                    <input
+                                                        type="file"
+                                                        name="sequence_chunk_image_file_{{ chunk.index }}"
+                                                        accept="image/*"
+                                                        class="input"
+                                                        onchange="updateEditSequenceChunkImagePreview({{ chunk.index }});"
+                                                    >
+                                                    <div
+                                                        id="edit_sequence_chunk_image_preview_{{ chunk.index }}"
+                                                        class="field-help"
+                                                        style="margin-top:8px;"
+                                                    ></div>
+                                                </div>
+                                            {% empty %}
+                                                <div class="field-help">请先填写顺序语块。</div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="field-help">当前题型不是 speak_sequence，不使用语块图片上传。</div>
+                                        {% endif %}
+                                    </div>
                                     <div class="field-help">
                                         上传新图片后，会覆盖该语块当前的图片 URL；不上传则保留文本框里 | 后面的 URL。
                                     </div>

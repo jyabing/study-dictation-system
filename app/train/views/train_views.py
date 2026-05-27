@@ -5473,6 +5473,12 @@ def _train_api_by_scope(request, scope, obj):
             if cycle_obj.get("is_mastered"):
                 continue
 
+            if (
+                not cycle_obj.get("is_due", False)
+                and not cycle_obj.get("is_overdue", False)
+            ):
+                continue
+
             wrong_boost = _get_wrong_boost(memory_obj) if memory_obj else 0
             total_correct = getattr(memory_obj, "total_correct", 0) or 0
             total_wrong = getattr(memory_obj, "total_wrong", 0) or 0

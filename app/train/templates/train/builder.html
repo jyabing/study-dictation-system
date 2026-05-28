@@ -857,7 +857,16 @@
                             <label for="write_japanese_expression">日语</label>
                             <textarea
                                 id="write_japanese_expression"
-                                placeholder="例如：あいかわらず"
+                                placeholder="例如：湧き溢れる"
+                                oninput="syncWriteFieldsToMainInputs(); updatePreview();"
+                            ></textarea>
+                        </div>
+
+                        <div class="field">
+                            <label for="write_japanese_reading">日语假名 / 读音</label>
+                            <textarea
+                                id="write_japanese_reading"
+                                placeholder="例如：わきあふれる"
                                 oninput="syncWriteFieldsToMainInputs(); updatePreview();"
                             ></textarea>
                         </div>
@@ -1649,6 +1658,7 @@
                 englishPronunciation: getWriteInputValue("write_english_pronunciation"),
                 englishDefinition: getWriteInputValue("write_english_definition"),
                 japaneseExpression: getWriteInputValue("write_japanese_expression"),
+                japaneseReading: getWriteInputValue("write_japanese_reading"),
                 japaneseDefinition: getWriteInputValue("write_japanese_definition"),
                 chineseMeaning: getWriteInputValue("write_chinese_meaning")
             };
@@ -1930,6 +1940,7 @@
                     pushWriteField("english_definition", "英语原语释义", writeFieldValues.englishDefinition);
 
                     pushWriteField("japanese_expression", "日语表达", writeFieldValues.japaneseExpression);
+                    pushWriteField("japanese_reading", "日语假名 / 读音", writeFieldValues.japaneseReading);
                     pushWriteField("japanese_definition", "日语原语释义", writeFieldValues.japaneseDefinition);
 
                     pushWriteField("chinese_meaning", "中文意思", writeFieldValues.chineseMeaning);

@@ -644,67 +644,17 @@
 {% firstof book.pending_count book_stats.pending_count "0" as book_pending_count %}
 {% firstof book.overdue_count book_stats.overdue_count "0" as book_overdue_count %}
 {% firstof book.due_count book_stats.due_count "0" as book_due_count %}
-{% with focus_lesson=lessons|first %}
-
 <div class="book-page">
     <div class="book-shell">
 
         {% include "train/includes/page_head.html" with head_type="book" head_actions=head_actions head_actions_collapsed=False head_title=book.title head_desc=book.description|default:"暂无说明" head_meta=head_meta head_chips=head_chips %}
-
-        <section class="focus-card">
-            <div class="focus-main">
-                {% if focus_lesson %}
-                    {% firstof focus_lesson.current_stage_label focus_lesson.stage_label focus_lesson.current_stage "未开始" as focus_lesson_stage %}
-                    {% firstof focus_lesson.next_review_text focus_lesson.next_review_display "未安排" as focus_lesson_next_review %}
-
-                    <h2 class="focus-title">{{ focus_lesson.title }}</h2>
-                    <div class="focus-subtitle">
-                        先从当前焦点课节开始。学习入口必须在最前面，统计放后面。
-                    </div>
-
-                    <div class="focus-meta">
-                        <span class="focus-chip">阶段：{{ focus_lesson_stage }}</span>
-                        <span class="focus-chip">下一次复习：{{ focus_lesson_next_review }}</span>
-                    </div>
-
-                    <div class="focus-actions">
-                        <a href="{% url 'lesson-train' focus_lesson.id %}" class="primary-btn">开始学习</a>
-                        <a href="{% url 'lesson-question-list' focus_lesson.id %}" class="secondary-btn">题目列表</a>
-                        <a href="{% url 'lesson-edit' focus_lesson.id %}" class="ghost-btn">编辑这个课节</a>
-                    </div>
-                {% else %}
-                    <h2 class="focus-title">还没有进入记忆循环的课节</h2>
-                    <div class="focus-subtitle">
-                        先创建第一课，再进入真正的学习页。
-                    </div>
-
-                    <div class="focus-actions">
-                        <a href="#create-lesson" class="primary-btn">现在创建课节</a>
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="focus-side">
-                <div class="focus-stat">
-                    <div class="focus-stat-label">待处理</div>
-                    <div class="focus-stat-value">{{ book_pending_count }}</div>
-                    <div class="focus-stat-sub">当前需要你处理的课节数量</div>
-                </div>
-
-                <div class="focus-stat">
-                    <div class="focus-stat-label">已逾期</div>
-                    <div class="focus-stat-value">{{ book_overdue_count }}</div>
-                    <div class="focus-stat-sub">已经错过复习时间的课节</div>
-                </div>
-            </div>
-        </section>
 
         <div class="book-main">
             <div class="book-left">
                 <section class="section-card" id="lesson-list">
                     <div class="section-header">
                         <div>
-                            <h2 class="section-title">章节列表</h2>
+                            <h2 class="section-title">课节列表</h2>
                             <div class="section-subtitle">这里是学习入口总表。书页主按钮进入整本循环训练，课节按钮进入 lesson-train。</div>
                         </div>
                     </div>
@@ -976,5 +926,4 @@
     </div>
 </div>
 
-{% endwith %}
 {% endblock %}

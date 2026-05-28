@@ -6372,19 +6372,23 @@ def lesson_question_list(request, lesson_id):
 
                 if field_key_set & {
                     "english_expression",
+                    "english_pronunciation",
                     "english_definition",
                     "japanese_expression",
+                    "japanese_reading",
                     "japanese_definition",
                     "chinese_meaning",
                 }:
                     display_field_labels = [
                         "英语表达",
+                        "英语发音注释",
                         "英语原语释义",
                         "日语表达",
+                        "日语假名 / 读音",
                         "日语原语释义",
                         "中文意思",
                     ]
-                    display_field_count = 5
+                    display_field_count = len(display_field_labels)
 
                 question.display_target_answer = (
                     f"{display_field_count}字段 / {display_direction_count}方向："

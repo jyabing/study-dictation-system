@@ -7389,6 +7389,7 @@ def question_edit(request, question_id):
         "english_expression": "",
         "english_definition": "",
         "japanese_expression": "",
+        "japanese_reading": "",
         "japanese_definition": "",
         "chinese_meaning": "",
 
@@ -7432,6 +7433,7 @@ def question_edit(request, question_id):
                 "english_expression",
                 "english_definition",
                 "japanese_expression",
+                "japanese_reading",
                 "japanese_definition",
                 "chinese_meaning",
             }:
@@ -7559,6 +7561,7 @@ def question_edit(request, question_id):
             _add_write_field("english_definition", "英语原语释义", _post_text("write_english_definition"))
 
             _add_write_field("japanese_expression", "日语表达", _post_text("write_japanese_expression"))
+            _add_write_field("japanese_reading", "日语假名 / 读音", _post_text("write_japanese_reading"))
             _add_write_field("japanese_definition", "日语原语释义", _post_text("write_japanese_definition"))
 
             _add_write_field("chinese_meaning", "中文意思", _post_text("write_chinese_meaning"))

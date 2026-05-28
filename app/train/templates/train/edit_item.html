@@ -290,8 +290,17 @@
                                             <textarea
                                                 name="write_japanese_expression"
                                                 class="textarea"
-                                                placeholder="例如：イライラする、もどかしい"
+                                                placeholder="例如：湧き溢れる"
                                             >{{ write_field_values.japanese_expression|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">日语假名 / 读音</div>
+                                            <textarea
+                                                name="write_japanese_reading"
+                                                class="textarea"
+                                                placeholder="例如：わきあふれる"
+                                            >{{ write_field_values.japanese_reading|default:'' }}</textarea>
                                         </div>
 
                                         <div class="field-group">
@@ -1621,12 +1630,14 @@ function syncEditWriteFieldsToLegacyInputs() {
         const englishExpression = getEditWriteFieldValueByName("write_english_expression");
         const englishDefinition = getEditWriteFieldValueByName("write_english_definition");
         const japaneseExpression = getEditWriteFieldValueByName("write_japanese_expression");
+        const japaneseReading = getEditWriteFieldValueByName("write_japanese_reading");
         const japaneseDefinition = getEditWriteFieldValueByName("write_japanese_definition");
         const chineseMeaning = getEditWriteFieldValueByName("write_chinese_meaning");
 
         sourceValue = (
             englishExpression
             || japaneseExpression
+            || japaneseReading
             || englishDefinition
             || japaneseDefinition
             || chineseMeaning
@@ -1636,6 +1647,7 @@ function syncEditWriteFieldsToLegacyInputs() {
         targetValue = (
             japaneseExpression
             || englishExpression
+            || japaneseReading
             || japaneseDefinition
             || englishDefinition
             || chineseMeaning

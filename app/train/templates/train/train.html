@@ -3275,6 +3275,27 @@ function formatRecordingLimitSeconds(ms) {
     return Math.ceil(ms / 1000);
 }
 
+function isSequenceStepTooShortForAsr() {
+    if (state.inputMode !== "sequence") {
+        return false;
+    }
+
+    const currentText = String(state.sequenceItems[state.sequenceIndex] || "").trim();
+
+    if (!currentText) {
+        return true;
+    }
+
+    const asciiWordCount = (currentText.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g) || []).length;
+    const nonSpaceCharCount = currentText.replace(/\s+/g, "").length;
+
+    if (asciiWordCount > 0) {
+        return asciiWordCount <= 2;
+    }
+
+    return nonSpaceCharCount <= 4;
+}
+
 async function uploadBackendSpeechRecording(sessionId, mimeType) {
     if (sessionId !== state.recognitionSessionId) {
         return;
@@ -3383,7 +3404,9 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
             state.sequenceStepRecorded = true;
         }
 
-        if (state.inputMode === "sequence" && state.sequenceIndex === 0) {
+        const shouldHideSequenceAsrText = isSequenceStepTooShortForAsr();
+
+        if (state.inputMode === "sequence" && shouldHideSequenceAsrText) {
             updateSpeechResult("", "");
             if (speechStatus) {
                 speechStatus.textContent = `本步录音已完成${returnedAsrLang ? "：" + returnedAsrLang : ""}。当前语块较短，ASR 结果不显示、不判题；请确认自己已跟读后进入下一步。`;
@@ -3405,7 +3428,7 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
             }
         }
 
-        if (state.inputMode === "sequence" && state.sequenceIndex === 0) {
+        if (state.inputMode === "sequence" && shouldHideSequenceAsrText) {
             setSpeechDebugStatus("短语块过短，ASR 结果已隐藏。");
         } else {
             setSpeechDebugStatus(`后端 ASR 识别完成：${transcript}`);

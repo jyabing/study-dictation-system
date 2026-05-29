@@ -1683,6 +1683,12 @@ def build_training_payload(training, memory=None, request=None):
     asr_cfg = meta.get("asr", {}) if isinstance(meta.get("asr"), dict) else {}
     asr_lang = asr_cfg.get("lang") or "en-US"
 
+    sequence_cfg = meta.get("sequence", {}) if isinstance(meta.get("sequence"), dict) else {}
+    sequence_generation_mode = str(sequence_cfg.get("generation_mode") or "forward").strip()
+
+    if sequence_generation_mode not in {"forward", "balanced"}:
+        sequence_generation_mode = "forward"
+
     prompt_tts_lang = _resolve_tts_lang_for_text(
         prompt_text,
         configured_lang=asr_cfg.get("prompt_tts_lang"),
@@ -1839,8 +1845,26 @@ def build_training_payload(training, memory=None, request=None):
             has_ascii_word = any(re.search(r"[A-Za-z]", part or "") for part in parts)
             return (" " if has_ascii_word else "").join(parts)
 
-        for index in range(len(clean_sequence_chunks)):
-            step_text = _join_sequence_parts(clean_sequence_chunks[:index + 1]).strip()
+        def _build_sequence_ranges(count, mode):
+            ranges = []
+
+            for end in range(1, count + 1):
+                ranges.append((0, end))
+
+            if mode == "balanced" and count >= 2:
+                for start in range(count - 1, 0, -1):
+                    ranges.append((start, count))
+
+            return ranges
+
+        sequence_ranges = _build_sequence_ranges(
+            len(clean_sequence_chunks),
+            sequence_generation_mode
+        )
+
+        for step_number, (start, end) in enumerate(sequence_ranges, start=1):
+            step_parts = clean_sequence_chunks[start:end]
+            step_text = _join_sequence_parts(step_parts).strip()
 
             if not step_text:
                 continue
@@ -1848,13 +1872,16 @@ def build_training_payload(training, memory=None, request=None):
             step_audio_url = _build_tts_audio(
                 text=step_text,
                 lang=answer_tts_lang,
-                prefix=f"listen_sequence_q{training.question_id}_s{index + 1}"
+                prefix=f"listen_sequence_q{training.question_id}_s{step_number}"
             )
 
             sequence_steps.append({
-                "index": index,
+                "index": step_number - 1,
                 "text": step_text,
                 "audio_url": step_audio_url or "",
+                "sequence_generation_mode": sequence_generation_mode,
+                "range_start": start,
+                "range_end": end,
             })
 
     # =========================
@@ -2165,6 +2192,7 @@ def build_training_payload(training, memory=None, request=None):
         "target_answer": resolved_answer_text,
         "correct_answers": resolved_cloze_answers or ([resolved_answer_text] if resolved_answer_text else []),
         "sequence_chunks": training.sequence_chunks or [],
+        "sequence_generation_mode": sequence_generation_mode,
 
         "write_direction": write_direction,
         "write_source_text": write_source_text,
@@ -6953,6 +6981,13 @@ def builder_save(request):
     cloze_cfg = data.get("cloze") or {}
     asr_cfg = data.get("asr") or {}
 
+    sequence_generation_mode = str(
+        data.get("sequence_generation_mode") or "forward"
+    ).strip()
+
+    if sequence_generation_mode not in {"forward", "balanced"}:
+        sequence_generation_mode = "forward"
+
     # sequence_chunks 只保存“基础语块”，不保存手动累计块。
     # 例如只保存 A / B / C，不保存 A+B / A+B+C。
     # 训练页会根据基础语块自动生成正向累积、下一块反应、桥接、拆块等衔接练习。
@@ -7311,7 +7346,10 @@ def builder_save(request):
                     "item_type": item_type,
                     "use_tts": use_tts,
                     "answer_use_tts": answer_use_tts,
-                    "asr": asr_cfg
+                    "asr": asr_cfg,
+                    "sequence": {
+                        "generation_mode": sequence_generation_mode
+                    }
                 }
             }],
             audio_file=uploaded_audio_file,
@@ -7504,6 +7542,20 @@ def question_edit(request, question_id):
             _sequence_chunks_to_text(current_training)
         )
 
+    sequence_generation_mode = "forward"
+
+    if training:
+        old_choices = training.choices or []
+        if old_choices and isinstance(old_choices[0], dict):
+            meta = old_choices[0].get("_meta", {}) or {}
+            sequence_meta = meta.get("sequence", {}) if isinstance(meta.get("sequence"), dict) else {}
+            sequence_generation_mode = str(
+                sequence_meta.get("generation_mode") or "forward"
+            ).strip()
+
+    if sequence_generation_mode not in {"forward", "balanced"}:
+        sequence_generation_mode = "forward"
+
     if request.method == "POST":
         instruction_text = (request.POST.get("instruction_text") or "").strip()
 
@@ -7594,6 +7646,15 @@ def question_edit(request, question_id):
         accepted_answers_text = (request.POST.get("accepted_answers_text") or "").strip()
         sequence_chunks_text = (request.POST.get("sequence_chunks_text") or "").strip()
 
+        sequence_generation_mode = (
+            request.POST.get("sequence_generation_mode")
+            or sequence_generation_mode
+            or "forward"
+        ).strip()
+
+        if sequence_generation_mode not in {"forward", "balanced"}:
+            sequence_generation_mode = "forward"
+
         accepted_answers = [
             line.strip()
             for line in accepted_answers_text.splitlines()
@@ -7650,6 +7711,7 @@ def question_edit(request, question_id):
                 "sequence_chunks_for_upload": _sequence_chunks_for_upload_from_text(
                     sequence_chunks_text or _sequence_chunks_to_text(training)
                 ),
+                "sequence_generation_mode": sequence_generation_mode,
                 "listen_meta": (
                     ((training.choices or [])[0].get("_meta", {}))
                     if training and training.choices and isinstance((training.choices or [])[0], dict)
@@ -7710,6 +7772,24 @@ def question_edit(request, question_id):
 
                 training.sequence_chunks = sequence_chunks
 
+                old_choices = training.choices or []
+                if old_choices and isinstance(old_choices[0], dict):
+                    first_choice = dict(old_choices[0])
+                    meta = first_choice.get("_meta", {}) or {}
+                else:
+                    first_choice = {}
+                    meta = {}
+
+                meta["skill"] = "listen" if training.item_type == "listen_sequence" else "speak"
+                meta["item_type"] = training.item_type
+
+                sequence_meta = meta.get("sequence", {}) if isinstance(meta.get("sequence"), dict) else {}
+                sequence_meta["generation_mode"] = sequence_generation_mode
+                meta["sequence"] = sequence_meta
+
+                first_choice["_meta"] = meta
+                training.choices = [first_choice]
+
             if training.item_type == "write" and len(write_fields) >= 2:
                 old_choices = training.choices or []
 
@@ -7751,6 +7831,7 @@ def question_edit(request, question_id):
 
             if training.item_type in {"speak_sequence", "listen_sequence"}:
                 update_fields.append("sequence_chunks")
+                update_fields.append("choices")
 
             if training.item_type == "write" and len(write_fields) >= 2:
                 update_fields.append("choices")
@@ -8052,6 +8133,7 @@ def question_edit(request, question_id):
         "accepted_answers_text": "\n".join(training.accepted_answers or []) if training and training.accepted_answers else "",
         "sequence_chunks_text": _sequence_chunks_to_text(training),
         "sequence_chunks_for_upload": _sequence_chunks_for_upload(training),
+        "sequence_generation_mode": sequence_generation_mode,
         "listen_meta": (
             ((training.choices or [])[0].get("_meta", {}))
             if training and training.choices and isinstance((training.choices or [])[0], dict)

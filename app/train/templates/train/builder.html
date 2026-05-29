@@ -705,10 +705,21 @@
                 <div id="sequence_chunks_section" class="card section hidden">
                     <div class="section-title">顺序语块训练</div>
                     <div class="section-sub">
-                        用于顺序跟读 / 累积跟读。每行填写一个语块，系统会按顺序组成：第1块 → 第1+2块 → 第1+2+3块 → 完整句。
+                        用于顺序跟读 / 累积跟读。每行填写一个基础语块，系统会根据下方生成方式自动组成训练步骤。
                     </div>
 
-                    <div class="field">
+                    <div class="field" style="margin-top:12px;">
+                        <label for="sequence_generation_mode">生成方式</label>
+                        <select id="sequence_generation_mode" onchange="updatePreview();">
+                            <option value="forward">正向累加：A → A+B → A+B+C</option>
+                            <option value="balanced">平衡背诵：正向累加 + 后半反向补偿</option>
+                        </select>
+                        <div class="section-sub" style="margin-top:6px; margin-bottom:0;">
+                            正向累加适合建立文章顺序；平衡背诵会补偿后半段，避免开头重复过多、结尾重复不足。
+                        </div>
+                    </div>
+
+                    <div class="field" style="margin-top:12px;">
                         <label for="sequence_chunks_text">语块列表</label>
                         <textarea
                             id="sequence_chunks_text"
@@ -2125,6 +2136,9 @@
                 write_fields: writeFields,
                 write_allowed_directions: writeAllowedDirections,
                 sequence_chunks: sequenceChunks,
+                sequence_generation_mode: document.getElementById("sequence_generation_mode")
+                    ? document.getElementById("sequence_generation_mode").value
+                    : "forward",
 
                 // 旧字段：继续兼容后端旧逻辑
                 prompt_text: promptText,

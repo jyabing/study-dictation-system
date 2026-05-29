@@ -379,6 +379,19 @@
                                 class="field-group full sequence-only"
                                 {% if display_qtype != "speak_sequence" and display_qtype != "listen_sequence" %}style="display:none;"{% endif %}
                             >
+                                <div class="field-label">生成方式</div>
+                                <select name="sequence_generation_mode" class="select" style="margin-bottom:12px;">
+                                    <option value="forward" {% if sequence_generation_mode == "forward" %}selected{% endif %}>
+                                        正向累加：A → A+B → A+B+C
+                                    </option>
+                                    <option value="balanced" {% if sequence_generation_mode == "balanced" %}selected{% endif %}>
+                                        平衡背诵：正向累加 + 后半反向补偿
+                                    </option>
+                                </select>
+                                <div class="field-help" style="margin-bottom:12px;">
+                                    正向累加适合建立文章顺序；平衡背诵会补偿后半段，避免开头重复过多、结尾重复不足。
+                                </div>
+
                                 <div class="field-label">顺序语块</div>
                                 <textarea
                                     name="sequence_chunks_text"
@@ -387,7 +400,7 @@
                                     oninput="renderEditSequenceChunkImageInputs();"
                                 >{{ sequence_chunks_text|default:'' }}</textarea>
                                 <div class="field-help">
-                                    这里只填写基础语块，不要填写累计块。系统会自动生成：第 1 块、第 1+2 块、第 1+2+3 块。图片 URL 可写在 | 后面。
+                                    这里只填写基础语块，不要填写累计块。系统会根据上方生成方式自动生成训练步骤。图片 URL 可写在 | 后面。
                                 </div>
 
                                 <div style="margin-top:12px;">

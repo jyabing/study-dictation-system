@@ -3012,40 +3012,73 @@ function showSequenceWorkspace(payload) {
         return parts.join(hasAsciiWord ? " " : "");
     }
 
+    function normalizeSequenceGenerationMode(value) {
+        return String(value || "").trim() === "balanced"
+            ? "balanced"
+            : "forward";
+    }
+
+    function buildSequenceRanges(count, mode) {
+        const ranges = [];
+
+        for (let end = 1; end <= count; end += 1) {
+            ranges.push([0, end]);
+        }
+
+        if (mode === "balanced" && count >= 2) {
+            for (let start = count - 1; start >= 1; start -= 1) {
+                ranges.push([start, count]);
+            }
+        }
+
+        return ranges;
+    }
+
+    const sequenceGenerationMode = normalizeSequenceGenerationMode(
+        payload.sequence_generation_mode
+    );
+
     const sequenceSteps = Array.isArray(payload.sequence_steps)
         ? payload.sequence_steps
         : [];
 
+    const generatedSequenceSteps = buildSequenceRanges(
+        cleanChunks.length,
+        sequenceGenerationMode
+    ).map(function (range, stepIndex) {
+        const start = range[0];
+        const end = range[1];
+        const rawChunks = chunks.slice(start, end);
+        const imageUrls = rawChunks
+            .map(function (chunk) {
+                return String((chunk && chunk.image_url) || "").trim();
+            })
+            .filter(function (url) {
+                return url;
+            });
+
+        return {
+            index: stepIndex,
+            text: joinSequenceChunks(cleanChunks.slice(start, end)),
+            image_url: imageUrls.length ? imageUrls[imageUrls.length - 1] : "",
+            image_urls: imageUrls,
+            sequence_generation_mode: sequenceGenerationMode,
+            range_start: start,
+            range_end: end
+        };
+    });
+
     state.sequenceSteps = sequenceSteps.length
         ? sequenceSteps
-        : cleanChunks.map(function (text, index) {
-            const rawChunks = chunks.slice(0, index + 1);
-            const imageUrls = rawChunks
-                .map(function (chunk) {
-                    return String((chunk && chunk.image_url) || "").trim();
-                })
-                .filter(function (url) {
-                    return url;
-                });
+        : generatedSequenceSteps;
 
-            return {
-                text: joinSequenceChunks(cleanChunks.slice(0, index + 1)),
-                image_url: imageUrls.length ? imageUrls[imageUrls.length - 1] : "",
-                image_urls: imageUrls
-            };
-        });
-
-    if (getQuestionType(payload) === "listen_sequence" && sequenceSteps.length) {
-        state.sequenceItems = sequenceSteps.map(function (step) {
+    state.sequenceItems = state.sequenceSteps
+        .map(function (step) {
             return String(step.text || "").trim();
-        }).filter(function (text) {
+        })
+        .filter(function (text) {
             return text;
         });
-    } else {
-        state.sequenceItems = cleanChunks.map(function (_chunk, index) {
-            return joinSequenceChunks(cleanChunks.slice(0, index + 1));
-        });
-    }
 
     state.sequenceIndex = 0;
     state.sequenceStepStarted = false;

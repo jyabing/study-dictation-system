@@ -2934,7 +2934,10 @@ function renderSequenceStep() {
 }
 
 async function advanceSequenceStep() {
-    if (state.inputMode !== "sequence") {
+    if (
+        state.inputMode !== "sequence"
+        && state.inputMode !== "sequence_text_fallback"
+    ) {
         return false;
     }
 
@@ -3103,7 +3106,11 @@ function showSequenceWorkspace(payload) {
 }
 
 function enableSpeechTextFallback() {
-    state.inputMode = "speech_text_fallback";
+    const wasSequenceMode = state.inputMode === "sequence";
+
+    state.inputMode = wasSequenceMode
+        ? "sequence_text_fallback"
+        : "speech_text_fallback";
 
     if (speechWorkspace) {
         speechWorkspace.style.display = "flex";
@@ -3114,12 +3121,23 @@ function enableSpeechTextFallback() {
     }
 
     if (speechStatus) {
-        speechStatus.textContent = "已切换到文本输入";
+        speechStatus.textContent = wasSequenceMode
+            ? "已切换到文本输入。可以把未读完的部分写在输入框里，本步仍按顺序训练处理。"
+            : "已切换到文本输入";
     }
 
     if (answerInput) {
+        answerInput.style.display = "";
         answerInput.disabled = false;
+        answerInput.placeholder = wasSequenceMode
+            ? "可以补写本步未读完的部分，或输入备注后点下一步"
+            : "请输入回答，然后提交";
         answerInput.focus();
+    }
+
+    if (wasSequenceMode) {
+        state.sequenceStepRecorded = true;
+        renderSequenceStep();
     }
 }
 
@@ -3224,6 +3242,37 @@ function hasBackendRecorderSupport() {
         && typeof navigator.mediaDevices.getUserMedia === "function"
         && window.MediaRecorder
     );
+}
+
+function getSequenceRecordingLimitMs() {
+    const fallbackMs = 8000;
+
+    if (state.inputMode !== "sequence") {
+        return fallbackMs;
+    }
+
+    const currentText = String(state.sequenceItems[state.sequenceIndex] || "").trim();
+
+    if (!currentText) {
+        return fallbackMs;
+    }
+
+    const asciiWordCount = (currentText.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g) || []).length;
+    const nonSpaceCharCount = currentText.replace(/\s+/g, "").length;
+
+    let estimatedMs = fallbackMs;
+
+    if (asciiWordCount > 0) {
+        estimatedMs = Math.ceil((asciiWordCount / 1.8) * 1000) + 4000;
+    } else {
+        estimatedMs = Math.ceil(nonSpaceCharCount * 450) + 4000;
+    }
+
+    return Math.max(8000, Math.min(45000, estimatedMs));
+}
+
+function formatRecordingLimitSeconds(ms) {
+    return Math.ceil(ms / 1000);
 }
 
 async function uploadBackendSpeechRecording(sessionId, mimeType) {
@@ -3456,6 +3505,9 @@ async function startBackendSpeechRecording() {
 
         clearBackendRecordingAutoStopTimer();
 
+        const recordingLimitMs = getSequenceRecordingLimitMs();
+        const recordingLimitSeconds = formatRecordingLimitSeconds(recordingLimitMs);
+
         state.mediaAutoStopTimer = setTimeout(() => {
             if (
                 sessionId === state.recognitionSessionId
@@ -3465,13 +3517,13 @@ async function startBackendSpeechRecording() {
                 setSpeechDebugStatus(`已自动停止录音：当前识别语言 ${state.recognitionLang || "en-US"}。正在上传后端识别...`);
                 stopBackendSpeechRecording(false);
             }
-        }, 8000);
+        }, recordingLimitMs);
 
         if (speechStatus) {
-            speechStatus.textContent = `录音已开始：当前识别语言 ${state.recognitionLang || "en-US"}`;
+            speechStatus.textContent = `录音已开始：当前识别语言 ${state.recognitionLang || "en-US"}，最长 ${recordingLimitSeconds} 秒`;
         }
 
-        setSpeechDebugStatus(`后端录音已开始：当前识别语言 ${state.recognitionLang || "en-US"}。请直接说完整句子，8 秒后会自动停止，也可以手动点“停止录音”。`);
+        setSpeechDebugStatus(`后端录音已开始：当前识别语言 ${state.recognitionLang || "en-US"}。请直接说完整当前步骤，最长 ${recordingLimitSeconds} 秒后会自动停止，也可以手动点“停止录音”。`);
 
         if (speechStartBtn) {
             speechStartBtn.style.display = "none";

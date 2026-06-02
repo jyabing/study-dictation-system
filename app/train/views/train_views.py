@@ -1316,6 +1316,40 @@ def _save_choice_uploads(raw_choices, request_files):
 
     return normalized_choices
 
+def _save_write_field_uploads(raw_fields, request_files):
+    """
+    保存写作字段自己的上传音频。
+    前端会在 field.audio_upload_key 里传入对应的 FormData key。
+    保存后把 field["audio_url"] 改成可访问路径。
+    """
+    if not raw_fields:
+        return []
+
+    normalized_fields = []
+
+    for field in raw_fields:
+        if not isinstance(field, dict):
+            continue
+
+        item = dict(field)
+
+        audio_upload_key = (item.get("audio_upload_key") or "").strip()
+        if audio_upload_key:
+            uploaded_audio = request_files.get(audio_upload_key)
+
+            if uploaded_audio:
+                safe_name = get_valid_filename(uploaded_audio.name or "write_field_audio")
+                saved_path = default_storage.save(
+                    f"audio/write_fields/{uuid.uuid4().hex}_{safe_name}",
+                    uploaded_audio
+                )
+                item["audio_url"] = default_storage.url(saved_path)
+
+        item.pop("audio_upload_key", None)
+        normalized_fields.append(item)
+
+    return normalized_fields
+
 def _guess_tts_lang(meta):
     asr_cfg = meta.get("asr") or {}
     lang = (asr_cfg.get("lang") or "").strip()
@@ -6945,6 +6979,15 @@ def builder_save(request):
 
     prompt_text = source_text
     answer_text = target_answer
+
+    if item_type == "write_text":
+        raw_write_fields_for_upload = data.get("write_fields") or data.get("fields") or []
+
+        if isinstance(raw_write_fields_for_upload, list):
+            data["write_fields"] = _save_write_field_uploads(
+                raw_write_fields_for_upload,
+                request.FILES
+            )
 
     # 写作英日中结构：不要让旧 prompt_text/source_text 把提示短语固定成中文。
     # 真正训练时会从 write.fields + allowed_directions 动态抽方向。

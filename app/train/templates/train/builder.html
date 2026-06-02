@@ -847,6 +847,29 @@
                         </div>
 
                         <div class="field">
+                            <label for="write_english_expression_audio_url">英语表达音频</label>
+                            <input
+                                id="write_english_expression_audio_url"
+                                type="text"
+                                placeholder="音频 URL，可留空"
+                            >
+                            <input
+                                id="write_english_expression_audio_file"
+                                type="file"
+                                accept="audio/*"
+                                style="margin-top:8px;"
+                            >
+                            <label class="section-sub" style="display:block; margin-top:8px;">
+                                <input
+                                    id="write_english_expression_use_tts"
+                                    type="checkbox"
+                                    checked
+                                >
+                                没有音频时用 TTS（英语）
+                            </label>
+                        </div>
+
+                        <div class="field">
                             <label for="write_english_pronunciation">英语发音注释</label>
                             <textarea
                                 id="write_english_pronunciation"
@@ -871,6 +894,29 @@
                                 placeholder="例如：湧き溢れる"
                                 oninput="syncWriteFieldsToMainInputs(); updatePreview();"
                             ></textarea>
+                        </div>
+
+                        <div class="field">
+                            <label for="write_japanese_expression_audio_url">日语表达音频</label>
+                            <input
+                                id="write_japanese_expression_audio_url"
+                                type="text"
+                                placeholder="音频 URL，可留空"
+                            >
+                            <input
+                                id="write_japanese_expression_audio_file"
+                                type="file"
+                                accept="audio/*"
+                                style="margin-top:8px;"
+                            >
+                            <label class="section-sub" style="display:block; margin-top:8px;">
+                                <input
+                                    id="write_japanese_expression_use_tts"
+                                    type="checkbox"
+                                    checked
+                                >
+                                没有音频时用 TTS（日语）
+                            </label>
                         </div>
 
                         <div class="field">
@@ -1651,6 +1697,23 @@
             }
         }
 
+        function getWriteFieldAudioConfig(fieldKey, defaultLang) {
+            const audioUrlInput = document.getElementById("write_" + fieldKey + "_audio_url");
+            const audioFileInput = document.getElementById("write_" + fieldKey + "_audio_file");
+            const useTtsInput = document.getElementById("write_" + fieldKey + "_use_tts");
+
+            const uploadKey = "write_" + fieldKey + "_audio_file";
+
+            return {
+                audio_url: audioUrlInput ? audioUrlInput.value.trim() : "",
+                audio_upload_key: (
+                    audioFileInput && audioFileInput.files && audioFileInput.files.length
+                ) ? uploadKey : "",
+                use_tts_when_no_audio: useTtsInput ? useTtsInput.checked : false,
+                tts_lang: defaultLang
+            };
+        }
+
         function getWriteFieldValues() {
             return {
                 structure: getWriteStructure(),
@@ -1912,18 +1975,38 @@
             const writeFields = [];
             const writeAllowedDirections = [];
 
-            function pushWriteField(key, label, text) {
+            function pushWriteField(key, label, text, audioConfig) {
                 const cleanedText = (text || "").trim();
 
                 if (!cleanedText) {
                     return;
                 }
 
-                writeFields.push({
+                const fieldPayload = {
                     key: key,
                     label: label,
                     text: cleanedText
-                });
+                };
+
+                if (audioConfig) {
+                    if (audioConfig.audio_url) {
+                        fieldPayload.audio_url = audioConfig.audio_url;
+                    }
+
+                    if (audioConfig.audio_upload_key) {
+                        fieldPayload.audio_upload_key = audioConfig.audio_upload_key;
+                    }
+
+                    if (audioConfig.use_tts_when_no_audio) {
+                        fieldPayload.use_tts_when_no_audio = true;
+                    }
+
+                    if (audioConfig.tts_lang) {
+                        fieldPayload.tts_lang = audioConfig.tts_lang;
+                    }
+                }
+
+                writeFields.push(fieldPayload);
             }
 
             function pushWriteDirection(promptKey, answerKey) {
@@ -1946,11 +2029,21 @@
                     pushWriteDirection("question_text", "answer_text");
                     pushWriteDirection("answer_text", "question_text");
                 } else if (writeFieldValues.structure === "en_ja_zh") {
-                    pushWriteField("english_expression", "英语表达", writeFieldValues.englishExpression);
+                    pushWriteField(
+                        "english_expression",
+                        "英语表达",
+                        writeFieldValues.englishExpression,
+                        getWriteFieldAudioConfig("english_expression", "en")
+                    );
                     pushWriteField("english_pronunciation", "英语发音注释", writeFieldValues.englishPronunciation);
                     pushWriteField("english_definition", "英语原语释义", writeFieldValues.englishDefinition);
 
-                    pushWriteField("japanese_expression", "日语表达", writeFieldValues.japaneseExpression);
+                    pushWriteField(
+                        "japanese_expression",
+                        "日语表达",
+                        writeFieldValues.japaneseExpression,
+                        getWriteFieldAudioConfig("japanese_expression", "ja")
+                    );
                     pushWriteField("japanese_reading", "日语假名 / 读音", writeFieldValues.japaneseReading);
                     pushWriteField("japanese_definition", "日语原语释义", writeFieldValues.japaneseDefinition);
 
@@ -2196,6 +2289,16 @@
 
                     if (imageFileInput && imageFileInput.files && imageFileInput.files.length) {
                         formData.append(chunk.image_upload_key, imageFileInput.files[0]);
+                    }
+                }
+            });
+
+            writeFields.forEach(function (field) {
+                if (field.audio_upload_key) {
+                    const audioFileInput = document.getElementById(field.audio_upload_key);
+
+                    if (audioFileInput && audioFileInput.files && audioFileInput.files.length) {
+                        formData.append(field.audio_upload_key, audioFileInput.files[0]);
                     }
                 }
             });

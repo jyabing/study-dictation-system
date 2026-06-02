@@ -1918,6 +1918,9 @@ def build_training_payload(training, memory=None, request=None):
     write_answer_type = ""
     write_direction_label = ""
     write_placeholder = ""
+    write_prompt_audio_url = ""
+    write_prompt_use_tts = False
+    write_prompt_tts_lang = ""
 
     if training.item_type == "write":
         write_source_text = (
@@ -1958,6 +1961,9 @@ def build_training_payload(training, memory=None, request=None):
                     "key": key,
                     "label": label,
                     "text": text,
+                    "audio_url": str(field.get("audio_url") or field.get("audio") or "").strip(),
+                    "use_tts_when_no_audio": bool(field.get("use_tts_when_no_audio", False)),
+                    "tts_lang": str(field.get("tts_lang") or "").strip(),
                 })
 
         # 新写作字段逻辑：
@@ -2046,6 +2052,11 @@ def build_training_payload(training, memory=None, request=None):
                 write_prompt_type = " + ".join(prompt_labels)
                 write_answer_type = " + ".join(answer_labels)
 
+                if len(prompt_fields) == 1:
+                    write_prompt_audio_url = str(prompt_fields[0].get("audio_url") or "").strip()
+                    write_prompt_use_tts = bool(prompt_fields[0].get("use_tts_when_no_audio", False))
+                    write_prompt_tts_lang = str(prompt_fields[0].get("tts_lang") or "").strip()
+
                 write_direction = (
                     f"{'+'.join(prompt_keys)}_to_{'+'.join(answer_keys)}"
                 )
@@ -2062,6 +2073,10 @@ def build_training_payload(training, memory=None, request=None):
 
                 write_prompt_type = prompt_field["label"]
                 write_answer_type = answer_field["label"]
+
+                write_prompt_audio_url = str(prompt_field.get("audio_url") or "").strip()
+                write_prompt_use_tts = bool(prompt_field.get("use_tts_when_no_audio", False))
+                write_prompt_tts_lang = str(prompt_field.get("tts_lang") or "").strip()
 
         else:
             # 旧数据兼容：
@@ -2157,6 +2172,19 @@ def build_training_payload(training, memory=None, request=None):
 
         if write_expected_answer:
             resolved_answer_text = write_expected_answer
+
+        if write_prompt_audio_url:
+            resolved_prompt_audio = write_prompt_audio_url
+        elif write_prompt_use_tts and write_display_text:
+            resolved_prompt_audio = _build_tts_audio(
+                text=write_display_text,
+                lang=write_prompt_tts_lang or _resolve_tts_lang_for_text(
+                    write_display_text,
+                    configured_lang="",
+                    fallback_lang="en",
+                ),
+                prefix=f"writetts_q{training.question_id}_{write_direction or 'prompt'}"
+            )
 
     question = training.question
     lesson = question.lesson if question else None

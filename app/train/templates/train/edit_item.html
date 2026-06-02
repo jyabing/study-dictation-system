@@ -263,8 +263,40 @@
                                             <textarea
                                                 name="write_english_expression"
                                                 class="textarea"
-                                                placeholder="例如：frustrating"
+                                                placeholder="例如：How's your summer going?"
                                             >{{ write_field_values.english_expression|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">英语表达音频</div>
+                                            <input
+                                                type="text"
+                                                name="write_english_expression_audio_url"
+                                                class="input"
+                                                placeholder="音频 URL，可留空"
+                                                value="{{ write_english_expression_audio.audio_url|default:'' }}"
+                                            >
+                                            <input
+                                                type="file"
+                                                name="write_english_expression_audio_file"
+                                                accept="audio/*"
+                                                class="input"
+                                                style="margin-top:8px;"
+                                            >
+                                            <label class="field-help" style="display:block; margin-top:8px;">
+                                                <input
+                                                    type="checkbox"
+                                                    name="write_english_expression_use_tts"
+                                                    value="1"
+                                                    {% if write_english_expression_audio.use_tts_when_no_audio %}checked{% endif %}
+                                                >
+                                                没有音频时用 TTS
+                                            </label>
+                                            <input
+                                                type="hidden"
+                                                name="write_english_expression_tts_lang"
+                                                value="{{ write_english_expression_audio.tts_lang|default:'en' }}"
+                                            >
                                         </div>
 
                                         <div class="field-group">
@@ -290,8 +322,40 @@
                                             <textarea
                                                 name="write_japanese_expression"
                                                 class="textarea"
-                                                placeholder="例如：湧き溢れる"
+                                                placeholder="例如：夏休みどう？"
                                             >{{ write_field_values.japanese_expression|default:'' }}</textarea>
+                                        </div>
+
+                                        <div class="field-group">
+                                            <div class="field-label">日语表达音频</div>
+                                            <input
+                                                type="text"
+                                                name="write_japanese_expression_audio_url"
+                                                class="input"
+                                                placeholder="音频 URL，可留空"
+                                                value="{{ write_japanese_expression_audio.audio_url|default:'' }}"
+                                            >
+                                            <input
+                                                type="file"
+                                                name="write_japanese_expression_audio_file"
+                                                accept="audio/*"
+                                                class="input"
+                                                style="margin-top:8px;"
+                                            >
+                                            <label class="field-help" style="display:block; margin-top:8px;">
+                                                <input
+                                                    type="checkbox"
+                                                    name="write_japanese_expression_use_tts"
+                                                    value="1"
+                                                    {% if write_japanese_expression_audio.use_tts_when_no_audio %}checked{% endif %}
+                                                >
+                                                没有音频时用 TTS
+                                            </label>
+                                            <input
+                                                type="hidden"
+                                                name="write_japanese_expression_tts_lang"
+                                                value="{{ write_japanese_expression_audio.tts_lang|default:'ja' }}"
+                                            >
                                         </div>
 
                                         <div class="field-group">

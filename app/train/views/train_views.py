@@ -7417,6 +7417,8 @@ def question_edit(request, question_id):
             )
 
     write_structure = "ja_three"
+    write_field_audio_values = {}
+
     write_field_values = {
         "jp_kanji": "",
         "kana": "",
@@ -7463,6 +7465,13 @@ def question_edit(request, question_id):
                     text = str(field.get("text") or field.get("value") or "").strip()
                     label = str(field.get("label") or "").strip()
 
+                    if key:
+                        write_field_audio_values[key] = {
+                            "audio_url": str(field.get("audio_url") or field.get("audio") or "").strip(),
+                            "use_tts_when_no_audio": bool(field.get("use_tts_when_no_audio", False)),
+                            "tts_lang": str(field.get("tts_lang") or "").strip(),
+                        }
+
                     if key in write_field_values:
                         write_field_values[key] = text
                         write_field_keys.add(key)
@@ -7484,6 +7493,21 @@ def question_edit(request, question_id):
                 write_structure = "poem_pair"
             elif write_field_keys & {"question_text", "answer_text"}:
                 write_structure = "qa_pair"
+
+    def _get_write_field_audio_context(field_key, default_tts_lang):
+        raw = write_field_audio_values.get(field_key, {}) if isinstance(write_field_audio_values, dict) else {}
+
+        if not isinstance(raw, dict):
+            raw = {}
+
+        return {
+            "audio_url": str(raw.get("audio_url") or "").strip(),
+            "use_tts_when_no_audio": bool(raw.get("use_tts_when_no_audio", False)),
+            "tts_lang": str(raw.get("tts_lang") or default_tts_lang or "").strip(),
+        }
+
+    write_english_expression_audio = _get_write_field_audio_context("english_expression", "en")
+    write_japanese_expression_audio = _get_write_field_audio_context("japanese_expression", "ja")
 
     def _sequence_chunks_to_text(current_training):
         if not current_training:
@@ -7579,17 +7603,58 @@ def question_edit(request, question_id):
         write_fields = []
         allowed_directions = []
 
-        def _add_write_field(key, label, text):
+        def _add_write_field(key, label, text, audio_url="", use_tts_when_no_audio=False, tts_lang=""):
             cleaned_text = (text or "").strip()
 
             if not cleaned_text:
                 return
 
-            write_fields.append({
+            field_payload = {
                 "key": key,
                 "label": label,
                 "text": cleaned_text,
-            })
+            }
+
+            cleaned_audio_url = (audio_url or "").strip()
+            cleaned_tts_lang = (tts_lang or "").strip()
+
+            if cleaned_audio_url:
+                field_payload["audio_url"] = cleaned_audio_url
+
+            if use_tts_when_no_audio:
+                field_payload["use_tts_when_no_audio"] = True
+
+            if cleaned_tts_lang:
+                field_payload["tts_lang"] = cleaned_tts_lang
+
+            write_fields.append(field_payload)
+
+        def _save_uploaded_write_field_audio(field_key):
+            uploaded = request.FILES.get(f"write_{field_key}_audio_file")
+
+            if not uploaded:
+                return ""
+
+            safe_name = get_valid_filename(uploaded.name or "write_field_audio")
+            saved_path = default_storage.save(
+                f"audio/write_fields/{uuid.uuid4().hex}_{safe_name}",
+                uploaded
+            )
+            return default_storage.url(saved_path)
+
+        def _write_field_audio_payload(field_key, default_tts_lang):
+            posted_audio_url = _post_text(f"write_{field_key}_audio_url")
+            uploaded_audio_url = _save_uploaded_write_field_audio(field_key)
+
+            audio_url = uploaded_audio_url or posted_audio_url
+            use_tts = request.POST.get(f"write_{field_key}_use_tts") == "1"
+            tts_lang = _post_text(f"write_{field_key}_tts_lang") or default_tts_lang
+
+            return {
+                "audio_url": audio_url,
+                "use_tts_when_no_audio": use_tts,
+                "tts_lang": tts_lang,
+            }
 
         def _add_write_direction(prompt_key, answer_key):
             if not prompt_key or not answer_key or prompt_key == answer_key:
@@ -7612,11 +7677,28 @@ def question_edit(request, question_id):
             _add_write_direction("answer_text", "question_text")
 
         elif write_structure == "en_ja_zh":
-            _add_write_field("english_expression", "英语表达", _post_text("write_english_expression"))
+            english_expression_audio = _write_field_audio_payload("english_expression", "en")
+            japanese_expression_audio = _write_field_audio_payload("japanese_expression", "ja")
+
+            _add_write_field(
+                "english_expression",
+                "英语表达",
+                _post_text("write_english_expression"),
+                audio_url=english_expression_audio["audio_url"],
+                use_tts_when_no_audio=english_expression_audio["use_tts_when_no_audio"],
+                tts_lang=english_expression_audio["tts_lang"],
+            )
             _add_write_field("english_pronunciation", "英语发音注释", _post_text("write_english_pronunciation"))
             _add_write_field("english_definition", "英语原语释义", _post_text("write_english_definition"))
 
-            _add_write_field("japanese_expression", "日语表达", _post_text("write_japanese_expression"))
+            _add_write_field(
+                "japanese_expression",
+                "日语表达",
+                _post_text("write_japanese_expression"),
+                audio_url=japanese_expression_audio["audio_url"],
+                use_tts_when_no_audio=japanese_expression_audio["use_tts_when_no_audio"],
+                tts_lang=japanese_expression_audio["tts_lang"],
+            )
             _add_write_field("japanese_reading", "日语假名 / 读音", _post_text("write_japanese_reading"))
             _add_write_field("japanese_definition", "日语原语释义", _post_text("write_japanese_definition"))
 
@@ -7719,6 +7801,9 @@ def question_edit(request, question_id):
                 ),
                 "write_structure": write_structure,
                 "write_field_values": write_field_values,
+                "write_field_audio_values": write_field_audio_values,
+                "write_english_expression_audio": write_english_expression_audio,
+                "write_japanese_expression_audio": write_japanese_expression_audio,
             })
 
         # 通用字段先保存（旧字段继续兼容）
@@ -8141,6 +8226,9 @@ def question_edit(request, question_id):
         ),
         "write_structure": write_structure,
         "write_field_values": write_field_values,
+        "write_field_audio_values": write_field_audio_values,
+        "write_english_expression_audio": write_english_expression_audio,
+        "write_japanese_expression_audio": write_japanese_expression_audio,
     })
 
 @login_required

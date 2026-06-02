@@ -2052,10 +2052,11 @@ def build_training_payload(training, memory=None, request=None):
                 write_prompt_type = " + ".join(prompt_labels)
                 write_answer_type = " + ".join(answer_labels)
 
-                if len(prompt_fields) == 1:
-                    write_prompt_audio_url = str(prompt_fields[0].get("audio_url") or "").strip()
-                    write_prompt_use_tts = bool(prompt_fields[0].get("use_tts_when_no_audio", False))
-                    write_prompt_tts_lang = str(prompt_fields[0].get("tts_lang") or "").strip()
+                if len(prompt_keys) == 1 and prompt_keys[0] in field_map:
+                    prompt_audio_field = field_map[prompt_keys[0]]
+                    write_prompt_audio_url = str(prompt_audio_field.get("audio_url") or "").strip()
+                    write_prompt_use_tts = bool(prompt_audio_field.get("use_tts_when_no_audio", False))
+                    write_prompt_tts_lang = str(prompt_audio_field.get("tts_lang") or "").strip()
 
                 write_direction = (
                     f"{'+'.join(prompt_keys)}_to_{'+'.join(answer_keys)}"

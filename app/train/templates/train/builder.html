@@ -864,6 +864,29 @@
                         </div>
 
                         <div class="field">
+                            <label for="write_question_text_audio_url">提问音频</label>
+                            <input
+                                id="write_question_text_audio_url"
+                                type="text"
+                                placeholder="音频 URL，可留空"
+                            >
+                            <input
+                                id="write_question_text_audio_file"
+                                type="file"
+                                accept="audio/*"
+                                style="margin-top:8px;"
+                            >
+                            <label class="section-sub" style="display:block; margin-top:8px;">
+                                <input
+                                    id="write_question_text_use_tts"
+                                    type="checkbox"
+                                    checked
+                                >
+                                没有音频时用 TTS（日语）
+                            </label>
+                        </div>
+
+                        <div class="field">
                             <label for="write_answer_text">回答</label>
                             <textarea
                                 id="write_answer_text"
@@ -2074,7 +2097,12 @@
                     pushWriteDirection("previous_line", "next_line");
                     pushWriteDirection("next_line", "previous_line");
                 } else if (writeFieldValues.structure === "qa_pair") {
-                    pushWriteField("question_text", "提问", writeFieldValues.questionText);
+                    pushWriteField(
+                        "question_text",
+                        "提问",
+                        writeFieldValues.questionText,
+                        getWriteFieldAudioConfig("question_text", "ja")
+                    );
                     pushWriteField("answer_text", "回答", writeFieldValues.answerText);
 
                     pushWriteDirection("question_text", "answer_text");

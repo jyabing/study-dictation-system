@@ -5002,7 +5002,27 @@ async function loadCurrentQuestion() {
             credentials: "same-origin",
         });
 
-        const data = await response.json();
+        const responseText = await response.text();
+
+        let data = null;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            throw new Error(
+                "API 返回非 JSON。status=" +
+                response.status +
+                "，内容=" +
+                responseText.slice(0, 180)
+            );
+        }
+
+        if (!response.ok) {
+            throw new Error(
+                data.error ||
+                data.message ||
+                ("API 请求失败。status=" + response.status)
+            );
+        }
 
         if (data.empty) {
             const isSuccessEmpty = ["today_done", "all_mastered"].includes(data.reason);
@@ -5102,7 +5122,18 @@ async function loadCurrentQuestion() {
         sideNextReview.textContent = "-";
         sideCorrectAnswer.textContent = "提交后显示";
 
-        showEmptyMode("加载当前题目失败，请刷新页面重试。", "warning");
+        const errorMessage = (
+            error && error.message
+                ? error.message
+                : String(error || "未知错误")
+        );
+
+        showEmptyMode(
+            "加载当前题目失败：" + errorMessage,
+            "warning",
+            "加载失败",
+            "请把这段错误信息贴出来，方便定位。"
+        );
     } finally {
         setLoading(false);
     }

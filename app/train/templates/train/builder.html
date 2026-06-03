@@ -821,6 +821,29 @@
                         </div>
 
                         <div class="field">
+                            <label for="write_previous_line_audio_url">上一句音频</label>
+                            <input
+                                id="write_previous_line_audio_url"
+                                type="text"
+                                placeholder="音频 URL，可留空"
+                            >
+                            <input
+                                id="write_previous_line_audio_file"
+                                type="file"
+                                accept="audio/*"
+                                style="margin-top:8px;"
+                            >
+                            <label class="section-sub" style="display:block; margin-top:8px;">
+                                <input
+                                    id="write_previous_line_use_tts"
+                                    type="checkbox"
+                                    checked
+                                >
+                                没有音频时用 TTS（日语）
+                            </label>
+                        </div>
+
+                        <div class="field">
                             <label for="write_poem_next">下一句</label>
                             <textarea
                                 id="write_poem_next"
@@ -2040,7 +2063,12 @@
 
             if (itemType === "write_text") {
                 if (writeFieldValues.structure === "poem_pair") {
-                    pushWriteField("previous_line", "上一句", writeFieldValues.poemPrevious);
+                    pushWriteField(
+                        "previous_line",
+                        "上一句",
+                        writeFieldValues.poemPrevious,
+                        getWriteFieldAudioConfig("previous_line", "ja")
+                    );
                     pushWriteField("next_line", "下一句", writeFieldValues.poemNext);
 
                     pushWriteDirection("previous_line", "next_line");

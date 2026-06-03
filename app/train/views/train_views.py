@@ -7579,6 +7579,7 @@ def question_edit(request, question_id):
         }
 
     write_jp_kanji_audio = _get_write_field_audio_context("jp_kanji", "ja")
+    write_question_text_audio = _get_write_field_audio_context("question_text", "ja")
     write_english_expression_audio = _get_write_field_audio_context("english_expression", "en")
     write_japanese_expression_audio = _get_write_field_audio_context("japanese_expression", "ja")
 
@@ -7743,7 +7744,16 @@ def question_edit(request, question_id):
             _add_write_direction("next_line", "previous_line")
 
         elif write_structure == "qa_pair":
-            _add_write_field("question_text", "提问", _post_text("write_question_text"))
+            question_text_audio = _write_field_audio_payload("question_text", "ja")
+
+            _add_write_field(
+                "question_text",
+                "提问",
+                _post_text("write_question_text"),
+                audio_url=question_text_audio["audio_url"],
+                use_tts_when_no_audio=question_text_audio["use_tts_when_no_audio"],
+                tts_lang=question_text_audio["tts_lang"],
+            )
             _add_write_field("answer_text", "回答", _post_text("write_answer_text"))
 
             _add_write_direction("question_text", "answer_text")
@@ -7885,6 +7895,7 @@ def question_edit(request, question_id):
                 "write_field_values": write_field_values,
                 "write_field_audio_values": write_field_audio_values,
                 "write_jp_kanji_audio": write_jp_kanji_audio,
+                "write_question_text_audio": write_question_text_audio,
                 "write_english_expression_audio": write_english_expression_audio,
                 "write_japanese_expression_audio": write_japanese_expression_audio,
             })
@@ -8311,6 +8322,7 @@ def question_edit(request, question_id):
         "write_field_values": write_field_values,
         "write_field_audio_values": write_field_audio_values,
         "write_jp_kanji_audio": write_jp_kanji_audio,
+        "write_question_text_audio": write_question_text_audio,
         "write_english_expression_audio": write_english_expression_audio,
         "write_japanese_expression_audio": write_japanese_expression_audio,
     })

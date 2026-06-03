@@ -4671,13 +4671,58 @@ def _resolve_write_field_tts_text(training, field_key, text):
 
     return cleaned_text
 
+def _resolve_write_field_audio_config(training, field_key):
+    """
+    从写作字段中取字段级音频配置。
+    例如 jp_kanji / previous_line / question_text / english_expression / japanese_expression。
+    """
+    cleaned_field_key = (field_key or "").strip()
+
+    if not training or not cleaned_field_key or cleaned_field_key == "legacy":
+        return {}
+
+    meta = _get_training_meta_dict(training)
+
+    if not isinstance(meta, dict):
+        return {}
+
+    write_meta = meta.get("write")
+
+    if not isinstance(write_meta, dict):
+        return {}
+
+    raw_fields = write_meta.get("fields") or []
+
+    if not isinstance(raw_fields, list):
+        return {}
+
+    for field in raw_fields:
+        if not isinstance(field, dict):
+            continue
+
+        key = str(field.get("key") or "").strip()
+
+        if key != cleaned_field_key:
+            continue
+
+        return {
+            "audio_url": str(field.get("audio_url") or field.get("audio") or "").strip(),
+            "use_tts_when_no_audio": bool(field.get("use_tts_when_no_audio", False)),
+            "tts_lang": str(field.get("tts_lang") or "").strip(),
+            "text": str(field.get("text") or field.get("value") or "").strip(),
+        }
+
+    return {}
+
 def _resolve_dictation_audio(result):
     """
     解析听写题播放音频。
 
-    第一版规则：
-    - legacy 来源优先使用 TrainingItem.audio_file
-    - 其他 write_fields 来源先使用 TTS，避免一条 TrainingItem 多语言字段时播错上传音频
+    当前规则：
+    - legacy 来源继续优先使用 TrainingItem.audio_file。
+    - write_fields 来源优先使用该字段自己的 audio_url。
+    - 如果该字段没有 audio_url，但勾选 use_tts_when_no_audio，则用该字段 tts_lang 生成 TTS。
+    - 如果字段没有显式配置，则保留旧的自动 TTS fallback，保证听写题仍有声音。
     """
     text = (getattr(result, "dictation_text_snapshot", "") or "").strip()
 
@@ -4688,7 +4733,6 @@ def _resolve_dictation_audio(result):
     field_label = (getattr(result, "dictation_field_label", "") or "").strip()
 
     training = getattr(result, "training_item", None)
-    tts_text = _resolve_write_field_tts_text(training, field_key, text)
 
     if field_key == "legacy" and training and getattr(training, "audio_file", None):
         try:
@@ -4699,14 +4743,31 @@ def _resolve_dictation_audio(result):
         if uploaded_url:
             return uploaded_url
 
-    if field_label == "英语":
+    field_audio_config = _resolve_write_field_audio_config(training, field_key)
+    field_audio_url = str(field_audio_config.get("audio_url") or "").strip()
+
+    if field_audio_url:
+        return field_audio_url
+
+    tts_text = _resolve_write_field_tts_text(training, field_key, text)
+
+    configured_tts_lang = str(field_audio_config.get("tts_lang") or "").strip()
+    use_field_tts = bool(field_audio_config.get("use_tts_when_no_audio", False))
+
+    if use_field_tts:
+        tts_lang = _resolve_tts_lang_for_text(
+            tts_text,
+            configured_lang=configured_tts_lang,
+            fallback_lang="ja",
+        )
+    elif field_label == "英语":
         tts_lang = "en"
     elif field_label == "日语":
         tts_lang = "ja"
     else:
         tts_lang = _resolve_tts_lang_for_text(
             tts_text,
-            configured_lang=None,
+            configured_lang=configured_tts_lang or None,
             fallback_lang="ja",
         )
 

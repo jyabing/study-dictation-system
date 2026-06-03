@@ -7578,6 +7578,7 @@ def question_edit(request, question_id):
             "tts_lang": str(raw.get("tts_lang") or default_tts_lang or "").strip(),
         }
 
+    write_jp_kanji_audio = _get_write_field_audio_context("jp_kanji", "ja")
     write_english_expression_audio = _get_write_field_audio_context("english_expression", "en")
     write_japanese_expression_audio = _get_write_field_audio_context("japanese_expression", "ja")
 
@@ -7789,7 +7790,16 @@ def question_edit(request, question_id):
             _add_write_direction("chinese_meaning", "english_expression+japanese_expression")
 
         else:
-            _add_write_field("jp_kanji", "日文汉字", _post_text("write_jp_kanji"))
+            jp_kanji_audio = _write_field_audio_payload("jp_kanji", "ja")
+
+            _add_write_field(
+                "jp_kanji",
+                "日文汉字",
+                _post_text("write_jp_kanji"),
+                audio_url=jp_kanji_audio["audio_url"],
+                use_tts_when_no_audio=jp_kanji_audio["use_tts_when_no_audio"],
+                tts_lang=jp_kanji_audio["tts_lang"],
+            )
             _add_write_field("kana", "假名", _post_text("write_kana"))
             _add_write_field("zh_meaning", "中文意译", _post_text("write_zh_meaning"))
 
@@ -7874,6 +7884,7 @@ def question_edit(request, question_id):
                 "write_structure": write_structure,
                 "write_field_values": write_field_values,
                 "write_field_audio_values": write_field_audio_values,
+                "write_jp_kanji_audio": write_jp_kanji_audio,
                 "write_english_expression_audio": write_english_expression_audio,
                 "write_japanese_expression_audio": write_japanese_expression_audio,
             })
@@ -8299,6 +8310,7 @@ def question_edit(request, question_id):
         "write_structure": write_structure,
         "write_field_values": write_field_values,
         "write_field_audio_values": write_field_audio_values,
+        "write_jp_kanji_audio": write_jp_kanji_audio,
         "write_english_expression_audio": write_english_expression_audio,
         "write_japanese_expression_audio": write_japanese_expression_audio,
     })

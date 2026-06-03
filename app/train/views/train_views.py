@@ -7579,6 +7579,7 @@ def question_edit(request, question_id):
         }
 
     write_jp_kanji_audio = _get_write_field_audio_context("jp_kanji", "ja")
+    write_previous_line_audio = _get_write_field_audio_context("previous_line", "ja")
     write_question_text_audio = _get_write_field_audio_context("question_text", "ja")
     write_english_expression_audio = _get_write_field_audio_context("english_expression", "en")
     write_japanese_expression_audio = _get_write_field_audio_context("japanese_expression", "ja")
@@ -7737,7 +7738,16 @@ def question_edit(request, question_id):
             allowed_directions.append(f"{prompt_key}_to_{answer_key}")
 
         if write_structure == "poem_pair":
-            _add_write_field("previous_line", "上一句", _post_text("write_previous_line"))
+            previous_line_audio = _write_field_audio_payload("previous_line", "ja")
+
+            _add_write_field(
+                "previous_line",
+                "上一句",
+                _post_text("write_previous_line"),
+                audio_url=previous_line_audio["audio_url"],
+                use_tts_when_no_audio=previous_line_audio["use_tts_when_no_audio"],
+                tts_lang=previous_line_audio["tts_lang"],
+            )
             _add_write_field("next_line", "下一句", _post_text("write_next_line"))
 
             _add_write_direction("previous_line", "next_line")
@@ -7895,6 +7905,7 @@ def question_edit(request, question_id):
                 "write_field_values": write_field_values,
                 "write_field_audio_values": write_field_audio_values,
                 "write_jp_kanji_audio": write_jp_kanji_audio,
+                "write_previous_line_audio": write_previous_line_audio,
                 "write_question_text_audio": write_question_text_audio,
                 "write_english_expression_audio": write_english_expression_audio,
                 "write_japanese_expression_audio": write_japanese_expression_audio,
@@ -8322,6 +8333,7 @@ def question_edit(request, question_id):
         "write_field_values": write_field_values,
         "write_field_audio_values": write_field_audio_values,
         "write_jp_kanji_audio": write_jp_kanji_audio,
+        "write_previous_line_audio": write_previous_line_audio,
         "write_question_text_audio": write_question_text_audio,
         "write_english_expression_audio": write_english_expression_audio,
         "write_japanese_expression_audio": write_japanese_expression_audio,

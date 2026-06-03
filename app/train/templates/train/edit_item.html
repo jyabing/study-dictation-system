@@ -251,6 +251,38 @@
                                         </div>
 
                                         <div class="field-group">
+                                            <div class="field-label">上一句音频</div>
+                                            <input
+                                                type="text"
+                                                name="write_previous_line_audio_url"
+                                                class="input"
+                                                placeholder="音频 URL，可留空"
+                                                value="{{ write_previous_line_audio.audio_url|default:'' }}"
+                                            >
+                                            <input
+                                                type="file"
+                                                name="write_previous_line_audio_file"
+                                                accept="audio/*"
+                                                class="input"
+                                                style="margin-top:8px;"
+                                            >
+                                            <label class="field-help" style="display:block; margin-top:8px;">
+                                                <input
+                                                    type="checkbox"
+                                                    name="write_previous_line_use_tts"
+                                                    value="1"
+                                                    {% if write_previous_line_audio.use_tts_when_no_audio %}checked{% endif %}
+                                                >
+                                                没有音频时用 TTS（日语）
+                                            </label>
+                                            <input
+                                                type="hidden"
+                                                name="write_previous_line_tts_lang"
+                                                value="{{ write_previous_line_audio.tts_lang|default:'ja' }}"
+                                            >
+                                        </div>
+
+                                        <div class="field-group">
                                             <div class="field-label">下一句</div>
                                             <textarea
                                                 name="write_next_line"

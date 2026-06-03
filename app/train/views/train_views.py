@@ -7335,11 +7335,26 @@ def builder_save(request):
                 if not key or not label or not text:
                     continue
 
-                write_fields.append({
+                field_payload = {
                     "key": key,
                     "label": label,
                     "text": text,
-                })
+                }
+
+                audio_url = str(field.get("audio_url") or field.get("audio") or "").strip()
+                use_tts_when_no_audio = bool(field.get("use_tts_when_no_audio", False))
+                tts_lang = str(field.get("tts_lang") or "").strip()
+
+                if audio_url:
+                    field_payload["audio_url"] = audio_url
+
+                if use_tts_when_no_audio:
+                    field_payload["use_tts_when_no_audio"] = True
+
+                if tts_lang:
+                    field_payload["tts_lang"] = tts_lang
+
+                write_fields.append(field_payload)
 
         if not answer_text and len(write_fields) < 2:
             question.delete()

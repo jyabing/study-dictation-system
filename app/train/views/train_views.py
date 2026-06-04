@@ -1857,7 +1857,48 @@ def build_training_payload(training, memory=None, request=None):
     })
 
     # =========================
-    # 顺序听说：为每一步累计语块生成 TTS 音频
+    # 顺序听说：准备语块音频
+    # - speak_sequence：每一步播放“当前新增语块”的示范音频
+    # - listen_sequence：仍然保留后面的累计步骤 TTS
+    # =========================
+    resolved_sequence_chunks = []
+    raw_sequence_chunks_for_payload = training.sequence_chunks or []
+
+    if isinstance(raw_sequence_chunks_for_payload, list):
+        for chunk_index, chunk in enumerate(raw_sequence_chunks_for_payload):
+            if isinstance(chunk, dict):
+                item = dict(chunk)
+                chunk_text = str(item.get("text") or "").strip()
+                chunk_audio_url = str(item.get("audio_url") or item.get("audio") or "").strip()
+                chunk_use_tts = bool(item.get("use_tts_when_no_audio", False))
+                chunk_tts_lang = str(item.get("tts_lang") or answer_tts_lang or "en").strip()
+            else:
+                item = {
+                    "order": chunk_index + 1,
+                    "text": str(chunk or "").strip(),
+                }
+                chunk_text = item["text"]
+                chunk_audio_url = ""
+                chunk_use_tts = False
+                chunk_tts_lang = str(answer_tts_lang or "en").strip()
+
+            if chunk_text and not chunk_audio_url and chunk_use_tts:
+                chunk_audio_url = _build_tts_audio(
+                    text=chunk_text,
+                    lang=chunk_tts_lang,
+                    prefix=f"sequence_chunk_q{training.question_id}_{chunk_index + 1}"
+                )
+
+            if chunk_audio_url:
+                item["audio_url"] = chunk_audio_url
+
+            if chunk_tts_lang:
+                item["tts_lang"] = chunk_tts_lang
+
+            resolved_sequence_chunks.append(item)
+
+    # =========================
+    # 顺序听说：为 listen_sequence 每一步累计语块生成 TTS 音频
     # =========================
     sequence_steps = []
 
@@ -2254,7 +2295,7 @@ def build_training_payload(training, memory=None, request=None):
         "answer_text": resolved_answer_text,
         "target_answer": resolved_answer_text,
         "correct_answers": resolved_cloze_answers or ([resolved_answer_text] if resolved_answer_text else []),
-        "sequence_chunks": training.sequence_chunks or [],
+        "sequence_chunks": resolved_sequence_chunks,
         "sequence_generation_mode": sequence_generation_mode,
 
         "write_direction": write_direction,

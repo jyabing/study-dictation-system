@@ -2901,6 +2901,16 @@ function renderSequenceStep() {
             <div class="sequence-current-item">
                 <div>${currentText}</div>
                 ${
+                    currentAudioUrl
+                        ? `
+                            <div style="margin-top:12px;">
+                                <div class="muted-text" style="margin-bottom:6px;">当前新增语块示范音频</div>
+                                <audio class="audio-player" controls src="${escapeHtml(currentAudioUrl)}"></audio>
+                            </div>
+                        `
+                        : ""
+                }
+                ${
                     currentImageUrls.length
                         ? `
                             <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; align-items:flex-start;">
@@ -3052,6 +3062,7 @@ function showSequenceWorkspace(payload) {
         const start = range[0];
         const end = range[1];
         const rawChunks = chunks.slice(start, end);
+        const currentChunk = rawChunks.length ? rawChunks[rawChunks.length - 1] : {};
         const imageUrls = rawChunks
             .map(function (chunk) {
                 return String((chunk && chunk.image_url) || "").trim();
@@ -3063,6 +3074,7 @@ function showSequenceWorkspace(payload) {
         return {
             index: stepIndex,
             text: joinSequenceChunks(cleanChunks.slice(start, end)),
+            audio_url: String((currentChunk && currentChunk.audio_url) || "").trim(),
             image_url: imageUrls.length ? imageUrls[imageUrls.length - 1] : "",
             image_urls: imageUrls,
             sequence_generation_mode: sequenceGenerationMode,

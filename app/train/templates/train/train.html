@@ -3248,6 +3248,29 @@ function getAudioFilenameForMimeType(mimeType) {
     return "speech.webm";
 }
 
+function buildSequenceAsrPrompt(targetText, lang) {
+    const text = String(targetText || "").trim();
+    const normalizedLang = String(lang || "").trim().toLowerCase();
+
+    if (!text) {
+        return "";
+    }
+
+    if (normalizedLang.startsWith("en")) {
+        return `This is English speech. The speaker is reading this phrase: ${text}`;
+    }
+
+    if (normalizedLang.startsWith("ja")) {
+        return `これは日本語の発話です。次の語句を読み上げています：${text}`;
+    }
+
+    if (normalizedLang.startsWith("zh")) {
+        return `这是中文语音。说话者正在朗读这个短语：${text}`;
+    }
+
+    return `The speaker is reading this phrase: ${text}`;
+}
+
 function hasBackendRecorderSupport() {
     return Boolean(
         navigator.mediaDevices
@@ -3348,11 +3371,13 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
 
     if (state.inputMode === "sequence") {
         const currentSequenceText = String(state.sequenceItems[state.sequenceIndex] || "").trim();
-        if (currentSequenceText) {
-            formData.append(
-                "asr_prompt",
-                `これは日本語の発話です。次の語句を読み上げています：${currentSequenceText}`
-            );
+        const sequenceAsrPrompt = buildSequenceAsrPrompt(
+            currentSequenceText,
+            state.recognitionLang || "en-US"
+        );
+
+        if (sequenceAsrPrompt) {
+            formData.append("asr_prompt", sequenceAsrPrompt);
         }
     }
 

@@ -564,9 +564,9 @@
                                 </div>
 
                                 <div style="margin-top:12px;">
-                                    <div class="field-label">语块图片重新上传（仅 speak_sequence 使用）</div>
+                                    <div class="field-label">语块图片 / 示范音频重新上传（speak_sequence / listen_sequence 使用）</div>
                                     <div id="edit-sequence-chunk-image-inputs-static">
-                                        {% if display_qtype == "speak_sequence" %}
+                                        {% if display_qtype == "speak_sequence" or display_qtype == "listen_sequence" %}
                                             {% for chunk in sequence_chunks_for_upload %}
                                                 <div class="field-group full" style="margin-top:10px;">
                                                     <div class="field-label">语块 {{ forloop.counter }}</div>
@@ -664,11 +664,11 @@
                                                 <div class="field-help">请先填写顺序语块。</div>
                                             {% endfor %}
                                         {% else %}
-                                            <div class="field-help">当前题型不是 speak_sequence，不使用语块图片上传。</div>
+                                            <div class="field-help">当前题型不是 speak_sequence / listen_sequence，不使用语块图片和音频上传。</div>
                                         {% endif %}
                                     </div>
                                     <div class="field-help">
-                                        上传新图片后，会覆盖该语块当前的图片 URL；不上传则保留文本框里 | 后面的 URL。
+                                        上传新图片 / 音频后，会覆盖该语块当前的图片 URL / 音频 URL；不上传则保留当前输入框中的 URL。
                                     </div>
                                 </div>
                             </div>
@@ -1965,8 +1965,8 @@ function renderEditSequenceChunkImageInputs() {
 
     wrap.innerHTML = "";
 
-    if (qtypeSelect.value !== "speak_sequence") {
-        wrap.innerHTML = '<div class="field-help">当前题型不是 speak_sequence，不使用语块图片上传。</div>';
+    if (qtypeSelect.value !== "speak_sequence" && qtypeSelect.value !== "listen_sequence") {
+        wrap.innerHTML = '<div class="field-help">当前题型不是 speak_sequence / listen_sequence，不使用语块图片和音频上传。</div>';
         return;
     }
 

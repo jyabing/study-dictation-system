@@ -1481,8 +1481,8 @@
 
             wrap.innerHTML = "";
 
-            if (itemType !== "speak_sequence") {
-                wrap.innerHTML = '<div class="section-sub">当前题型不是 speak_sequence，不使用语块图片上传。</div>';
+            if (itemType !== "speak_sequence" && itemType !== "listen_sequence") {
+                wrap.innerHTML = '<div class="section-sub">当前题型不是 speak_sequence / listen_sequence，不使用语块图片和音频上传。</div>';
                 return;
             }
 

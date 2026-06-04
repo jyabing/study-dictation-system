@@ -7143,6 +7143,10 @@ def builder_save(request):
 
             image_url = str(chunk.get("image_url") or "").strip()
             image_upload_key = str(chunk.get("image_upload_key") or "").strip()
+            audio_url = str(chunk.get("audio_url") or chunk.get("audio") or "").strip()
+            audio_upload_key = str(chunk.get("audio_upload_key") or "").strip()
+            use_tts_when_no_audio = bool(chunk.get("use_tts_when_no_audio", False))
+            tts_lang = str(chunk.get("tts_lang") or "").strip()
 
             if image_upload_key:
                 uploaded_sequence_image = request.FILES.get(image_upload_key)
@@ -7155,11 +7159,33 @@ def builder_save(request):
                     )
                     image_url = default_storage.url(saved_path)
 
-            sequence_chunks.append({
+            if audio_upload_key:
+                uploaded_sequence_audio = request.FILES.get(audio_upload_key)
+
+                if uploaded_sequence_audio:
+                    safe_name = get_valid_filename(uploaded_sequence_audio.name or "sequence_chunk_audio")
+                    saved_path = default_storage.save(
+                        f"audio/sequence/{uuid.uuid4().hex}_{safe_name}",
+                        uploaded_sequence_audio
+                    )
+                    audio_url = default_storage.url(saved_path)
+
+            sequence_chunk_payload = {
                 "order": order,
                 "text": text,
                 "image_url": image_url,
-            })
+            }
+
+            if audio_url:
+                sequence_chunk_payload["audio_url"] = audio_url
+
+            if use_tts_when_no_audio:
+                sequence_chunk_payload["use_tts_when_no_audio"] = True
+
+            if tts_lang:
+                sequence_chunk_payload["tts_lang"] = tts_lang
+
+            sequence_chunks.append(sequence_chunk_payload)
 
     if not lesson_id:
         return JsonResponse({"ok": False, "error": "lesson_id 不能为空"}, status=400)

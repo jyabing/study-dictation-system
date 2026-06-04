@@ -1506,6 +1506,10 @@
                 const imageUrl = String(parts.slice(1).join("|") || "").trim();
                 const inputId = `sequence_chunk_image_file_${index}`;
                 const previewId = `sequence_chunk_image_preview_${index}`;
+                const audioUrlInputId = `sequence_chunk_audio_url_${index}`;
+                const audioFileInputId = `sequence_chunk_audio_file_${index}`;
+                const audioTtsInputId = `sequence_chunk_use_tts_${index}`;
+                const audioLangInputId = `sequence_chunk_tts_lang_${index}`;
 
                 const row = document.createElement("div");
                 row.className = "choice-row";
@@ -1515,7 +1519,7 @@
                         <div class="section-sub">${escapeHtml(text || "未填写文本")}</div>
                         ${
                             imageUrl
-                                ? `<div class="section-sub">当前 URL：${escapeHtml(imageUrl)}</div>`
+                                ? `<div class="section-sub">当前图片 URL：${escapeHtml(imageUrl)}</div>`
                                 : `<div class="section-sub">当前没有图片 URL。</div>`
                         }
                     </div>
@@ -1528,6 +1532,40 @@
                             onchange="updateSequenceChunkImagePreview(${index}); updatePreview();"
                         >
                         <div id="${previewId}" class="section-sub" style="margin-top:8px;"></div>
+                    </div>
+                    <div>
+                        <label>语块示范音频 URL</label>
+                        <input
+                            id="${audioUrlInputId}"
+                            type="text"
+                            placeholder="音频 URL，可留空"
+                            oninput="updatePreview();"
+                        >
+                        <label style="display:block; margin-top:8px;">语块示范音频上传</label>
+                        <input
+                            id="${audioFileInputId}"
+                            type="file"
+                            accept="audio/*"
+                            onchange="updatePreview();"
+                        >
+                        <label class="section-sub" style="display:block; margin-top:8px;">
+                            <input
+                                id="${audioTtsInputId}"
+                                type="checkbox"
+                                checked
+                                onchange="updatePreview();"
+                            >
+                            没有音频时用 TTS
+                        </label>
+                        <select
+                            id="${audioLangInputId}"
+                            onchange="updatePreview();"
+                            style="margin-top:6px;"
+                        >
+                            <option value="en" selected>英语 en</option>
+                            <option value="ja">日语 ja</option>
+                            <option value="zh-CN">中文 zh-CN</option>
+                        </select>
                     </div>
                 `;
                 wrap.appendChild(row);
@@ -2298,6 +2336,30 @@
                 if (imageFileInput && imageFileInput.files && imageFileInput.files.length) {
                     chunk.image_upload_key = "sequence_chunk_image_file_" + index;
                 }
+
+                const audioUrlInput = document.getElementById("sequence_chunk_audio_url_" + index);
+                const audioFileInput = document.getElementById("sequence_chunk_audio_file_" + index);
+                const audioTtsInput = document.getElementById("sequence_chunk_use_tts_" + index);
+                const audioLangInput = document.getElementById("sequence_chunk_tts_lang_" + index);
+
+                const audioUrl = audioUrlInput ? audioUrlInput.value.trim() : "";
+                const ttsLang = audioLangInput ? audioLangInput.value.trim() : "en";
+
+                if (audioUrl) {
+                    chunk.audio_url = audioUrl;
+                }
+
+                if (audioFileInput && audioFileInput.files && audioFileInput.files.length) {
+                    chunk.audio_upload_key = "sequence_chunk_audio_file_" + index;
+                }
+
+                if (audioTtsInput && audioTtsInput.checked) {
+                    chunk.use_tts_when_no_audio = true;
+                }
+
+                if (ttsLang) {
+                    chunk.tts_lang = ttsLang;
+                }
             });
 
             const payload = {
@@ -2373,6 +2435,14 @@
 
                     if (imageFileInput && imageFileInput.files && imageFileInput.files.length) {
                         formData.append(chunk.image_upload_key, imageFileInput.files[0]);
+                    }
+                }
+
+                if (chunk.audio_upload_key) {
+                    const audioFileInput = document.getElementById(chunk.audio_upload_key);
+
+                    if (audioFileInput && audioFileInput.files && audioFileInput.files.length) {
+                        formData.append(chunk.audio_upload_key, audioFileInput.files[0]);
                     }
                 }
             });

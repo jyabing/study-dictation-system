@@ -7739,9 +7739,43 @@ def question_edit(request, question_id):
         return rows
 
     def _sequence_chunks_for_upload(current_training):
-        return _sequence_chunks_for_upload_from_text(
-            _sequence_chunks_to_text(current_training)
-        )
+        if not current_training:
+            return []
+
+        raw_chunks = current_training.sequence_chunks or []
+
+        if not isinstance(raw_chunks, list):
+            return []
+
+        rows = []
+
+        for index, chunk in enumerate(raw_chunks):
+            if isinstance(chunk, dict):
+                text = str(chunk.get("text") or "").strip()
+                image_url = str(chunk.get("image_url") or "").strip()
+                audio_url = str(chunk.get("audio_url") or chunk.get("audio") or "").strip()
+                use_tts_when_no_audio = bool(chunk.get("use_tts_when_no_audio", False))
+                tts_lang = str(chunk.get("tts_lang") or "en").strip()
+            else:
+                text = str(chunk or "").strip()
+                image_url = ""
+                audio_url = ""
+                use_tts_when_no_audio = False
+                tts_lang = "en"
+
+            if not text:
+                continue
+
+            rows.append({
+                "index": index,
+                "text": text,
+                "image_url": image_url,
+                "audio_url": audio_url,
+                "use_tts_when_no_audio": use_tts_when_no_audio,
+                "tts_lang": tts_lang or "en",
+            })
+
+        return rows
 
     sequence_generation_mode = "forward"
 
@@ -8056,11 +8090,42 @@ def question_edit(request, question_id):
                         )
                         image_url = default_storage.url(saved_path)
 
-                    sequence_chunks.append({
+                    audio_url = _post_text(f"sequence_chunk_audio_url_{index}")
+                    uploaded_sequence_audio = request.FILES.get(
+                        f"sequence_chunk_audio_file_{index}"
+                    )
+
+                    if uploaded_sequence_audio:
+                        safe_name = get_valid_filename(
+                            uploaded_sequence_audio.name or "sequence_chunk_audio"
+                        )
+                        saved_path = default_storage.save(
+                            f"audio/sequence/{uuid.uuid4().hex}_{safe_name}",
+                            uploaded_sequence_audio
+                        )
+                        audio_url = default_storage.url(saved_path)
+
+                    use_tts_when_no_audio = (
+                        request.POST.get(f"sequence_chunk_use_tts_{index}") == "1"
+                    )
+                    tts_lang = _post_text(f"sequence_chunk_tts_lang_{index}") or "en"
+
+                    sequence_chunk_payload = {
                         "order": index + 1,
                         "text": text,
                         "image_url": image_url,
-                    })
+                    }
+
+                    if audio_url:
+                        sequence_chunk_payload["audio_url"] = audio_url
+
+                    if use_tts_when_no_audio:
+                        sequence_chunk_payload["use_tts_when_no_audio"] = True
+
+                    if tts_lang:
+                        sequence_chunk_payload["tts_lang"] = tts_lang
+
+                    sequence_chunks.append(sequence_chunk_payload)
 
                 training.sequence_chunks = sequence_chunks
 

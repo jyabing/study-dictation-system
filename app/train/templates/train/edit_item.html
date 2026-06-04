@@ -604,6 +604,61 @@
                                                         class="field-help"
                                                         style="margin-top:8px;"
                                                     ></div>
+
+                                                    <div
+                                                        class="field-help"
+                                                        style="margin-top:14px; font-weight:700; color:#1d4ed8;"
+                                                    >
+                                                        语块示范音频
+                                                    </div>
+
+                                                    {% if chunk.audio_url %}
+                                                        <div class="field-help">当前音频：{{ chunk.audio_url }}</div>
+                                                        <audio
+                                                            controls
+                                                            src="{{ chunk.audio_url }}"
+                                                            style="display:block; width:100%; margin-top:8px;"
+                                                        ></audio>
+                                                    {% else %}
+                                                        <div class="field-help">当前没有语块音频 URL。</div>
+                                                    {% endif %}
+
+                                                    <input
+                                                        type="text"
+                                                        name="sequence_chunk_audio_url_{{ chunk.index }}"
+                                                        class="input"
+                                                        placeholder="音频 URL，可留空"
+                                                        value="{{ chunk.audio_url|default:'' }}"
+                                                        style="margin-top:8px;"
+                                                    >
+
+                                                    <input
+                                                        type="file"
+                                                        name="sequence_chunk_audio_file_{{ chunk.index }}"
+                                                        accept="audio/*"
+                                                        class="input"
+                                                        style="display:block; width:100%; margin-top:6px; padding:10px; border:2px dashed #60a5fa; border-radius:12px; background:#eff6ff;"
+                                                    >
+
+                                                    <label class="field-help" style="display:block; margin-top:8px;">
+                                                        <input
+                                                            type="checkbox"
+                                                            name="sequence_chunk_use_tts_{{ chunk.index }}"
+                                                            value="1"
+                                                            {% if chunk.use_tts_when_no_audio %}checked{% endif %}
+                                                        >
+                                                        没有音频时用 TTS
+                                                    </label>
+
+                                                    <select
+                                                        name="sequence_chunk_tts_lang_{{ chunk.index }}"
+                                                        class="select"
+                                                        style="margin-top:6px;"
+                                                    >
+                                                        <option value="en" {% if chunk.tts_lang == "en" %}selected{% endif %}>英语 en</option>
+                                                        <option value="ja" {% if chunk.tts_lang == "ja" %}selected{% endif %}>日语 ja</option>
+                                                        <option value="zh-CN" {% if chunk.tts_lang == "zh-CN" %}selected{% endif %}>中文 zh-CN</option>
+                                                    </select>
                                                 </div>
                                             {% empty %}
                                                 <div class="field-help">请先填写顺序语块。</div>

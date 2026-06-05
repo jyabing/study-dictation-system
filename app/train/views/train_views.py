@@ -1898,23 +1898,28 @@ def build_training_payload(training, memory=None, request=None):
             resolved_sequence_chunks.append(item)
 
     # =========================
-    # 顺序听说：为 listen_sequence 每一步累计语块生成 TTS 音频
+    # 顺序听说：为每一步累计语块生成 TTS 音频
+    # - listen_sequence：隐藏文本，只听累计音频后模仿
+    # - speak_sequence：显示累计文本，同时播放同样累计文本的示范音频
     # =========================
     sequence_steps = []
 
-    if training.item_type == "listen_sequence":
-        raw_sequence_chunks = training.sequence_chunks or []
-
+    if training.item_type in {"listen_sequence", "speak_sequence"}:
         clean_sequence_chunks = []
-        if isinstance(raw_sequence_chunks, list):
-            for chunk in raw_sequence_chunks:
-                if isinstance(chunk, dict):
-                    text = str(chunk.get("text") or "").strip()
-                else:
-                    text = str(chunk or "").strip()
 
-                if text:
-                    clean_sequence_chunks.append(text)
+        for chunk in resolved_sequence_chunks:
+            if isinstance(chunk, dict):
+                text = str(chunk.get("text") or "").strip()
+                image_url = str(chunk.get("image_url") or "").strip()
+            else:
+                text = str(chunk or "").strip()
+                image_url = ""
+
+            if text:
+                clean_sequence_chunks.append({
+                    "text": text,
+                    "image_url": image_url,
+                })
 
         def _join_sequence_parts(parts):
             has_ascii_word = any(re.search(r"[A-Za-z]", part or "") for part in parts)
@@ -1938,22 +1943,35 @@ def build_training_payload(training, memory=None, request=None):
         )
 
         for step_number, (start, end) in enumerate(sequence_ranges, start=1):
-            step_parts = clean_sequence_chunks[start:end]
+            step_chunks = clean_sequence_chunks[start:end]
+            step_parts = [
+                chunk["text"]
+                for chunk in step_chunks
+                if chunk.get("text")
+            ]
             step_text = _join_sequence_parts(step_parts).strip()
 
             if not step_text:
                 continue
 
+            image_urls = [
+                chunk["image_url"]
+                for chunk in step_chunks
+                if chunk.get("image_url")
+            ]
+
             step_audio_url = _build_tts_audio(
                 text=step_text,
                 lang=answer_tts_lang,
-                prefix=f"listen_sequence_q{training.question_id}_s{step_number}"
+                prefix=f"{training.item_type}_q{training.question_id}_s{step_number}"
             )
 
             sequence_steps.append({
                 "index": step_number - 1,
                 "text": step_text,
                 "audio_url": step_audio_url or "",
+                "image_url": image_urls[-1] if image_urls else "",
+                "image_urls": image_urls,
                 "sequence_generation_mode": sequence_generation_mode,
                 "range_start": start,
                 "range_end": end,

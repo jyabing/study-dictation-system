@@ -18,6 +18,7 @@ from .views.train_views import (
     dictation_session_detail,
     dictation_result_submit,
     asr_transcribe_api,
+    audio_search_api,
     practice_player_page,
     practice_library_page,
     practice_playlist_create,
@@ -108,6 +109,7 @@ urlpatterns = [
     path("api/book/<int:book_id>/train/", book_train_api, name="book-train-api"),
     path("api/book/<int:book_id>/train/manual-upgrade/", book_train_manual_upgrade, name="book-train-manual-upgrade"),
     path("api/asr/transcribe/", asr_transcribe_api, name="asr-transcribe-api"),
+    path("api/audio/search/", audio_search_api, name="audio-search-api"),
 
     # Global Train
     path("train/global/due/", global_due_train, name="global-due-train"),

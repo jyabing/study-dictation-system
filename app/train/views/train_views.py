@@ -7057,6 +7057,189 @@ def _normalize_choices(raw_choices, selection_mode="single", reveal_text_on_wron
     return normalized, correct_texts
 
 
+@login_required
+def audio_search_api(request):
+    """
+    按文本搜索已有音频 URL，第一版只读查询，不修改任何数据。
+
+    用途：
+    - 避免同一句音频在 write / sequence / listen / speak 中重复上传。
+    - 先返回可复用 URL，后续再接 builder / edit 页面按钮。
+    """
+    if request.method != "GET":
+        return JsonResponse({"ok": False, "error": "GET only"}, status=405)
+
+    query = (request.GET.get("q") or "").strip()
+    limit_raw = request.GET.get("limit") or "20"
+
+    try:
+        limit = int(limit_raw)
+    except (TypeError, ValueError):
+        limit = 20
+
+    limit = max(1, min(limit, 50))
+
+    if not query:
+        return JsonResponse({
+            "ok": False,
+            "error": "query_required",
+            "message": "请提供 q 参数。",
+        }, status=400)
+
+    lowered_query = query.lower()
+    results = []
+    seen_urls = set()
+
+    def add_result(source, training, text, audio_url, extra=None):
+        cleaned_text = str(text or "").strip()
+        cleaned_audio_url = str(audio_url or "").strip()
+
+        if not cleaned_audio_url:
+            return
+
+        if cleaned_audio_url in seen_urls:
+            return
+
+        if lowered_query not in cleaned_text.lower():
+            return
+
+        seen_urls.add(cleaned_audio_url)
+
+        item = {
+            "source": source,
+            "training_id": training.id if training else None,
+            "question_id": training.question_id if training else None,
+            "item_type": training.item_type if training else "",
+            "text": cleaned_text,
+            "audio_url": cleaned_audio_url,
+        }
+
+        if extra:
+            item.update(extra)
+
+        results.append(item)
+
+    trainings = (
+        TrainingItem.objects
+        .select_related("question", "question__lesson", "question__lesson__book")
+        .order_by("-id")
+    )
+
+    for training in trainings:
+        if len(results) >= limit:
+            break
+
+        # 1. TrainingItem.audio_file / answer_audio_file
+        source_text = str(training.source_text or training.prompt_text or "").strip()
+        target_text = str(training.target_answer or "").strip()
+
+        if training.audio_file:
+            try:
+                add_result(
+                    "training_audio_file",
+                    training,
+                    source_text,
+                    training.audio_file.url,
+                )
+            except Exception:
+                pass
+
+        if len(results) >= limit:
+            break
+
+        if training.answer_audio_file:
+            try:
+                add_result(
+                    "answer_audio_file",
+                    training,
+                    target_text or source_text,
+                    training.answer_audio_file.url,
+                )
+            except Exception:
+                pass
+
+        if len(results) >= limit:
+            break
+
+        # 2. sequence_chunks[].audio_url
+        chunks = training.sequence_chunks or []
+        if isinstance(chunks, list):
+            for index, chunk in enumerate(chunks):
+                if not isinstance(chunk, dict):
+                    continue
+
+                add_result(
+                    "sequence_chunk",
+                    training,
+                    chunk.get("text") or "",
+                    chunk.get("audio_url") or chunk.get("audio") or "",
+                    {
+                        "chunk_index": index,
+                        "chunk_order": chunk.get("order") or index + 1,
+                    }
+                )
+
+                if len(results) >= limit:
+                    break
+
+        if len(results) >= limit:
+            break
+
+        # 3. choices / write fields audio_url
+        choices = training.choices or []
+        if isinstance(choices, list):
+            for choice_index, choice in enumerate(choices):
+                if not isinstance(choice, dict):
+                    continue
+
+                add_result(
+                    "choice",
+                    training,
+                    choice.get("text") or choice.get("content") or "",
+                    choice.get("audio_url") or choice.get("audio") or "",
+                    {
+                        "choice_index": choice_index,
+                    }
+                )
+
+                if len(results) >= limit:
+                    break
+
+                meta = choice.get("_meta") or {}
+                write = meta.get("write") if isinstance(meta, dict) else {}
+                fields = write.get("fields") if isinstance(write, dict) else []
+
+                if isinstance(fields, list):
+                    for field_index, field in enumerate(fields):
+                        if not isinstance(field, dict):
+                            continue
+
+                        add_result(
+                            "write_field",
+                            training,
+                            field.get("text") or field.get("value") or "",
+                            field.get("audio_url") or field.get("audio") or "",
+                            {
+                                "field_index": field_index,
+                                "field_key": field.get("key") or "",
+                                "field_label": field.get("label") or "",
+                            }
+                        )
+
+                        if len(results) >= limit:
+                            break
+
+                if len(results) >= limit:
+                    break
+
+    return JsonResponse({
+        "ok": True,
+        "query": query,
+        "count": len(results),
+        "results": results,
+    })
+
+
 @csrf_exempt
 @login_required
 def builder_save(request):

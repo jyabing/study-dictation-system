@@ -639,7 +639,7 @@
                                                         style="margin-top:8px;"
                                                         onclick="searchExistingAudioForInput('{{ chunk.text|escapejs }}', 'sequence_chunk_audio_url_{{ chunk.index }}', 'sequence_chunk_audio_search_results_{{ chunk.index }}')"
                                                     >
-                                                        查找已有音频
+                                                        查找可复用音频 URL
                                                     </button>
 
                                                     <div
@@ -647,6 +647,13 @@
                                                         class="field-help"
                                                         style="margin-top:8px;"
                                                     ></div>
+
+                                                    <div
+                                                        class="field-help"
+                                                        style="margin-top:12px; font-weight:700; color:#334155;"
+                                                    >
+                                                        上传新的语块音频文件
+                                                    </div>
 
                                                     <input
                                                         type="file"
@@ -1993,7 +2000,7 @@ async function searchExistingAudioForInput(query, inputId, resultsId) {
         return;
     }
 
-    results.innerHTML = "正在查找已有音频...";
+    results.innerHTML = "正在查找可复用音频 URL...";
 
     try {
         const response = await fetch(`/api/audio/search/?q=${encodeURIComponent(cleanedQuery)}&limit=10`, {
@@ -2011,7 +2018,7 @@ async function searchExistingAudioForInput(query, inputId, resultsId) {
         const items = Array.isArray(data.results) ? data.results : [];
 
         if (!items.length) {
-            results.innerHTML = "没有找到可复用音频。";
+            results.innerHTML = "没有找到可复用音频 URL。";
             return;
         }
 
@@ -2033,7 +2040,7 @@ async function searchExistingAudioForInput(query, inputId, resultsId) {
                         style="margin-top:6px;"
                         onclick="useExistingAudioUrl('${escapeEditAudioSearchHtml(audioUrl)}', '${escapeEditAudioSearchHtml(inputId)}')"
                     >
-                        使用此音频
+                        使用这个 URL
                     </button>
                 </div>
             `;

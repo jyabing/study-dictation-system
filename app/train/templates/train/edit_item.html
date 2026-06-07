@@ -625,12 +625,28 @@
 
                                                     <input
                                                         type="text"
+                                                        id="sequence_chunk_audio_url_{{ chunk.index }}"
                                                         name="sequence_chunk_audio_url_{{ chunk.index }}"
                                                         class="input"
                                                         placeholder="音频 URL，可留空"
                                                         value="{{ chunk.audio_url|default:'' }}"
                                                         style="margin-top:8px;"
                                                     >
+
+                                                    <button
+                                                        type="button"
+                                                        class="btn-secondary"
+                                                        style="margin-top:8px;"
+                                                        onclick="searchExistingAudioForInput('{{ chunk.text|escapejs }}', 'sequence_chunk_audio_url_{{ chunk.index }}', 'sequence_chunk_audio_search_results_{{ chunk.index }}')"
+                                                    >
+                                                        查找已有音频
+                                                    </button>
+
+                                                    <div
+                                                        id="sequence_chunk_audio_search_results_{{ chunk.index }}"
+                                                        class="field-help"
+                                                        style="margin-top:8px;"
+                                                    ></div>
 
                                                     <input
                                                         type="file"
@@ -1952,6 +1968,92 @@ function isListenOrSpeakQtype(value) {
 
 function isSequenceQtype(value) {
     return value === "speak_sequence" || value === "listen_sequence";
+}
+
+function escapeEditAudioSearchHtml(value) {
+    return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+async function searchExistingAudioForInput(query, inputId, resultsId) {
+    const cleanedQuery = String(query || "").trim();
+    const input = document.getElementById(inputId);
+    const results = document.getElementById(resultsId);
+
+    if (!results) {
+        return;
+    }
+
+    if (!cleanedQuery) {
+        results.innerHTML = "当前语块没有文本，无法查找。";
+        return;
+    }
+
+    results.innerHTML = "正在查找已有音频...";
+
+    try {
+        const response = await fetch(`/api/audio/search/?q=${encodeURIComponent(cleanedQuery)}&limit=10`, {
+            method: "GET",
+            credentials: "same-origin"
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+            results.innerHTML = escapeEditAudioSearchHtml(data.message || data.error || "查找失败");
+            return;
+        }
+
+        const items = Array.isArray(data.results) ? data.results : [];
+
+        if (!items.length) {
+            results.innerHTML = "没有找到可复用音频。";
+            return;
+        }
+
+        results.innerHTML = items.map(function (item, index) {
+            const audioUrl = String(item.audio_url || "");
+            const text = String(item.text || "");
+            const source = String(item.source || "");
+            const itemType = String(item.item_type || "");
+            const trainingId = String(item.training_id || "");
+
+            return `
+                <div style="border:1px solid #dbeafe; border-radius:10px; padding:8px; margin-top:8px; background:#f8fbff;">
+                    <div><strong>${index + 1}. ${escapeEditAudioSearchHtml(source)}</strong> / ${escapeEditAudioSearchHtml(itemType)} / TID ${escapeEditAudioSearchHtml(trainingId)}</div>
+                    <div style="margin-top:4px;">${escapeEditAudioSearchHtml(text)}</div>
+                    <audio controls src="${escapeEditAudioSearchHtml(audioUrl)}" style="display:block; width:100%; margin-top:6px;"></audio>
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        style="margin-top:6px;"
+                        onclick="useExistingAudioUrl('${escapeEditAudioSearchHtml(audioUrl)}', '${escapeEditAudioSearchHtml(inputId)}')"
+                    >
+                        使用此音频
+                    </button>
+                </div>
+            `;
+        }).join("");
+
+    } catch (error) {
+        results.innerHTML = "查找失败：" + escapeEditAudioSearchHtml(error && error.message ? error.message : String(error));
+    }
+}
+
+function useExistingAudioUrl(audioUrl, inputId) {
+    const input = document.getElementById(inputId);
+
+    if (!input) {
+        return;
+    }
+
+    input.value = audioUrl;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 function renderEditSequenceChunkImageInputs() {

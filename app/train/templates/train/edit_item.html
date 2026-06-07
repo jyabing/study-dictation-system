@@ -278,11 +278,35 @@
                                             <div class="field-label">上一句音频</div>
                                             <input
                                                 type="text"
+                                                id="write_previous_line_audio_url"
                                                 name="write_previous_line_audio_url"
                                                 class="input"
                                                 placeholder="音频 URL，可留空"
                                                 value="{{ write_previous_line_audio.audio_url|default:'' }}"
                                             >
+
+                                            <button
+                                                type="button"
+                                                class="btn-secondary"
+                                                style="margin-top:8px;"
+                                                onclick="searchExistingAudioForTextarea('write_previous_line', 'write_previous_line_audio_url', 'write_previous_line_audio_search_results')"
+                                            >
+                                                查找可复用音频 URL
+                                            </button>
+
+                                            <div
+                                                id="write_previous_line_audio_search_results"
+                                                class="field-help"
+                                                style="margin-top:8px;"
+                                            ></div>
+
+                                            <div
+                                                class="field-help"
+                                                style="margin-top:12px; font-weight:700; color:#334155;"
+                                            >
+                                                上传新的上一句音频文件
+                                            </div>
+
                                             <input
                                                 type="file"
                                                 name="write_previous_line_audio_file"

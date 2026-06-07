@@ -367,11 +367,35 @@
                                             <div class="field-label">英语表达音频</div>
                                             <input
                                                 type="text"
+                                                id="write_english_expression_audio_url"
                                                 name="write_english_expression_audio_url"
                                                 class="input"
                                                 placeholder="音频 URL，可留空"
                                                 value="{{ write_english_expression_audio.audio_url|default:'' }}"
                                             >
+
+                                            <button
+                                                type="button"
+                                                class="btn-secondary"
+                                                style="margin-top:8px;"
+                                                onclick="searchExistingAudioForTextarea('write_english_expression', 'write_english_expression_audio_url', 'write_english_expression_audio_search_results')"
+                                            >
+                                                查找可复用音频 URL
+                                            </button>
+
+                                            <div
+                                                id="write_english_expression_audio_search_results"
+                                                class="field-help"
+                                                style="margin-top:8px;"
+                                            ></div>
+
+                                            <div
+                                                class="field-help"
+                                                style="margin-top:12px; font-weight:700; color:#334155;"
+                                            >
+                                                上传新的英语表达音频文件
+                                            </div>
+
                                             <input
                                                 type="file"
                                                 name="write_english_expression_audio_file"
@@ -2049,6 +2073,21 @@ async function searchExistingAudioForInput(query, inputId, resultsId) {
     } catch (error) {
         results.innerHTML = "查找失败：" + escapeEditAudioSearchHtml(error && error.message ? error.message : String(error));
     }
+}
+
+function searchExistingAudioForTextarea(textareaName, inputId, resultsId) {
+    const textarea = document.querySelector(`textarea[name="${textareaName}"]`);
+    const results = document.getElementById(resultsId);
+
+    if (!textarea) {
+        if (results) {
+            results.innerHTML = "没有找到对应文本输入框。";
+        }
+        return;
+    }
+
+    const query = textarea.value || "";
+    searchExistingAudioForInput(query, inputId, resultsId);
 }
 
 function useExistingAudioUrl(audioUrl, inputId) {

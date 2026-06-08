@@ -922,6 +922,29 @@
                                 type="text"
                                 placeholder="音频 URL，可留空"
                             >
+
+                            <button
+                                type="button"
+                                class="btn secondary"
+                                style="margin-top:8px;"
+                                onclick="searchBuilderAudioForTextarea('write_english_expression', 'write_english_expression_audio_url', 'write_english_expression_audio_search_results')"
+                            >
+                                查找可复用音频 URL
+                            </button>
+
+                            <div
+                                id="write_english_expression_audio_search_results"
+                                class="section-sub"
+                                style="margin-top:8px;"
+                            ></div>
+
+                            <div
+                                class="section-sub"
+                                style="margin-top:12px; font-weight:700; color:#334155;"
+                            >
+                                上传新的英语表达音频文件
+                            </div>
+
                             <input
                                 id="write_english_expression_audio_file"
                                 type="file"
@@ -2494,6 +2517,100 @@
                 console.error(err);
                 alert("保存失败");
             });
+        }
+
+        function escapeBuilderAudioSearchHtml(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        async function searchBuilderAudioForTextarea(textareaId, inputId, resultsId) {
+            const textarea = document.getElementById(textareaId);
+            const input = document.getElementById(inputId);
+            const results = document.getElementById(resultsId);
+
+            if (!results) {
+                return;
+            }
+
+            if (!textarea) {
+                results.innerHTML = "没有找到对应文本输入框。";
+                return;
+            }
+
+            const query = String(textarea.value || "").trim();
+
+            if (!query) {
+                results.innerHTML = "当前文本为空，无法查找。";
+                return;
+            }
+
+            results.innerHTML = "正在查找可复用音频 URL...";
+
+            try {
+                const response = await fetch(`/api/audio/search/?q=${encodeURIComponent(query)}&limit=10`, {
+                    method: "GET",
+                    credentials: "same-origin"
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.ok) {
+                    results.innerHTML = escapeBuilderAudioSearchHtml(data.message || data.error || "查找失败");
+                    return;
+                }
+
+                const items = Array.isArray(data.results) ? data.results : [];
+
+                if (!items.length) {
+                    results.innerHTML = "没有找到可复用音频 URL。";
+                    return;
+                }
+
+                results.innerHTML = items.map(function (item, index) {
+                    const audioUrl = String(item.audio_url || "");
+                    const text = String(item.text || "");
+                    const source = String(item.source || "");
+                    const itemType = String(item.item_type || "");
+                    const trainingId = String(item.training_id || "");
+
+                    return `
+                        <div style="border:1px solid #dbeafe; border-radius:10px; padding:8px; margin-top:8px; background:#f8fbff;">
+                            <div><strong>${index + 1}. ${escapeBuilderAudioSearchHtml(source)}</strong> / ${escapeBuilderAudioSearchHtml(itemType)} / TID ${escapeBuilderAudioSearchHtml(trainingId)}</div>
+                            <div style="margin-top:4px;">${escapeBuilderAudioSearchHtml(text)}</div>
+                            <audio controls src="${escapeBuilderAudioSearchHtml(audioUrl)}" style="display:block; width:100%; margin-top:6px;"></audio>
+                            <button
+                                type="button"
+                                class="btn secondary"
+                                style="margin-top:6px;"
+                                onclick="useBuilderExistingAudioUrl('${escapeBuilderAudioSearchHtml(audioUrl)}', '${escapeBuilderAudioSearchHtml(inputId)}')"
+                            >
+                                使用这个 URL
+                            </button>
+                        </div>
+                    `;
+                }).join("");
+
+            } catch (error) {
+                results.innerHTML = "查找失败：" + escapeBuilderAudioSearchHtml(error && error.message ? error.message : String(error));
+            }
+        }
+
+        function useBuilderExistingAudioUrl(audioUrl, inputId) {
+            const input = document.getElementById(inputId);
+
+            if (!input) {
+                return;
+            }
+
+            input.value = audioUrl;
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+            updatePreview();
         }
 
         function escapeHtml(text) {

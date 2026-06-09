@@ -2320,6 +2320,7 @@ def build_training_payload(training, memory=None, request=None):
         "sequence_generation_mode": sequence_generation_mode,
 
         "write_direction": write_direction,
+        "write_expected_answer": write_expected_answer,
         "write_source_text": write_source_text,
         "write_target_text": write_target_text,
         "write_prompt_label": write_prompt_label,

@@ -331,7 +331,7 @@
    ========================= */
 .layout-main {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.72fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
     align-items: start;
 }
@@ -342,6 +342,15 @@
     flex-direction: column;
     gap: 10px;
     min-width: 0;
+}
+
+.main-left {
+    width: min(100%, 1080px);
+    margin: 0 auto;
+}
+
+.main-right {
+    display: none !important;
 }
 
 /* =========================
@@ -486,6 +495,255 @@
     white-space: pre-wrap;
     word-break: break-word;
     margin-top: 0;
+}
+
+/* =========================
+   即席翻译训练卡片
+   ========================= */
+.question-extra.instant-translate-extra {
+    width: 100%;
+    margin-top: 14px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    white-space: normal;
+}
+
+.instant-translate-card {
+    display: grid;
+    gap: 12px;
+    padding: 18px 20px;
+    border-radius: 18px;
+    border: 1px solid rgba(110, 168, 255, 0.26);
+    background: linear-gradient(180deg, rgba(239, 246, 255, 0.98), rgba(255, 255, 255, 0.94));
+    box-shadow: 0 14px 32px rgba(36, 74, 134, 0.12);
+}
+
+.instant-translate-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.instant-translate-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(110, 168, 255, 0.30);
+    background: rgba(110, 168, 255, 0.16);
+    color: #244a86;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+}
+
+.instant-translate-direction {
+    font-size: 13px;
+    font-weight: 900;
+    color: #1e3a5f;
+}
+
+.instant-translate-timer {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(110, 168, 255, 0.24);
+    background: rgba(110, 168, 255, 0.10);
+}
+
+.instant-translate-timer-label {
+    font-size: 11px;
+    font-weight: 900;
+    color: #244a86;
+    letter-spacing: 0.02em;
+}
+
+.instant-translate-timer-main {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+    min-width: 64px;
+    color: #1e3a5f;
+    font-weight: 900;
+}
+
+#instant-translate-timer-text {
+    font-size: 24px;
+    line-height: 1;
+}
+
+.instant-translate-timer-unit {
+    font-size: 12px;
+}
+
+.instant-translate-timer-hint {
+    font-size: 13px;
+    line-height: 1.45;
+    font-weight: 800;
+    color: #4c5f7f;
+    word-break: break-word;
+}
+
+@media (max-width: 768px) {
+    .instant-translate-timer {
+        grid-template-columns: 1fr;
+        gap: 6px;
+        padding: 10px 12px;
+    }
+
+    .instant-translate-timer-main {
+        min-width: 0;
+    }
+
+    #instant-translate-timer-text {
+        font-size: 22px;
+    }
+
+    .instant-translate-timer-hint {
+        font-size: 12px;
+    }
+}
+
+.instant-translate-task {
+    display: grid;
+    gap: 6px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(122, 214, 163, 0.26);
+    background: rgba(122, 214, 163, 0.10);
+}
+
+.instant-translate-task-label {
+    font-size: 11px;
+    font-weight: 900;
+    color: #1f5f37;
+    letter-spacing: 0.02em;
+}
+
+.instant-translate-task-text {
+    font-size: 14px;
+    line-height: 1.6;
+    font-weight: 800;
+    color: #334155;
+}
+
+.instant-translate-answer-box {
+    display: grid;
+    gap: 6px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 190, 85, 0.32);
+    background: rgba(255, 190, 85, 0.12);
+}
+
+.instant-translate-answer-label {
+    font-size: 11px;
+    font-weight: 900;
+    color: #8a5a00;
+    letter-spacing: 0.02em;
+}
+
+.instant-translate-answer-text {
+    font-size: 16px;
+    line-height: 1.65;
+    font-weight: 900;
+    color: #1f2937;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.instant-translate-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.instant-translate-answer-btn {
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(110, 168, 255, 0.34);
+    background: rgba(255, 255, 255, 0.78);
+    color: #244a86;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+}
+
+.instant-translate-answer-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(239, 246, 255, 0.96);
+}
+
+.instant-translate-answer-btn:disabled {
+    cursor: default;
+    opacity: 0.65;
+    transform: none;
+}
+
+.instant-translate-flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: #64748b;
+}
+
+.instant-translate-flow-step {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.70);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+@media (max-width: 768px) {
+    .question-extra.instant-translate-extra {
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .instant-translate-card {
+        gap: 10px;
+        padding: 14px;
+        border-radius: 16px;
+    }
+
+    .instant-translate-head {
+        align-items: flex-start;
+    }
+
+    .instant-translate-direction {
+        width: 100%;
+        font-size: 12px;
+    }
+
+    .instant-translate-task {
+        padding: 10px 12px;
+        border-radius: 12px;
+    }
+
+    .instant-translate-task-text {
+        font-size: 13px;
+        line-height: 1.55;
+    }
+
+    .instant-translate-flow {
+        gap: 6px;
+        font-size: 11px;
+    }
 }
 
 .audio-wrap {
@@ -2082,6 +2340,9 @@ const state = {
     writeDirection: "",
     loading: false,
     autoNextTimer: null,
+    instantTranslateTimer: null,
+    instantTranslateRemaining: 0,
+    instantTranslateAnswerVisible: false,
     inputMode: "text",
     usedHint: false,
     retryCount: 0,
@@ -4098,6 +4359,134 @@ function inferSequenceAsrLang(payload, fallbackLang) {
     return fallbackLang || "en-US";
 }
 
+function isInstantTranslateWrite(payload) {
+    const qType = getQuestionType(payload);
+    const direction = String(payload?.write_direction || "").trim();
+    const directionLabel = String(payload?.write_direction_label || "").trim();
+
+    if (!(qType === "write" || qType === "write_text")) {
+        return false;
+    }
+
+    const translateKeys = [
+        "english_expression",
+        "japanese_expression",
+        "chinese_meaning",
+    ];
+
+    const hasTranslateKey = translateKeys.some(function (key) {
+        return direction.includes(key);
+    });
+
+    const hasTranslateLabel =
+        directionLabel.includes("英语")
+        || directionLabel.includes("英文")
+        || directionLabel.includes("日语")
+        || directionLabel.includes("日文")
+        || directionLabel.includes("中文")
+        || directionLabel.includes("中国語")
+        || directionLabel.includes("英語")
+        || directionLabel.includes("日本語");
+
+    return hasTranslateKey && hasTranslateLabel;
+}
+
+function getInstantTranslateLabel(payload) {
+    const directionLabel = String(payload?.write_direction_label || "").trim();
+
+    if (!directionLabel) {
+        return "即席翻译训练：请立刻口头翻译";
+    }
+
+    return `即席翻译训练：${directionLabel}`;
+}
+
+function getInstantTranslateInstruction(payload) {
+    const answerType = String(payload?.write_answer_type || "").trim();
+
+    if (answerType) {
+        return `请先口头说出${answerType}，说完后再输入或查看参考答案。`;
+    }
+
+    return "请先口头翻译，不卡太久；说完后再输入或查看参考答案。";
+}
+
+function clearInstantTranslateTimer() {
+    if (state.instantTranslateTimer) {
+        clearInterval(state.instantTranslateTimer);
+        state.instantTranslateTimer = null;
+    }
+
+    state.instantTranslateRemaining = 0;
+}
+
+function startInstantTranslateTimer(seconds = 10) {
+    clearInstantTranslateTimer();
+
+    state.instantTranslateRemaining = seconds;
+
+    const timerText = document.getElementById("instant-translate-timer-text");
+    const timerHint = document.getElementById("instant-translate-timer-hint");
+
+    if (!timerText || !timerHint) {
+        return;
+    }
+
+    timerText.textContent = `${state.instantTranslateRemaining}`;
+    timerHint.textContent = "先别急着看答案，先强迫自己开口。";
+
+    state.instantTranslateTimer = setInterval(function () {
+        state.instantTranslateRemaining -= 1;
+
+        if (state.instantTranslateRemaining <= 0) {
+            clearInstantTranslateTimer();
+
+            timerText.textContent = "时间到";
+            timerHint.textContent = "现在输入你的答案，或查看参考答案。";
+
+            if (answerInput) {
+                answerInput.focus();
+            }
+
+            return;
+        }
+
+        timerText.textContent = `${state.instantTranslateRemaining}`;
+    }, 1000);
+}
+
+function showInstantTranslateAnswer() {
+    const answerBox = document.getElementById("instant-translate-answer-box");
+    const answerText = document.getElementById("instant-translate-answer-text");
+    const showBtn = document.getElementById("instant-translate-show-answer-btn");
+
+    if (!answerBox || !answerText) {
+        return;
+    }
+
+    const answer = String(
+        state.current?.write_expected_answer
+        || state.current?.expected_answer
+        || state.current?.correct_answer
+        || state.current?.answer
+        || ""
+    ).trim();
+
+    answerText.textContent = answer || "当前题目没有返回参考答案。";
+    answerBox.style.display = "grid";
+    state.instantTranslateAnswerVisible = true;
+    state.usedHint = true;
+
+    if (showBtn) {
+        showBtn.disabled = true;
+        showBtn.textContent = "已显示参考答案";
+    }
+
+    if (answerInput) {
+        answerInput.focus();
+    }
+}
+
 function applyQuestionInputMode(payload) {
     const qType = getQuestionType(payload);
     const instructionText = getInstructionText(payload);
@@ -4111,7 +4500,10 @@ function applyQuestionInputMode(payload) {
     const writeTargetLabel = getWriteTargetLabel(payload, instructionText);
 
     if (questionTargetBadge) {
-        if ((qType === "write" || qType === "write_text") && writeTargetLabel) {
+        if (isInstantTranslateWrite(payload)) {
+            questionTargetBadge.textContent = "";
+            questionTargetBadge.style.display = "none";
+        } else if ((qType === "write" || qType === "write_text") && writeTargetLabel) {
             questionTargetBadge.textContent = writeTargetLabel;
             questionTargetBadge.style.display = "inline-flex";
         } else {
@@ -4368,19 +4760,87 @@ function applyQuestionInputMode(payload) {
         answerInput.placeholder = "请输入每个空的答案";
     } else if (qType === "write" || qType === "write_text") {
         answerInput.value = "";
-        answerInput.placeholder = getWritePlaceholder(payload, instructionText);
 
         const writePromptLabel = String(payload.write_prompt_label || "").trim();
         const writeDirectionLabel = String(payload.write_direction_label || "").trim();
 
-        if (writePromptLabel) {
+        if (isInstantTranslateWrite(payload)) {
+            answerInput.placeholder = "口头说出后，可在这里输入你的翻译，或直接查看参考答案";
+
+            questionExtra.classList.add("instant-translate-extra");
             questionExtra.style.display = "block";
-            questionExtra.textContent = writePromptLabel;
-        } else if (writeDirectionLabel) {
-            questionExtra.style.display = "block";
-            questionExtra.textContent = `当前训练：${writeDirectionLabel}`;
+            state.instantTranslateAnswerVisible = false;
+
+            questionExtra.innerHTML = `
+                <div class="instant-translate-card">
+                    <div class="instant-translate-head">
+                        <span class="instant-translate-pill">即席翻译</span>
+                        <span class="instant-translate-direction">
+                            ${escapeHtml(String(payload.write_direction_label || "").trim() || "请立刻口头翻译")}
+                        </span>
+                    </div>
+
+                    <div class="instant-translate-timer">
+                        <div class="instant-translate-timer-label">倒计时</div>
+                        <div class="instant-translate-timer-main">
+                            <span id="instant-translate-timer-text">10</span>
+                            <span class="instant-translate-timer-unit">秒</span>
+                        </div>
+                        <div class="instant-translate-timer-hint" id="instant-translate-timer-hint">
+                            先别急着看答案，先强迫自己开口。
+                        </div>
+                    </div>
+
+                    <div class="instant-translate-task">
+                        <div class="instant-translate-task-label">任务</div>
+                        <div class="instant-translate-task-text">
+                            ${escapeHtml(getInstantTranslateInstruction(payload))}
+                        </div>
+                    </div>
+
+                    <div class="instant-translate-answer-box" id="instant-translate-answer-box" style="display:none;">
+                        <div class="instant-translate-answer-label">参考答案</div>
+                        <div class="instant-translate-answer-text" id="instant-translate-answer-text"></div>
+                    </div>
+
+                    <div class="instant-translate-actions">
+                        <button type="button" class="instant-translate-answer-btn" id="instant-translate-show-answer-btn">
+                            查看参考答案
+                        </button>
+                    </div>
+
+                    <div class="instant-translate-flow">
+                        <span class="instant-translate-flow-step">1. 先口头说</span>
+                        <span class="instant-translate-flow-step">2. 可查看答案</span>
+                        <span class="instant-translate-flow-step">3. 提交进入记忆循环</span>
+                    </div>
+                </div>
+            `;
+
+            const instantAnswerBtn = document.getElementById("instant-translate-show-answer-btn");
+            if (instantAnswerBtn) {
+                instantAnswerBtn.addEventListener("click", showInstantTranslateAnswer);
+            }
+
+            startInstantTranslateTimer(10);
+        } else {
+            clearInstantTranslateTimer();
+            state.instantTranslateAnswerVisible = false;
+            questionExtra.classList.remove("instant-translate-extra");
+            answerInput.placeholder = getWritePlaceholder(payload, instructionText);
+
+            if (writePromptLabel) {
+                questionExtra.style.display = "block";
+                questionExtra.textContent = writePromptLabel;
+            } else if (writeDirectionLabel) {
+                questionExtra.style.display = "block";
+                questionExtra.textContent = `当前训练：${writeDirectionLabel}`;
+            }
         }
     } else {
+        clearInstantTranslateTimer();
+        state.instantTranslateAnswerVisible = false;
+
         answerInput.value = "";
         answerInput.placeholder = Array.isArray(payload.choices) && payload.choices.length > 0
             ? "可点击选项，也可手动输入回答"

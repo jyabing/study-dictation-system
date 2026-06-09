@@ -1166,15 +1166,34 @@
 
                                     <div style="height: 12px;"></div>
 
-                                    <div class="field-label">音频链接（旧字段兼容）</div>
+                                    <div class="field-label">题干音频链接（旧字段兼容）</div>
                                     <input
                                         type="text"
+                                        id="audio_url"
                                         name="audio_url"
                                         class="input"
                                         value="{{ obj.audio_url|default:'' }}"
                                         placeholder="可选：填写远程音频链接"
                                     >
-                                    <div class="field-help">这个字段用于兼容旧题。优先建议直接上传音频文件。</div>
+
+                                    <button
+                                        type="button"
+                                        class="btn-secondary"
+                                        style="margin-top:8px;"
+                                        onclick="searchExistingAudioForTextarea('source_text', 'audio_url', 'prompt_audio_search_results')"
+                                    >
+                                        查找可复用题干音频 URL
+                                    </button>
+
+                                    <div
+                                        id="prompt_audio_search_results"
+                                        class="field-help"
+                                        style="margin-top:8px;"
+                                    ></div>
+
+                                    <div class="field-help">
+                                        这个字段用于兼容旧题。没有上传题干音频文件时，可复用已有音频 URL。
+                                    </div>
 
                                     <div style="height: 12px;"></div>
 

@@ -2923,6 +2923,48 @@ function isSpeechQuestionType(qType) {
     return qType === "listen_asr" || qType === "speak_read" || qType === "speak_sequence" || qType === "listen_sequence";
 }
 
+function isSpeechAllowedQuestion(payload) {
+    if (!payload) {
+        return false;
+    }
+
+    return isSpeechQuestionType(getQuestionType(payload)) || isInstantTranslateWrite(payload);
+}
+
+function inferInstantTranslateAsrLang(payload) {
+    const answerType = String(payload?.write_answer_type || "").trim();
+    const directionLabel = String(payload?.write_direction_label || "").trim();
+    const combined = `${answerType} ${directionLabel}`;
+
+    if (
+        combined.includes("英语")
+        || combined.includes("英文")
+        || combined.includes("英語")
+        || combined.includes("English")
+    ) {
+        return "en-US";
+    }
+
+    if (
+        combined.includes("日语")
+        || combined.includes("日文")
+        || combined.includes("日本語")
+        || combined.includes("Japanese")
+    ) {
+        return "ja-JP";
+    }
+
+    if (
+        combined.includes("中文")
+        || combined.includes("中国語")
+        || combined.includes("Chinese")
+    ) {
+        return "zh-CN";
+    }
+
+    return "en-US";
+}
+
 function resetSpeechUi() {
     state.recognizedText = "";
     state.recognitionFinalText = "";
@@ -4023,7 +4065,7 @@ function stopSpeechRecognition(cancelSubmit = false) {
 }
 
 function startSpeechRecognition() {
-    if (!state.current || !isSpeechQuestionType(getQuestionType(state.current))) {
+    if (!state.current || !isSpeechAllowedQuestion(state.current)) {
         return;
     }
 
@@ -4766,6 +4808,17 @@ function applyQuestionInputMode(payload) {
 
         if (isInstantTranslateWrite(payload)) {
             answerInput.placeholder = "口头说出后，可在这里输入你的翻译，或直接查看参考答案";
+
+            state.recognitionLang = inferInstantTranslateAsrLang(payload);
+
+            showSpeechWorkspace(
+                "即席翻译语音输入",
+                `请点击“开始录音”，直接说出${String(payload.write_answer_type || "目标语言").trim()}。识别结果会自动填入答案框，确认后再提交。`
+            );
+
+            if (textAnswerWorkspace) {
+                textAnswerWorkspace.style.display = "flex";
+            }
 
             questionExtra.classList.add("instant-translate-extra");
             questionExtra.style.display = "block";
@@ -6082,7 +6135,7 @@ if (speechRetryBtn) {
     speechRetryBtn.addEventListener("click", () => {
         resetSpeechRecognitionState();
 
-        if (state.current && isSpeechQuestionType(getQuestionType(state.current))) {
+        if (state.current && isSpeechAllowedQuestion(state.current)) {
             if (textAnswerWorkspace) {
                 textAnswerWorkspace.style.display = "none";
             }
@@ -6094,7 +6147,7 @@ if (speechRetryBtn) {
 
 if (speechStartBtn) {
     speechStartBtn.addEventListener("click", () => {
-        if (!state.current || !isSpeechQuestionType(getQuestionType(state.current))) {
+        if (!state.current || !isSpeechAllowedQuestion(state.current)) {
             return;
         }
 

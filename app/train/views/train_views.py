@@ -1716,6 +1716,7 @@ def build_training_payload(training, memory=None, request=None):
 
     asr_cfg = meta.get("asr", {}) if isinstance(meta.get("asr"), dict) else {}
     asr_lang = asr_cfg.get("lang") or "en-US"
+    answer_audio_url = str(asr_cfg.get("answer_audio_url") or "").strip()
 
     sequence_cfg = meta.get("sequence", {}) if isinstance(meta.get("sequence"), dict) else {}
     sequence_generation_mode = str(sequence_cfg.get("generation_mode") or "forward").strip()
@@ -1830,9 +1831,10 @@ def build_training_payload(training, memory=None, request=None):
     # 听 / 说题型：回答音频 fallback
     # 优先级：
     # 1. TrainingItem.answer_audio_file（人工上传）
-    # 2. TTS 自动生成回答音频
+    # 2. choices[0]._meta.asr.answer_audio_url（复用 URL）
+    # 3. TTS 自动生成回答音频
     # =========================
-    resolved_answer_audio = answer_audio_file_url
+    resolved_answer_audio = answer_audio_file_url or answer_audio_url
 
     if (
         not resolved_answer_audio
@@ -1851,6 +1853,7 @@ def build_training_payload(training, memory=None, request=None):
         "question_id": training.question_id,
         "answer_audio_name": getattr(getattr(training, "answer_audio_file", None), "name", ""),
         "answer_audio_file_url": answer_audio_file_url,
+        "answer_audio_url": answer_audio_url,
         "resolved_answer_audio": resolved_answer_audio,
         "answer_use_tts": answer_use_tts,
         "item_type": training.item_type,
@@ -8685,6 +8688,7 @@ def question_edit(request, question_id):
             has_answer_audio = bool(
                 training.answer_audio_file
                 or uploaded_answer_audio_file
+                or answer_audio_url
             )
 
             if not has_prompt_audio:
@@ -8704,6 +8708,7 @@ def question_edit(request, question_id):
                         "lang": asr_lang,
                         "prompt_tts_lang": prompt_tts_lang,
                         "answer_tts_lang": answer_tts_lang,
+                        "answer_audio_url": answer_audio_url,
                         "allow_partial_match": allow_partial_match
                     }
                 }

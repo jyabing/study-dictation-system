@@ -1164,6 +1164,35 @@
                                         删除当前回答音频
                                     </label>
 
+                                    <div class="field-label" style="margin-top:12px;">回答音频 URL</div>
+                                    <input
+                                        type="text"
+                                        id="answer_audio_url"
+                                        name="answer_audio_url"
+                                        class="input"
+                                        value="{{ listen_meta.asr.answer_audio_url|default:'' }}"
+                                        placeholder="可选：填写回答音频 URL"
+                                    >
+
+                                    <button
+                                        type="button"
+                                        class="btn-secondary"
+                                        style="margin-top:8px;"
+                                        onclick="searchExistingAudioForTextarea('target_answer', 'answer_audio_url', 'answer_audio_search_results')"
+                                    >
+                                        查找可复用回答音频 URL
+                                    </button>
+
+                                    <div
+                                        id="answer_audio_search_results"
+                                        class="field-help"
+                                        style="margin-top:8px;"
+                                    ></div>
+
+                                    <div class="field-help">
+                                        没有上传回答音频文件时，可复用已有回答音频 URL。
+                                    </div>
+
                                     <div style="height: 12px;"></div>
 
                                     <div class="field-label">题干音频链接（旧字段兼容）</div>

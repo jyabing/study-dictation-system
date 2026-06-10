@@ -379,6 +379,14 @@
         overflow-wrap: break-word;
     }
 
+    .lesson-summary {
+        margin-top: 6px;
+        font-size: 13px;
+        color: var(--text);
+        line-height: 1.55;
+        font-weight: 700;
+    }
+
     .lesson-subtitle {
         margin-top: 8px;
         font-size: 12px;
@@ -746,6 +754,9 @@
 
                                                 <td>
                                                     <div class="lesson-title">{{ lesson.title }}</div>
+                                                    {% if lesson.summary %}
+                                                        <div class="lesson-summary">{{ lesson.summary }}</div>
+                                                    {% endif %}
                                                     <div class="lesson-subtitle">
                                                         新学 {{ lesson_new_count }}
                                                         ｜巩固中 {{ lesson_in_progress_count }}
@@ -798,6 +809,9 @@
                                         <div class="lesson-card-head">
                                             <div>
                                                 <div class="lesson-card-title">{{ lesson_order }}. {{ lesson.title }}</div>
+                                                {% if lesson.summary %}
+                                                    <div class="lesson-summary">{{ lesson.summary }}</div>
+                                                {% endif %}
                                                 <div class="lesson-subtitle">
                                                     新学 {{ lesson_new_count }}
                                                     ｜巩固中 {{ lesson_in_progress_count }}

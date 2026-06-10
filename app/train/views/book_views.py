@@ -538,6 +538,7 @@ def lesson_edit(request, lesson_id):
 
     if request.method == "POST":
         title = (request.POST.get("title") or "").strip()
+        summary = (request.POST.get("summary") or "").strip()
 
         try:
             order = int(request.POST.get("order") or 0)
@@ -546,8 +547,9 @@ def lesson_edit(request, lesson_id):
 
         if title:
             lesson.title = title
+            lesson.summary = summary
             lesson.order = order
-            lesson.save(update_fields=["title", "order"])
+            lesson.save(update_fields=["title", "summary", "order"])
             return redirect(next_url)
 
     return render(request, "train/edit_item.html", {

@@ -74,6 +74,18 @@
                                 <input type="text" name="title" class="input" value="{{ obj.title|default:'' }}" placeholder="请输入章节名称" required>
                             </div>
 
+                            <div class="field-group full">
+                                <div class="field-label">本课简短要点</div>
+                                <input
+                                    type="text"
+                                    name="summary"
+                                    class="input"
+                                    value="{{ obj.summary|default:'' }}"
+                                    placeholder="例如：申し出る / おわびをする / 批判的な意見を言う"
+                                >
+                                <div class="field-help">显示在书本详情页的课节列表里，用一句话说明这一课训练什么。</div>
+                            </div>
+
                             <div class="field-group">
                                 <div class="field-label">排序</div>
                                 <input type="number" name="order" class="input" value="{{ obj.order|default:0 }}" placeholder="请输入排序">

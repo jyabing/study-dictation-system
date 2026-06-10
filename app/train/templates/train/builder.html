@@ -615,6 +615,21 @@
                     <div id="prompt_audio_wrap" class="field hidden" style="margin-top:12px;">
                         <label for="prompt_audio">题干音频（URL / 路径）</label>
                         <input id="prompt_audio" type="text" placeholder="没有音频时可留空" oninput="updatePreview();">
+
+                        <button
+                            type="button"
+                            class="btn secondary"
+                            style="margin-top:8px;"
+                            onclick="searchBuilderAudioForTextarea('prompt_text', 'prompt_audio', 'prompt_audio_search_results')"
+                        >
+                            查找可复用音频 URL
+                        </button>
+
+                        <div
+                            id="prompt_audio_search_results"
+                            class="section-sub"
+                            style="margin-top:8px;"
+                        ></div>
                     </div>
 
                     <div id="prompt_audio_file_wrap" class="field hidden" style="margin-top:12px;">

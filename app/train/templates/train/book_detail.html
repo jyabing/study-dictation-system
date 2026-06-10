@@ -825,6 +825,10 @@
                                                         ｜长期巩固 {{ lesson_mastered_count }}
                                                         ｜听写题 {{ lesson.dictation_count }}
                                                     </div>
+
+                                                    <div class="table-actions" style="margin-top:10px;">
+                                                        <a href="{% url 'lesson-edit' lesson.id %}" class="ghost-btn">编辑本课</a>
+                                                    </div>
                                                 </td>
 
                                                 <td>

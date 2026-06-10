@@ -488,6 +488,16 @@ def _check_answer_english(user_answer, correct_answer):
     if ua == ca:
         return True
 
+    # 英文短句：允许大小写、弯引号、句末标点、空格差异。
+    # 例如：
+    # There’s gotta be something wrong with him.
+    # == There's gotta be something wrong with him
+    user_loose_keys = _normalize_answer_loose_keys(user_answer)
+    correct_loose_keys = _normalize_answer_loose_keys(correct_answer)
+
+    if user_loose_keys and correct_loose_keys and user_loose_keys & correct_loose_keys:
+        return True
+
     # 仅保留最保守的英文单复数容错
     if ua == ca + "s" or ua + "s" == ca:
         return True

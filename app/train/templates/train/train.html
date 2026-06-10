@@ -3683,24 +3683,16 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
             formData.append("asr_prompt", sequenceAsrPrompt);
         }
     } else {
-        const currentPayload = state.current || {};
-        const correctAnswers = Array.isArray(currentPayload.correct_answers)
-            ? currentPayload.correct_answers
-            : [];
+        const normalizedSpeechLang = String(state.recognitionLang || "en-US").trim().toLowerCase();
+        let normalAsrPrompt = "";
 
-        const normalAsrTarget = String(
-            currentPayload.target_answer
-            || correctAnswers[0]
-            || currentPayload.answer
-            || currentPayload.question_text
-            || currentPayload.source_text
-            || ""
-        ).trim();
-
-        const normalAsrPrompt = buildSequenceAsrPrompt(
-            normalAsrTarget,
-            state.recognitionLang || "en-US"
-        );
+        if (normalizedSpeechLang.startsWith("ja")) {
+            normalAsrPrompt = "これは日本語の発話です。聞こえた内容だけを日本語で書き起こしてください。聞こえない場合は推測しないでください。";
+        } else if (normalizedSpeechLang.startsWith("en")) {
+            normalAsrPrompt = "This is English speech. Transcribe only what is actually spoken. Do not guess when there is no clear speech.";
+        } else if (normalizedSpeechLang.startsWith("zh")) {
+            normalAsrPrompt = "这是中文语音。只转写实际听到的内容；如果没有清晰语音，不要猜测。";
+        }
 
         if (normalAsrPrompt) {
             formData.append("asr_prompt", normalAsrPrompt);

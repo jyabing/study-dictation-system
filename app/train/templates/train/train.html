@@ -3682,6 +3682,29 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
         if (sequenceAsrPrompt) {
             formData.append("asr_prompt", sequenceAsrPrompt);
         }
+    } else {
+        const currentPayload = state.current || {};
+        const correctAnswers = Array.isArray(currentPayload.correct_answers)
+            ? currentPayload.correct_answers
+            : [];
+
+        const normalAsrTarget = String(
+            currentPayload.target_answer
+            || correctAnswers[0]
+            || currentPayload.answer
+            || currentPayload.question_text
+            || currentPayload.source_text
+            || ""
+        ).trim();
+
+        const normalAsrPrompt = buildSequenceAsrPrompt(
+            normalAsrTarget,
+            state.recognitionLang || "en-US"
+        );
+
+        if (normalAsrPrompt) {
+            formData.append("asr_prompt", normalAsrPrompt);
+        }
     }
 
     try {

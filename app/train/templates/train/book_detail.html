@@ -279,9 +279,44 @@
         -webkit-overflow-scrolling: touch;
     }
 
-    .lessons-table-top-scroll-inner {
+    .lessons-table-top-scroll-inner,
+    .lessons-table-floating-scroll-inner {
         width: 1080px;
         height: 1px;
+    }
+
+    .lessons-table-floating-scroll {
+        position: fixed;
+        left: 50%;
+        bottom: 12px;
+        transform: translateX(-50%);
+        z-index: 120;
+        display: none;
+        width: min(calc(100% - 32px), 760px);
+        height: 20px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-radius: 999px;
+        background: rgba(110, 168, 255, 0.16);
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .lessons-table-floating-scroll.is-visible {
+        display: block;
+    }
+
+    .lessons-table-floating-scroll::-webkit-scrollbar {
+        height: 12px;
+    }
+
+    .lessons-table-floating-scroll::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: rgba(110, 168, 255, 0.75);
+    }
+
+    .lessons-table-floating-scroll::-webkit-scrollbar-track {
+        background: rgba(110, 168, 255, 0.16);
     }
 
     .lessons-table-top-scroll::-webkit-scrollbar {
@@ -681,6 +716,7 @@
         }
 
         .lessons-table-top-scroll,
+        .lessons-table-floating-scroll,
         .lessons-table-wrap {
             display: none;
         }
@@ -740,6 +776,10 @@
                         {% if lessons %}
                             <div class="lessons-table-top-scroll" id="lessons-table-top-scroll" aria-label="课节列表横向滚动条">
                                 <div class="lessons-table-top-scroll-inner" id="lessons-table-top-scroll-inner"></div>
+                            </div>
+
+                            <div class="lessons-table-floating-scroll" id="lessons-table-floating-scroll" aria-label="课节列表浮动横向滚动条">
+                                <div class="lessons-table-floating-scroll-inner" id="lessons-table-floating-scroll-inner"></div>
                             </div>
 
                             <div class="lessons-table-wrap" id="lessons-table-wrap">
@@ -1028,42 +1068,74 @@ document.addEventListener("DOMContentLoaded", function () {
     const tableWrap = document.getElementById("lessons-table-wrap");
     const topScroll = document.getElementById("lessons-table-top-scroll");
     const topScrollInner = document.getElementById("lessons-table-top-scroll-inner");
+    const floatingScroll = document.getElementById("lessons-table-floating-scroll");
+    const floatingScrollInner = document.getElementById("lessons-table-floating-scroll-inner");
     const lessonsTable = document.getElementById("lessons-table");
 
-    if (!tableWrap || !topScroll || !topScrollInner || !lessonsTable) {
+    if (!tableWrap || !topScroll || !topScrollInner || !floatingScroll || !floatingScrollInner || !lessonsTable) {
         return;
     }
 
-    function syncTopScrollWidth() {
-        topScrollInner.style.width = `${lessonsTable.scrollWidth}px`;
+    function syncScrollbarWidth() {
+        const width = `${lessonsTable.scrollWidth}px`;
+        topScrollInner.style.width = width;
+        floatingScrollInner.style.width = width;
     }
 
-    let syncingFromTop = false;
-    let syncingFromTable = false;
+    let isSyncingScroll = false;
 
-    topScroll.addEventListener("scroll", function () {
-        if (syncingFromTable) {
+    function syncScrollLeft(source) {
+        if (isSyncingScroll) {
             return;
         }
 
-        syncingFromTop = true;
-        tableWrap.scrollLeft = topScroll.scrollLeft;
-        syncingFromTop = false;
+        isSyncingScroll = true;
+        const left = source.scrollLeft;
+
+        if (source !== tableWrap) {
+            tableWrap.scrollLeft = left;
+        }
+
+        if (source !== topScroll) {
+            topScroll.scrollLeft = left;
+        }
+
+        if (source !== floatingScroll) {
+            floatingScroll.scrollLeft = left;
+        }
+
+        isSyncingScroll = false;
+    }
+
+    function updateFloatingScrollbarVisibility() {
+        const rect = tableWrap.getBoundingClientRect();
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const isVisible = rect.top < viewportHeight - 80 && rect.bottom > 120;
+
+        floatingScroll.classList.toggle("is-visible", isVisible);
+    }
+
+    topScroll.addEventListener("scroll", function () {
+        syncScrollLeft(topScroll);
+    });
+
+    floatingScroll.addEventListener("scroll", function () {
+        syncScrollLeft(floatingScroll);
     });
 
     tableWrap.addEventListener("scroll", function () {
-        if (syncingFromTop) {
-            return;
-        }
-
-        syncingFromTable = true;
-        topScroll.scrollLeft = tableWrap.scrollLeft;
-        syncingFromTable = false;
+        syncScrollLeft(tableWrap);
     });
 
-    syncTopScrollWidth();
+    syncScrollbarWidth();
+    updateFloatingScrollbarVisibility();
 
-    window.addEventListener("resize", syncTopScrollWidth);
+    window.addEventListener("resize", function () {
+        syncScrollbarWidth();
+        updateFloatingScrollbarVisibility();
+    });
+
+    window.addEventListener("scroll", updateFloatingScrollbarVisibility, { passive: true });
 });
 </script>
 {% endblock %}

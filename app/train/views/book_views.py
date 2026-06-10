@@ -465,6 +465,13 @@ def book_detail(request, book_id):
         lesson.risk_level = row.get("risk_level", "稳定")
         lesson.dictation_count = dictation_count_map.get(lesson.id, 0)
 
+    lesson_summary_filled_count = sum(
+        1
+        for lesson in lessons
+        if (getattr(lesson, "summary", "") or "").strip()
+    )
+    lesson_summary_missing_count = max(0, len(lessons) - lesson_summary_filled_count)
+
     book_cycle_summary_list = get_dashboard_books_cycle_summary(request.user, [book])
     book_cycle_summary = book_cycle_summary_list[0] if book_cycle_summary_list else {
         "book": book,
@@ -483,6 +490,8 @@ def book_detail(request, book_id):
         "lessons": lessons,
         "lesson_cycle_summary": lesson_cycle_summary,
         "book_cycle_summary": book_cycle_summary,
+        "lesson_summary_filled_count": lesson_summary_filled_count,
+        "lesson_summary_missing_count": lesson_summary_missing_count,
         "head_actions": [
             {"label": "返回首页", "url": reverse("dashboard")},
             {"label": "编辑书册", "url": reverse("book-edit", args=[book.id])},

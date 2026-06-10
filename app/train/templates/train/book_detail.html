@@ -916,34 +916,39 @@
                 <section class="side-card">
                     <div class="side-card-header">
                         <div>
-                            <h3 class="side-card-title">循环摘要</h3>
-                            <div class="side-card-subtitle">只保留必要信息，不和主入口抢层级。</div>
+                            <h3 class="side-card-title">今日任务</h3>
+                            <div class="side-card-subtitle">只显示会影响今天学习决策的信息。</div>
                         </div>
                     </div>
 
                     <div class="side-card-body">
                         <div class="mini-stats">
                             <div class="mini-row">
-                                <div class="mini-row-label">当前阶段</div>
-                                <div class="mini-row-value">{{ book_stage }}</div>
+                                <div class="mini-row-label">今日到期</div>
+                                <div class="mini-row-value">{{ book_cycle_summary.today_due_count|default:0 }}</div>
+                            </div>
+
+                            <div class="mini-row">
+                                <div class="mini-row-label">逾期未做</div>
+                                <div class="mini-row-value">{{ book_cycle_summary.overdue_count|default:0 }}</div>
+                            </div>
+
+                            <div class="mini-row">
+                                <div class="mini-row-label">主阶段</div>
+                                <div class="mini-row-value">{{ book_cycle_summary.main_stage|default:"尚未开始" }}</div>
                             </div>
 
                             <div class="mini-row">
                                 <div class="mini-row-label">下一次复习</div>
-                                <div class="mini-row-value">{{ book_next_review }}</div>
+                                <div class="mini-row-value">{{ book_cycle_summary.next_review_text|default:"未安排" }}</div>
                             </div>
+                        </div>
 
-                            <div class="mini-row">
-                                <div class="mini-row-label">总课节</div>
-                                <div class="mini-row-value">{{ lessons|length }}</div>
-                            </div>
+                        <div style="height: 14px;"></div>
 
-                            <div class="mini-row">
-                                <div class="mini-row-label">新学 / 巩固中 / 长期巩固</div>
-                                <div class="mini-row-value">
-                                    {{ book_new_count }} / {{ book_in_progress_count }} / {{ book_mastered_count }}
-                                </div>
-                            </div>
+                        <div class="table-actions">
+                            <a href="#lesson-list" class="primary-btn">查看课节</a>
+                            <a href="{% url 'dashboard' %}" class="secondary-btn">返回首页</a>
                         </div>
                     </div>
                 </section>
@@ -951,37 +956,38 @@
                 <section class="side-card">
                     <div class="side-card-header">
                         <div>
-                            <h3 class="side-card-title">书本信息</h3>
-                            <div class="side-card-subtitle">基础信息保留，但不抢主视线。</div>
+                            <h3 class="side-card-title">目录维护</h3>
+                            <div class="side-card-subtitle">重点看课节要点是否已经整理完整。</div>
                         </div>
                     </div>
 
                     <div class="side-card-body">
                         <div class="mini-stats">
                             <div class="mini-row">
-                                <div class="mini-row-label">标题</div>
-                                <div class="mini-row-value">{{ book.title }}</div>
+                                <div class="mini-row-label">总课节</div>
+                                <div class="mini-row-value">{{ lessons|length }}</div>
                             </div>
 
                             <div class="mini-row">
-                                <div class="mini-row-label">ID</div>
-                                <div class="mini-row-value">{{ book.id }}</div>
+                                <div class="mini-row-label">已填写要点</div>
+                                <div class="mini-row-value">{{ lesson_summary_filled_count }}</div>
                             </div>
 
                             <div class="mini-row">
-                                <div class="mini-row-label">创建时间</div>
-                                <div class="mini-row-value">{{ book.created_at|date:"Y-m-d H:i"|default:"-" }}</div>
-                            </div>
-
-                            <div class="mini-row">
-                                <div class="mini-row-label">更新时间</div>
-                                <div class="mini-row-value">{{ book.updated_at|date:"Y-m-d H:i"|default:"-" }}</div>
+                                <div class="mini-row-label">待补要点</div>
+                                <div class="mini-row-value">{{ lesson_summary_missing_count }}</div>
                             </div>
                         </div>
 
                         <div style="height: 14px;"></div>
 
-                        <div class="description-box">{{ book.description|default:"暂无说明" }}</div>
+                        <div class="description-box">{{ book.description|default:"暂无书本说明" }}</div>
+
+                        <div style="height: 14px;"></div>
+
+                        <div class="table-actions">
+                            <a href="{% url 'book-edit' book.id %}" class="secondary-btn">编辑书本</a>
+                        </div>
                     </div>
                 </section>
             </aside>

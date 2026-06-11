@@ -145,6 +145,29 @@ def asr_transcribe_api(request):
 
     asr_lang = _normalize_openai_asr_language(request.POST.get("asr_lang") or "")
     asr_prompt = (request.POST.get("asr_prompt") or "").strip()
+
+    # 后端兜底强化：
+    # 前端虽然会传日语 prompt，但浏览器缓存、旧页面、短音频、噪音场景下，
+    # ASR 仍可能把日语误识别成中文/韩文。这里统一在服务端加硬约束。
+    if asr_lang == "ja":
+        ja_guard_prompt = (
+            "これは日本語の音声です。"
+            "必ず日本語として、聞こえた内容だけをそのまま書き起こしてください。"
+            "中国語に翻訳しないでください。中国語を出力しないでください。"
+            "韓国語を出力しないでください。"
+            "聞き取れない場合は、意味を推測して別の言語の文を作らないでください。"
+        )
+        asr_prompt = f"{ja_guard_prompt}\n{asr_prompt}".strip() if asr_prompt else ja_guard_prompt
+    elif asr_lang == "en":
+        en_guard_prompt = (
+            "This is English speech. Transcribe only the words actually spoken. "
+            "Do not translate. Do not guess unrelated text when the speech is unclear."
+        )
+        asr_prompt = f"{en_guard_prompt}\n{asr_prompt}".strip() if asr_prompt else en_guard_prompt
+    elif asr_lang == "zh":
+        zh_guard_prompt = "这是中文语音。只转写实际听到的内容，不要翻译，不要在听不清时编造无关句子。"
+        asr_prompt = f"{zh_guard_prompt}\n{asr_prompt}".strip() if asr_prompt else zh_guard_prompt
+
     suffix = os.path.splitext(audio_file.name or "")[1] or ".webm"
 
     tmp_path = ""

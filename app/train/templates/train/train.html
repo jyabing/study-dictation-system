@@ -3751,6 +3751,40 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
             return;
         }
 
+        const normalizedReturnedAsrLang = String(returnedAsrLang || state.recognitionLang || "").trim().toLowerCase();
+        const currentExpectedSpeechText = pickText(
+            state.current || {},
+            ["answer_text", "target_answer", "write_expected_answer", "prompt_text", "source_text"],
+            ""
+        );
+        const expectedLooksJapanese = /[\u3040-\u30ff]/.test(currentExpectedSpeechText);
+        const transcriptHasKana = /[\u3040-\u30ff]/.test(transcript);
+        const transcriptHasCjk = /[\u3400-\u9fff]/.test(transcript);
+        const normalJapaneseScriptMismatch = (
+            state.inputMode !== "sequence"
+            && normalizedReturnedAsrLang.startsWith("ja")
+            && expectedLooksJapanese
+            && transcriptHasCjk
+            && !transcriptHasKana
+        );
+
+        if (normalJapaneseScriptMismatch) {
+            state.recognitionFinalText = "";
+            state.recognitionInterimText = "";
+            state.recognizedText = "";
+
+            updateSpeechResult("", "");
+
+            showSpeechError("ASR 输出像中文，但当前题要求日语。识别结果已隐藏，请重新录音或改用文本输入。");
+
+            if (speechStatus) {
+                speechStatus.textContent = `后端识别完成${returnedAsrLang ? "：" + returnedAsrLang : ""}，但输出脚本与日语目标不匹配，结果已隐藏。`;
+            }
+
+            setSpeechDebugStatus(`ASR 输出脚本与日语目标不匹配，结果已隐藏：${transcript}`);
+            return;
+        }
+
         state.recognitionFinalText = transcript;
         state.recognitionInterimText = "";
         state.recognizedText = transcript;

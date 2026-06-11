@@ -401,10 +401,6 @@
         width: 96px;
     }
 
-    .col-actions {
-        width: 320px;
-    }
-
     .table-pill,
     .status-chip {
         display: inline-flex;
@@ -792,7 +788,6 @@
                                             <th class="col-next">下一次复习</th>
                                             <th class="col-due">现在可做</th>
                                             <th class="col-overdue">今天稍后 / 未来</th>
-                                            <th class="col-actions">操作</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -846,14 +841,6 @@
                                                     ｜逾期 {{ lesson_overdue_count }}
                                                 </td>
 
-                                                <td>
-                                                    <div class="table-actions">
-                                                        <a href="{% url 'lesson-train' lesson.id %}" class="primary-btn">进入学习</a>
-                                                        <a href="{% url 'lesson-question-list' lesson.id %}" class="secondary-btn">题目列表</a>
-                                                        <a href="{% url 'dictation-lesson-check' lesson.id %}" class="secondary-btn">听写考核</a>
-                                                        <a href="{% url 'lesson-edit' lesson.id %}" class="ghost-btn">编辑</a>
-                                                    </div>
-                                                </td>
                                             </tr>
                                         {% endfor %}
                                     </tbody>

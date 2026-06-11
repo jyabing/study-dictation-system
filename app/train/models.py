@@ -48,7 +48,7 @@ class Question(models.Model):
     prompt_text = models.TextField()
     answer_text = models.TextField()
 
-    audio_url = models.URLField(blank=True, null=True)
+    audio_url = models.URLField(max_length=1000, blank=True, null=True)
 
     def __str__(self):
         return self.prompt_text[:50]

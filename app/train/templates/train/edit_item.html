@@ -144,6 +144,71 @@
                                 </div>
                             </div>
 
+                            {% if display_qtype == "listen_asr" or display_qtype == "speak_read" %}
+                                <div class="field-group full">
+                                    <div class="field-label">题干音频</div>
+                                    <div class="field-help">优先播放上传文件；无文件时使用 URL 或 TTS。</div>
+
+                                    {% if training and training.audio_file %}
+                                        <div class="field-help">
+                                            当前题干音频：
+                                            <a href="{{ training.audio_file.url }}" target="_blank" rel="noopener">{{ training.audio_file.name }}</a>
+                                        </div>
+                                        <audio controls preload="none" class="input" style="padding: 8px;">
+                                            <source src="{{ training.audio_file.url }}">
+                                            浏览器暂不支持音频播放。
+                                        </audio>
+                                    {% elif obj.audio_url %}
+                                        <div class="field-help">
+                                            当前题干音频 URL：
+                                            <a href="{{ obj.audio_url }}" target="_blank" rel="noopener">{{ obj.audio_url }}</a>
+                                        </div>
+                                        <audio controls preload="none" class="input" style="padding: 8px;">
+                                            <source src="{{ obj.audio_url }}">
+                                            浏览器暂不支持音频播放。
+                                        </audio>
+                                    {% else %}
+                                        <div class="field-help">当前还没有题干音频。可上传音频、填写 URL，或使用题干 TTS。</div>
+                                    {% endif %}
+
+                                    <div style="display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; align-items:center;">
+                                        <input type="file" name="audio_file" class="input" accept="audio/*">
+
+                                        <label class="field-help" style="display:flex; gap:6px; align-items:center; margin:0; white-space:nowrap;">
+                                            <input type="checkbox" name="clear_audio_file" value="1">
+                                            删除题干音频
+                                        </label>
+                                    </div>
+                                    <div class="field-help">上传新题干音频后会替换当前上传文件。</div>
+
+                                    <div class="field-label" style="margin-top:12px;">题干音频 URL</div>
+                                    <div style="display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; align-items:center;">
+                                        <input
+                                            type="text"
+                                            id="audio_url"
+                                            name="audio_url"
+                                            class="input"
+                                            value="{{ obj.audio_url|default:'' }}"
+                                            placeholder="可选：填写远程题干音频 URL"
+                                        >
+
+                                        <button
+                                            type="button"
+                                            class="btn-secondary"
+                                            onclick="searchExistingAudioForTextarea('source_text', 'audio_url', 'prompt_audio_search_results')"
+                                        >
+                                            查找
+                                        </button>
+                                    </div>
+
+                                    <div
+                                        id="prompt_audio_search_results"
+                                        class="field-help"
+                                        style="margin-top:8px;"
+                                    ></div>
+                                </div>
+                            {% endif %}
+
                             {% if item_type == "read_choice" %}
                                 <input type="hidden" id="answer-display" value="">
                                 <input type="hidden" name="answer" id="answer-hidden-1" value="">
@@ -1065,41 +1130,6 @@
 
                             {% if display_qtype == "listen_asr" or display_qtype == "speak_read" %}
                                 <div class="field-group full">
-                                    <div class="field-label">题干音频</div>
-                                    <div class="field-help">优先播放上传文件；无文件时使用 URL 或 TTS。</div>
-
-                                    {% if training and training.audio_file %}
-                                        <div class="field-help">
-                                            当前题干音频：
-                                            <a href="{{ training.audio_file.url }}" target="_blank" rel="noopener">{{ training.audio_file.name }}</a>
-                                        </div>
-                                        <audio controls preload="none" class="input" style="padding: 8px;">
-                                            <source src="{{ training.audio_file.url }}">
-                                            浏览器暂不支持音频播放。
-                                        </audio>
-                                    {% elif obj.audio_url %}
-                                        <div class="field-help">
-                                            当前题干音频 URL：
-                                            <a href="{{ obj.audio_url }}" target="_blank" rel="noopener">{{ obj.audio_url }}</a>
-                                        </div>
-                                        <audio controls preload="none" class="input" style="padding: 8px;">
-                                            <source src="{{ obj.audio_url }}">
-                                            浏览器暂不支持音频播放。
-                                        </audio>
-                                    {% else %}
-                                        <div class="field-help">当前还没有题干音频。可上传音频、填写 URL，或使用题干 TTS。</div>
-                                    {% endif %}
-
-                                    <div style="display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; align-items:center;">
-                                        <input type="file" name="audio_file" class="input" accept="audio/*">
-
-                                        <label class="field-help" style="display:flex; gap:6px; align-items:center; margin:0; white-space:nowrap;">
-                                            <input type="checkbox" name="clear_audio_file" value="1">
-                                            删除题干音频
-                                        </label>
-                                    </div>
-                                    <div class="field-help">上传新题干音频后会替换当前上传文件。</div>
-
                                     {% if display_qtype == "speak_read" %}
                                         <div class="field-label" style="margin-top:16px;">题干图片</div>
 
@@ -1201,34 +1231,6 @@
 
                                     <div
                                         id="answer_audio_search_results"
-                                        class="field-help"
-                                        style="margin-top:8px;"
-                                    ></div>
-
-                                    <div style="height: 12px;"></div>
-
-                                    <div class="field-label">题干音频 URL</div>
-                                    <div style="display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; align-items:center;">
-                                        <input
-                                            type="text"
-                                            id="audio_url"
-                                            name="audio_url"
-                                            class="input"
-                                            value="{{ obj.audio_url|default:'' }}"
-                                            placeholder="可选：填写远程题干音频 URL"
-                                        >
-
-                                        <button
-                                            type="button"
-                                            class="btn-secondary"
-                                            onclick="searchExistingAudioForTextarea('source_text', 'audio_url', 'prompt_audio_search_results')"
-                                        >
-                                            查找
-                                        </button>
-                                    </div>
-
-                                    <div
-                                        id="prompt_audio_search_results"
                                         class="field-help"
                                         style="margin-top:8px;"
                                     ></div>

@@ -1328,7 +1328,7 @@
                 </div>
 
                 <div class="footer-bar">
-                    <button type="button" class="save-btn" onclick="save()">保存素材</button>
+                    <button type="button" class="save-btn" id="save-btn" onclick="save()">保存素材</button>
                 </div>
             </div>
 
@@ -2216,6 +2216,18 @@
         }
 
         function save() {
+            const saveBtn = document.getElementById("save-btn");
+
+            if (saveBtn && saveBtn.disabled) {
+                return;
+            }
+
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.dataset.originalText = saveBtn.innerText || "保存素材";
+                saveBtn.innerText = "保存中…";
+            }
+
             const skill = document.getElementById("skill").value;
             const itemType = document.getElementById("item_type").value;
 
@@ -2626,20 +2638,34 @@
                 method: "POST",
                 body: formData
             })
+            .then(r => {
+                if (!r.ok) {
+                    throw new Error(`保存请求失败：HTTP ${r.status}`);
+                }
 
-
-            .then(r => r.json())
+                return r.json();
+            })
             .then(data => {
                 if (data.ok) {
+                    if (saveBtn) {
+                        saveBtn.innerText = "保存成功，正在跳转…";
+                    }
+
                     const lessonId = document.getElementById("lesson").value;
                     window.location.href = `/lesson/${lessonId}/questions/`;
                 } else {
-                    alert(data.error || "保存失败");
+                    throw new Error(data.error || "保存失败");
                 }
             })
             .catch(err => {
                 console.error(err);
-                alert("保存失败");
+
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerText = saveBtn.dataset.originalText || "保存素材";
+                }
+
+                alert(`${err.message || "保存失败"}。如果刚才上传了音频，请先到素材列表确认是否已经保存，避免重复点击。`);
             });
         }
 

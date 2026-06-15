@@ -228,6 +228,63 @@
                                     <input type="hidden" name="target_answer" id="target-answer-hidden" value="{% firstof training.target_answer obj.answer_text obj.answer '' %}">
                                     <div class="field-help">这里填写用户最终需要生成并记忆的目标回答。</div>
                                 </div>
+
+                                {% if display_qtype == "listen_asr" or display_qtype == "speak_read" %}
+                                    <div class="field-group full">
+                                        <div class="field-label">回答音频</div>
+                                        <div class="field-help">答对后播放。优先用上传文件；无文件时使用 URL 或 TTS。</div>
+
+                                        {% if training and training.answer_audio_file %}
+                                            <div class="field-help">
+                                                当前回答音频：
+                                                <a href="{{ training.answer_audio_file.url }}" target="_blank" rel="noopener">{{ training.answer_audio_file.name }}</a>
+                                            </div>
+                                            <audio controls preload="none" class="input" style="padding: 8px;">
+                                                <source src="{{ training.answer_audio_file.url }}">
+                                                浏览器暂不支持音频播放。
+                                            </audio>
+                                        {% else %}
+                                            <div class="field-help">当前还没有回答音频。可上传回答音频，或勾选下方“回答 TTS”作为兜底。</div>
+                                        {% endif %}
+
+                                        <div style="display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; align-items:center;">
+                                            <input type="file" name="answer_audio_file" class="input" accept="audio/*">
+
+                                            <label class="field-help" style="display:flex; gap:6px; align-items:center; margin:0; white-space:nowrap;">
+                                                <input type="checkbox" name="clear_answer_audio_file" value="1">
+                                                删除回答音频
+                                            </label>
+                                        </div>
+                                        <div class="field-help">上传新回答音频后会替换当前回答音频。</div>
+
+                                        <div class="field-label" style="margin-top:12px;">回答音频 URL</div>
+                                        <div style="display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; align-items:center;">
+                                            <input
+                                                type="text"
+                                                id="answer_audio_url"
+                                                name="answer_audio_url"
+                                                class="input"
+                                                value="{{ listen_meta.asr.answer_audio_url|default:'' }}"
+                                                placeholder="可选：填写回答音频 URL"
+                                            >
+
+                                            <button
+                                                type="button"
+                                                class="btn-secondary"
+                                                onclick="searchExistingAudioForTextarea('target_answer', 'answer_audio_url', 'answer_audio_search_results')"
+                                            >
+                                                查找
+                                            </button>
+                                        </div>
+
+                                        <div
+                                            id="answer_audio_search_results"
+                                            class="field-help"
+                                            style="margin-top:8px;"
+                                        ></div>
+                                    </div>
+                                {% endif %}
+
                             {% endif %}
 
                             {% if display_qtype == "write" %}
@@ -1182,60 +1239,6 @@
                                         <div class="field-help">用于说 / 看字朗读。上传图片优先；没有上传图片时，训练页可回退到这里的 URL。</div>
                                     {% endif %}
 
-
-                                    <div class="field-label" style="margin-top:12px;">回答音频</div>
-                                    <div class="field-help">答对后播放。优先用上传文件；无文件时使用 URL 或 TTS。</div>
-
-                                    {% if training and training.answer_audio_file %}
-                                        <div class="field-help">
-                                            当前回答音频：
-                                            <a href="{{ training.answer_audio_file.url }}" target="_blank" rel="noopener">{{ training.answer_audio_file.name }}</a>
-                                        </div>
-                                        <audio controls preload="none" class="input" style="padding: 8px;">
-                                            <source src="{{ training.answer_audio_file.url }}">
-                                            浏览器暂不支持音频播放。
-                                        </audio>
-                                    {% else %}
-                                        <div class="field-help">当前还没有回答音频。可上传回答音频，或勾选下方“回答 TTS”作为兜底。</div>
-                                    {% endif %}
-
-                                    <div style="display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; align-items:center;">
-                                        <input type="file" name="answer_audio_file" class="input" accept="audio/*">
-
-                                        <label class="field-help" style="display:flex; gap:6px; align-items:center; margin:0; white-space:nowrap;">
-                                            <input type="checkbox" name="clear_answer_audio_file" value="1">
-                                            删除回答音频
-                                        </label>
-                                    </div>
-                                    <div class="field-help">上传新回答音频后会替换当前回答音频。</div>
-
-                                    <div class="field-label" style="margin-top:12px;">回答音频 URL</div>
-                                    <div style="display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; align-items:center;">
-                                        <input
-                                            type="text"
-                                            id="answer_audio_url"
-                                            name="answer_audio_url"
-                                            class="input"
-                                            value="{{ listen_meta.asr.answer_audio_url|default:'' }}"
-                                            placeholder="可选：填写回答音频 URL"
-                                        >
-
-                                        <button
-                                            type="button"
-                                            class="btn-secondary"
-                                            onclick="searchExistingAudioForTextarea('target_answer', 'answer_audio_url', 'answer_audio_search_results')"
-                                        >
-                                            查找
-                                        </button>
-                                    </div>
-
-                                    <div
-                                        id="answer_audio_search_results"
-                                        class="field-help"
-                                        style="margin-top:8px;"
-                                    ></div>
-
-                                    <div style="height: 12px;"></div>
 
                                     <div class="field-label">TTS / 判定选项</div>
                                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; align-items:center;">

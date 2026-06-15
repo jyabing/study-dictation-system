@@ -1069,25 +1069,23 @@
                                     <div class="field-help">播放给用户听的音频。优先使用上传文件；没有上传文件时，可回退到题干音频 URL 或题干 TTS。</div>
 
                                     {% if training and training.audio_file %}
-                                        <div class="field-help">当前已上传题干音频。</div>
-                                        <audio controls preload="none" class="input" style="padding: 12px;">
+                                        <div class="field-help">
+                                            当前题干音频：
+                                            <a href="{{ training.audio_file.url }}" target="_blank" rel="noopener">{{ training.audio_file.name }}</a>
+                                        </div>
+                                        <audio controls preload="none" class="input" style="padding: 8px;">
                                             <source src="{{ training.audio_file.url }}">
                                             浏览器暂不支持音频播放。
                                         </audio>
-                                        <div class="field-help">
-                                            当前文件：
-                                            <a href="{{ training.audio_file.url }}" target="_blank" rel="noopener">{{ training.audio_file.name }}</a>
-                                        </div>
                                     {% elif obj.audio_url %}
-                                        <div class="field-help">当前使用题干音频 URL。</div>
-                                        <audio controls preload="none" class="input" style="padding: 12px;">
+                                        <div class="field-help">
+                                            当前题干音频 URL：
+                                            <a href="{{ obj.audio_url }}" target="_blank" rel="noopener">{{ obj.audio_url }}</a>
+                                        </div>
+                                        <audio controls preload="none" class="input" style="padding: 8px;">
                                             <source src="{{ obj.audio_url }}">
                                             浏览器暂不支持音频播放。
                                         </audio>
-                                        <div class="field-help">
-                                            当前链接：
-                                            <a href="{{ obj.audio_url }}" target="_blank" rel="noopener">{{ obj.audio_url }}</a>
-                                        </div>
                                     {% else %}
                                         <div class="field-help">当前还没有题干音频。可上传音频、填写 URL，或使用题干 TTS。</div>
                                     {% endif %}
@@ -1159,15 +1157,14 @@
                                     <div class="field-help">答对后播放给用户听的标准回答音频。优先使用上传文件；没有上传文件时，可回退到回答音频 URL 或回答 TTS。</div>
 
                                     {% if training and training.answer_audio_file %}
-                                        <div class="field-help">当前已上传回答音频文件。</div>
-                                        <audio controls preload="none" class="input" style="padding: 12px;">
+                                        <div class="field-help">
+                                            当前回答音频：
+                                            <a href="{{ training.answer_audio_file.url }}" target="_blank" rel="noopener">{{ training.answer_audio_file.name }}</a>
+                                        </div>
+                                        <audio controls preload="none" class="input" style="padding: 8px;">
                                             <source src="{{ training.answer_audio_file.url }}">
                                             浏览器暂不支持音频播放。
                                         </audio>
-                                        <div class="field-help">
-                                            当前文件：
-                                            <a href="{{ training.answer_audio_file.url }}" target="_blank" rel="noopener">{{ training.answer_audio_file.name }}</a>
-                                        </div>
                                     {% else %}
                                         <div class="field-help">当前还没有回答音频。可上传回答音频，或勾选下方“回答 TTS”作为兜底。</div>
                                     {% endif %}

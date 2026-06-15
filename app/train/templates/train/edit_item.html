@@ -1238,53 +1238,63 @@
 
                                     <div style="height: 12px;"></div>
 
-                                    <label class="field-help" style="display:block;">
-                                        <input
-                                            type="checkbox"
-                                            name="use_tts"
-                                            value="1"
-                                            {% if listen_meta.use_tts or not training.audio_file and not obj.audio_url %}checked{% endif %}
-                                        >
-                                        没有题干音频时自动使用 TTS
-                                    </label>
+                                    <div class="field-label">TTS / 判定选项</div>
+                                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; align-items:center;">
+                                        <label class="field-help" style="display:flex; gap:6px; align-items:center; margin:0;">
+                                            <input
+                                                type="checkbox"
+                                                name="use_tts"
+                                                value="1"
+                                                {% if listen_meta.use_tts or not training.audio_file and not obj.audio_url %}checked{% endif %}
+                                            >
+                                            题干无音频时用 TTS
+                                        </label>
 
-                                    <div class="field-label" style="margin-top:12px;">题干 TTS 语言</div>
-                                    <select name="prompt_tts_lang" class="select">
-                                        <option value="en" {% if listen_meta.asr.prompt_tts_lang == "en" or not listen_meta.asr.prompt_tts_lang %}selected{% endif %}>英语</option>
-                                        <option value="ja" {% if listen_meta.asr.prompt_tts_lang == "ja" %}selected{% endif %}>日语</option>
-                                        <option value="zh-CN" {% if listen_meta.asr.prompt_tts_lang == "zh-CN" %}selected{% endif %}>中文</option>
-                                        <option value="ko" {% if listen_meta.asr.prompt_tts_lang == "ko" %}selected{% endif %}>韩语</option>
-                                    </select>
-                                    <div class="field-help">用于没有题干音频时，自动朗读题干。</div>
+                                        <label class="field-help" style="display:flex; gap:6px; align-items:center; margin:0;">
+                                            <input
+                                                type="checkbox"
+                                                name="answer_use_tts"
+                                                value="1"
+                                                {% if training and training.answer_use_tts or training and not training.answer_audio_file %}checked{% endif %}
+                                            >
+                                            回答无音频时用 TTS
+                                        </label>
 
-                                    <label class="field-help" style="display:block; margin-top:8px;">
-                                        <input
-                                            type="checkbox"
-                                            name="answer_use_tts"
-                                            value="1"
-                                            {% if training and training.answer_use_tts or training and not training.answer_audio_file %}checked{% endif %}
-                                        >
-                                        没有回答音频时自动使用 TTS 朗读回答
-                                    </label>
+                                        <label class="field-help" style="display:flex; gap:6px; align-items:center; margin:0;">
+                                            <input
+                                                type="checkbox"
+                                                name="allow_partial_match"
+                                                value="1"
+                                                {% if listen_meta.asr.allow_partial_match %}checked{% endif %}
+                                            >
+                                            允许部分匹配
+                                        </label>
+                                    </div>
 
-                                    <div class="field-label" style="margin-top:12px;">回答 TTS 语言</div>
-                                    <select name="answer_tts_lang" class="select">
-                                        <option value="en" {% if listen_meta.asr.answer_tts_lang == "en" or not listen_meta.asr.answer_tts_lang %}selected{% endif %}>英语</option>
-                                        <option value="ja" {% if listen_meta.asr.answer_tts_lang == "ja" %}selected{% endif %}>日语</option>
-                                        <option value="zh-CN" {% if listen_meta.asr.answer_tts_lang == "zh-CN" %}selected{% endif %}>中文</option>
-                                        <option value="ko" {% if listen_meta.asr.answer_tts_lang == "ko" %}selected{% endif %}>韩语</option>
-                                    </select>
-                                    <div class="field-help">用于没有回答音频时，自动朗读标准回答。</div>
+                                    <div class="form-grid" style="margin-top:12px;">
+                                        <div class="field-group">
+                                            <div class="field-label">题干 TTS 语言</div>
+                                            <select name="prompt_tts_lang" class="select">
+                                                <option value="en" {% if listen_meta.asr.prompt_tts_lang == "en" or not listen_meta.asr.prompt_tts_lang %}selected{% endif %}>英语</option>
+                                                <option value="ja" {% if listen_meta.asr.prompt_tts_lang == "ja" %}selected{% endif %}>日语</option>
+                                                <option value="zh-CN" {% if listen_meta.asr.prompt_tts_lang == "zh-CN" %}selected{% endif %}>中文</option>
+                                                <option value="ko" {% if listen_meta.asr.prompt_tts_lang == "ko" %}selected{% endif %}>韩语</option>
+                                            </select>
+                                            <div class="field-help">用于没有题干音频时朗读题干。</div>
+                                        </div>
 
-                                    <label class="field-help" style="display:block; margin-top:8px;">
-                                        <input
-                                            type="checkbox"
-                                            name="allow_partial_match"
-                                            value="1"
-                                            {% if listen_meta.asr.allow_partial_match %}checked{% endif %}
-                                        >
-                                        允许部分匹配
-                                    </label>
+                                        <div class="field-group">
+                                            <div class="field-label">回答 TTS 语言</div>
+                                            <select name="answer_tts_lang" class="select">
+                                                <option value="en" {% if listen_meta.asr.answer_tts_lang == "en" or not listen_meta.asr.answer_tts_lang %}selected{% endif %}>英语</option>
+                                                <option value="ja" {% if listen_meta.asr.answer_tts_lang == "ja" %}selected{% endif %}>日语</option>
+                                                <option value="zh-CN" {% if listen_meta.asr.answer_tts_lang == "zh-CN" %}selected{% endif %}>中文</option>
+                                                <option value="ko" {% if listen_meta.asr.answer_tts_lang == "ko" %}selected{% endif %}>韩语</option>
+                                            </select>
+                                            <div class="field-help">用于没有回答音频时朗读标准回答。</div>
+                                        </div>
+                                    </div>
+
                                     <div style="height: 12px;"></div>
                                     
                                     <div class="field-label">ASR 语言</div>

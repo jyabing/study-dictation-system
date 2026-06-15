@@ -1066,7 +1066,7 @@
                             {% if display_qtype == "listen_asr" or display_qtype == "speak_read" %}
                                 <div class="field-group full">
                                     <div class="field-label">题干音频</div>
-                                    <div class="field-help">播放给用户听的音频。优先使用上传文件；没有上传文件时，可回退到题干音频 URL 或题干 TTS。</div>
+                                    <div class="field-help">优先播放上传文件；无文件时使用 URL 或 TTS。</div>
 
                                     {% if training and training.audio_file %}
                                         <div class="field-help">
@@ -1154,7 +1154,7 @@
 
 
                                     <div class="field-label" style="margin-top:12px;">回答音频</div>
-                                    <div class="field-help">答对后播放给用户听的标准回答音频。优先使用上传文件；没有上传文件时，可回退到回答音频 URL 或回答 TTS。</div>
+                                    <div class="field-help">答对后播放。优先用上传文件；无文件时使用 URL 或 TTS。</div>
 
                                     {% if training and training.answer_audio_file %}
                                         <div class="field-help">

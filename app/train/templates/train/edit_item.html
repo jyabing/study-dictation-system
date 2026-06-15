@@ -1092,13 +1092,15 @@
                                         <div class="field-help">当前还没有题干音频。可上传音频、填写 URL，或使用题干 TTS。</div>
                                     {% endif %}
 
-                                    <input type="file" name="audio_file" class="input" accept="audio/*">
-                                    <div class="field-help">上传新题干音频后会替换当前上传文件。</div>
+                                    <div style="display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; align-items:center;">
+                                        <input type="file" name="audio_file" class="input" accept="audio/*">
 
-                                    <label class="field-help" style="display:block; margin-top:8px;">
-                                        <input type="checkbox" name="clear_audio_file" value="1">
-                                        删除当前题干上传音频
-                                    </label>
+                                        <label class="field-help" style="display:flex; gap:6px; align-items:center; margin:0; white-space:nowrap;">
+                                            <input type="checkbox" name="clear_audio_file" value="1">
+                                            删除题干音频
+                                        </label>
+                                    </div>
+                                    <div class="field-help">上传新题干音频后会替换当前上传文件。</div>
 
                                     {% if display_qtype == "speak_read" %}
                                         <div class="field-label" style="margin-top:16px;">题干图片</div>
@@ -1170,13 +1172,15 @@
                                         <div class="field-help">当前还没有回答音频。可上传回答音频，或勾选下方“回答 TTS”作为兜底。</div>
                                     {% endif %}
 
-                                    <input type="file" name="answer_audio_file" class="input" accept="audio/*">
-                                    <div class="field-help">上传新回答音频后会替换当前回答音频。</div>
+                                    <div style="display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; align-items:center;">
+                                        <input type="file" name="answer_audio_file" class="input" accept="audio/*">
 
-                                    <label class="field-help" style="display:block; margin-top:8px;">
-                                        <input type="checkbox" name="clear_answer_audio_file" value="1">
-                                        删除当前回答音频
-                                    </label>
+                                        <label class="field-help" style="display:flex; gap:6px; align-items:center; margin:0; white-space:nowrap;">
+                                            <input type="checkbox" name="clear_answer_audio_file" value="1">
+                                            删除回答音频
+                                        </label>
+                                    </div>
+                                    <div class="field-help">上传新回答音频后会替换当前回答音频。</div>
 
                                     <div class="field-label" style="margin-top:12px;">回答音频 URL</div>
                                     <div style="display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; align-items:center;">

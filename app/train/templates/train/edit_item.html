@@ -1065,10 +1065,11 @@
 
                             {% if display_qtype == "listen_asr" or display_qtype == "speak_read" %}
                                 <div class="field-group full">
-                                    <div class="field-label">声音设置</div>
+                                    <div class="field-label">题干音频</div>
+                                    <div class="field-help">播放给用户听的音频。优先使用上传文件；没有上传文件时，可回退到题干音频 URL 或题干 TTS。</div>
 
                                     {% if training and training.audio_file %}
-                                        <div class="field-help">当前已上传音频文件。</div>
+                                        <div class="field-help">当前已上传题干音频。</div>
                                         <audio controls preload="none" class="input" style="padding: 12px;">
                                             <source src="{{ training.audio_file.url }}">
                                             浏览器暂不支持音频播放。
@@ -1078,7 +1079,7 @@
                                             <a href="{{ training.audio_file.url }}" target="_blank" rel="noopener">{{ training.audio_file.name }}</a>
                                         </div>
                                     {% elif obj.audio_url %}
-                                        <div class="field-help">当前使用旧字段音频链接。</div>
+                                        <div class="field-help">当前使用题干音频 URL。</div>
                                         <audio controls preload="none" class="input" style="padding: 12px;">
                                             <source src="{{ obj.audio_url }}">
                                             浏览器暂不支持音频播放。
@@ -1088,15 +1089,15 @@
                                             <a href="{{ obj.audio_url }}" target="_blank" rel="noopener">{{ obj.audio_url }}</a>
                                         </div>
                                     {% else %}
-                                        <div class="field-help">当前还没有音频。可上传音频，或勾选下方 TTS 作为兜底。</div>
+                                        <div class="field-help">当前还没有题干音频。可上传音频、填写 URL，或使用题干 TTS。</div>
                                     {% endif %}
 
                                     <input type="file" name="audio_file" class="input" accept="audio/*">
-                                    <div class="field-help">支持 mp3 / wav / m4a 等常见格式。上传新文件后会替换当前上传音频。</div>
+                                    <div class="field-help">上传新题干音频后会替换当前上传文件。</div>
 
                                     <label class="field-help" style="display:block; margin-top:8px;">
                                         <input type="checkbox" name="clear_audio_file" value="1">
-                                        删除当前上传音频
+                                        删除当前题干上传音频
                                     </label>
 
                                     {% if display_qtype == "speak_read" %}
@@ -1153,6 +1154,7 @@
 
 
                                     <div class="field-label" style="margin-top:12px;">回答音频</div>
+                                    <div class="field-help">答对后播放给用户听的标准回答音频。优先使用上传文件；没有上传文件时，可回退到回答音频 URL 或回答 TTS。</div>
 
                                     {% if training and training.answer_audio_file %}
                                         <div class="field-help">当前已上传回答音频文件。</div>
@@ -1169,7 +1171,7 @@
                                     {% endif %}
 
                                     <input type="file" name="answer_audio_file" class="input" accept="audio/*">
-                                    <div class="field-help">支持 mp3 / wav / m4a 等常见格式。上传新文件后会替换当前回答音频。</div>
+                                    <div class="field-help">上传新回答音频后会替换当前回答音频。</div>
 
                                     <label class="field-help" style="display:block; margin-top:8px;">
                                         <input type="checkbox" name="clear_answer_audio_file" value="1">

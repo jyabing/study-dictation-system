@@ -3183,8 +3183,13 @@ function renderSequenceStep() {
         updateSpeechResult("", "");
     }
 
+    const sequenceMeaningConfirmed = !!state.sequenceMeaningConfirmed;
     const actionHint = state.sequenceStepRecorded
-        ? "本步录音已完成。确认后可以进入下一步。"
+        ? (
+            sequenceMeaningConfirmed
+                ? "本步录音和意义回想已完成，可以进入下一步。"
+                : "本步录音已完成。请先回想中文意思，再进入下一步。"
+        )
         : "请先点击下方“开始录音”，完成一次真实跟读。录音完成前不能进入下一步。";
 
     const sequenceStepBody = isListenSequence
@@ -3227,8 +3232,40 @@ function renderSequenceStep() {
             </div>
         `;
 
+    const sequenceMeaningHint = pickText(
+        state.current || {},
+        [
+            "meaning_hint",
+            "translation",
+            "translation_text",
+            "answer_text",
+            "target_answer",
+            "write_expected_answer"
+        ],
+        ""
+    );
+
+    const sequenceMeaningPanel = state.sequenceStepRecorded
+        ? `
+            <div class="speech-result-panel" id="sequence-meaning-panel" style="display:block; margin-top:12px;">
+                <div class="speech-result-label">意义回想</div>
+                <div class="muted-text" style="margin-bottom:10px;">
+                    请先在脑中回想当前语块的中文意思。不要只机械复读声音。
+                </div>
+                <div class="speech-controls" style="margin-top:0;">
+                    <button type="button" class="secondary-btn" onclick="confirmSequenceMeaning()">我已想起意思</button>
+                    <button type="button" class="ghost-btn" onclick="showSequenceMeaningHint()">显示中文提示</button>
+                </div>
+                <div class="speech-result-box" id="sequence-meaning-hint" style="display:${state.sequenceMeaningHintShown ? "block" : "none"}; margin-top:10px;">
+                    ${sequenceMeaningHint ? escapeHtml(sequenceMeaningHint) : "当前题目没有单独保存中文提示。请根据提示短语或完整回答自己回想意思。"}
+                </div>
+            </div>
+        `
+        : "";
+
     sequenceChunkList.innerHTML = `
         ${sequenceStepBody}
+        ${sequenceMeaningPanel}
         <div class="muted-text" style="margin-top:8px;">
             ${actionHint}
         </div>
@@ -3239,11 +3276,34 @@ function renderSequenceStep() {
     }
 
     if (nextBtn) {
-        nextBtn.disabled = !state.sequenceStepRecorded;
+        nextBtn.disabled = !state.sequenceStepRecorded || !state.sequenceMeaningConfirmed;
         nextBtn.textContent = safeIndex >= items.length - 1
-            ? "录音完成，进入下一题"
-            : "录音完成，进入下一步";
+            ? "意义确认完成，进入下一题"
+            : "意义确认完成，进入下一步";
     }
+}
+
+function confirmSequenceMeaning() {
+    state.sequenceMeaningConfirmed = true;
+    state.sequenceMeaningHintShown = false;
+
+    if (speechStatus) {
+        speechStatus.textContent = "意义已确认，可以进入下一步。";
+    }
+
+    renderSequenceStep();
+}
+
+function showSequenceMeaningHint() {
+    state.sequenceMeaningHintShown = true;
+    state.sequenceMeaningConfirmed = true;
+    state.usedHint = true;
+
+    if (speechStatus) {
+        speechStatus.textContent = "已查看中文提示，本步按提示后通过处理。";
+    }
+
+    renderSequenceStep();
 }
 
 async function advanceSequenceStep() {
@@ -3273,6 +3333,8 @@ async function advanceSequenceStep() {
         state.sequenceIndex += 1;
         state.sequenceStepStarted = false;
         state.sequenceStepRecorded = false;
+        state.sequenceMeaningConfirmed = false;
+        state.sequenceMeaningHintShown = false;
         clearSequencePlayback();
         resetSpeechRecognitionState();
         renderSequenceStep();
@@ -3401,6 +3463,8 @@ function showSequenceWorkspace(payload) {
     state.sequenceIndex = 0;
     state.sequenceStepStarted = false;
     state.sequenceStepRecorded = false;
+    state.sequenceMeaningConfirmed = false;
+    state.sequenceMeaningHintShown = false;
     clearSequencePlayback();
 
     renderSequenceStep();
@@ -3452,6 +3516,8 @@ function enableSpeechTextFallback() {
 
     if (wasSequenceMode) {
         state.sequenceStepRecorded = true;
+        state.sequenceMeaningConfirmed = false;
+        state.sequenceMeaningHintShown = false;
         renderSequenceStep();
     }
 }
@@ -3736,6 +3802,8 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
 
         if (sequenceAsrScriptMismatch) {
             state.sequenceStepRecorded = true;
+            state.sequenceMeaningConfirmed = false;
+            state.sequenceMeaningHintShown = false;
             state.recognitionFinalText = "";
             state.recognitionInterimText = "";
             state.recognizedText = "";
@@ -3791,6 +3859,8 @@ async function uploadBackendSpeechRecording(sessionId, mimeType) {
 
         if (state.inputMode === "sequence") {
             state.sequenceStepRecorded = true;
+            state.sequenceMeaningConfirmed = false;
+            state.sequenceMeaningHintShown = false;
         }
 
         const shouldHideSequenceAsrText = isSequenceStepTooShortForAsr();

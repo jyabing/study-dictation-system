@@ -3233,7 +3233,7 @@ function renderSequenceStep() {
         `;
 
     const sequenceMeaningHint = pickText(
-        state.current || {},
+        currentStep || {},
         [
             "meaning_hint",
             "meaning",
@@ -3436,12 +3436,21 @@ function showSequenceWorkspace(payload) {
                 return url;
             });
 
+        const meaningHints = rawChunks
+            .map(function (chunk) {
+                return String((chunk && (chunk.meaning_hint || chunk.meaning || chunk.chinese_meaning || chunk.zh_meaning)) || "").trim();
+            })
+            .filter(function (text) {
+                return text;
+            });
+
         return {
             index: stepIndex,
             text: joinSequenceChunks(cleanChunks.slice(start, end)),
             audio_url: String((currentChunk && currentChunk.audio_url) || "").trim(),
             image_url: imageUrls.length ? imageUrls[imageUrls.length - 1] : "",
             image_urls: imageUrls,
+            meaning_hint: meaningHints.join(" / "),
             sequence_generation_mode: sequenceGenerationMode,
             range_start: start,
             range_end: end

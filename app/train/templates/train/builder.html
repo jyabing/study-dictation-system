@@ -2475,15 +2475,33 @@
                 .split(/\r?\n/)
                 .map(function (line, index) {
                     const rawLine = line.trim();
-                    const parts = rawLine.split("|");
-                    const text = String(parts[0] || "").trim();
-                    const imageUrl = String(parts.slice(1).join("|") || "").trim();
 
-                    return {
+                    let text = "";
+                    let meaningHint = "";
+                    let imageUrl = "";
+
+                    if (rawLine.includes("||")) {
+                        const meaningParts = rawLine.split("||");
+                        text = String(meaningParts[0] || "").trim();
+                        meaningHint = String(meaningParts[1] || "").trim();
+                        imageUrl = String(meaningParts.slice(2).join("||") || "").trim();
+                    } else {
+                        const parts = rawLine.split("|");
+                        text = String(parts[0] || "").trim();
+                        imageUrl = String(parts.slice(1).join("|") || "").trim();
+                    }
+
+                    const chunk = {
                         order: index + 1,
                         text: text,
                         image_url: imageUrl
                     };
+
+                    if (meaningHint) {
+                        chunk.meaning_hint = meaningHint;
+                    }
+
+                    return chunk;
                 })
                 .filter(function (chunk) {
                     return chunk.text;

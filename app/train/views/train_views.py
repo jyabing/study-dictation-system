@@ -1947,14 +1947,17 @@ def build_training_payload(training, memory=None, request=None):
             if isinstance(chunk, dict):
                 text = str(chunk.get("text") or "").strip()
                 image_url = str(chunk.get("image_url") or "").strip()
+                meaning_hint = str(chunk.get("meaning_hint") or chunk.get("meaning") or "").strip()
             else:
                 text = str(chunk or "").strip()
                 image_url = ""
+                meaning_hint = ""
 
             if text:
                 clean_sequence_chunks.append({
                     "text": text,
                     "image_url": image_url,
+                    "meaning_hint": meaning_hint,
                 })
 
         def _join_sequence_parts(parts):
@@ -1996,6 +1999,12 @@ def build_training_payload(training, memory=None, request=None):
                 if chunk.get("image_url")
             ]
 
+            meaning_hints = [
+                chunk["meaning_hint"]
+                for chunk in step_chunks
+                if chunk.get("meaning_hint")
+            ]
+
             step_audio_url = _build_tts_audio(
                 text=step_text,
                 lang=answer_tts_lang,
@@ -2008,6 +2017,7 @@ def build_training_payload(training, memory=None, request=None):
                 "audio_url": step_audio_url or "",
                 "image_url": image_urls[-1] if image_urls else "",
                 "image_urls": image_urls,
+                "meaning_hint": " / ".join(meaning_hints),
                 "sequence_generation_mode": sequence_generation_mode,
                 "range_start": start,
                 "range_end": end,
@@ -7421,6 +7431,7 @@ def builder_save(request):
                 order = index + 1
 
             image_url = str(chunk.get("image_url") or "").strip()
+            meaning_hint = str(chunk.get("meaning_hint") or chunk.get("meaning") or "").strip()
             image_upload_key = str(chunk.get("image_upload_key") or "").strip()
             audio_url = str(chunk.get("audio_url") or chunk.get("audio") or "").strip()
             audio_upload_key = str(chunk.get("audio_upload_key") or "").strip()
@@ -7454,6 +7465,9 @@ def builder_save(request):
                 "text": text,
                 "image_url": image_url,
             }
+
+            if meaning_hint:
+                sequence_chunk_payload["meaning_hint"] = meaning_hint
 
             if audio_url:
                 sequence_chunk_payload["audio_url"] = audio_url

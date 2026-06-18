@@ -2301,12 +2301,28 @@ function renderEditSequenceChunkImageInputs() {
     }
 
     lines.forEach(function (line, index) {
-        const parts = line.split("|");
-        const text = String(parts[0] || "").trim();
-        const imageUrl = String(parts.slice(1).join("|") || "").trim();
+        let text = "";
+        let meaningHint = "";
+        let imageUrl = "";
 
-        const inputName = `sequence_chunk_image_file_${index}`;
+        if (line.includes("||")) {
+            const meaningParts = line.split("||");
+            text = String(meaningParts[0] || "").trim();
+            meaningHint = String(meaningParts[1] || "").trim();
+            imageUrl = String(meaningParts.slice(2).join("||") || "").trim();
+        } else {
+            const parts = line.split("|");
+            text = String(parts[0] || "").trim();
+            imageUrl = String(parts.slice(1).join("|") || "").trim();
+        }
+
+        const imageInputName = `sequence_chunk_image_file_${index}`;
         const previewId = `edit_sequence_chunk_image_preview_${index}`;
+        const audioUrlInputId = `sequence_chunk_audio_url_${index}`;
+        const audioFileInputName = `sequence_chunk_audio_file_${index}`;
+        const audioTtsInputName = `sequence_chunk_use_tts_${index}`;
+        const audioLangInputName = `sequence_chunk_tts_lang_${index}`;
+        const audioSearchResultsId = `sequence_chunk_audio_search_results_${index}`;
 
         const row = document.createElement("div");
         row.className = "field-group full";
@@ -2315,18 +2331,73 @@ function renderEditSequenceChunkImageInputs() {
             <div class="field-label">语块 ${index + 1}</div>
             <div class="field-help">${escapeHtml(text || "未填写文本")}</div>
             ${
+                meaningHint
+                    ? `<div class="field-help">中文意思：${escapeHtml(meaningHint)}</div>`
+                    : ""
+            }
+            ${
                 imageUrl
                     ? `<div class="field-help">当前图片：${escapeHtml(imageUrl)}</div>`
                     : `<div class="field-help">当前没有图片 URL。</div>`
             }
+
+            <div class="field-help" style="margin-top:10px; font-weight:700; color:#1d4ed8;">
+                请选择 / 重新上传此语块图片
+            </div>
             <input
                 type="file"
-                name="${inputName}"
+                name="${imageInputName}"
                 accept="image/*"
                 class="input"
+                style="display:block; width:100%; margin-top:6px; padding:10px; border:2px dashed #60a5fa; border-radius:12px; background:#eff6ff;"
                 onchange="updateEditSequenceChunkImagePreview(${index});"
             >
             <div id="${previewId}" class="field-help" style="margin-top:8px;"></div>
+
+            <div class="field-help" style="margin-top:14px; font-weight:700; color:#1d4ed8;">
+                语块示范音频
+            </div>
+            <div style="display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:8px; align-items:center; margin-top:6px;">
+                <input
+                    type="text"
+                    id="${audioUrlInputId}"
+                    name="${audioUrlInputId}"
+                    class="input"
+                    placeholder="可选：填写语块示范音频 URL"
+                >
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    onclick="searchExistingAudioForInput(${JSON.stringify(text)}, '${audioUrlInputId}', '${audioSearchResultsId}')"
+                >
+                    查找
+                </button>
+            </div>
+            <div id="${audioSearchResultsId}" class="field-help" style="margin-top:8px;"></div>
+
+            <input
+                type="file"
+                name="${audioFileInputName}"
+                accept="audio/*"
+                class="input"
+                style="display:block; width:100%; margin-top:8px; padding:10px; border:2px dashed #60a5fa; border-radius:12px; background:#eff6ff;"
+            >
+
+            <label class="field-help" style="display:block; margin-top:8px;">
+                <input
+                    type="checkbox"
+                    name="${audioTtsInputName}"
+                    value="1"
+                    checked
+                >
+                没有语块示范音频时使用 TTS
+            </label>
+
+            <select name="${audioLangInputName}" class="select" style="margin-top:6px;">
+                <option value="en">英语 en</option>
+                <option value="ja" selected>日语 ja</option>
+                <option value="zh-CN">中文 zh-CN</option>
+            </select>
         `;
         wrap.appendChild(row);
 

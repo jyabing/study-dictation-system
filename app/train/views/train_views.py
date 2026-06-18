@@ -7997,10 +7997,17 @@ def question_edit(request, question_id):
 
             if text:
                 image_url = ""
+                meaning_hint = ""
+
                 if isinstance(chunk, dict):
                     image_url = str(chunk.get("image_url") or "").strip()
+                    meaning_hint = str(chunk.get("meaning_hint") or chunk.get("meaning") or "").strip()
 
-                if image_url:
+                if meaning_hint and image_url:
+                    lines.append(f"{text} || {meaning_hint} || {image_url}")
+                elif meaning_hint:
+                    lines.append(f"{text} || {meaning_hint}")
+                elif image_url:
                     lines.append(f"{text} | {image_url}")
                 else:
                     lines.append(text)
@@ -8016,9 +8023,18 @@ def question_edit(request, question_id):
             if not line:
                 continue
 
-            parts = line.split("|")
-            chunk_text = str(parts[0] or "").strip()
-            image_url = str("|".join(parts[1:]) or "").strip()
+            meaning_hint = ""
+            image_url = ""
+
+            if "||" in line:
+                parts = line.split("||")
+                chunk_text = str(parts[0] or "").strip()
+                meaning_hint = str(parts[1] or "").strip()
+                image_url = str("||".join(parts[2:]) or "").strip()
+            else:
+                parts = line.split("|")
+                chunk_text = str(parts[0] or "").strip()
+                image_url = str("|".join(parts[1:]) or "").strip()
 
             if not chunk_text:
                 continue
@@ -8026,6 +8042,7 @@ def question_edit(request, question_id):
             rows.append({
                 "index": index,
                 "text": chunk_text,
+                "meaning_hint": meaning_hint,
                 "image_url": image_url,
             })
 
@@ -8362,9 +8379,17 @@ def question_edit(request, question_id):
                 sequence_chunks = []
 
                 for index, line in enumerate(sequence_lines):
-                    parts = line.split("|")
-                    text = str(parts[0] or "").strip()
-                    image_url = str("|".join(parts[1:]) or "").strip()
+                    meaning_hint = ""
+
+                    if "||" in line:
+                        parts = line.split("||")
+                        text = str(parts[0] or "").strip()
+                        meaning_hint = str(parts[1] or "").strip()
+                        image_url = str("||".join(parts[2:]) or "").strip()
+                    else:
+                        parts = line.split("|")
+                        text = str(parts[0] or "").strip()
+                        image_url = str("|".join(parts[1:]) or "").strip()
 
                     if not text:
                         continue
@@ -8408,6 +8433,9 @@ def question_edit(request, question_id):
                         "text": text,
                         "image_url": image_url,
                     }
+
+                    if meaning_hint:
+                        sequence_chunk_payload["meaning_hint"] = meaning_hint
 
                     if audio_url:
                         sequence_chunk_payload["audio_url"] = audio_url

@@ -810,11 +810,11 @@
                                 <textarea
                                     name="sequence_chunks_text"
                                     class="textarea"
-                                    placeholder="每行一个基础语块；可选图片 URL 用 | 分隔，例如：&#10;気分を | /media/images/sequence/xxx.png&#10;味わえ&#10;ちゃった"
+                                    placeholder="每行一个基础语块；中文意思用 || 分隔，例如：&#10;気分を || 心情、感觉&#10;味わえ || 体会到&#10;ちゃった || 不知不觉做了"
                                     oninput="renderEditSequenceChunkImageInputs();"
                                 >{{ sequence_chunks_text|default:'' }}</textarea>
                                 <div class="field-help">
-                                    这里只填写基础语块，不要填写累计块。系统会根据上方生成方式自动生成训练步骤。图片 URL 可写在 | 后面。
+                                    这里只填写基础语块，不要填写累计块。中文意思可写在 || 后面；旧格式图片 URL 仍可写在 | 后面。
                                 </div>
 
                                 <div style="margin-top:12px;">

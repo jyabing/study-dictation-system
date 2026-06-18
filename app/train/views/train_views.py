@@ -8064,14 +8064,16 @@ def question_edit(request, question_id):
                 text = str(chunk.get("text") or "").strip()
                 image_url = str(chunk.get("image_url") or "").strip()
                 audio_url = str(chunk.get("audio_url") or chunk.get("audio") or "").strip()
+                meaning_hint = str(chunk.get("meaning_hint") or chunk.get("meaning") or "").strip()
                 use_tts_when_no_audio = bool(chunk.get("use_tts_when_no_audio", False))
-                tts_lang = str(chunk.get("tts_lang") or "en").strip()
+                tts_lang = str(chunk.get("tts_lang") or "ja").strip()
             else:
                 text = str(chunk or "").strip()
                 image_url = ""
                 audio_url = ""
+                meaning_hint = ""
                 use_tts_when_no_audio = False
-                tts_lang = "en"
+                tts_lang = "ja"
 
             if not text:
                 continue
@@ -8081,8 +8083,9 @@ def question_edit(request, question_id):
                 "text": text,
                 "image_url": image_url,
                 "audio_url": audio_url,
+                "meaning_hint": meaning_hint,
                 "use_tts_when_no_audio": use_tts_when_no_audio,
-                "tts_lang": tts_lang or "en",
+                "tts_lang": tts_lang or "ja",
             })
 
         return rows

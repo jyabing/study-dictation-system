@@ -2287,36 +2287,48 @@ function renderEditSequenceMeaningPreview() {
         return;
     }
 
-    const rows = textarea.value
+    preview.innerHTML = "";
+
+    const title = document.createElement("div");
+    title.style.fontWeight = "700";
+    title.style.marginBottom = "6px";
+    title.textContent = "中文意思预览";
+    preview.appendChild(title);
+
+    const lines = textarea.value
         .split(/\r?\n/)
-        .map(function (line, index) {
-            const rawLine = line.trim();
-
-            if (!rawLine) {
-                return "";
-            }
-
-            if (!rawLine.includes("||")) {
-                const textOnly = rawLine.split("|")[0].trim();
-                return `<div>语块 ${index + 1}：${escapeHtml(textOnly)} <span style="color:#94a3b8;">（未填写中文意思）</span></div>`;
-            }
-
-            const parts = rawLine.split("||");
-            const text = String(parts[0] || "").trim();
-            const meaning = String(parts[1] || "").trim();
-
-            return `<div>语块 ${index + 1}：${escapeHtml(text)} → <strong>${escapeHtml(meaning || "未填写中文意思")}</strong></div>`;
+        .map(function (line) {
+            return line.trim();
         })
-        .filter(function (html) {
-            return html;
+        .filter(function (line) {
+            return line;
         });
 
-    if (!rows.length) {
-        preview.innerHTML = "中文意思预览：请先填写顺序语块。";
+    if (!lines.length) {
+        const empty = document.createElement("div");
+        empty.textContent = "请先填写顺序语块。";
+        preview.appendChild(empty);
         return;
     }
 
-    preview.innerHTML = `<div style="font-weight:700; margin-bottom:6px;">中文意思预览</div>${rows.join("")}`;
+    lines.forEach(function (line, index) {
+        const row = document.createElement("div");
+
+        let text = "";
+        let meaning = "";
+
+        if (line.includes("||")) {
+            const parts = line.split("||");
+            text = String(parts[0] || "").trim();
+            meaning = String(parts[1] || "").trim();
+        } else {
+            text = String(line.split("|")[0] || "").trim();
+            meaning = "未填写中文意思";
+        }
+
+        row.textContent = "语块 " + (index + 1) + "：" + text + " → " + meaning;
+        preview.appendChild(row);
+    });
 }
 
 function renderEditSequenceChunkImageInputs() {

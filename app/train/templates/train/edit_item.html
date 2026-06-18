@@ -811,11 +811,17 @@
                                     name="sequence_chunks_text"
                                     class="textarea"
                                     placeholder="每行一个基础语块；中文意思用 || 分隔，例如：&#10;気分を || 心情、感觉&#10;味わえ || 体会到&#10;ちゃった || 不知不觉做了"
-                                    oninput="renderEditSequenceChunkImageInputs();"
+                                    oninput="renderEditSequenceMeaningPreview();"
                                 >{{ sequence_chunks_text|default:'' }}</textarea>
                                 <div class="field-help">
                                     这里只填写基础语块，不要填写累计块。中文意思可写在 || 后面；旧格式图片 URL 仍可写在 | 后面。
                                 </div>
+
+                                <div
+                                    id="edit-sequence-meaning-preview"
+                                    class="field-help"
+                                    style="margin-top:8px; padding:10px; border:1px dashed #93c5fd; border-radius:10px; background:#eff6ff;"
+                                ></div>
 
                                 <div style="margin-top:12px;">
                                     <div class="field-label">语块图片 / 示范音频重新上传（speak_sequence / listen_sequence 使用）</div>
@@ -2273,6 +2279,46 @@ function useExistingAudioUrl(audioUrl, inputId) {
     input.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+function renderEditSequenceMeaningPreview() {
+    const preview = document.getElementById("edit-sequence-meaning-preview");
+    const textarea = document.querySelector('textarea[name="sequence_chunks_text"]');
+
+    if (!preview || !textarea) {
+        return;
+    }
+
+    const rows = textarea.value
+        .split(/\r?\n/)
+        .map(function (line, index) {
+            const rawLine = line.trim();
+
+            if (!rawLine) {
+                return "";
+            }
+
+            if (!rawLine.includes("||")) {
+                const textOnly = rawLine.split("|")[0].trim();
+                return `<div>语块 ${index + 1}：${escapeHtml(textOnly)} <span style="color:#94a3b8;">（未填写中文意思）</span></div>`;
+            }
+
+            const parts = rawLine.split("||");
+            const text = String(parts[0] || "").trim();
+            const meaning = String(parts[1] || "").trim();
+
+            return `<div>语块 ${index + 1}：${escapeHtml(text)} → <strong>${escapeHtml(meaning || "未填写中文意思")}</strong></div>`;
+        })
+        .filter(function (html) {
+            return html;
+        });
+
+    if (!rows.length) {
+        preview.innerHTML = "中文意思预览：请先填写顺序语块。";
+        return;
+    }
+
+    preview.innerHTML = `<div style="font-weight:700; margin-bottom:6px;">中文意思预览</div>${rows.join("")}`;
+}
+
 function renderEditSequenceChunkImageInputs() {
     const wrap = document.getElementById("edit-sequence-chunk-image-inputs");
     const textarea = document.querySelector('textarea[name="sequence_chunks_text"]');
@@ -2475,6 +2521,7 @@ if (qtypeSelect) {
 
 refreshListenSpeakOnlyBlocks();
 renderEditSequenceChunkImageInputs();
+renderEditSequenceMeaningPreview();
 
 </script>
 {% endblock %}

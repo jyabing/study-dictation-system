@@ -825,6 +825,9 @@
                                                 <div class="field-group full" style="margin-top:10px;">
                                                     <div class="field-label">语块 {{ forloop.counter }}</div>
                                                     <div class="field-help">{{ chunk.text }}</div>
+                                                    {% if chunk.meaning_hint %}
+                                                        <div class="field-help">中文意思：{{ chunk.meaning_hint }}</div>
+                                                    {% endif %}
 
                                                     {% if chunk.image_url %}
                                                         <div class="field-help">当前图片：{{ chunk.image_url }}</div>

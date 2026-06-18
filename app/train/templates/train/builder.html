@@ -738,16 +738,16 @@
                         <label for="sequence_chunks_text">语块列表</label>
                         <textarea
                             id="sequence_chunks_text"
-                            placeholder="每行一个基础语块；可选图片 URL 用 | 分隔，例如：&#10;気分を | https://example.com/kibun.png&#10;味わえ | https://example.com/ajiwae.png&#10;ちゃった"
+                            placeholder="每行一个基础语块；中文意思用 || 分隔，例如：&#10;気分を || 心情、感觉&#10;味わえ || 体会到&#10;ちゃった || 不知不觉做了"
                             oninput="renderSequenceChunkImageInputs(); updatePreview();"
                         ></textarea>
                     </div>
 
                     <div class="field" style="margin-top:12px;">
-                        <label>语块图片上传（仅 speak_sequence 使用）</label>
+                        <label>语块图片 / 示范音频上传（speak_sequence / listen_sequence 使用）</label>
                         <div id="sequence_chunk_image_inputs" class="choice-list"></div>
                         <div class="section-sub" style="margin-top:6px; margin-bottom:0;">
-                            每行语块对应一个图片上传框。上传图片会优先使用上传文件；没有上传时才使用“语块 | 图片URL”里的 URL。
+                            每行语块对应一个图片和示范音频上传框。中文意思可写在 || 后面；旧格式图片 URL 仍可写在 | 后面。
                         </div>
                     </div>
                 </div>
@@ -1504,11 +1504,11 @@
             const sequenceChunksSection = document.getElementById("sequence_chunks_section");
 
             const isListenChoice = isListenChoiceItemType(itemType);
-            const isListenAudioMode = itemType === "listen_asr" || isListenChoice;
-            const isListenOrSpeak = itemType === "listen_asr" || itemType === "speak_read";
             const isSpeakRead = itemType === "speak_read";
             const isSpeakSequence = itemType === "speak_sequence";
             const isSequenceItem = itemType === "speak_sequence" || itemType === "listen_sequence";
+            const isListenAudioMode = itemType === "listen_asr" || isListenChoice || isSequenceItem;
+            const isListenOrSpeak = itemType === "listen_asr" || itemType === "speak_read" || isSequenceItem;
             const isReadChoice = isChoiceItemType(itemType);
             const isWriteText = itemType === "write_text";
 
@@ -1631,9 +1631,21 @@
             }
 
             lines.forEach(function (line, index) {
-                const parts = line.split("|");
-                const text = String(parts[0] || "").trim();
-                const imageUrl = String(parts.slice(1).join("|") || "").trim();
+                let text = "";
+                let meaningHint = "";
+                let imageUrl = "";
+
+                if (line.includes("||")) {
+                    const meaningParts = line.split("||");
+                    text = String(meaningParts[0] || "").trim();
+                    meaningHint = String(meaningParts[1] || "").trim();
+                    imageUrl = String(meaningParts.slice(2).join("||") || "").trim();
+                } else {
+                    const parts = line.split("|");
+                    text = String(parts[0] || "").trim();
+                    imageUrl = String(parts.slice(1).join("|") || "").trim();
+                }
+
                 const inputId = `sequence_chunk_image_file_${index}`;
                 const previewId = `sequence_chunk_image_preview_${index}`;
                 const audioUrlInputId = `sequence_chunk_audio_url_${index}`;
@@ -1648,6 +1660,11 @@
                     <div>
                         <label>语块 ${index + 1}</label>
                         <div class="section-sub">${escapeHtml(text || "未填写文本")}</div>
+                        ${
+                            meaningHint
+                                ? `<div class="section-sub">中文意思：${escapeHtml(meaningHint)}</div>`
+                                : ""
+                        }
                         ${
                             imageUrl
                                 ? `<div class="section-sub">当前图片 URL：${escapeHtml(imageUrl)}</div>`

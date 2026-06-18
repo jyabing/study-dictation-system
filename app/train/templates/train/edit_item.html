@@ -811,7 +811,7 @@
                                     name="sequence_chunks_text"
                                     class="textarea"
                                     placeholder="每行一个基础语块；中文意思用 || 分隔，例如：&#10;気分を || 心情、感觉&#10;味わえ || 体会到&#10;ちゃった || 不知不觉做了"
-                                    oninput="renderEditSequenceChunkImageInputs();"
+                                    oninput="renderEditSequenceChunkImageInputs(true);"
                                 >{{ sequence_chunks_text|default:'' }}</textarea>
                                 <div class="field-help">
                                     这里只填写基础语块，不要填写累计块。中文意思可写在 || 后面；旧格式图片 URL 仍可写在 | 后面。
@@ -947,6 +947,7 @@
                                             <div class="field-help">当前题型不是 speak_sequence / listen_sequence，不使用语块图片和音频上传。</div>
                                         {% endif %}
                                     </div>
+                                    <div id="edit-sequence-chunk-image-inputs" style="display:none;"></div>
                                     <div class="field-help">
                                         上传新图片 / 音频后，会覆盖该语块当前的图片 URL / 音频 URL；不上传则保留当前输入框中的 URL。
                                     </div>
@@ -2273,8 +2274,9 @@ function useExistingAudioUrl(audioUrl, inputId) {
     input.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
-function renderEditSequenceChunkImageInputs() {
+function renderEditSequenceChunkImageInputs(useDynamic) {
     const wrap = document.getElementById("edit-sequence-chunk-image-inputs");
+    const staticWrap = document.getElementById("edit-sequence-chunk-image-inputs-static");
     const textarea = document.querySelector('textarea[name="sequence_chunks_text"]');
     const qtypeSelect = document.querySelector('select[name="qtype"]');
 
@@ -2282,6 +2284,28 @@ function renderEditSequenceChunkImageInputs() {
         return;
     }
 
+    if (!useDynamic) {
+        wrap.innerHTML = "";
+        wrap.style.display = "none";
+
+        if (staticWrap) {
+            staticWrap.style.display = "";
+            staticWrap.querySelectorAll("input, textarea, select, button").forEach(function (field) {
+                field.disabled = false;
+            });
+        }
+
+        return;
+    }
+
+    if (staticWrap) {
+        staticWrap.style.display = "none";
+        staticWrap.querySelectorAll("input, textarea, select, button").forEach(function (field) {
+            field.disabled = true;
+        });
+    }
+
+    wrap.style.display = "";
     wrap.innerHTML = "";
 
     if (qtypeSelect.value !== "speak_sequence" && qtypeSelect.value !== "listen_sequence") {

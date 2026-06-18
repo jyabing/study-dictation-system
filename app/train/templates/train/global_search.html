@@ -1,0 +1,114 @@
+{% extends "train/base_train.html" %}
+
+{% block title %}全局知识点搜索{% endblock %}
+
+{% block body_class %}dashboard-body{% endblock %}
+
+{% block content %}
+<div class="dashboard-page">
+    <div class="dashboard-shell">
+        <section class="section-card">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">全局知识点搜索</h2>
+                    <div class="section-subtitle">搜索书册、课节、题目、训练项、顺序语块、中文意思、可接受回答等内容。</div>
+                </div>
+                <div class="section-header-actions">
+                    <a href="{% url 'dashboard' %}" class="icon-action-btn">返回首页</a>
+                </div>
+            </div>
+
+            <form method="get" action="{% url 'global-search' %}" style="display:grid; gap:12px; margin-top:14px;">
+                <input
+                    type="search"
+                    name="q"
+                    value="{{ query }}"
+                    placeholder="例如：毎日のように / 敬语 / 皮肉 / ちゃった / 自信"
+                    style="width:100%; padding:14px 16px; border-radius:14px; border:1px solid rgba(148, 163, 184, 0.35); background:rgba(255,255,255,0.86); font-size:15px;"
+                    autofocus
+                >
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button type="submit" class="primary-btn">搜索</button>
+                    <a href="{% url 'global-search' %}" class="secondary-btn">清空</a>
+                </div>
+            </form>
+        </section>
+
+        <section class="section-card" style="margin-top:16px;">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">搜索结果</h2>
+                    <div class="section-subtitle">
+                        {% if query %}
+                            关键词「{{ query }}」共找到 {{ result_count }} 条结果。
+                        {% else %}
+                            输入关键词后开始搜索。
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if query and results %}
+                <div style="display:grid; gap:12px; margin-top:14px;">
+                    {% for row in results %}
+                        <article style="border:1px solid rgba(148, 163, 184, 0.24); border-radius:16px; padding:14px; background:rgba(255,255,255,0.72);">
+                            <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+                                <div>
+                                    <div style="font-weight:900; font-size:16px;">
+                                        <span class="mini-chip">{{ row.kind }}</span>
+                                        {{ row.title }}
+                                    </div>
+
+                                    {% if row.subtitle %}
+                                        <div style="margin-top:6px; color:#475569; line-height:1.55;">{{ row.subtitle }}</div>
+                                    {% endif %}
+
+                                    {% if row.body %}
+                                        <div style="margin-top:8px; color:#334155; line-height:1.55;">{{ row.body }}</div>
+                                    {% endif %}
+
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                                        {% if row.book_title %}
+                                            <span class="mini-chip">书册：{{ row.book_title }}</span>
+                                        {% endif %}
+                                        {% if row.lesson_title %}
+                                            <span class="mini-chip">课：{{ row.lesson_title }}</span>
+                                        {% endif %}
+                                        {% if row.item_type %}
+                                            <span class="mini-chip">题型：{{ row.item_type }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                    {% if row.train_url %}
+                                        <a href="{{ row.train_url }}" class="primary-btn">训练</a>
+                                    {% endif %}
+                                    {% if row.lesson_url %}
+                                        <a href="{{ row.lesson_url }}" class="secondary-btn">题目列表</a>
+                                    {% endif %}
+                                    {% if row.edit_url %}
+                                        <a href="{{ row.edit_url }}" class="secondary-btn">编辑</a>
+                                    {% elif row.url %}
+                                        <a href="{{ row.url }}" class="secondary-btn">打开</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% elif query %}
+                <div class="empty-card" style="margin-top:14px;">
+                    <div class="empty-title">没有找到匹配内容</div>
+                    <div>可以换一个关键词，比如日语片段、中文意思、题型、书名或课名。</div>
+                </div>
+            {% else %}
+                <div class="empty-card" style="margin-top:14px;">
+                    <div class="empty-title">等待搜索</div>
+                    <div>输入一个知识点、表达、中文意思或书课名称。</div>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}

@@ -6706,6 +6706,179 @@ def lesson_question_list(request, lesson_id):
 # =========================
 # 统计页
 # =========================
+@login_required
+def global_search(request):
+    query = (request.GET.get("q") or "").strip()
+    results = []
+
+    def as_text(value):
+        if value is None:
+            return ""
+
+        if isinstance(value, (dict, list)):
+            try:
+                return json.dumps(value, ensure_ascii=False, default=str)
+            except TypeError:
+                return str(value)
+
+        return str(value)
+
+    def is_match(*values):
+        if not query:
+            return False
+
+        needle = query.lower()
+        haystack = "\n".join(as_text(value) for value in values).lower()
+        return needle in haystack
+
+    def clip(value, size=180):
+        text = as_text(value).replace("\r", " ").replace("\n", " ").strip()
+        if len(text) <= size:
+            return text
+        return text[:size] + "..."
+
+    def sequence_summary(chunks):
+        rows = []
+
+        if not isinstance(chunks, list):
+            return ""
+
+        for chunk in chunks:
+            if not isinstance(chunk, dict):
+                continue
+
+            text = as_text(chunk.get("text")).strip()
+            meaning = as_text(chunk.get("meaning_hint") or chunk.get("meaning")).strip()
+
+            if text and meaning:
+                rows.append(f"{text} / {meaning}")
+            elif text:
+                rows.append(text)
+
+        return "｜".join(rows)
+
+    if query:
+        books = Book.objects.filter(owner=request.user).order_by("title", "id")
+
+        for book in books:
+            if is_match(book.title, book.description):
+                results.append({
+                    "kind": "书册",
+                    "title": book.title,
+                    "subtitle": "书册",
+                    "body": clip(book.description or "暂无描述"),
+                    "book_title": book.title,
+                    "lesson_title": "",
+                    "item_type": "",
+                    "url": reverse("book-detail", args=[book.id]),
+                    "edit_url": reverse("book-edit", args=[book.id]),
+                })
+
+        lessons = Lesson.objects.filter(book__owner=request.user).select_related("book").order_by("book__title", "order", "id")
+
+        for lesson in lessons:
+            if is_match(lesson.title, lesson.summary, lesson.book.title, lesson.book.description):
+                results.append({
+                    "kind": "课节",
+                    "title": lesson.title,
+                    "subtitle": lesson.summary or "暂无课节摘要",
+                    "body": clip(lesson.book.title),
+                    "book_title": lesson.book.title,
+                    "lesson_title": lesson.title,
+                    "item_type": "",
+                    "url": reverse("lesson-question-list", args=[lesson.id]),
+                    "train_url": reverse("lesson-train", args=[lesson.id]),
+                    "edit_url": reverse("lesson-edit", args=[lesson.id]),
+                })
+
+        questions = Question.objects.filter(
+            lesson__book__owner=request.user
+        ).select_related("lesson", "lesson__book").order_by("lesson__book__title", "lesson__order", "id")
+
+        for question in questions:
+            if is_match(
+                question.prompt_text,
+                question.answer_text,
+                question.audio_url,
+                question.lesson.title if question.lesson else "",
+                question.lesson.book.title if question.lesson and question.lesson.book else "",
+            ):
+                lesson = question.lesson
+                book = lesson.book if lesson else None
+
+                results.append({
+                    "kind": "题目",
+                    "title": clip(question.prompt_text, 80) or f"Question {question.id}",
+                    "subtitle": clip(question.answer_text, 120),
+                    "body": "",
+                    "book_title": book.title if book else "",
+                    "lesson_title": lesson.title if lesson else "",
+                    "item_type": "",
+                    "url": reverse("question-edit", args=[question.id]),
+                    "edit_url": reverse("question-edit", args=[question.id]),
+                    "lesson_url": reverse("lesson-question-list", args=[lesson.id]) if lesson else "",
+                })
+
+        training_items = TrainingItem.objects.filter(
+            question__lesson__book__owner=request.user
+        ).select_related("question", "question__lesson", "question__lesson__book").order_by(
+            "question__lesson__book__title",
+            "question__lesson__order",
+            "id",
+        )
+
+        for item in training_items:
+            sequence_text = sequence_summary(item.sequence_chunks)
+
+            if not is_match(
+                item.item_type,
+                item.instruction_text,
+                item.source_text,
+                item.target_answer,
+                item.prompt_text,
+                item.explanation,
+                item.accepted_answers,
+                item.choices,
+                item.correct_answers,
+                item.sequence_chunks,
+                item.question.prompt_text if item.question else "",
+                item.question.answer_text if item.question else "",
+                item.question.lesson.title if item.question and item.question.lesson else "",
+                item.question.lesson.book.title if item.question and item.question.lesson and item.question.lesson.book else "",
+            ):
+                continue
+
+            question = item.question
+            lesson = question.lesson if question else None
+            book = lesson.book if lesson else None
+
+            title = item.instruction_text or item.source_text or (question.prompt_text if question else "") or f"TrainingItem {item.id}"
+
+            results.append({
+                "kind": "训练项",
+                "title": clip(title, 90),
+                "subtitle": clip(item.target_answer or (question.answer_text if question else ""), 130),
+                "body": clip(sequence_text or item.explanation or item.source_text or "", 220),
+                "book_title": book.title if book else "",
+                "lesson_title": lesson.title if lesson else "",
+                "item_type": item.item_type,
+                "url": reverse("question-edit", args=[question.id]) if question else "",
+                "edit_url": reverse("question-edit", args=[question.id]) if question else "",
+                "lesson_url": reverse("lesson-question-list", args=[lesson.id]) if lesson else "",
+                "train_url": reverse("lesson-train", args=[lesson.id]) if lesson else "",
+            })
+
+    results = results[:120]
+
+    return render(request, "train/global_search.html", {
+        "page_title": "全局知识点搜索",
+        "query": query,
+        "results": results,
+        "result_count": len(results),
+    })
+
+
+
 def stats_page(request):
     stats = get_stats(request)
 

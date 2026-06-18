@@ -828,14 +828,21 @@
                                     <div id="edit-sequence-chunk-image-inputs-static">
                                         {% if display_qtype == "speak_sequence" or display_qtype == "listen_sequence" %}
                                             {% for chunk in sequence_chunks_for_upload %}
-                                                <div class="field-group full" style="margin-top:10px;">
-                                                    <div class="field-label">语块 {{ forloop.counter }}</div>
-                                                    <div class="field-help">{{ chunk.text }}</div>
-                                                    {% if chunk.meaning_hint %}
-                                                        <div class="field-help">中文意思：{{ chunk.meaning_hint }}</div>
-                                                    {% endif %}
+                                                <details class="field-group full" style="margin-top:10px;">
+                                                    <summary class="field-label" style="cursor:pointer;">
+                                                        语块 {{ forloop.counter }}：{{ chunk.text }}
+                                                        {% if chunk.meaning_hint %}
+                                                            / {{ chunk.meaning_hint }}
+                                                        {% endif %}
+                                                    </summary>
 
-                                                    {% if chunk.image_url %}
+                                                    <div style="margin-top:10px;">
+                                                        <div class="field-help">{{ chunk.text }}</div>
+                                                        {% if chunk.meaning_hint %}
+                                                            <div class="field-help">中文意思：{{ chunk.meaning_hint }}</div>
+                                                        {% endif %}
+
+                                                        {% if chunk.image_url %}
                                                         <div class="field-help">当前图片：{{ chunk.image_url }}</div>
                                                         <div class="field-help" style="margin-top:8px;">
                                                             <img
@@ -945,7 +952,8 @@
                                                         <option value="ja" {% if chunk.tts_lang == "ja" %}selected{% endif %}>日语 ja</option>
                                                         <option value="zh-CN" {% if chunk.tts_lang == "zh-CN" %}selected{% endif %}>中文 zh-CN</option>
                                                     </select>
-                                                </div>
+                                                    </div>
+                                                </details>
                                             {% empty %}
                                                 <div class="field-help">请先填写顺序语块。</div>
                                             {% endfor %}

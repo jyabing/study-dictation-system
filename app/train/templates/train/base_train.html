@@ -37,6 +37,7 @@
             <summary class="user-pill">{{ request.user.username }}</summary>
             <div class="user-dropdown">
                 <a href="{% url 'dashboard' %}" class="user-dropdown-link">学习起始页</a>
+                <a href="{% url 'global-search' %}" class="user-dropdown-link">全局搜索</a>
                 <a href="{% url 'practice-player' %}" class="user-dropdown-link">自由练习播放器</a>
                 <a href="{% url 'practice-library' %}" class="user-dropdown-link">我的播放列表</a>
                 <a href="{% url 'stats-page' %}" class="user-dropdown-link">学习统计</a>

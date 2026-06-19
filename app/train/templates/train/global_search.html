@@ -19,16 +19,25 @@
             </div>
 
             <form method="get" action="{% url 'global-search' %}" style="display:grid; gap:12px; margin-top:14px; max-width:860px;">
-                <input
-                    type="search"
-                    name="q"
-                    value="{{ query }}"
-                    placeholder="例如：毎日のように / 敬语 / 皮肉 / ちゃった / 自信"
-                    style="width:100%; max-width:760px; padding:12px 14px; border-radius:14px; border:1px solid rgba(148, 163, 184, 0.35); background:rgba(255,255,255,0.86); font-size:15px;"
-                    autofocus
-                >
+                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <input
+                        type="search"
+                        name="q"
+                        value="{{ query }}"
+                        placeholder="例如：毎日のように / 敬语 / 皮肉 / ちゃった / 自信"
+                        style="flex:1 1 280px; min-width:0; padding:12px 14px; border-radius:14px; border:1px solid rgba(148, 163, 184, 0.35); background:rgba(255,255,255,0.86); font-size:15px;"
+                        autofocus
+                    >
+                    <button type="submit" class="primary-btn">搜索</button>
+                    <a href="{% url 'global-search' %}" class="secondary-btn">清空</a>
+                </div>
 
-                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+                <details style="margin-top:2px;">
+                    <summary class="field-help" style="cursor:pointer; font-weight:800; color:#1d4ed8;">
+                        高级筛选
+                    </summary>
+
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-top:10px;">
                     <label class="field-help">
                         搜索范围
                         <select name="scope" class="select" style="width:170px; margin-top:6px;">
@@ -71,12 +80,8 @@
                             {% endfor %}
                         </select>
                     </label>
-                </div>
-
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <button type="submit" class="primary-btn">搜索</button>
-                    <a href="{% url 'global-search' %}" class="secondary-btn">清空</a>
-                </div>
+                    </div>
+                </details>
             </form>
         </section>
 

@@ -18,20 +18,20 @@
                 </div>
             </div>
 
-            <form method="get" action="{% url 'global-search' %}" style="display:grid; gap:12px; margin-top:14px;">
+            <form method="get" action="{% url 'global-search' %}" style="display:grid; gap:12px; margin-top:14px; max-width:860px;">
                 <input
                     type="search"
                     name="q"
                     value="{{ query }}"
                     placeholder="例如：毎日のように / 敬语 / 皮肉 / ちゃった / 自信"
-                    style="width:100%; padding:14px 16px; border-radius:14px; border:1px solid rgba(148, 163, 184, 0.35); background:rgba(255,255,255,0.86); font-size:15px;"
+                    style="width:100%; max-width:760px; padding:12px 14px; border-radius:14px; border:1px solid rgba(148, 163, 184, 0.35); background:rgba(255,255,255,0.86); font-size:15px;"
                     autofocus
                 >
 
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">
+                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
                     <label class="field-help">
                         搜索范围
-                        <select name="scope" class="select" style="width:100%; margin-top:6px;">
+                        <select name="scope" class="select" style="width:170px; margin-top:6px;">
                             <option value="all" {% if scope == "all" %}selected{% endif %}>全部</option>
                             <option value="books" {% if scope == "books" %}selected{% endif %}>只搜书册</option>
                             <option value="lessons" {% if scope == "lessons" %}selected{% endif %}>只搜课程</option>
@@ -44,7 +44,7 @@
 
                     <label class="field-help">
                         书册
-                        <select name="book_id" class="select" style="width:100%; margin-top:6px;">
+                        <select name="book_id" class="select" style="width:220px; margin-top:6px;">
                             <option value="">全部书册</option>
                             {% for book in books_for_filter %}
                                 <option value="{{ book.id }}" {% if selected_book_id == book.id|stringformat:"s" %}selected{% endif %}>{{ book.title }}</option>
@@ -54,7 +54,7 @@
 
                     <label class="field-help">
                         课程
-                        <select name="lesson_id" class="select" style="width:100%; margin-top:6px;">
+                        <select name="lesson_id" class="select" style="width:260px; margin-top:6px;">
                             <option value="">全部课程</option>
                             {% for lesson in lessons_for_filter %}
                                 <option value="{{ lesson.id }}" {% if selected_lesson_id == lesson.id|stringformat:"s" %}selected{% endif %}>{{ lesson.book.title }} / {{ lesson.title }}</option>
@@ -64,7 +64,7 @@
 
                     <label class="field-help">
                         题型
-                        <select name="item_type" class="select" style="width:100%; margin-top:6px;">
+                        <select name="item_type" class="select" style="width:170px; margin-top:6px;">
                             <option value="">全部题型</option>
                             {% for item_type in item_type_options %}
                                 <option value="{{ item_type }}" {% if selected_item_type == item_type %}selected{% endif %}>{{ item_type }}</option>

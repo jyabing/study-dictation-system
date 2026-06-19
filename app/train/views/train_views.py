@@ -6709,6 +6709,24 @@ def lesson_question_list(request, lesson_id):
 @login_required
 def global_search(request):
     query = (request.GET.get("q") or "").strip()
+    scope = (request.GET.get("scope") or "all").strip()
+    selected_book_id = (request.GET.get("book_id") or "").strip()
+    selected_lesson_id = (request.GET.get("lesson_id") or "").strip()
+    selected_item_type = (request.GET.get("item_type") or "").strip()
+
+    valid_scopes = {
+        "all",
+        "books",
+        "lessons",
+        "questions",
+        "training",
+        "chunks",
+        "meanings",
+    }
+
+    if scope not in valid_scopes:
+        scope = "all"
+
     results = []
 
     def as_text(value):
@@ -6757,67 +6775,112 @@ def global_search(request):
 
         return "｜".join(rows)
 
+    def chunk_text_and_meaning(chunk):
+        if not isinstance(chunk, dict):
+            return "", ""
+
+        text = as_text(chunk.get("text")).strip()
+        meaning = as_text(chunk.get("meaning_hint") or chunk.get("meaning")).strip()
+        return text, meaning
+
+    book_filter_id = int(selected_book_id) if selected_book_id.isdigit() else None
+    lesson_filter_id = int(selected_lesson_id) if selected_lesson_id.isdigit() else None
+
+    books_for_filter = list(Book.objects.filter(owner=request.user).order_by("title", "id"))
+
+    lessons_for_filter_qs = Lesson.objects.filter(book__owner=request.user).select_related("book")
+    if book_filter_id:
+        lessons_for_filter_qs = lessons_for_filter_qs.filter(book_id=book_filter_id)
+
+    lessons_for_filter = list(lessons_for_filter_qs.order_by("book__title", "order", "id"))
+
+    item_type_options = list(
+        TrainingItem.objects.filter(question__lesson__book__owner=request.user)
+        .exclude(item_type__isnull=True)
+        .exclude(item_type="")
+        .order_by("item_type")
+        .values_list("item_type", flat=True)
+        .distinct()
+    )
+
     if query:
-        books = Book.objects.filter(owner=request.user).order_by("title", "id")
+        if scope in ("all", "books"):
+            books = Book.objects.filter(owner=request.user).order_by("title", "id")
+            if book_filter_id:
+                books = books.filter(id=book_filter_id)
 
-        for book in books:
-            if is_match(book.title, book.description):
-                results.append({
-                    "kind": "书册",
-                    "title": book.title,
-                    "subtitle": "书册",
-                    "body": clip(book.description or "暂无描述"),
-                    "book_title": book.title,
-                    "lesson_title": "",
-                    "item_type": "",
-                    "url": reverse("book-detail", args=[book.id]),
-                    "edit_url": reverse("book-edit", args=[book.id]),
-                })
+            for book in books:
+                if is_match(book.title, book.description):
+                    results.append({
+                        "kind": "书册",
+                        "title": book.title,
+                        "subtitle": "书册",
+                        "body": clip(book.description or "暂无描述"),
+                        "book_title": book.title,
+                        "lesson_title": "",
+                        "item_type": "",
+                        "url": reverse("book-detail", args=[book.id]),
+                        "edit_url": reverse("book-edit", args=[book.id]),
+                    })
 
-        lessons = Lesson.objects.filter(book__owner=request.user).select_related("book").order_by("book__title", "order", "id")
+        if scope in ("all", "lessons"):
+            lessons = Lesson.objects.filter(book__owner=request.user).select_related("book").order_by("book__title", "order", "id")
 
-        for lesson in lessons:
-            if is_match(lesson.title, lesson.summary, lesson.book.title, lesson.book.description):
-                results.append({
-                    "kind": "课节",
-                    "title": lesson.title,
-                    "subtitle": lesson.summary or "暂无课节摘要",
-                    "body": clip(lesson.book.title),
-                    "book_title": lesson.book.title,
-                    "lesson_title": lesson.title,
-                    "item_type": "",
-                    "url": reverse("lesson-question-list", args=[lesson.id]),
-                    "train_url": reverse("lesson-train", args=[lesson.id]),
-                    "edit_url": reverse("lesson-edit", args=[lesson.id]),
-                })
+            if book_filter_id:
+                lessons = lessons.filter(book_id=book_filter_id)
 
-        questions = Question.objects.filter(
-            lesson__book__owner=request.user
-        ).select_related("lesson", "lesson__book").order_by("lesson__book__title", "lesson__order", "id")
+            if lesson_filter_id:
+                lessons = lessons.filter(id=lesson_filter_id)
 
-        for question in questions:
-            if is_match(
-                question.prompt_text,
-                question.answer_text,
-                question.audio_url,
-                question.lesson.title if question.lesson else "",
-                question.lesson.book.title if question.lesson and question.lesson.book else "",
-            ):
-                lesson = question.lesson
-                book = lesson.book if lesson else None
+            for lesson in lessons:
+                if is_match(lesson.title, lesson.summary, lesson.book.title, lesson.book.description):
+                    results.append({
+                        "kind": "课节",
+                        "title": lesson.title,
+                        "subtitle": lesson.summary or "暂无课节摘要",
+                        "body": clip(lesson.book.title),
+                        "book_title": lesson.book.title,
+                        "lesson_title": lesson.title,
+                        "item_type": "",
+                        "url": reverse("lesson-question-list", args=[lesson.id]),
+                        "train_url": reverse("lesson-train", args=[lesson.id]),
+                        "edit_url": reverse("lesson-edit", args=[lesson.id]),
+                    })
 
-                results.append({
-                    "kind": "题目",
-                    "title": clip(question.prompt_text, 80) or f"Question {question.id}",
-                    "subtitle": clip(question.answer_text, 120),
-                    "body": "",
-                    "book_title": book.title if book else "",
-                    "lesson_title": lesson.title if lesson else "",
-                    "item_type": "",
-                    "url": reverse("question-edit", args=[question.id]),
-                    "edit_url": reverse("question-edit", args=[question.id]),
-                    "lesson_url": reverse("lesson-question-list", args=[lesson.id]) if lesson else "",
-                })
+        if scope in ("all", "questions"):
+            questions = Question.objects.filter(
+                lesson__book__owner=request.user
+            ).select_related("lesson", "lesson__book").order_by("lesson__book__title", "lesson__order", "id")
+
+            if book_filter_id:
+                questions = questions.filter(lesson__book_id=book_filter_id)
+
+            if lesson_filter_id:
+                questions = questions.filter(lesson_id=lesson_filter_id)
+
+            for question in questions:
+                if is_match(
+                    question.prompt_text,
+                    question.answer_text,
+                    question.audio_url,
+                    question.lesson.title if question.lesson else "",
+                    question.lesson.book.title if question.lesson and question.lesson.book else "",
+                ):
+                    lesson = question.lesson
+                    book = lesson.book if lesson else None
+
+                    results.append({
+                        "kind": "题目",
+                        "title": clip(question.prompt_text, 80) or f"Question {question.id}",
+                        "subtitle": clip(question.answer_text, 120),
+                        "body": "",
+                        "book_title": book.title if book else "",
+                        "lesson_title": lesson.title if lesson else "",
+                        "item_type": "",
+                        "url": reverse("question-edit", args=[question.id]),
+                        "edit_url": reverse("question-edit", args=[question.id]),
+                        "lesson_url": reverse("lesson-question-list", args=[lesson.id]) if lesson else "",
+                    })
 
         training_items = TrainingItem.objects.filter(
             question__lesson__book__owner=request.user
@@ -6827,52 +6890,102 @@ def global_search(request):
             "id",
         )
 
-        for item in training_items:
-            sequence_text = sequence_summary(item.sequence_chunks)
+        if book_filter_id:
+            training_items = training_items.filter(question__lesson__book_id=book_filter_id)
 
-            if not is_match(
-                item.item_type,
-                item.instruction_text,
-                item.source_text,
-                item.target_answer,
-                item.prompt_text,
-                item.explanation,
-                item.accepted_answers,
-                item.choices,
-                item.correct_answers,
-                item.sequence_chunks,
-                item.question.prompt_text if item.question else "",
-                item.question.answer_text if item.question else "",
-                item.question.lesson.title if item.question and item.question.lesson else "",
-                item.question.lesson.book.title if item.question and item.question.lesson and item.question.lesson.book else "",
-            ):
-                continue
+        if lesson_filter_id:
+            training_items = training_items.filter(question__lesson_id=lesson_filter_id)
 
-            question = item.question
-            lesson = question.lesson if question else None
-            book = lesson.book if lesson else None
+        if selected_item_type:
+            training_items = training_items.filter(item_type=selected_item_type)
 
-            title = item.instruction_text or item.source_text or (question.prompt_text if question else "") or f"TrainingItem {item.id}"
+        if scope in ("all", "training"):
+            for item in training_items:
+                sequence_text = sequence_summary(item.sequence_chunks)
 
-            results.append({
-                "kind": "训练项",
-                "title": clip(title, 90),
-                "subtitle": clip(item.target_answer or (question.answer_text if question else ""), 130),
-                "body": clip(sequence_text or item.explanation or item.source_text or "", 220),
-                "book_title": book.title if book else "",
-                "lesson_title": lesson.title if lesson else "",
-                "item_type": item.item_type,
-                "url": reverse("question-edit", args=[question.id]) if question else "",
-                "edit_url": reverse("question-edit", args=[question.id]) if question else "",
-                "lesson_url": reverse("lesson-question-list", args=[lesson.id]) if lesson else "",
-                "train_url": reverse("lesson-train", args=[lesson.id]) if lesson else "",
-            })
+                if not is_match(
+                    item.item_type,
+                    item.instruction_text,
+                    item.source_text,
+                    item.target_answer,
+                    item.prompt_text,
+                    item.explanation,
+                    item.accepted_answers,
+                    item.choices,
+                    item.correct_answers,
+                    item.sequence_chunks,
+                    item.question.prompt_text if item.question else "",
+                    item.question.answer_text if item.question else "",
+                    item.question.lesson.title if item.question and item.question.lesson else "",
+                    item.question.lesson.book.title if item.question and item.question.lesson and item.question.lesson.book else "",
+                ):
+                    continue
+
+                question = item.question
+                lesson = question.lesson if question else None
+                book = lesson.book if lesson else None
+
+                title = item.instruction_text or item.source_text or (question.prompt_text if question else "") or f"TrainingItem {item.id}"
+
+                results.append({
+                    "kind": "训练项",
+                    "title": clip(title, 90),
+                    "subtitle": clip(item.target_answer or (question.answer_text if question else ""), 130),
+                    "body": clip(sequence_text or item.explanation or item.source_text or "", 220),
+                    "book_title": book.title if book else "",
+                    "lesson_title": lesson.title if lesson else "",
+                    "item_type": item.item_type,
+                    "url": reverse("question-edit", args=[question.id]) if question else "",
+                    "edit_url": reverse("question-edit", args=[question.id]) if question else "",
+                    "lesson_url": reverse("lesson-question-list", args=[lesson.id]) if lesson else "",
+                    "train_url": reverse("lesson-train", args=[lesson.id]) if lesson else "",
+                })
+
+        if scope in ("all", "chunks", "meanings"):
+            for item in training_items:
+                chunks = item.sequence_chunks if isinstance(item.sequence_chunks, list) else []
+
+                question = item.question
+                lesson = question.lesson if question else None
+                book = lesson.book if lesson else None
+
+                for index, chunk in enumerate(chunks, start=1):
+                    text, meaning = chunk_text_and_meaning(chunk)
+
+                    if scope == "meanings":
+                        matched = is_match(meaning)
+                    else:
+                        matched = is_match(text, meaning)
+
+                    if not matched:
+                        continue
+
+                    results.append({
+                        "kind": "中文意思" if scope == "meanings" else "语块",
+                        "title": clip(text or f"语块 {index}", 90),
+                        "subtitle": clip(meaning or "未填写中文意思", 130),
+                        "body": clip(question.prompt_text if question else "", 180),
+                        "book_title": book.title if book else "",
+                        "lesson_title": lesson.title if lesson else "",
+                        "item_type": item.item_type,
+                        "url": reverse("question-edit", args=[question.id]) if question else "",
+                        "edit_url": reverse("question-edit", args=[question.id]) if question else "",
+                        "lesson_url": reverse("lesson-question-list", args=[lesson.id]) if lesson else "",
+                        "train_url": reverse("lesson-train", args=[lesson.id]) if lesson else "",
+                    })
 
     results = results[:120]
 
     return render(request, "train/global_search.html", {
         "page_title": "全局知识点搜索",
         "query": query,
+        "scope": scope,
+        "selected_book_id": selected_book_id,
+        "selected_lesson_id": selected_lesson_id,
+        "selected_item_type": selected_item_type,
+        "books_for_filter": books_for_filter,
+        "lessons_for_filter": lessons_for_filter,
+        "item_type_options": item_type_options,
         "results": results,
         "result_count": len(results),
     })

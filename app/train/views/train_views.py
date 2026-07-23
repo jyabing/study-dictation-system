@@ -10,6 +10,7 @@ from io import BytesIO
 from tempfile import NamedTemporaryFile
 import uuid
 
+from django.db import transaction
 from django.db.models import Q
 
 from datetime import timedelta
@@ -43,6 +44,8 @@ from ..models import (
     Lesson,
     Question,
     QuestionMemory,
+    MemoryItem,
+    MemoryItemVerification,
     WordMemory,
     UserProfile,
     StudyLog,
@@ -52,6 +55,8 @@ from ..models import (
     PracticeSegment,
     DictationSession,
     DictationResult,
+    GraduationSession,
+    GraduationResult,
 )
 
 # =========================
@@ -2330,11 +2335,33 @@ def build_training_payload(training, memory=None, request=None):
     lesson = question.lesson if question else None
     book = lesson.book if lesson else None
 
+    verification = None
+
+    if request is not None and request.user.is_authenticated:
+        verification = get_memory_item_verification(
+            request.user,
+            training
+        )
+
     payload = {
         "id": training.id,
         "training_id": training.id,
 
         "question_id": training.question_id,
+        "memory_item_id": training.memory_item_id,
+
+        "verification_status": (
+            verification.status
+            if verification else None
+        ),
+        "verification_ready_at": (
+            verification.ready_at.isoformat()
+            if verification and verification.ready_at else None
+        ),
+        "verification_verified_at": (
+            verification.verified_at.isoformat()
+            if verification and verification.verified_at else None
+        ),
 
         "book_id": book.id if book else None,
         "book_title": book.title if book else "",
@@ -2432,6 +2459,124 @@ def get_item_memory(user, training):
         question=training.question
     )
     return memory
+
+def get_memory_item_verification(user, training):
+    if not user.is_authenticated:
+        return None
+
+    if not training.memory_item_id:
+        return None
+
+    verification, _ = MemoryItemVerification.objects.get_or_create(
+        user=user,
+        memory_item=training.memory_item
+    )
+
+    return verification
+
+def update_memory_item_verification(user, training):
+    if not user.is_authenticated:
+        return None
+
+    if not training.memory_item_id:
+        return None
+
+    verification = get_memory_item_verification(
+        user,
+        training,
+    )
+
+    memories = QuestionMemory.objects.filter(
+        user=user,
+        question__training_items__memory_item=training.memory_item,
+    ).distinct()
+
+    all_mastered = (
+        memories.exists()
+        and not memories.filter(mastered_at__isnull=True).exists()
+    )
+
+    # 已经通过毕业考核的知识点，不允许自动退回。
+    if verification.status != "verified":
+        if all_mastered:
+            verification.status = "ready"
+
+            if verification.ready_at is None:
+                verification.ready_at = timezone.now()
+        else:
+            verification.status = "learning"
+            verification.ready_at = None
+
+        verification.save(
+            update_fields=[
+                "status",
+                "ready_at",
+                "updated_at",
+            ]
+        )
+
+    return {
+        "verification": verification,
+        "memories": memories,
+        "all_mastered": all_mastered,
+    }
+
+def create_graduation_session(user, memory_item):
+    if not user.is_authenticated:
+        return None
+
+    verification = MemoryItemVerification.objects.filter(
+        user=user,
+        memory_item=memory_item,
+    ).first()
+
+    if verification is None:
+        return None
+
+    if verification.status != MemoryItemVerification.STATUS_READY:
+        return None
+
+    training_items = list(
+        memory_item.training_items
+        .filter(is_active=True)
+        .select_related("question")
+        .order_by("sort_order", "id")
+    )
+
+    if not training_items:
+        return None
+
+    with transaction.atomic():
+        session = GraduationSession.objects.create(
+            user=user,
+            memory_item=memory_item,
+            verification=verification,
+            total_count=len(training_items),
+            correct_count=0,
+            wrong_count=0,
+            passed=None,
+            status=GraduationSession.STATUS_IN_PROGRESS,
+        )
+
+        results = []
+
+        for index, training in enumerate(training_items, start=1):
+            results.append(
+                GraduationResult(
+                    session=session,
+                    training_item=training,
+                    question=training.question,
+                    order_index=index,
+                    item_type_snapshot=training.item_type or "",
+                    instruction_text_snapshot=training.instruction_text or "",
+                    source_text_snapshot=training.source_text or "",
+                    target_answer_snapshot=training.target_answer or "",
+                )
+            )
+
+        GraduationResult.objects.bulk_create(results)
+
+    return session
 
 def _session_next_empty_submit_stage(request, training_id):
     """
@@ -5484,6 +5629,333 @@ def dictation_lesson_start(request, lesson_id):
 
     return redirect("dictation-session-detail", session_id=session.id)
 
+@login_required
+def graduation_start(request, memory_item_id):
+    memory_item = get_object_or_404(
+        MemoryItem,
+        id=memory_item_id,
+        lesson__book__owner=request.user,
+    )
+
+    session = create_graduation_session(
+        request.user,
+        memory_item,
+    )
+
+    if session is None:
+        return redirect(
+            "book-detail",
+            book_id=memory_item.lesson.book_id,
+        )
+
+    return redirect(
+        "graduation-session-detail",
+        session_id=session.id,
+    )
+
+@login_required
+def graduation_session_detail(request, session_id):
+    session = get_object_or_404(
+        GraduationSession.objects.select_related(
+            "memory_item",
+            "memory_item__lesson",
+            "memory_item__lesson__book",
+            "verification",
+        ),
+        id=session_id,
+        user=request.user,
+    )
+
+    results = list(
+        session.results
+        .select_related(
+            "training_item",
+            "training_item__question",
+            "question",
+        )
+        .order_by("order_index", "id")
+    )
+
+    graduation_result_payloads = []
+
+    for result in results:
+        training = result.training_item
+
+        if training is None:
+            continue
+
+        payload = build_training_payload(
+            training,
+            request=request,
+        )
+
+        payload.update({
+            "graduation_result_id": result.id,
+            "order_index": result.order_index,
+            "is_correct": result.is_correct,
+            "answered_at": (
+                result.answered_at.isoformat()
+                if result.answered_at else None
+            ),
+            "submit_url": reverse(
+                "graduation-result-submit",
+                args=[result.id],
+            ),
+        })
+
+        graduation_result_payloads.append(payload)
+
+    book = session.memory_item.lesson.book
+    lesson = session.memory_item.lesson
+
+    return render(
+        request,
+        "train/train.html",
+        {
+            "train_scope": "graduation",
+            "train_scope_label": "毕业考核",
+            "train_title": "毕业考核",
+            "book": book,
+            "lesson": lesson,
+            "is_global_train_scope": False,
+
+            "plan_total": session.total_count,
+            "plan_done": session.correct_count + session.wrong_count,
+            "plan_progress": (
+                round(
+                    (
+                        (session.correct_count + session.wrong_count)
+                        / session.total_count
+                    ) * 100
+                )
+                if session.total_count > 0
+                else 0
+            ),
+
+            "train_api_url": "",
+            "manual_upgrade_url": "",
+            "continue_train_url": reverse(
+                "graduation-session-detail",
+                args=[session.id],
+            ),
+            "book_detail_url": reverse(
+                "book-detail",
+                args=[book.id],
+            ),
+            "course_map_url": reverse(
+                "book-detail",
+                args=[book.id],
+            ),
+
+            "head_actions": [
+                {
+                    "label": "← 返回书册",
+                    "url": reverse(
+                        "book-detail",
+                        args=[book.id],
+                    ),
+                },
+            ],
+            "head_meta": [
+                {
+                    "label": "范围：",
+                    "text": "毕业考核",
+                },
+                {
+                    "label": "记忆项目：",
+                    "text": str(session.memory_item),
+                },
+            ],
+            "head_chips": [
+                {
+                    "kind": "warning",
+                    "text": "阶段：毕业考核",
+                },
+                {
+                    "kind": "primary",
+                    "text": f"进度：{session.correct_count + session.wrong_count}/{session.total_count}",
+                },
+                {
+                    "kind": "primary",
+                    "text": f"状态：{session.status}",
+                },
+                {
+                    "kind": "danger",
+                    "text": "规则：每题仅一次机会",
+                },
+            ],
+
+            "training_mode": "graduation",
+            "graduation_session": session,
+            "graduation_result_payloads_json": json.dumps(
+                graduation_result_payloads,
+                ensure_ascii=False,
+            ),
+        },
+    )
+
+@login_required
+@require_POST
+def graduation_result_submit(request, result_id):
+    result = get_object_or_404(
+        GraduationResult.objects.select_related(
+            "session",
+            "session__verification",
+            "training_item",
+            "training_item__question",
+        ),
+        id=result_id,
+        session__user=request.user,
+    )
+
+    if result.is_correct is not None:
+        return JsonResponse(
+            {
+                "ok": False,
+                "error": "This graduation result has already been answered.",
+            },
+            status=409,
+        )
+
+    try:
+        data = json.loads(request.body.decode("utf-8") or "{}")
+    except Exception:
+        data = {}
+
+    raw_answer = data.get("user_answer")
+    write_direction = str(data.get("write_direction") or "").strip()
+
+    try:
+        duration_ms = int(data.get("duration_ms") or 0)
+    except (TypeError, ValueError):
+        duration_ms = 0
+
+    duration_ms = max(duration_ms, 0)
+
+    training = result.training_item
+
+    if training is None:
+        return JsonResponse(
+            {
+                "ok": False,
+                "error": "Training item no longer exists.",
+            },
+            status=410,
+        )
+
+    with transaction.atomic():
+        judge_result = judge_training_answer(
+            training,
+            raw_answer,
+            write_direction=write_direction,
+        )
+
+        is_correct = bool(judge_result.get("is_correct"))
+
+        result.user_answer = raw_answer
+        result.is_correct = is_correct
+        result.duration_ms = duration_ms
+        result.answered_at = timezone.now()
+
+        result.save(
+            update_fields=[
+                "user_answer",
+                "is_correct",
+                "duration_ms",
+                "answered_at",
+            ]
+        )
+
+        session = (
+            GraduationSession.objects
+            .select_for_update()
+            .select_related("verification")
+            .get(id=result.session_id)
+        )
+
+        session_results = session.results.all()
+
+        answered_count = session_results.filter(
+            is_correct__isnull=False
+        ).count()
+
+        correct_count = session_results.filter(
+            is_correct=True
+        ).count()
+
+        wrong_count = session_results.filter(
+            is_correct=False
+        ).count()
+
+        session.correct_count = correct_count
+        session.wrong_count = wrong_count
+
+        session_finished = answered_count >= session.total_count
+
+        verification = session.verification
+
+        if session_finished:
+            now = timezone.now()
+
+            session.status = GraduationSession.STATUS_FINISHED
+            session.finished_at = now
+            session.passed = (
+                session.total_count > 0
+                and correct_count == session.total_count
+            )
+
+            verification.last_attempt_at = now
+
+            if session.passed:
+                verification.status = MemoryItemVerification.STATUS_VERIFIED
+                verification.verified_at = now
+            else:
+                verification.status = MemoryItemVerification.STATUS_READY
+                verification.fail_count += 1
+
+            verification.save(
+                update_fields=[
+                    "status",
+                    "verified_at",
+                    "last_attempt_at",
+                    "fail_count",
+                    "updated_at",
+                ]
+            )
+
+        session.save(
+            update_fields=[
+                "correct_count",
+                "wrong_count",
+                "status",
+                "finished_at",
+                "passed",
+            ]
+        )
+
+    return JsonResponse({
+        "ok": True,
+        "is_correct": is_correct,
+        "correct_answers": judge_result.get("correct_answers") or [],
+        "display_answer": judge_result.get("display_answer") or "",
+        "user_answers": judge_result.get("user_answers"),
+        "result_level": judge_result.get("result_level"),
+        "feedback_message": judge_result.get("feedback_message") or "",
+        "error_tip": judge_result.get("error_tip") or "",
+        "diff_segments": judge_result.get("diff_segments") or [],
+        "session_finished": session_finished,
+        "session_status": session.status,
+        "session_passed": session.passed,
+        "session_correct_count": session.correct_count,
+        "session_wrong_count": session.wrong_count,
+        "verification_status": verification.status,
+        "verification_verified_at": (
+            verification.verified_at.isoformat()
+            if verification.verified_at else None
+        ),
+        "verification_fail_count": verification.fail_count,
+    })
+
 # =========================
 # 页面：训练页
 # =========================
@@ -6272,6 +6744,11 @@ def _train_api_by_scope(request, scope, obj):
             used_hint=used_hint,
         )
         memory.refresh_from_db()
+
+        verification_result = update_memory_item_verification(
+            request.user,
+            training,
+        )
 
         cycle_after = _build_cycle_status(memory)
 

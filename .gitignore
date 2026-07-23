@@ -9,3 +9,15 @@ __pycache__/
 *.bak
 *.bak_*
 *.gz
+# Python virtual environment
+study_env/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

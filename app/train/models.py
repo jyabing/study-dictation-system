@@ -77,6 +77,252 @@ class MemoryItem(models.Model):
 
 
 # =========================
+# 🎓 MemoryItemVerification（知识点毕业认证层）
+# =========================
+class MemoryItemVerification(models.Model):
+
+    STATUS_LEARNING = "learning"
+    STATUS_READY = "ready"
+    STATUS_VERIFIED = "verified"
+
+    STATUS_CHOICES = [
+        (STATUS_LEARNING, "学习中"),
+        (STATUS_READY, "待毕业验证"),
+        (STATUS_VERIFIED, "已验证掌握"),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="memory_item_verifications"
+    )
+
+    memory_item = models.ForeignKey(
+        MemoryItem,
+        on_delete=models.CASCADE,
+        related_name="verifications"
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_LEARNING
+    )
+
+    ready_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    verified_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    last_attempt_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    fail_count = models.PositiveIntegerField(
+        default=0
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "memory_item"],
+                name="unique_user_memory_item_verification"
+            )
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.user} - "
+            f"M{self.memory_item_id} - "
+            f"{self.get_status_display()}"
+        )
+
+# =========================
+# 🎓 GraduationSession（知识点毕业考核会话）
+# =========================
+class GraduationSession(models.Model):
+
+    STATUS_IN_PROGRESS = "in_progress"
+    STATUS_FINISHED = "finished"
+    STATUS_ABANDONED = "abandoned"
+
+    STATUS_CHOICES = [
+        (STATUS_IN_PROGRESS, "进行中"),
+        (STATUS_FINISHED, "已完成"),
+        (STATUS_ABANDONED, "已放弃"),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="graduation_sessions"
+    )
+
+    memory_item = models.ForeignKey(
+        MemoryItem,
+        on_delete=models.CASCADE,
+        related_name="graduation_sessions"
+    )
+
+    verification = models.ForeignKey(
+        MemoryItemVerification,
+        on_delete=models.CASCADE,
+        related_name="graduation_sessions"
+    )
+
+    total_count = models.PositiveSmallIntegerField(
+        default=0
+    )
+
+    correct_count = models.PositiveSmallIntegerField(
+        default=0
+    )
+
+    wrong_count = models.PositiveSmallIntegerField(
+        default=0
+    )
+
+    passed = models.BooleanField(
+        null=True,
+        blank=True
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_IN_PROGRESS
+    )
+
+    started_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    finished_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        ordering = ["-started_at"]
+
+    def __str__(self):
+        return (
+            f"{self.user} - "
+            f"M{self.memory_item_id} - "
+            f"graduation {self.id} - "
+            f"{self.status}"
+        )
+
+
+# =========================
+# 🎓 GraduationResult（毕业考核单题结果）
+# =========================
+class GraduationResult(models.Model):
+
+    session = models.ForeignKey(
+        GraduationSession,
+        on_delete=models.CASCADE,
+        related_name="results"
+    )
+
+    training_item = models.ForeignKey(
+        "TrainingItem",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="graduation_results"
+    )
+
+    question = models.ForeignKey(
+        Question,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="graduation_results"
+    )
+
+    order_index = models.PositiveSmallIntegerField(
+        default=0
+    )
+
+    item_type_snapshot = models.CharField(
+        max_length=30,
+        blank=True,
+        default=""
+    )
+
+    instruction_text_snapshot = models.TextField(
+        blank=True,
+        default=""
+    )
+
+    source_text_snapshot = models.TextField(
+        blank=True,
+        default=""
+    )
+
+    target_answer_snapshot = models.TextField(
+        blank=True,
+        default=""
+    )
+
+    is_correct = models.BooleanField(
+        null=True,
+        blank=True
+    )
+
+    user_answer = models.JSONField(
+        blank=True,
+        null=True
+    )
+
+    duration_ms = models.PositiveIntegerField(
+        default=0
+    )
+
+    answered_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        ordering = ["session", "order_index", "id"]
+
+    def __str__(self):
+        result = (
+            "pending"
+            if self.is_correct is None
+            else "correct"
+            if self.is_correct
+            else "wrong"
+        )
+
+        return (
+            f"GraduationResult "
+            f"S{self.session_id} "
+            f"#{self.order_index} - "
+            f"{result}"
+        )
+
+# =========================
 # 🎯 TrainingItem（训练主表 + 题型兼容层）
 # =========================
 class TrainingItem(models.Model):
@@ -134,6 +380,18 @@ class TrainingItem(models.Model):
         "Question",
         on_delete=models.CASCADE,
         related_name="training_items"
+    )
+
+    # =========================
+    # 核心知识点关联
+    # =========================
+    memory_item = models.ForeignKey(
+        MemoryItem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="training_items",
+        help_text="该训练题所属的核心知识点；旧数据可暂时留空"
     )
 
     item_type = models.CharField(

@@ -2083,6 +2083,12 @@
 const TRAIN_SCOPE = "{{ train_scope|default:'lesson' }}";
 const TRAIN_SCOPE_LABEL = "{{ train_scope_label|default:'本课训练' }}";
 
+const TRAINING_MODE = "{{ training_mode|default:'normal'|escapejs }}";
+
+const GRADUATION_RESULTS = JSON.parse(
+    "{{ graduation_result_payloads_json|default:'[]'|escapejs }}"
+);
+
 const API_URL = "{{ train_api_url|default:''|escapejs }}";
 const MANUAL_UPGRADE_URL = "{{ manual_upgrade_url|default:''|escapejs }}";
 const CONTINUE_TRAIN_URL = "{{ continue_train_url|default:''|escapejs }}";
@@ -2336,6 +2342,11 @@ const sideCorrectAnswer = document.getElementById("side-correct-answer");
 const state = {
     current: null,
     startedAt: 0,
+
+    graduationResults: GRADUATION_RESULTS,
+    graduationIndex: 0,
+    graduationFinished: false,
+
     selectedChoiceIndex: null,
     writeDirection: "",
     loading: false,
@@ -5648,6 +5659,48 @@ function renderPayload(payload) {
 }
 
 async function loadCurrentQuestion() {
+    if (TRAINING_MODE === "graduation") {
+        const payload = state.graduationResults[state.graduationIndex];
+
+        if (!payload) {
+            state.graduationFinished = true;
+
+            clearFeedback();
+            clearQuestionSource();
+            clearResultImpact();
+            clearMemoryStepTrack();
+            clearSessionProgress();
+
+            if (statMemoryLevel) statMemoryLevel.textContent = "-";
+            if (sideType) sideType.textContent = "-";
+            if (sideTrainingId) sideTrainingId.textContent = "-";
+            if (sideIsTodayPlan) sideIsTodayPlan.textContent = "-";
+            if (sideCycleStep) sideCycleStep.textContent = "-";
+            if (sideStepLabel) sideStepLabel.textContent = "-";
+            if (sideStatusText) sideStatusText.textContent = "-";
+            if (sideLastResult) sideLastResult.textContent = "-";
+            if (sideNextReview) sideNextReview.textContent = "-";
+            if (sideCorrectAnswer) sideCorrectAnswer.textContent = "考核已结束";
+
+            chipStage.textContent = "当前阶段：毕业考核完成";
+            chipNextReview.textContent = "毕业考核：已完成";
+            chipStatus.textContent = "当前状态：等待最终结果";
+            chipSource.textContent = "训练来源：毕业考核";
+
+            showEmptyMode(
+                "本次毕业考核题目已经全部完成。",
+                "success",
+                "毕业考核完成",
+                "所有题目均已提交，请返回书册查看最终状态。"
+            );
+            return;
+        }
+
+        state.graduationFinished = false;
+        renderPayload(payload);
+        return;
+    }
+
     if (!API_URL) {
         clearFeedback();
         clearQuestionSource();
@@ -6021,8 +6074,117 @@ async function submitSequenceCompletion() {
     }
 }
 
+async function submitGraduationAnswer(event) {
+    event.preventDefault();
+
+    if (state.loading) {
+        return;
+    }
+
+    const currentPayload = state.current || {};
+    const submitUrl = String(currentPayload.submit_url || "").trim();
+    const qType = getQuestionType(currentPayload);
+
+    if (qType === "read_cloze") {
+        flushClozeTagInput(true);
+        answerInput.value = JSON.stringify(clozeAnswerTags);
+    }
+
+    const answer = answerInput.value.trim();
+
+    if (!submitUrl) {
+        setFeedback("当前毕业考核题目没有提交地址，请重新加载页面。", "wrong");
+        return;
+    }
+
+    if (!answer || answer === "[]") {
+        setFeedback("请先填写答案。毕业考核每题只有一次机会。", "warning");
+        return;
+    }
+
+    setLoading(true);
+    clearFeedback();
+
+    const duration = Math.max(0, Date.now() - state.startedAt);
+
+    const currentWriteDirection = String(
+        currentPayload.write_direction
+        || state.writeDirection
+        || ""
+    ).trim();
+
+    try {
+        const response = await fetch(submitUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json;charset=UTF-8",
+                "X-CSRFToken": getCookie("csrftoken"),
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            body: JSON.stringify({
+                user_answer: answer,
+                duration_ms: duration,
+                write_direction: currentWriteDirection,
+            }),
+            credentials: "same-origin",
+        });
+
+        const data = await response.json();
+
+        console.log("graduation submit response:", data);
+
+        if (!response.ok || data.ok === false) {
+            setFeedback(
+                data.error || "毕业考核答案提交失败，请重试。",
+                "wrong"
+            );
+            return;
+        }
+
+        const correctAnswersRaw = Array.isArray(data.correct_answers)
+            ? data.correct_answers
+            : [];
+
+        const correctAnswerText = correctAnswersRaw.join(" / ");
+
+        sideCorrectAnswer.textContent = correctAnswerText || "未返回";
+
+        if (data.is_correct) {
+            setFeedback(
+                data.feedback_message || "回答正确",
+                "correct"
+            );
+        } else {
+            setFeedback({
+                title: "❌ 判定结果：错误",
+                userAnswer: String(answer || "").trim(),
+                correctAnswer: correctAnswerText,
+                errorTip: data.error_tip || "",
+            }, "wrong");
+        }
+
+        state.graduationIndex += 1;
+
+        playAnswerAudioThenNext(currentPayload, 1200);
+        
+    } catch (error) {
+        console.error("submitGraduationAnswer failed:", error);
+
+        setFeedback(
+            "毕业考核答案提交失败，请检查网络或刷新页面后重试。",
+            "wrong"
+        );
+    } finally {
+        setLoading(false);
+    }
+}
+
 async function submitAnswer(event) {
     event.preventDefault();
+
+    if (TRAINING_MODE === "graduation") {
+        return submitGraduationAnswer(event);
+    }
 
     if (state.loading) {
         return;

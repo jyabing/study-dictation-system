@@ -17,6 +17,7 @@ from .views.train_views import (
     dictation_lesson_start,
     dictation_session_detail,
     dictation_result_submit,
+    graduation_lesson_center,
     graduation_start,
     graduation_session_detail,
     graduation_result_submit,
@@ -108,9 +109,9 @@ urlpatterns = [
     path("dictation/lesson/<int:lesson_id>/check/", dictation_lesson_check, name="dictation-lesson-check"),
     path("dictation/lesson/<int:lesson_id>/start/", dictation_lesson_start, name="dictation-lesson-start"),
     path(
-        "graduation/memory-item/<int:memory_item_id>/start/",
-        graduation_start,
-        name="graduation-start",
+        "graduation/lesson/<int:lesson_id>/",
+        graduation_lesson_center,
+        name="graduation-lesson-center",
     ),
     path(
         "graduation/memory-item/<int:memory_item_id>/start/",

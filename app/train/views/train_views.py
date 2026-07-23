@@ -5630,6 +5630,47 @@ def dictation_lesson_start(request, lesson_id):
     return redirect("dictation-session-detail", session_id=session.id)
 
 @login_required
+def graduation_lesson_center(request, lesson_id):
+    lesson = get_object_or_404(
+        Lesson,
+        id=lesson_id,
+        book__owner=request.user,
+    )
+
+    ready_items = (
+        MemoryItemVerification.objects
+        .filter(
+            user=request.user,
+            memory_item__lesson=lesson,
+            status=MemoryItemVerification.STATUS_READY,
+        )
+        .select_related("memory_item")
+        .order_by("memory_item__id")
+    )
+
+    verified_items = (
+        MemoryItemVerification.objects
+        .filter(
+            user=request.user,
+            memory_item__lesson=lesson,
+            status=MemoryItemVerification.STATUS_VERIFIED,
+        )
+        .select_related("memory_item")
+        .order_by("-verified_at")
+    )
+
+    return render(
+        request,
+        "train/graduation_center.html",
+        {
+            "lesson": lesson,
+            "book": lesson.book,
+            "ready_items": ready_items,
+            "verified_items": verified_items,
+        },
+    )
+
+@login_required
 def graduation_start(request, memory_item_id):
     memory_item = get_object_or_404(
         MemoryItem,

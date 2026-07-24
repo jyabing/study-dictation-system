@@ -819,6 +819,8 @@
                                                         ｜巩固中 {{ lesson_in_progress_count }}
                                                         ｜长期巩固 {{ lesson_mastered_count }}
                                                         ｜听写题 {{ lesson.dictation_count }}
+                                                        ｜待毕业 {{ lesson.ready_count }}
+                                                        ｜已毕业 {{ lesson.verified_count }}
                                                     </div>
 
                                                     <div class="table-actions" style="margin-top:10px;">
@@ -907,6 +909,8 @@
                                         <div class="lesson-subtitle">
                                             逾期 {{ lesson_overdue_count }}
                                             ｜阶段 {{ lesson_stage }}
+                                            ｜待毕业 {{ lesson.ready_count }}
+                                            ｜已毕业 {{ lesson.verified_count }}
                                         </div>
 
                                         <div class="lesson-card-actions">

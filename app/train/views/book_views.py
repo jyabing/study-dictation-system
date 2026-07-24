@@ -1,7 +1,14 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.db.models import Count
-from ..models import Book, Lesson, Question, QuestionMemory, TrainingItem
+from ..models import (
+    Book,
+    Lesson,
+    Question,
+    QuestionMemory,
+    TrainingItem,
+    MemoryItemVerification,
+)
 from .train_views import (
     get_book_lessons_cycle_summary,
     get_dashboard_books_cycle_summary,
@@ -438,6 +445,31 @@ def book_detail(request, book_id):
         for row in dictation_count_rows
     }
 
+    graduation_count_rows = (
+        MemoryItemVerification.objects
+        .filter(
+            user=request.user,
+            memory_item__lesson__book=book,
+            status__in=[
+                MemoryItemVerification.STATUS_READY,
+                MemoryItemVerification.STATUS_VERIFIED,
+            ],
+        )
+        .values(
+            "memory_item__lesson_id",
+            "status",
+        )
+        .annotate(count=Count("id"))
+    )
+
+    graduation_count_map = {
+        (
+            row["memory_item__lesson_id"],
+            row["status"],
+        ): row["count"]
+        for row in graduation_count_rows
+    }
+
     for lesson in lessons:
         row = lesson_summary_map.get(lesson.id, {})
 
@@ -464,6 +496,22 @@ def book_detail(request, book_id):
         lesson.priority_status_label = row.get("priority_status_label", "暂无安排")
         lesson.risk_level = row.get("risk_level", "稳定")
         lesson.dictation_count = dictation_count_map.get(lesson.id, 0)
+
+        lesson.ready_count = graduation_count_map.get(
+            (
+                lesson.id,
+                MemoryItemVerification.STATUS_READY,
+            ),
+            0,
+        )
+
+        lesson.verified_count = graduation_count_map.get(
+            (
+                lesson.id,
+                MemoryItemVerification.STATUS_VERIFIED,
+            ),
+            0,
+        )
 
     lesson_summary_filled_count = sum(
         1
